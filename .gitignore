@@ -1,0 +1,91 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+Icon?
+
+# Windows specific
+*.lnk
+
+# Temporary/system files
+*.swp
+*~
+*.tmp
+*.pid
+*.seed
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node
+node_modules/
+dist/
+build/
+.npm
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+env/
+venv/
+.venv/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+
+
+# IDEs and editors
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-workspace
+*.sublime-project
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Archives and packages
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Secrets and keys
+*.pem
+*.key
+*.pfx
+
+# Docker
+docker-compose.override.yml
+.env.*.local
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash/
+
+# Misc
+coverage/
+coverage.*
+cache/
+*.sqlite
+*.db
+*.DS_Store
+
+# Allow tracking of example env files
+!.env.example
