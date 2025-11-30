@@ -1,0 +1,39 @@
+# Normalize all text files to LF in the repo
+* text=auto
+
+# Force LF for files that must NEVER get CRLF
+*.sh     eol=lf
+*.bash   eol=lf
+*.zsh    eol=lf
+*.py     eol=lf
+*.js     eol=lf
+*.ts     eol=lf
+*.jsx    eol=lf
+*.tsx    eol=lf
+*.json   eol=lf
+*.yml    eol=lf
+*.yaml   eol=lf
+*.env    eol=lf
+Dockerfile eol=lf
+
+# Force CRLF for Windows-only files
+*.bat    eol=crlf
+*.cmd    eol=crlf
+*.ps1    eol=crlf
+
+# Mark binary files so Git doesn't mess with them
+*.png    -text
+*.jpg    -text
+*.jpeg   -text
+*.gif    -text
+*.ico    -text
+*.pdf    -text
+*.zip    -text
+*.exe    -text
+*.dll    -text
+
+
+# reduce merge conflicts in lock files
+package-lock.json merge=union
+yarn.lock       merge=union
+pnpm-lock.yaml  merge=union
