@@ -1,111 +1,201 @@
-# Tobii Local Service
+# Tobii Eye Tracker Service
 
-A local HTTP service that captures gaze data from Tobii eye trackers and exposes it via REST API for web applications.
+Local Windows desktop application that captures eye tracking data from Tobii hardware and exposes it via WebSocket API.
 
-## Prerequisites
+## Features
 
-- Python 3.10 (required for tobii_research compatibility)
-- Tobii Eye Tracker (connected and drivers installed)
-- [Tobii Eye Tracker drivers](https://gaming.tobii.com/getstarted/)
+- **System Tray Integration** - Runs in background, left-click tray to open window
+- **Fixed Port (28980)** - No discovery needed, simple connection
+- **Port Conflict Resolution** - Automatically detects and offers to kill conflicting processes
+- **Real-time Status** - Service status, port info, and eye tracker connection
+- **Modern GUI** - CustomTkinter-based interface with clean design
+- **WebSocket API** - Real-time gaze data streaming
+- **CORS Enabled** - Ready for web integration
 
-## Setup
+## Quick Start
 
-### 1. Create Virtual Environment
-
+1. Create virtual environment and install dependencies:
 ```powershell
-# Navigate to tobii-service directory
-cd tobii-service
-
-# Create virtual environment with Python 3.10
-py -3.10 -m venv venv
-
-# Activate virtual environment
-.\venv\Scripts\Activate.ps1
-```
-
-### 2. Install Dependencies
-
-```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-### 3. Configuration
-
-Copy `.env.example` to `.env` and adjust settings if needed:
-
+2. Run the application:
 ```powershell
-cp .env.example .env
+python gui_window.py
 ```
 
-## Running the Service
+3. Use the GUI to:
+   - Start/Stop the service
+   - Monitor eye tracker status
+   - View current port (28980)
+
+### Auto-Start (Minimized to Tray)
 
 ```powershell
-# Make sure virtual environment is activated
-.\venv\Scripts\Activate.ps1
-
-# Run the service
-python main.py
+python gui_window.py --minimized
 ```
 
-The service will start on `http://127.0.0.1:3001`
+## Application Behavior
+
+| Action | Behavior |
+|--------|----------|
+| **Left-click tray** | Opens main window |
+| **Right-click tray** | Shows menu (Open, Exit) |
+| **Minimize button (-)** | Hides to tray, service keeps running |
+| **Close button (X)** | Stops service, hides to tray |
+| **Exit button** | Stops service, hides to tray |
+| **Tray → Exit** | Stops service, quits application |
 
 ## API Endpoints
 
-### Tobii Endpoints
-- `GET /tobii/status` - Check eye tracker connection status
-- `WebSocket /tobii/gaze` - Real-time gaze data streaming (auto-starts/stops capture)
+### Health Check
+```
+GET http://localhost:28980/tobii/status
+```
 
-## API Documentation
+Response:
+```json
+{
+  "connected": true,
+  "device": {
+    "model": "Tobii Eye Tracker 5",
+    "serial_number": "..."
+  }
+}
+```
 
-Once running, visit `http://127.0.0.1:3001/docs` for interactive API documentation (Swagger UI).
+### Gaze Data Stream (WebSocket)
+```
+ws://localhost:28980/tobii/gaze
+```
 
-## Project Structure
+Data format:
+```json
+{
+  "timestamp": 1234567890.123,
+  "left_gaze": {"x": 0.5, "y": 0.5},
+  "right_gaze": {"x": 0.5, "y": 0.5}
+}
+```
+
+## Web Integration
+
+Example Next.js integration:
+
+```typescript
+const ws = new WebSocket('ws://localhost:28980/tobii/gaze');
+
+ws.onopen = () => console.log('Connected to Tobii service');
+
+ws.onmessage = (event) => {
+  const gazeData = JSON.parse(event.data);
+  // Process gaze data
+};
+
+ws.onerror = (error) => console.error('WebSocket error:', error);
+```
+
+**Important:** Add your production domain to `ALLOWED_ORIGINS` in `app/config.py`:
+
+```python
+ALLOWED_ORIGINS: List[str] = [
+    "http://localhost:3000",
+    "https://yourapp.com"
+]
+```
+
+## File Structure
 
 ```
 tobii-service/
+├── gui_window.py              # Main application entry point
+├── main.py                    # FastAPI server entry
+├── requirements.txt           # Python dependencies
+├── config.json               # Runtime configuration
 ├── app/
-│   ├── __init__.py
-│   ├── api.py              # Application factory
-│   ├── config.py           # Configuration settings
-│   ├── models/             # Data models
-│   │   ├── __init__.py
-│   │   └── gaze.py
-│   ├── routers/            # API routes
-│   │   ├── __init__.py
-│   │   └── tobii.py
-│   └── services/           # Business logic
-│       ├── __init__.py
-│       └── tobii_service.py
-├── main.py                 # Application entry point
-├── requirements.txt
-├── .env.example
-├── .gitignore
-└── README.md
+│   ├── api.py                # FastAPI application
+│   ├── config.py             # Settings and environment
+│   ├── routers/
+│   │   └── tobii.py          # Eye tracker endpoints
+│   └── services/
+│       └── tobii_service.py  # Tobii SDK integration
+├── gui/
+│   ├── widgets.py            # GUI components
+│   ├── styles.py             # Theme and colors
+│   └── service_manager.py    # Server lifecycle management
+└── assets/
+    └── eye.ico             # Application icon
 ```
 
-## Development
+## Configuration
 
-### Code Style
-- Follow PEP 8 guidelines
-- Use type hints
-- Write docstrings for all functions and classes
+**Port:** Fixed at 28980 (configured in `app/config.py`)
 
-### Testing
-```powershell
-# TODO: Add testing instructions
+**Environment Variables** (optional `.env` file):
+```env
+HOST=127.0.0.1
+PORT=28980
+DEBUG=true
 ```
+
+## Requirements
+
+- **Python:** 3.8 or higher
+- **Hardware:** Tobii Eye Tracker (4C, 5, or compatible)
+- **OS:** Windows 10/11
+- **Drivers:** Tobii Eye Tracker drivers installed
+
+## Dependencies
+
+Core libraries:
+- `fastapi==0.109.0` - REST API framework
+- `uvicorn[standard]==0.27.0` - ASGI server
+- `tobii_research` - Tobii SDK
+- `customtkinter==5.2.2` - Modern GUI framework
+- `pystray==0.19.5` - System tray integration
+- `psutil==5.9.8` - Process management
+
+See `requirements.txt` for complete list.
 
 ## Troubleshooting
 
-### Eye tracker not detected
-1. Ensure Tobii drivers are installed
-2. Check if eye tracker is properly connected
-3. Restart the service
+**Port 28980 already in use:**
+- The GUI will detect this and offer to kill the conflicting process
+- Or manually check: `netstat -ano | findstr :28980`
 
-### CORS issues
-- Check `ALLOWED_ORIGINS` in `.env` matches your frontend URL
-- Default is `http://localhost:3000` for Next.js
+**Eye tracker not detected:**
+- Ensure Tobii drivers are installed
+- Check USB connection
+- Restart the Tobii service from Windows Services
 
-## License
+**Icon not showing in dialog:**
+- Known issue with CustomTkinter - icon appears after short delay
+- Icon file must be `.ico` format for Windows title bar
 
-[Your License Here]
+## Development
+
+### Running the Server Directly
+
+```powershell
+uvicorn main:app --host 127.0.0.1 --port 28980
+```
+
+### Code Structure
+
+- **GUI Layer** (`gui/`) - CustomTkinter widgets and service manager
+- **API Layer** (`app/`) - FastAPI routes and business logic
+- **Service Layer** (`app/services/`) - Tobii SDK integration
+
+### Styling
+
+All colors and fonts are centralized in `gui/styles.py` for easy theming.
+
+## Future Enhancements
+
+- [ ] Package as standalone executable (PyInstaller)
+- [ ] Windows installer with auto-start option
+- [ ] Calibration UI
+- [ ] Data recording and export
+- [ ] Settings panel for port configuration
