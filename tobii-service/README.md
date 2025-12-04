@@ -10,15 +10,31 @@ This service runs quietly in your system tray and makes your Tobii eye tracker a
 
 ### System Requirements
 
-- **OS:** Windows 10 or Windows 11 (currently Windows-only due to GUI framework)
+- **OS:** Windows 10/11, macOS 10.15+, or Linux (Ubuntu 20.04+)
+- **Python:** 3.10 (bundled in portable executable)
 - **Hardware:** Tobii Pro eye tracker (e.g., Pro Fusion, Pro Spectrum, Pro Nano) with Tobii Pro SDK support
+
+**Note:** Windows builds are fully tested. macOS and Linux builds are automated but currently untested. Please report any platform-specific issues.
 
 ### Setup
 
-1. **Download** the latest release from the [Releases page](../../releases)
-2. **Install** by running `Lexora-setup.exe`
-3. **Launch** from Start Menu or Desktop shortcut
-4. The app will appear in your system tray (look for the eye icon 👁️)
+#### Windows
+1. **Download** `Lexora-Windows.exe` from the [Releases page](../../releases)
+2. **Run** the executable (no installation required)
+3. The app will appear in your system tray (look for the eye icon 👁️)
+
+#### macOS
+1. **Download** `Lexora-macOS.dmg` from the [Releases page](../../releases)
+2. **Open** the DMG file and drag Lexora.app to Applications
+3. **Run** from Applications folder
+4. The app will appear in your menu bar
+
+#### Linux
+1. **Download** `Lexora-Linux.tar.gz` from the [Releases page](../../releases)
+2. **Extract:** `tar -xzf Lexora-Linux.tar.gz`
+3. **Make executable:** `chmod +x Lexora`
+4. **Run:** `./Lexora`
+5. The app will appear in your system tray
 
 ## How to Use
 
@@ -43,12 +59,16 @@ This service runs quietly in your system tray and makes your Tobii eye tracker a
 | **Exit button** | Stops service and minimizes to tray |
 | **Tray → Exit** | Completely quits the application |
 
-### Auto-Start on Windows Login
+### Auto-Start (Windows)
 
 To start the service automatically when you log in:
 1. Press `Win + R`, type `shell:startup`, press Enter
-2. Create a shortcut to Lexora in this folder
+2. Create a shortcut to `Lexora-Windows.exe` in this folder
 3. Right-click shortcut → Properties → Add `--minimized` to Target field
+
+**macOS:** Add Lexora.app to System Preferences → Users & Groups → Login Items
+
+**Linux:** Add to your desktop environment's startup applications
 
 
 ## Connecting from Web Applications
