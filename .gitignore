@@ -43,6 +43,10 @@ pip-wheel-metadata/
 *.egg-info/
 dist/
 
+# PyInstaller
+build/
+*.spec.bak
+
 
 # IDEs and editors
 .vscode/
