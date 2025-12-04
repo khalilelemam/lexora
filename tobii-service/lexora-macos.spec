@@ -67,3 +67,14 @@ exe = EXE(
     entitlements_file=None,
     icon='assets/eye.ico',
 )
+
+app = BUNDLE(
+    exe,
+    name='Lexora.app',
+    icon='assets/eye.ico',
+    bundle_identifier='com.lexora.eyetracker',
+    info_plist={
+        'NSHighResolutionCapable': 'True',
+        'LSUIElement': '1',
+    },
+)
