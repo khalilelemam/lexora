@@ -19,18 +19,18 @@ This service runs quietly in your system tray and makes your Tobii eye tracker a
 ### Setup
 
 #### Windows
-1. **Download** `Lexora-Windows.exe` from the [Releases page](../../releases)
+1. **Download** `Lexora-Windows.exe` from the [Releases page](https://github.com/Khalil-Elemam/eglex/releases)
 2. **Run** the executable (no installation required)
 3. The app will appear in your system tray (look for the eye icon 👁️)
 
 #### macOS
-1. **Download** `Lexora-macOS.dmg` from the [Releases page](../../releases)
+1. **Download** `Lexora-macOS.dmg` from the [Releases page](https://github.com/Khalil-Elemam/eglex/releases)
 2. **Open** the DMG file and drag Lexora.app to Applications
 3. **Run** from Applications folder
 4. The app will appear in your menu bar
 
 #### Linux
-1. **Download** `Lexora-Linux.tar.gz` from the [Releases page](../../releases)
+1. **Download** `Lexora-Linux.tar.gz` from the [Releases page](https://github.com/Khalil-Elemam/eglex/releases)
 2. **Extract:** `tar -xzf Lexora-Linux.tar.gz`
 3. **Make executable:** `chmod +x Lexora`
 4. **Run:** `./Lexora`
@@ -204,7 +204,7 @@ To manually check what's using the port:
 
 ## Support & Feedback
 
-- **Issues:** Report bugs on the [GitHub Issues page](../../issues)
+- **Issues:** Report bugs on the [GitHub Issues page](https://github.com/Khalil-Elemam/eglex/issues)
 - **Questions:** Check existing issues or open a new discussion
 
 ## For Developers
