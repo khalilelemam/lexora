@@ -100,3 +100,73 @@ jobs:
       
       - name: Build executable
         run: pyinstaller lexora-linux.spec
+      
+      - name: Create tar.gz archive
+        run: |
+          cd dist
+          tar -czf Lexora-Linux.tar.gz Lexora
+      
+      - name: Upload Linux executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: lexora-linux
+          path: tobii-service/dist/Lexora-Linux.tar.gz
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/lexora-windows/Lexora.exe
+            artifacts/lexora-macos/Lexora-macOS.dmg
+            artifacts/lexora-linux/Lexora-Linux.tar.gz
+          draft: false
+          prerelease: true
+          body: |
+            ## Lexora Eye Tracker Service
+            
+            Cross-platform eye tracking service for web applications.
+            
+            ### Installation
+            
+            **Windows:**
+            - Download `Lexora.exe`
+            - Run the executable (no installation required)
+            - App appears in system tray
+            
+            **macOS:**
+            - Download `Lexora-macOS.dmg`
+            - Open DMG and drag to Applications
+            - Run from Applications folder
+            
+            **Linux:**
+            - Download `Lexora-Linux.tar.gz`
+            - Extract: `tar -xzf Lexora-Linux.tar.gz`
+            - Run: `./Lexora`
+            
+            ### System Requirements
+            
+            - **OS:** Windows 10/11, macOS 10.15+, Ubuntu 20.04+
+            - **Python:** 3.10+ (bundled in executable)
+            - **Hardware:** Tobii Pro eye tracker
+            
+            ### Documentation
+            
+            - [User Guide](https://github.com/Khalil-Elemam/eglex/blob/main/tobii-service/README.md)
+            - [API Documentation](https://github.com/Khalil-Elemam/eglex/blob/main/tobii-service/API.md)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
