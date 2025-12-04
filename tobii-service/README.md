@@ -1,201 +1,200 @@
-# Tobii Eye Tracker Service
+# Lexora Eye Tracker Service
 
-Local Windows desktop application that captures eye tracking data from Tobii hardware and exposes it via WebSocket API.
+Local desktop application that connects to your Tobii Pro eye tracker and provides real-time gaze data to web applications.
 
-## Features
+## What It Does
 
-- **System Tray Integration** - Runs in background, left-click tray to open window
-- **Fixed Port (28980)** - No discovery needed, simple connection
-- **Port Conflict Resolution** - Automatically detects and offers to kill conflicting processes
-- **Real-time Status** - Service status, port info, and eye tracker connection
-- **Modern GUI** - CustomTkinter-based interface with clean design
-- **WebSocket API** - Real-time gaze data streaming
-- **CORS Enabled** - Ready for web integration
+This service runs quietly in your system tray and makes your Tobii eye tracker accessible to web browsers through a local WebSocket connection. Perfect for integrating eye tracking into web-based applications, research tools, or accessibility projects.
 
-## Quick Start
+## Installation
 
-1. Create virtual environment and install dependencies:
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
+### System Requirements
 
-2. Run the application:
-```powershell
-python gui_window.py
-```
+- **OS:** Windows 10 or Windows 11 (currently Windows-only due to GUI framework)
+- **Hardware:** Tobii Pro eye tracker (e.g., Pro Fusion, Pro Spectrum, Pro Nano) with Tobii Pro SDK support
 
-3. Use the GUI to:
-   - Start/Stop the service
-   - Monitor eye tracker status
-   - View current port (28980)
+### Setup
 
-### Auto-Start (Minimized to Tray)
+1. **Download** the latest release from the [Releases page](../../releases)
+2. **Install** by running `Lexora-setup.exe`
+3. **Launch** from Start Menu or Desktop shortcut
+4. The app will appear in your system tray (look for the eye icon 👁️)
 
-```powershell
-python gui_window.py --minimized
-```
+## How to Use
 
-## Application Behavior
+### Starting the Service
 
-| Action | Behavior |
-|--------|----------|
-| **Left-click tray** | Opens main window |
-| **Right-click tray** | Shows menu (Open, Exit) |
-| **Minimize button (-)** | Hides to tray, service keeps running |
-| **Close button (X)** | Stops service, hides to tray |
-| **Exit button** | Stops service, hides to tray |
-| **Tray → Exit** | Stops service, quits application |
+1. **Left-click** the tray icon to open the control window
+2. Click **Start** to begin the eye tracking service
+3. The status cards will turn green when running
+4. You can now connect from your web application
 
-## API Endpoints
+### Application Controls
 
-### Health Check
+| Action | What Happens |
+|--------|--------------|
+| **Left-click tray icon** | Opens the control window |
+| **Right-click tray icon** | Quick menu (Open/Exit) |
+| **Start button** | Starts the eye tracking service |
+| **Stop button** | Stops the service |
+| **Restart button** | Restarts the service |
+| **Minimize (-) button** | Hides window to tray (service keeps running) |
+| **Close (X) button** | Stops service and minimizes to tray |
+| **Exit button** | Stops service and minimizes to tray |
+| **Tray → Exit** | Completely quits the application |
+
+### Auto-Start on Windows Login
+
+To start the service automatically when you log in:
+1. Press `Win + R`, type `shell:startup`, press Enter
+2. Create a shortcut to Lexora in this folder
+3. Right-click shortcut → Properties → Add `--minimized` to Target field
+
+
+## Connecting from Web Applications
+
+The service runs on **port 28980** and provides two endpoints:
+
+### Check Connection Status
+
 ```
 GET http://localhost:28980/tobii/status
 ```
 
-Response:
+Returns tracker information:
 ```json
 {
   "connected": true,
   "device": {
-    "model": "Tobii Eye Tracker 5",
-    "serial_number": "..."
+    "device_name": "Tobii Pro Fusion",
+    "serial_number": "TPC-0123456789AB",
+    "model": "Tobii Pro Fusion",
+    "firmware_version": "1.7.6-citronkola-ibland.6"
   }
 }
 ```
 
-### Gaze Data Stream (WebSocket)
+
+### Stream Gaze Data (WebSocket)
+
 ```
 ws://localhost:28980/tobii/gaze
 ```
 
-Data format:
+Receives batches of gaze points (array):
 ```json
-{
-  "timestamp": 1234567890.123,
-  "left_gaze": {"x": 0.5, "y": 0.5},
-  "right_gaze": {"x": 0.5, "y": 0.5}
-}
-```
-
-## Web Integration
-
-Example Next.js integration:
-
-```typescript
-const ws = new WebSocket('ws://localhost:28980/tobii/gaze');
-
-ws.onopen = () => console.log('Connected to Tobii service');
-
-ws.onmessage = (event) => {
-  const gazeData = JSON.parse(event.data);
-  // Process gaze data
-};
-
-ws.onerror = (error) => console.error('WebSocket error:', error);
-```
-
-**Important:** Add your production domain to `ALLOWED_ORIGINS` in `app/config.py`:
-
-```python
-ALLOWED_ORIGINS: List[str] = [
-    "http://localhost:3000",
-    "https://yourapp.com"
+[
+  {
+    "fixation_x": 0.5,
+    "fixation_y": 0.5,
+    "timestamp": 1234567890123456
+  },
+  {
+    "fixation_x": 0.51,
+    "fixation_y": 0.49,
+    "timestamp": 1234567890140000
+  }
 ]
 ```
 
-## File Structure
+**Data format:**
+- `fixation_x`, `fixation_y`: Averaged gaze coordinates from both eyes (normalized 0.0 to 1.0)
+- `timestamp`: System timestamp in **microseconds** (not milliseconds)
+- Coordinates: `x: 0.0` = left edge, `x: 1.0` = right edge; `y: 0.0` = top edge, `y: 1.0` = bottom edge
+- Response is an **array** of gaze points collected since last message (~50ms batches)
 
+### Example: JavaScript/TypeScript Integration
+
+```javascript
+// Connect to the service
+const ws = new WebSocket('ws://localhost:28980/tobii/gaze');
+
+ws.onopen = () => {
+  console.log('Connected to Tobii eye tracker');
+};
+
+ws.onmessage = (event) => {
+  const gazePoints = JSON.parse(event.data);
+  // gazePoints is an array of gaze data
+  gazePoints.forEach(point => {
+    console.log(`Gaze: (${point.fixation_x}, ${point.fixation_y})`);
+    // Use the gaze data in your application
+  });
+};
+
+ws.onerror = (error) => {
+  console.error('Connection error:', error);
+};
+
+ws.onclose = () => {
+  console.log('Disconnected from Tobii service');
+};
 ```
-tobii-service/
-├── gui_window.py              # Main application entry point
-├── main.py                    # FastAPI server entry
-├── requirements.txt           # Python dependencies
-├── config.json               # Runtime configuration
-├── app/
-│   ├── api.py                # FastAPI application
-│   ├── config.py             # Settings and environment
-│   ├── routers/
-│   │   └── tobii.py          # Eye tracker endpoints
-│   └── services/
-│       └── tobii_service.py  # Tobii SDK integration
-├── gui/
-│   ├── widgets.py            # GUI components
-│   ├── styles.py             # Theme and colors
-│   └── service_manager.py    # Server lifecycle management
-└── assets/
-    └── eye.ico             # Application icon
-```
-
-## Configuration
-
-**Port:** Fixed at 28980 (configured in `app/config.py`)
-
-**Environment Variables** (optional `.env` file):
-```env
-HOST=127.0.0.1
-PORT=28980
-DEBUG=true
-```
-
-## Requirements
-
-- **Python:** 3.8 or higher
-- **Hardware:** Tobii Eye Tracker (4C, 5, or compatible)
-- **OS:** Windows 10/11
-- **Drivers:** Tobii Eye Tracker drivers installed
-
-## Dependencies
-
-Core libraries:
-- `fastapi==0.109.0` - REST API framework
-- `uvicorn[standard]==0.27.0` - ASGI server
-- `tobii_research` - Tobii SDK
-- `customtkinter==5.2.2` - Modern GUI framework
-- `pystray==0.19.5` - System tray integration
-- `psutil==5.9.8` - Process management
-
-See `requirements.txt` for complete list.
 
 ## Troubleshooting
 
-**Port 28980 already in use:**
-- The GUI will detect this and offer to kill the conflicting process
-- Or manually check: `netstat -ano | findstr :28980`
+### Port 28980 Already in Use
 
-**Eye tracker not detected:**
-- Ensure Tobii drivers are installed
-- Check USB connection
-- Restart the Tobii service from Windows Services
+If another application is using port 28980:
+- The service will automatically detect this when you click Start
+- A dialog will show which process is using the port
+- You can choose to terminate that process or cancel
 
-**Icon not showing in dialog:**
-- Known issue with CustomTkinter - icon appears after short delay
-- Icon file must be `.ico` format for Windows title bar
+To manually check what's using the port:
+1. Open PowerShell or Command Prompt
+2. Run: `netstat -ano | findstr :28980`
 
-## Development
+### Eye Tracker Not Detected
 
-### Running the Server Directly
+**Check the USB connection:**
+- Unplug and reconnect your Tobii Pro device
+- Try a different USB port (preferably USB 3.0)
+- Ensure the tracker is getting power (LED indicators should be on)
 
-```powershell
-uvicorn main:app --host 127.0.0.1 --port 28980
-```
+**Verify device compatibility:**
+- Only Tobii Pro devices with SDK support are compatible
+- Consumer devices (e.g., Tobii Eye Tracker 5) are NOT supported
 
-### Code Structure
+**Check with Tobii Pro Eye Tracker Manager:**
+- Download [Tobii Pro Eye Tracker Manager](https://www.tobii.com/products/software/applications-and-developer-kits/tobii-pro-eye-tracker-manager) (free)
+- Install and launch the application
+- Verify your device is detected and functioning
+- Run firmware updates if available
 
-- **GUI Layer** (`gui/`) - CustomTkinter widgets and service manager
-- **API Layer** (`app/`) - FastAPI routes and business logic
-- **Service Layer** (`app/services/`) - Tobii SDK integration
+### WebSocket Connection Fails from Browser
 
-### Styling
+**Firewall blocking:**
+- Windows may block local connections
+- Add exception for port 28980 in Windows Defender Firewall
 
-All colors and fonts are centralized in `gui/styles.py` for easy theming.
+**Wrong URL:**
+- Make sure you're using `ws://` not `wss://`
+- URL must be exactly: `ws://localhost:28980/tobii/gaze`
 
-## Future Enhancements
+**Service not running:**
+- Check the app's status cards - they should be green
+- Try Stop → Start to restart the service
 
-- [ ] Package as standalone executable (PyInstaller)
-- [ ] Windows installer with auto-start option
-- [ ] Calibration UI
-- [ ] Data recording and export
-- [ ] Settings panel for port configuration
+### Application Won't Start
+
+**Previous instance still running:**
+- Check system tray for the eye icon
+- Right-click → Exit to close previous instance
+- Open Task Manager and end any "Lexora" or "python" processes using port 28980
+
+## Support & Feedback
+
+- **Issues:** Report bugs on the [GitHub Issues page](../../issues)
+- **Questions:** Check existing issues or open a new discussion
+
+## For Developers
+
+If you're developing a web application that integrates with this service, see [API.md](API.md) for complete API documentation, CORS configuration, and development guidelines.
+
+## License
+
+This project is part of the Lexora suite. See the main repository for license information.
+
+---
+
+**Note:** This service only works locally on your computer. Web applications must be running in your browser to connect to `localhost:28980`.

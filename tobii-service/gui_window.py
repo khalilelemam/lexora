@@ -8,6 +8,7 @@ from pathlib import Path
 
 from gui.service_manager import ServiceManager
 from app.services.tobii_service import TobiiService
+from app.config import settings
 from gui.widgets import (
     HeaderWidget,
     StatusCard,
@@ -28,7 +29,7 @@ class TobiiServiceGUI:
         self.tobii_service = TobiiService()
 
         self.root = ctk.CTk()
-        self.root.title("Tobii Eye Tracker Service")
+        self.root.title(settings.APP_NAME)
         self.root.geometry("600x520")
         self.root.resizable(False, False)
 
@@ -161,7 +162,7 @@ class TobiiServiceGUI:
             icon_path = Path(__file__).parent / "assets" / "eye.ico"
             icon_image = Image.open(icon_path)
             self.tray_icon = pystray.Icon(
-                "tobii_service", icon_image, "Tobii Eye Tracker Service", menu
+                "lexora_service", icon_image, settings.APP_NAME, menu
             )
 
             self.tray_icon.run()

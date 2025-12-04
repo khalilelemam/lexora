@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from gui.styles import Styles
 from pathlib import Path
+from app.config import settings
 
 
 class HeaderWidget:
@@ -14,7 +15,7 @@ class HeaderWidget:
 
         title = ctk.CTkLabel(
             frame,
-            text="Tobii Eye Tracker Service",
+            text=settings.APP_NAME,
             font=(Styles.FONT_FAMILY, 22, "bold"),
             text_color="white",
         )
