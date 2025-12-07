@@ -42,6 +42,7 @@ venv/
 pip-wheel-metadata/
 *.egg-info/
 dist/
+.venv*/
 
 # PyInstaller
 build/
@@ -93,3 +94,6 @@ cache/
 
 # Allow tracking of example env files
 !.env.example
+
+# testing
+.pytest_cache/
