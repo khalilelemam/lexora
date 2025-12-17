@@ -97,7 +97,8 @@ class TestWebcamFeatureProcessor:
         # Create stationary points (should form one fixation)
         # Using microsecond timestamps, 100ms = 100000 microseconds
         points = [
-            (0.5, 0.5, i * 100_000) for i in range(10)  # 100ms intervals, same location
+            (0.5, 0.5, i * 100_000)
+            for i in range(10)  # 100ms intervals, same location
         ]
 
         fixations = processor.detect_fixations(points)

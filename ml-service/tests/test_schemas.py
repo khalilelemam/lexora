@@ -7,7 +7,6 @@ from tests.conftest import create_gaze_points
 
 
 class TestGazePoint:
-
     def test_valid_gaze_point(self):
         point = GazePoint(fixation_x=0.5, fixation_y=0.5, timestamp=1000000)
 
@@ -54,7 +53,6 @@ class TestGazePoint:
 
 
 class TestGazeSequence:
-
     def test_valid_sequence(self, valid_gaze_points):
         sequence = GazeSequence(gaze_points=valid_gaze_points)
 
@@ -98,7 +96,6 @@ class TestGazeSequence:
 
 
 class TestPredictionRequest:
-
     def test_valid_request(self, valid_gaze_sequence):
         request = PredictionRequest(
             syllables_task=valid_gaze_sequence,

@@ -17,7 +17,6 @@ from tests.fixtures.loader import load_case, load_case_all_tasks
 
 
 class TestModelLoading:
-
     def test_model_loads_successfully(self, real_eye_tracker_prediction):
         assert real_eye_tracker_prediction.model is not None
         assert real_eye_tracker_prediction.is_loaded()
@@ -29,7 +28,6 @@ class TestModelLoading:
 
 
 class TestFeatureEngineering:
-
     def test_scaler_loads(self, real_eye_tracker_features):
         assert real_eye_tracker_features.scaler is not None
 
@@ -50,7 +48,6 @@ class TestFeatureEngineering:
 
 
 class TestPrediction:
-
     def test_prediction_output_range(self, real_eye_tracker_prediction):
         np.random.seed(42)
         dummy = np.random.randn(
@@ -101,9 +98,9 @@ class TestFullPipeline:
 
         assert 0.0 <= prob <= 1.0
         assert 0.0 <= result["confidence"] <= 1.0
-        assert (
-            risk == "high"
-        ), f"Expected high risk for dyslexic case, got {risk} (prob={prob})"
+        assert risk == "high", (
+            f"Expected high risk for dyslexic case, got {risk} (prob={prob})"
+        )
         assert prob > 0.66, f"Dyslexic probability should be >0.66, got {prob}"
 
     def test_true_negative_non_dyslexic_classification(
@@ -128,9 +125,9 @@ class TestFullPipeline:
 
         assert 0.0 <= prob <= 1.0
         assert 0.0 <= result["confidence"] <= 1.0
-        assert (
-            risk == "low"
-        ), f"Expected low risk for non-dyslexic case, got {risk} (prob={prob})"
+        assert risk == "low", (
+            f"Expected low risk for non-dyslexic case, got {risk} (prob={prob})"
+        )
         assert prob < 0.33, f"Non-dyslexic probability should be <0.33, got {prob}"
 
     def test_false_positive_edge_case(
@@ -158,7 +155,6 @@ class TestFullPipeline:
 
 
 class TestAPIEndpoint:
-
     @pytest.fixture
     def client(self):
         app = create_app()
