@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -23,16 +22,15 @@ class PredictionRequest(BaseModel):
 
 
 class PredictionMetadata(BaseModel):
+    """Analysis metadata for transparency and debugging."""
+
     model_config = ConfigDict(
         populate_by_name=True,
         alias_generator=to_camel,
-        protected_namespaces=(),  # Allow fields starting with "model_"
     )
 
-    model_version: str
     sequences_analyzed: int
     total_fixations: int
-    processed_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class PredictionResponse(BaseModel):

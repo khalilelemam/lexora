@@ -1,5 +1,3 @@
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict
 
 from . import to_camel
@@ -11,6 +9,5 @@ class HealthResponse(BaseModel):
         alias_generator=to_camel,
     )
 
-    status: Literal["healthy", "unhealthy"]
+    status: str
     version: str
-    models_loaded: bool

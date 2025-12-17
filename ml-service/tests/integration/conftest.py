@@ -1,29 +1,51 @@
 import os
 
-os.environ["SKIP_MODEL_LOADING"] = "false"
-
 import pytest
 
 
 @pytest.fixture(scope="module")
-def real_model_service():
-    """Real ModelService with actual Keras model loaded."""
-    from app.services.model_service import ModelService
+def real_eye_tracker_prediction():
+    """Real EyeTrackerPredictionService with actual Keras model loaded."""
+    from app.services.eye_tracker.prediction import EyeTrackerPredictionService
 
     try:
-        service = ModelService()
+        service = EyeTrackerPredictionService()
         yield service
     except Exception as e:
-        pytest.skip(f"Could not load model: {e}")
+        pytest.skip(f"Could not load eye tracker model: {e}")
 
 
 @pytest.fixture(scope="module")
-def real_feature_engineer():
-    """Real FeatureEngineer with actual scaler loaded."""
-    from app.services.feature_engineer import FeatureEngineer
+def real_eye_tracker_features():
+    """Real EyeTrackerFeatureProcessor with actual scaler loaded."""
+    from app.services.eye_tracker.features import EyeTrackerFeatureProcessor
 
     try:
-        engineer = FeatureEngineer()
-        yield engineer
+        processor = EyeTrackerFeatureProcessor()
+        yield processor
     except Exception as e:
-        pytest.skip(f"Could not load feature engineer: {e}")
+        pytest.skip(f"Could not load eye tracker feature processor: {e}")
+
+
+@pytest.fixture(scope="module")
+def real_webcam_prediction():
+    """Real WebcamPredictionService with actual model loaded."""
+    from app.services.webcam.prediction import WebcamPredictionService
+
+    try:
+        service = WebcamPredictionService()
+        yield service
+    except Exception as e:
+        pytest.skip(f"Could not load webcam model: {e}")
+
+
+@pytest.fixture(scope="module")
+def real_webcam_features():
+    """Real WebcamFeatureProcessor."""
+    from app.services.webcam.features import WebcamFeatureProcessor
+
+    try:
+        processor = WebcamFeatureProcessor()
+        yield processor
+    except Exception as e:
+        pytest.skip(f"Could not create webcam feature processor: {e}")

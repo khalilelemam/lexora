@@ -8,22 +8,22 @@ from app.config import settings
 from app.schemas import GazePoint
 
 
-class FeatureEngineer:
+class EyeTrackerFeatureProcessor:
 
     def __init__(self):
         self.scaler: StandardScaler = self._load_scaler()
 
     def _load_scaler(self) -> StandardScaler:
-        with open(settings.SCALER_PATH, "rb") as f:
+        with open(settings.EYE_TRACKER_SCALER_PATH, "rb") as f:
             return pickle.load(f)
 
     def process_gaze_points(
         self, gaze_points: List[GazePoint], screen_width: int, screen_height: int
     ) -> np.ndarray:
         """Convert raw gaze points to model-ready sequences of shape (100, 20, 5)."""
-        if len(gaze_points) < settings.SEQUENCE_LENGTH:
+        if len(gaze_points) < settings.EYE_TRACKER_SEQUENCE_LENGTH:
             raise ValueError(
-                f"Insufficient gaze points. Need at least {settings.SEQUENCE_LENGTH}, got {len(gaze_points)}"
+                f"Insufficient gaze points. Need at least {settings.EYE_TRACKER_SEQUENCE_LENGTH}, got {len(gaze_points)}"
             )
 
         screen_diagonal = np.sqrt(screen_width**2 + screen_height**2)
@@ -63,15 +63,15 @@ class FeatureEngineer:
         )
 
         # Filter out physiologically implausible fixations
-        valid_mask = (durations_ms >= settings.MIN_FIXATION_DURATION_MS) & (
-            durations_ms <= settings.MAX_FIXATION_DURATION_MS
+        valid_mask = (durations_ms >= settings.EYE_TRACKER_MIN_FIXATION_MS) & (
+            durations_ms <= settings.EYE_TRACKER_MAX_FIXATION_MS
         )
         features_filtered = features[valid_mask]
 
-        if len(features_filtered) < settings.SEQUENCE_LENGTH:
+        if len(features_filtered) < settings.EYE_TRACKER_SEQUENCE_LENGTH:
             raise ValueError(
                 f"After filtering, only {len(features_filtered)} valid fixations remain. "
-                f"Need at least {settings.SEQUENCE_LENGTH}."
+                f"Need at least {settings.EYE_TRACKER_SEQUENCE_LENGTH}."
             )
 
         features_scaled = self.scaler.transform(features_filtered)
@@ -107,9 +107,11 @@ class FeatureEngineer:
         sequences = []
 
         for i in range(
-            0, len(features) - settings.SEQUENCE_LENGTH + 1, settings.SEQUENCE_STEP
+            0,
+            len(features) - settings.EYE_TRACKER_SEQUENCE_LENGTH + 1,
+            settings.EYE_TRACKER_SEQUENCE_STEP,
         ):
-            sequence = features[i : i + settings.SEQUENCE_LENGTH]
+            sequence = features[i : i + settings.EYE_TRACKER_SEQUENCE_LENGTH]
             sequences.append(sequence)
 
         return np.array(sequences)
@@ -117,11 +119,16 @@ class FeatureEngineer:
     def _pad_sequences(self, sequences: np.ndarray) -> np.ndarray:
         n_sequences = len(sequences)
 
-        if n_sequences > settings.MAX_SEQUENCES:
-            return sequences[: settings.MAX_SEQUENCES]
+        if n_sequences > settings.EYE_TRACKER_MAX_SEQUENCES:
+            return sequences[: settings.EYE_TRACKER_MAX_SEQUENCES]
 
         padded = np.zeros(
-            (settings.MAX_SEQUENCES, settings.SEQUENCE_LENGTH, 5), dtype=np.float32
+            (
+                settings.EYE_TRACKER_MAX_SEQUENCES,
+                settings.EYE_TRACKER_SEQUENCE_LENGTH,
+                5,
+            ),
+            dtype=np.float32,
         )
         padded[:n_sequences] = sequences
 
