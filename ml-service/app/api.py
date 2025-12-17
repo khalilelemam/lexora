@@ -16,7 +16,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
-        description="ML service for dyslexia risk prediction from eye-tracking data",
+        description="ML service for dyslexia risk prediction from eye-tracking and webcam data",
         lifespan=lifespan,
     )
 
@@ -24,7 +24,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, global_exception_handler)
 
     app.include_router(health_router)
-    app.include_router(predict_router)
+    app.include_router(predict_router, prefix="/v1")
 
     return app
 

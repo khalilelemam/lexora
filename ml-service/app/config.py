@@ -14,8 +14,6 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8001
 
-    SKIP_MODEL_LOADING: bool = False
-
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
@@ -24,15 +22,29 @@ class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
     MODELS_DIR: Path = BASE_DIR / "models"
 
-    CLASSIFIER_MODEL_PATH: Path = MODELS_DIR / "dyslexia-profile-model.h5"
-    SCALER_PATH: Path = MODELS_DIR / "scaler.pkl"
+    # Eye tracker model paths
+    EYE_TRACKER_MODEL_PATH: Path = (
+        MODELS_DIR / "eye-tracker" / "dyslexia-profile-model.h5"
+    )
+    EYE_TRACKER_SCALER_PATH: Path = MODELS_DIR / "eye-tracker" / "scaler.pkl"
 
-    # Feature engineering parameters
-    SEQUENCE_LENGTH: int = 20
-    SEQUENCE_STEP: int = 5
-    MAX_SEQUENCES: int = 100
-    MIN_FIXATION_DURATION_MS: int = 80
-    MAX_FIXATION_DURATION_MS: int = 1000
+    # Webcam model paths
+    WEBCAM_MODEL_PATH: Path = MODELS_DIR / "webcam" / "dyslexia-uda-classifier.h5"
+    WEBCAM_SCALER_PATH: Path = MODELS_DIR / "webcam" / "target-domain-scaler.pkl"
+
+    # Feature engineering parameters (Eye Tracker)
+    EYE_TRACKER_SEQUENCE_LENGTH: int = 20
+    EYE_TRACKER_SEQUENCE_STEP: int = 5
+    EYE_TRACKER_MAX_SEQUENCES: int = 100
+    EYE_TRACKER_MIN_FIXATION_MS: int = 80
+    EYE_TRACKER_MAX_FIXATION_MS: int = 1000
+
+    # Feature engineering parameters (Webcam I-VT algorithm)
+    WEBCAM_VELOCITY_THRESHOLD: float = 0.5  # normalized units/second
+    WEBCAM_MIN_FIXATION_MS: int = 50
+    WEBCAM_EMA_ALPHA: float = 0.5  # Exponential moving average smoothing
+    WEBCAM_MAX_SEQUENCES: int = 82
+    WEBCAM_MIN_SEQUENCES: int = 10  # Minimum sequences for valid prediction
 
     # Risk classification thresholds
     LOW_RISK_THRESHOLD: float = 0.33
@@ -44,8 +56,10 @@ settings = Settings()
 
 def validate_model_files() -> None:
     required_files = {
-        "Profile model": settings.CLASSIFIER_MODEL_PATH,
-        "Scaler": settings.SCALER_PATH,
+        "Eye tracker model": settings.EYE_TRACKER_MODEL_PATH,
+        "Eye tracker scaler": settings.EYE_TRACKER_SCALER_PATH,
+        "Webcam model": settings.WEBCAM_MODEL_PATH,
+        "Webcam scaler": settings.WEBCAM_SCALER_PATH,
     }
 
     missing_files = []

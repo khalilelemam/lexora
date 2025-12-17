@@ -18,31 +18,31 @@ from tests.fixtures.loader import load_case, load_case_all_tasks
 
 class TestModelLoading:
 
-    def test_model_loads_successfully(self, real_model_service):
-        assert real_model_service.model is not None
-        assert real_model_service.is_loaded()
+    def test_model_loads_successfully(self, real_eye_tracker_prediction):
+        assert real_eye_tracker_prediction.model is not None
+        assert real_eye_tracker_prediction.is_loaded()
 
-    def test_model_architecture_has_three_inputs(self, real_model_service):
+    def test_model_architecture_has_three_inputs(self, real_eye_tracker_prediction):
         """Model expects syllables, meaningful, and pseudo task inputs."""
-        model = real_model_service.model
+        model = real_eye_tracker_prediction.model
         assert len(model.inputs) == 3
 
 
 class TestFeatureEngineering:
 
-    def test_scaler_loads(self, real_feature_engineer):
-        assert real_feature_engineer.scaler is not None
+    def test_scaler_loads(self, real_eye_tracker_features):
+        assert real_eye_tracker_features.scaler is not None
 
-    def test_output_shape(self, real_feature_engineer):
+    def test_output_shape(self, real_eye_tracker_features):
         points = load_case("tn-1209", "meaningful-text")
-        result = real_feature_engineer.process_gaze_points(
+        result = real_eye_tracker_features.process_gaze_points(
             points, screen_width=1680, screen_height=1050
         )
         assert result.shape == (100, 20, 5)
 
-    def test_output_contains_no_nan_or_inf(self, real_feature_engineer):
+    def test_output_contains_no_nan_or_inf(self, real_eye_tracker_features):
         points = load_case("tn-1209", "meaningful-text")
-        result = real_feature_engineer.process_gaze_points(
+        result = real_eye_tracker_features.process_gaze_points(
             points, screen_width=1680, screen_height=1050
         )
         assert not np.isnan(result).any()
@@ -51,92 +51,109 @@ class TestFeatureEngineering:
 
 class TestPrediction:
 
-    def test_prediction_output_range(self, real_model_service):
+    def test_prediction_output_range(self, real_eye_tracker_prediction):
         np.random.seed(42)
         dummy = np.random.randn(
-            settings.MAX_SEQUENCES, settings.SEQUENCE_LENGTH, 5
+            settings.EYE_TRACKER_MAX_SEQUENCES, settings.EYE_TRACKER_SEQUENCE_LENGTH, 5
         ).astype(np.float32)
 
-        prob, conf, n = real_model_service.predict(dummy, dummy, dummy)
+        result = real_eye_tracker_prediction.predict(dummy, dummy, dummy)
 
-        assert 0.0 <= prob <= 1.0
-        assert 0.0 <= conf <= 1.0
-        assert n == settings.MAX_SEQUENCES * 3
+        assert 0.0 <= result["dyslexia_probability"] <= 1.0
+        assert 0.0 <= result["confidence"] <= 1.0
+        assert result["sequences_analyzed"] == settings.EYE_TRACKER_MAX_SEQUENCES * 3
 
-    def test_prediction_is_deterministic(self, real_model_service):
+    def test_prediction_is_deterministic(self, real_eye_tracker_prediction):
         """Same input should always produce same output."""
         np.random.seed(42)
         dummy = np.random.randn(
-            settings.MAX_SEQUENCES, settings.SEQUENCE_LENGTH, 5
+            settings.EYE_TRACKER_MAX_SEQUENCES, settings.EYE_TRACKER_SEQUENCE_LENGTH, 5
         ).astype(np.float32)
 
-        result1 = real_model_service.predict(dummy, dummy, dummy)
-        result2 = real_model_service.predict(dummy, dummy, dummy)
+        result1 = real_eye_tracker_prediction.predict(dummy, dummy, dummy)
+        result2 = real_eye_tracker_prediction.predict(dummy, dummy, dummy)
 
-        assert result1[0] == result2[0]
+        assert result1["dyslexia_probability"] == result2["dyslexia_probability"]
 
 
 class TestFullPipeline:
     """End-to-end tests with real ETDD70 dataset cases."""
 
     def test_true_positive_dyslexic_classification(
-        self, real_model_service, real_feature_engineer
+        self, real_eye_tracker_prediction, real_eye_tracker_features
     ):
         """TP-1174: Dyslexic participant should be classified as high risk."""
         tasks = load_case_all_tasks("tp-1174")
 
-        syl = real_feature_engineer.process_gaze_points(tasks["syllables"], 1680, 1050)
-        mean = real_feature_engineer.process_gaze_points(
+        syl = real_eye_tracker_features.process_gaze_points(
+            tasks["syllables"], 1680, 1050
+        )
+        mean = real_eye_tracker_features.process_gaze_points(
             tasks["meaningful"], 1680, 1050
         )
-        pseudo = real_feature_engineer.process_gaze_points(tasks["pseudo"], 1680, 1050)
+        pseudo = real_eye_tracker_features.process_gaze_points(
+            tasks["pseudo"], 1680, 1050
+        )
 
-        prob, conf, n = real_model_service.predict(syl, mean, pseudo)
-        risk = real_model_service.get_risk_level(prob)
+        result = real_eye_tracker_prediction.predict(syl, mean, pseudo)
+        prob = result["dyslexia_probability"]
+        risk = result["risk_level"]
 
         assert 0.0 <= prob <= 1.0
-        assert 0.0 <= conf <= 1.0
+        assert 0.0 <= result["confidence"] <= 1.0
         assert (
             risk == "high"
         ), f"Expected high risk for dyslexic case, got {risk} (prob={prob})"
         assert prob > 0.66, f"Dyslexic probability should be >0.66, got {prob}"
 
     def test_true_negative_non_dyslexic_classification(
-        self, real_model_service, real_feature_engineer
+        self, real_eye_tracker_prediction, real_eye_tracker_features
     ):
         """TN-1209: Non-dyslexic participant should be classified as low risk."""
         tasks = load_case_all_tasks("tn-1209")
 
-        syl = real_feature_engineer.process_gaze_points(tasks["syllables"], 1680, 1050)
-        mean = real_feature_engineer.process_gaze_points(
+        syl = real_eye_tracker_features.process_gaze_points(
+            tasks["syllables"], 1680, 1050
+        )
+        mean = real_eye_tracker_features.process_gaze_points(
             tasks["meaningful"], 1680, 1050
         )
-        pseudo = real_feature_engineer.process_gaze_points(tasks["pseudo"], 1680, 1050)
+        pseudo = real_eye_tracker_features.process_gaze_points(
+            tasks["pseudo"], 1680, 1050
+        )
 
-        prob, conf, n = real_model_service.predict(syl, mean, pseudo)
-        risk = real_model_service.get_risk_level(prob)
+        result = real_eye_tracker_prediction.predict(syl, mean, pseudo)
+        prob = result["dyslexia_probability"]
+        risk = result["risk_level"]
 
         assert 0.0 <= prob <= 1.0
-        assert 0.0 <= conf <= 1.0
+        assert 0.0 <= result["confidence"] <= 1.0
         assert (
             risk == "low"
         ), f"Expected low risk for non-dyslexic case, got {risk} (prob={prob})"
         assert prob < 0.33, f"Non-dyslexic probability should be <0.33, got {prob}"
 
-    def test_false_positive_edge_case(self, real_model_service, real_feature_engineer):
+    def test_false_positive_edge_case(
+        self, real_eye_tracker_prediction, real_eye_tracker_features
+    ):
         """FP-1065: Non-dyslexic misclassified as high risk (edge case)."""
         tasks = load_case_all_tasks("fp-1065")
 
-        syl = real_feature_engineer.process_gaze_points(tasks["syllables"], 1680, 1050)
-        mean = real_feature_engineer.process_gaze_points(
+        syl = real_eye_tracker_features.process_gaze_points(
+            tasks["syllables"], 1680, 1050
+        )
+        mean = real_eye_tracker_features.process_gaze_points(
             tasks["meaningful"], 1680, 1050
         )
-        pseudo = real_feature_engineer.process_gaze_points(tasks["pseudo"], 1680, 1050)
+        pseudo = real_eye_tracker_features.process_gaze_points(
+            tasks["pseudo"], 1680, 1050
+        )
 
-        prob, conf, n = real_model_service.predict(syl, mean, pseudo)
+        result = real_eye_tracker_prediction.predict(syl, mean, pseudo)
+        prob = result["dyslexia_probability"]
 
         assert 0.0 <= prob <= 1.0
-        assert 0.0 <= conf <= 1.0
+        assert 0.0 <= result["confidence"] <= 1.0
         assert prob > 0.66, f"FP case should have high probability, got {prob}"
 
 
@@ -153,10 +170,10 @@ class TestAPIEndpoint:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "healthy"
-        assert data["modelsLoaded"] is True
+        assert data["status"] == "ok"
+        assert "version" in data
 
-    def test_predict_endpoint_with_dyslexic_case(self, client):
+    def test_predict_eye_tracker_endpoint_with_dyslexic_case(self, client):
         """API should classify TP-1174 as high risk."""
         tasks = load_case_all_tasks("tp-1174")
         request_data = {
@@ -167,7 +184,7 @@ class TestAPIEndpoint:
             "screenHeight": 1050,
         }
 
-        response = client.post("/predict", json=request_data)
+        response = client.post("/v1/eye-tracker/predict", json=request_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -176,7 +193,7 @@ class TestAPIEndpoint:
         assert "confidence" in data
         assert "metadata" in data
 
-    def test_predict_endpoint_with_non_dyslexic_case(self, client):
+    def test_predict_eye_tracker_endpoint_with_non_dyslexic_case(self, client):
         """API should classify TN-1209 as low risk."""
         tasks = load_case_all_tasks("tn-1209")
         request_data = {
@@ -187,7 +204,7 @@ class TestAPIEndpoint:
             "screenHeight": 1050,
         }
 
-        response = client.post("/predict", json=request_data)
+        response = client.post("/v1/eye-tracker/predict", json=request_data)
 
         assert response.status_code == 200
         data = response.json()

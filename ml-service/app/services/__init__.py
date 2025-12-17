@@ -1,8 +1,9 @@
-from .feature_engineer import FeatureEngineer
-from .model_service import ModelService, get_model_service
+from .eye_tracker import EyeTrackerFeatureProcessor, EyeTrackerPredictionService
+from .webcam import WebcamFeatureProcessor, WebcamPredictionService
 
 __all__ = [
-    "FeatureEngineer",
-    "ModelService",
-    "get_model_service",
+    "EyeTrackerFeatureProcessor",
+    "EyeTrackerPredictionService",
+    "WebcamFeatureProcessor",
+    "WebcamPredictionService",
 ]

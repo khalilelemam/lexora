@@ -12,10 +12,13 @@ import pytest
 if os.environ.get("REAL_TF") != "1":
     sys.modules["tensorflow"] = MagicMock()
     sys.modules["tensorflow.python"] = MagicMock()
+    sys.modules["tensorflow.keras"] = MagicMock()
+    sys.modules["tensorflow.keras.models"] = MagicMock()
     sys.modules["keras"] = MagicMock()
     sys.modules["keras.models"] = MagicMock()
 
 from app.schemas import GazePoint, GazeSequence, PredictionRequest
+from app.schemas.webcam import RawGazePoint
 
 
 def create_gaze_points(
@@ -72,6 +75,80 @@ def create_gaze_points(
     return points
 
 
+def create_raw_gaze_points(
+    count: int = 100,
+    start_timestamp: int = 1000000,
+    screen_width: int = 1920,
+    screen_height: int = 1080,
+) -> list[RawGazePoint]:
+    """
+    Generate synthetic raw gaze points for webcam testing.
+
+    Args:
+        count: Number of gaze points to generate
+        start_timestamp: Starting timestamp in microseconds
+        screen_width: Screen width in pixels
+        screen_height: Screen height in pixels
+
+    Points are generated with ~16ms intervals (60fps) simulating webcam capture.
+    Generates clear fixation-saccade patterns suitable for I-VT algorithm testing.
+
+    For the model to work properly, we need sufficient fixations:
+    - Each fixation must be >= 50ms (min 4 points at 16ms)
+    - Model needs 20 + (n-1)*5 fixations for n sequences
+    - For 82 sequences: 425 fixations needed
+    - ~2000 raw points generates ~300+ fixations
+    """
+    points = []
+    current_time = start_timestamp
+
+    # Reading simulation: move across lines
+    line_y_positions = [0.25, 0.35, 0.45, 0.55, 0.65, 0.75]
+    current_line = 0
+    x_progress = 0.15  # Start left side
+
+    i = 0
+    while i < count:
+        # Current fixation position
+        fixation_x = x_progress * screen_width
+        fixation_y = (
+            line_y_positions[current_line % len(line_y_positions)] * screen_height
+        )
+
+        # Generate 5-8 points per fixation (80-128ms at 16ms/point)
+        # This ensures fixations pass the 50ms minimum threshold
+        fixation_points = np.random.randint(5, 9)
+
+        for _ in range(min(fixation_points, count - i)):
+            # Add small jitter within fixation
+            jitter_x = np.random.uniform(-2, 2)
+            jitter_y = np.random.uniform(-2, 2)
+
+            points.append(
+                RawGazePoint(
+                    x=np.clip(fixation_x + jitter_x, 0, screen_width),
+                    y=np.clip(fixation_y + jitter_y, 0, screen_height),
+                    timestamp=current_time,
+                )
+            )
+            current_time += 16000  # 16ms in microseconds
+            i += 1
+
+        # Saccade to next position
+        x_progress += np.random.uniform(0.06, 0.12)  # 6-12% of screen width per saccade
+
+        # End of line - move to next line
+        if x_progress > 0.85:
+            x_progress = 0.15 + np.random.uniform(-0.02, 0.02)
+            current_line += 1
+
+        # Occasional regression (10% chance)
+        if np.random.random() < 0.1:
+            x_progress = max(0.15, x_progress - np.random.uniform(0.05, 0.15))
+
+    return points
+
+
 @pytest.fixture
 def gaze_points_50() -> list[GazePoint]:
     """50 gaze points with realistic reading pattern."""
@@ -87,12 +164,12 @@ def gaze_points_100() -> list[GazePoint]:
 
 
 @pytest.fixture
-def gaze_sequence(gaze_points_50) -> GazeSequence:
+def gaze_sequence(gaze_points_50: list[GazePoint]) -> GazeSequence:
     return GazeSequence(gaze_points=gaze_points_50)
 
 
 @pytest.fixture
-def prediction_request(gaze_sequence) -> PredictionRequest:
+def prediction_request(gaze_sequence: GazeSequence) -> PredictionRequest:
     return PredictionRequest(
         syllables_task=gaze_sequence,
         meaningful_task=gaze_sequence,
@@ -104,15 +181,17 @@ def prediction_request(gaze_sequence) -> PredictionRequest:
 
 # Descriptive aliases for schema validation tests
 @pytest.fixture
-def valid_gaze_points(gaze_points_50) -> list[GazePoint]:
+def valid_gaze_points(gaze_points_50: list[GazePoint]) -> list[GazePoint]:
     return gaze_points_50
 
 
 @pytest.fixture
-def valid_gaze_sequence(gaze_sequence) -> GazeSequence:
+def valid_gaze_sequence(gaze_sequence: GazeSequence) -> GazeSequence:
     return gaze_sequence
 
 
 @pytest.fixture
-def valid_prediction_request(prediction_request) -> PredictionRequest:
+def valid_prediction_request(
+    prediction_request: PredictionRequest,
+) -> PredictionRequest:
     return prediction_request

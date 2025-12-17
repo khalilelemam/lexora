@@ -11,6 +11,12 @@ GAZE_POINT_EXAMPLE = {
     "timestamp": 1234567890,
 }
 
+RAW_GAZE_POINT_EXAMPLE = {
+    "x": 960,
+    "y": 540,
+    "timestamp": 1630000001,
+}
+
 GAZE_SEQUENCE_EXAMPLE = {
     "gaze_points": [
         {"fixation_x": 0.5, "fixation_y": 0.3, "timestamp": 1000},
@@ -46,9 +52,17 @@ PREDICTION_RESPONSE_EXAMPLE = {
     "riskLevel": "high",
     "confidence": 0.89,
     "metadata": {
-        "modelVersion": "1.0.0",
         "sequencesAnalyzed": 300,
         "totalFixations": 250,
-        "processedAt": "2025-12-04T10:30:00Z",
     },
+}
+
+WEBCAM_PREDICTION_REQUEST_EXAMPLE = {
+    "screenWidth": 1920,
+    "screenHeight": 1080,
+    "gazeData": [
+        {"x": 100, "y": 500, "timestamp": 1630000001},
+        {"x": 102, "y": 505, "timestamp": 1630000034},
+        {"x": 105, "y": 508, "timestamp": 1630000067},
+    ],
 }
