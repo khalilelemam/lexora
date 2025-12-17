@@ -137,8 +137,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}},prefix=lexora-ml-v
-            type=semver,pattern={{major}}.{{minor}},prefix=lexora-ml-v
+            # 1. Capture the version from the tag (e.g., 1.0.0)
+            type=match,pattern=lexora-ml-v(.*),group=1
+            # 2. Also create a major.minor tag (e.g., 1.0)
+            type=match,pattern=lexora-ml-v(\d+\.\d+),group=1
             type=raw,value=latest
 
       - name: Build and push Docker image
