@@ -1,9 +1,8 @@
 import numpy as np
 import pytest
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock
 
-from app.config import settings
-from app.schemas import PredictionRequest, GazeSequence, PredictionResponse
+from app.schemas import PredictionRequest, GazeSequence
 from app.schemas.webcam import WebcamPredictionRequest, RawGazePoint
 from tests.conftest import create_gaze_points
 

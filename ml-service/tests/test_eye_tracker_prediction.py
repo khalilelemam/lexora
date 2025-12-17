@@ -2,9 +2,8 @@ import os
 import sys
 import numpy as np
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
-from app.config import settings
 
 
 # Skip entire module when running with real TensorFlow (integration tests)

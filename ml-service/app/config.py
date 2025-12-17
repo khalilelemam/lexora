@@ -69,6 +69,6 @@ def validate_model_files() -> None:
 
     if missing_files:
         raise FileNotFoundError(
-            f"Missing required model files:\n"
+            "Missing required model files:\n"
             + "\n".join(f"  - {f}" for f in missing_files)
         )
