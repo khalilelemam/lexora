@@ -1,14 +1,12 @@
 import logging
 import warnings
-
-import numpy as np
-
-warnings.filterwarnings("ignore", category=UserWarning, module="keras")
-
 import keras
+import numpy as np
 
 from app.config import settings
 from app.schemas import RiskLevel
+
+warnings.filterwarnings("ignore", category=UserWarning, module="keras")
 
 logger = logging.getLogger(__name__)
 
