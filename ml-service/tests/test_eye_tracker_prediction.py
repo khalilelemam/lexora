@@ -5,7 +5,6 @@ import pytest
 from unittest.mock import Mock
 
 
-
 # Skip entire module when running with real TensorFlow (integration tests)
 pytestmark = pytest.mark.skipif(
     os.environ.get("REAL_TF") == "1",

@@ -25,6 +25,6 @@ class GazeSequence(BaseModel):
             if points[i].timestamp <= points[i - 1].timestamp:
                 raise ValueError(
                     f"Timestamps must be in ascending order. "
-                    f"Point {i} ({points[i].timestamp}) <= Point {i-1} ({points[i-1].timestamp})"
+                    f"Point {i} ({points[i].timestamp}) <= Point {i - 1} ({points[i - 1].timestamp})"
                 )
         return points

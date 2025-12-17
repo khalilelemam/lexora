@@ -9,7 +9,6 @@ from app.schemas import GazePoint
 
 
 class EyeTrackerFeatureProcessor:
-
     def __init__(self):
         self.scaler: StandardScaler = self._load_scaler()
 
