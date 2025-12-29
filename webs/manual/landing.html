@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exia - The Reading Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    
+    <style>
+        /* --- DYSLEXIA OPTIMIZED TYPOGRAPHY --- */
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Dosis:wght@600;800&display=swap');
+        
+        :root {
+            /* Revised Palette: Softer, Earthier, Calmer */
+            --bg-cream: #F9F7F2;
+            --bg-white: #FFFFFF;
+            --accent-pink: #FF99C9;
+            --accent-mint: #58FCEC;
+            --accent-blue: #A2C7E5;
+            --text-dark: #2A3326; /* Softer than pure black */
+            --text-light: #5F6B59;
+        }
+
+        body {
+            background-color: var(--bg-cream);
+            color: var(--text-dark);
+            font-family: 'Lexend', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, .brand-font {
+            font-family: 'Dosis', sans-serif; /* Very friendly, rounded headers */
+        }
+
+        /* --- INTERACTIVE DEMO STYLES --- */
+        .word-interactive {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 0 2px;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: default;
+            position: relative;
+        }
+        
+        /* The "Gaze" Effect on Hover */
+        .word-interactive:hover {
+            background-color: var(--accent-mint);
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 10px 20px rgba(88, 252, 236, 0.3);
+            z-index: 10;
+            color: var(--text-dark);
+        }
+
+        .word-interactive.difficult {
+            border-bottom: 3px solid var(--accent-pink);
+        }
+        .word-interactive.difficult:hover {
+            background-color: var(--accent-pink);
+            box-shadow: 0 10px 20px rgba(255, 153, 201, 0.4);
+        }
+
+        /* --- BENTO GRID CARD STYLES --- */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .bento-card {
+            background: var(--bg-white);
+            border-radius: 32px;
+            padding: 40px;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            border: 1px solid rgba(0,0,0,0.03);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bento-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(42, 51, 38, 0.08);
+        }
+
+        /* Glassmorphism Badge */
+        .glass-badge {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.8);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* --- ANIMATIONS --- */
+        .float-slow { animation: float 8s ease-in-out infinite; }
+        .float-fast { animation: float 5s ease-in-out infinite reverse; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .blob-bg {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.5;
+            z-index: 0;
+        }
+
+    </style>
+</head>
+<body class="selection:bg-pink-200 selection:text-slate-900">
+
+    <!-- Ambient Background Blobs -->
+    <div class="blob-bg w-96 h-96 bg-blue-200 top-0 left-0 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+    <div class="blob-bg w-96 h-96 bg-pink-200 top-0 right-0 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+    <div class="blob-bg w-96 h-96 bg-teal-200 -bottom-32 left-20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+
+    <!-- 1. NAVBAR (Sticky & Glass) -->
+    <nav class="fixed w-full z-50 top-0 px-6 py-4 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto flex justify-between items-center bg-white/70 backdrop-blur-xl border border-white/50 rounded-full px-6 py-3 shadow-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center relative overflow-hidden">
+                    <div class="w-3 h-3 bg-white rounded-full absolute animate-[look_4s_infinite]"></div>
+                </div>
+                <span class="text-2xl font-bold brand-font tracking-wide">Exia</span>
+            </div>
+            
+            <div class="hidden md:flex gap-8 font-medium text-slate-600">
+                <a href="#" class="hover:text-pink-500 transition-colors">How it works</a>
+                <a href="#" class="hover:text-pink-500 transition-colors">Science</a>
+                <a href="#" class="hover:text-pink-500 transition-colors">Stories</a>
+            </div>
+
+            <button class="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold hover:bg-slate-800 transition-transform hover:scale-105 active:scale-95 text-sm">
+                Try Free Demo
+            </button>
+        </div>
+    </nav>
+
+    <!-- 2. HERO SECTION (The Interactive Hook) -->
+    <section class="relative pt-40 pb-20 px-6">
+        <div class="max-w-5xl mx-auto text-center z-10 relative">
+            
+            <div class="inline-block mb-6">
+                <div class="glass-badge">
+                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                    <span>New: At-home discovery kit</span>
+                </div>
+            </div>
+
+            <h1 class="text-6xl md:text-8xl font-black mb-8 leading-[0.95] text-slate-900 tracking-tight">
+                Reading is a<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500">fingerprint.</span>
+            </h1>
+
+            <p class="text-xl md:text-2xl text-slate-600 max-w-2xl mx-auto mb-12 font-light">
+                We don't use scary tests. We play games. 
+                Exia maps your unique eye movements to uncover hidden reading superpowers.
+            </p>
+
+            <!-- THE INTERACTIVE READING DEMO -->
+            <div class="bg-white rounded-3xl p-8 md:p-12 shadow-xl border border-slate-100 max-w-3xl mx-auto transform hover:scale-[1.01] transition-transform duration-500 relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-300 via-teal-300 to-blue-300"></div>
+                
+                <!-- Tooltip Hint -->
+                <div class="absolute top-4 right-6 text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="mouse-pointer-2" class="w-4 h-4 animate-bounce"></i>
+                    Hover the text below
+                </div>
+
+                <div class="text-3xl md:text-4xl font-serif leading-relaxed text-slate-800" id="interactive-text">
+                    <!-- Text injected by JS -->
+                </div>
+
+                <div class="mt-8 flex items-center justify-center gap-2 text-sm text-slate-400 font-medium">
+                    <i data-lucide="video" class="w-4 h-4 text-teal-400"></i>
+                    <span>AI tracks your eye movement patterns in real-time</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 3. THE "BENTO" COMPARISON (Modern Layout) -->
+    <section class="py-20 px-4">
+        <div class="max-w-6xl mx-auto mb-12 text-center">
+            <h2 class="text-4xl font-bold mb-4">Choose your adventure</h2>
+            <p class="text-slate-500 text-lg">Whether you are a curious parent or a specialized clinic.</p>
+        </div>
+
+        <div class="bento-grid">
+            
+            <!-- EXIA HOME (Friendly Entry) -->
+            <div class="bento-card col-span-12 md:col-span-7 bg-white relative group">
+                <div class="absolute top-6 right-6 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                    Most Popular
+                </div>
+                
+                <div class="mb-6">
+                    <div class="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 text-blue-500">
+                        <i data-lucide="home" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-2">Exia Home</h3>
+                    <p class="text-slate-500 text-lg">Curious? Get a preliminary reading map in 5 minutes using just your laptop webcam.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-green-500"><i data-lucide="check" class="w-4 h-4"></i></div>
+                        <span class="font-semibold text-sm">No install needed</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-green-500"><i data-lucide="check" class="w-4 h-4"></i></div>
+                        <span class="font-semibold text-sm">Instant Results</span>
+                    </div>
+                </div>
+
+                <button class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 group-hover:gap-4">
+                    Play in Browser <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- EXIA LAB (Professional) -->
+            <div class="bento-card col-span-12 md:col-span-5 bg-slate-900 text-white relative overflow-hidden">
+                <!-- Abstract Glow -->
+                <div class="absolute -top-20 -right-20 w-64 h-64 bg-pink-500/30 blur-[80px] rounded-full"></div>
+
+                <div class="mb-6 relative z-10">
+                    <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-4 text-pink-300">
+                        <i data-lucide="microscope" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-2">Exia Lab</h3>
+                    <p class="text-slate-400 text-lg">For schools & clinics. High-frequency tracking for deep neurological analysis.</p>
+                </div>
+
+                <ul class="space-y-4 mb-8 relative z-10">
+                    <li class="flex items-center gap-3 text-slate-300">
+                        <i data-lucide="shield-check" class="text-teal-400 w-5 h-5"></i>
+                        Offline & HIPAA Secure
+                    </li>
+                    <li class="flex items-center gap-3 text-slate-300">
+                        <i data-lucide="file-text" class="text-teal-400 w-5 h-5"></i>
+                        Clinical Report Generation
+                    </li>
+                </ul>
+
+                <button class="w-full py-4 bg-pink-400 text-slate-900 rounded-xl font-bold text-lg hover:bg-white transition-colors relative z-10">
+                    Download Software
+                </button>
+            </div>
+
+            <!-- TRUST METRICS (Bottom Row) -->
+            <div class="bento-card col-span-12 md:col-span-4 bg-teal-50 flex flex-col justify-center items-center text-center">
+                <h4 class="text-5xl font-black text-teal-600 mb-2">98%</h4>
+                <p class="font-bold text-teal-800">Diagnostic Accuracy</p>
+            </div>
+            <div class="bento-card col-span-12 md:col-span-4 bg-pink-50 flex flex-col justify-center items-center text-center">
+                <h4 class="text-5xl font-black text-pink-500 mb-2">&lt; 5m</h4>
+                <p class="font-bold text-pink-800">Average Session Time</p>
+            </div>
+            <div class="bento-card col-span-12 md:col-span-4 bg-blue-50 flex flex-col justify-center items-center text-center">
+                <div class="flex -space-x-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-300 border-2 border-white"></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-400 border-2 border-white"></div>
+                    <div class="w-10 h-10 rounded-full bg-slate-500 border-2 border-white"></div>
+                </div>
+                <p class="font-bold text-blue-800">Trusted by 10,000+ Parents</p>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. MISSION (Visual Story) -->
+    <section class="py-20 px-6 max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-12">
+        <div class="flex-1 space-y-6">
+            <span class="text-pink-500 font-bold tracking-widest uppercase text-sm">Our Mission</span>
+            <h2 class="text-5xl font-bold leading-tight">We don't fix people. <br>We find <span class="bg-teal-100 px-2 rounded-lg text-teal-800">potential.</span></h2>
+            <p class="text-xl text-slate-600">
+                Dyslexia is not a bug; it's a different operating system. 1 in 5 people have it, including Einstein, Spielberg, and maybe you.
+            </p>
+            <p class="text-xl text-slate-600">
+                Exia makes the invisible visible, turning confusion into clarity so every child can learn *their* way.
+            </p>
+        </div>
+        <div class="flex-1 relative">
+            <div class="aspect-square bg-slate-900 rounded-[40px] relative overflow-hidden shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
+                <!-- Abstract visual of a brain map -->
+                <svg viewBox="0 0 400 400" class="absolute inset-0 w-full h-full opacity-50">
+                    <circle cx="200" cy="200" r="100" stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none" />
+                    <circle cx="200" cy="200" r="150" stroke="rgba(255,255,255,0.1)" stroke-width="2" fill="none" />
+                    <path d="M100 200 Q 150 100 200 200 T 300 200" stroke="#58FCEC" stroke-width="3" fill="none" class="animate-pulse" />
+                    <circle cx="150" cy="150" r="10" fill="#FF99C9" class="float-slow" />
+                    <circle cx="250" cy="250" r="15" fill="#A2C7E5" class="float-fast" />
+                </svg>
+                <div class="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20 text-white">
+                    <p class="font-mono text-xs opacity-70 mb-1">LIVE DATA</p>
+                    <p class="font-bold">Visual Processing: <span class="text-teal-400">Unique</span></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-12 text-center text-slate-400 text-sm">
+        <p>© 2025 Exia Labs. Built with ❤️ for different thinkers.</p>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        // --- INTERACTIVE TEXT LOGIC ---
+        const sentence = "The quick brown fox jumps over the lazy dog.";
+        const container = document.getElementById('interactive-text');
+        
+        // Break sentence into spans
+        container.innerHTML = sentence.split(' ').map(word => {
+            // Mark 'fox' and 'lazy' as difficult/interesting for effect
+            const isTricky = ['fox', 'lazy', 'jumps'].includes(word.toLowerCase().replace('.',''));
+            const className = isTricky ? 'word-interactive difficult' : 'word-interactive';
+            return `<span class="${className}">${word}</span>`;
+        }).join(' ');
+
+        // --- SCROLL ANIMATIONS ---
+        gsap.from(".bento-card", {
+            scrollTrigger: { trigger: ".bento-grid", start: "top 80%" },
+            y: 50, opacity: 0, duration: 0.8, stagger: 0.1, ease: "power2.out"
+        });
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                nav.classList.add('py-2');
+                nav.classList.remove('py-4');
+            } else {
+                nav.classList.add('py-4');
+                nav.classList.remove('py-2');
+            }
+        });
+    </script>
+
+</body>
+</html>

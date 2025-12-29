@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exia - Dyslexia Diagnosis</title>
+    <meta name="description"
+        content="See the unseen. Diagnose dyslexia in minutes with advanced eye-tracking technology.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Three.js for WebGL Glass Effect -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+
+<body>
+    <div class="main-scr">
+        <!-- Navigation Bar with WebGL Glass -->
+        <nav class="navi-bar glass-container" id="navbar-glass">
+            <div class="logo">
+                <img class="processed_image-1" src="https://placehold.co/102x68" alt="Exia Logo" />
+                <span class="exia_span">Exia</span>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-item"><span>Services</span></div>
+                <div class="nav-item"><span>About us</span></div>
+                <div class="nav-item"><span>Download</span></div>
+            </div>
+            <div class="button-stro glass-container" id="contact-glass">
+                <span>Contact us</span>
+                <svg width="28" height="28" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M6.54 13.92L24 24.02L41.46 13.92M24 44.16V24M42 32V16C41.9993 15.2985 41.8141 14.6096 41.4631 14.0023C41.112 13.395 40.6075 12.8907 40 12.54L26 4.54C25.3919 4.18893 24.7021 4.0041 24 4.0041C23.2979 4.0041 22.6081 4.18893 22 4.54L8 12.54C7.39253 12.8907 6.88796 13.395 6.53692 14.0023C6.18589 14.6096 6.00072 15.2985 6 16V32C6.00072 32.7015 6.18589 33.3904 6.53692 33.9977C6.88796 34.605 7.39253 35.1093 8 35.46L22 43.46C22.6081 43.8111 23.2979 43.9959 24 43.9959C24.7021 43.9959 25.3919 43.8111 26 43.46L40 35.46C40.6075 35.1093 41.112 34.605 41.4631 33.9977C41.8141 33.3904 41.9993 32.7015 42 32Z"
+                        stroke="#303A2B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="mission-baord">
+            <div class="mission">
+                <h1 class="hero-title">
+                    <span class="highlight-pink">See the unseen.</span><br />
+                    <span class="dark-text">Diagnose in<br />minutes.</span>
+                </h1>
+                <p class="hero-description">Traditional assessments take hours. Exia uses advanced eye-tracking
+                    algorithms to identify reading patterns associated with dyslexia instantly. Get objective,
+                    data-driven results that empower educators and parents.</p>
+            </div>
+            <img class="hyperspace-graphs" src="https://placehold.co/600x400" alt="Hyperspace Graphs" />
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Mission Label -->
+        <div class="frame-1">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                <path d="M10 24H38" stroke="#303A2B" stroke-width="4" stroke-linecap="round" />
+            </svg>
+            <span class="label-text">OUR MISSION</span>
+        </div>
+
+        <!-- Services Section -->
+        <section class="services">
+            <div class="services-header">
+                <span class="highlight-pink">Services</span><br />
+                <span class="section-subtitle">Choose Your Diagnostic Power</span>
+            </div>
+            <span class="services-tagline">From instant home screening to clinical-grade analysis</span>
+        </section>
+
+        <!-- Cards Section with WebGL Glass -->
+        <section class="cards-area">
+            <article class="card glass-container" id="card1-glass">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <h2 class="card-title pink">Exia Web</h2>
+                        <span class="badge outline">Instant Access</span>
+                    </div>
+                </div>
+                <p class="card-description">Rapid screening using your browser's webcam. Perfect for a quick initial
+                    assessment at home.</p>
+                <ul class="feature-list">
+                    <li><span class="heart-icon pink">♥</span> No installation required</li>
+                    <li><span class="heart-icon pink">♥</span> Instant "Risk Probability" score</li>
+                    <li><span class="heart-icon pink">♥</span> Standard 30fps tracking</li>
+                </ul>
+                <div class="card-footer">
+                    <button class="action-btn glass-container" id="btn1-glass">Launch web</button>
+                </div>
+            </article>
+
+            <article class="card glass-container featured" id="card2-glass">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <h2 class="card-title">Desktop Pro</h2>
+                        <span class="badge filled">Recommended</span>
+                    </div>
+                </div>
+                <p class="card-description">Clinical-grade precision using local hardware acceleration. The standard for
+                    formal diagnosis.</p>
+                <ul class="feature-list">
+                    <li><span class="heart-icon cyan">♥</span> High-Fidelity 60Hz+ Tracking</li>
+                    <li><span class="heart-icon cyan">♥</span> Offline & Secure Processing</li>
+                    <li><span class="heart-icon cyan">♥</span> Full Clinical Report Generation</li>
+                </ul>
+                <div class="card-footer">
+                    <button class="action-btn glass-container" id="btn2-glass">Download</button>
+                </div>
+            </article>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- About Section -->
+        <section class="about-us">
+            <h2 class="about-title"><span>Democratizing diagnosis for the </span><span class="highlight-pink">1 in
+                    5.</span></h2>
+            <p class="about-text">Dyslexia is not a disease; it is a different way of thinking. Yet, millions of
+                brilliant minds go undiagnosed because traditional testing is expensive, slow, and inaccessible.</p>
+            <p class="about-text"><strong>Exia</strong> was born from a simple question: "What if a standard webcam
+                could see what a specialist sees?" By combining neuroscience with computer vision, we are turning every
+                screen into a diagnostic tool, ensuring no child is left behind due to a lack of resources.</p>
+        </section>
+
+        <!-- Stats Section with WebGL Glass -->
+        <section class="stats-section glass-container" id="stats-glass">
+            <div class="stat-item">
+                <span class="stat-number">98%</span>
+                <span class="stat-label">Accuracy vs. Clinical Standard</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">&lt; 5 min</span>
+                <span class="stat-label">Average Assessment Time</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">0</span>
+                <span class="stat-label">Waiting List Time</span>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Newsletter Section with WebGL Glass -->
+        <section class="page-newsletter glass-container" id="newsletter-glass">
+            <div class="newsletter-heading">
+                <h3>Follow the latest trends</h3>
+                <p>With our daily newsletter</p>
+            </div>
+            <form class="form-newsletter">
+                <input type="email" placeholder="you@example.com" class="email-input" />
+                <button type="submit" class="submit-btn">Submit</button>
+            </form>
+        </section>
+    </div>
+
+    <!-- Glass Shader Controls (for demo/debugging) -->
+    <div id="glass-controls"
+        style="position:fixed;bottom:20px;right:20px;background:rgba(0,0,0,0.8);padding:15px;border-radius:12px;color:#fff;font-family:monospace;font-size:12px;z-index:9999;display:none;">
+        <div style="margin-bottom:8px;font-weight:bold;">Glass Shader Controls</div>
+        <label>Light X: <input type="range" id="ctrl-lightX" min="0" max="1" step="0.01" value="0.5"></label><br>
+        <label>Light Y: <input type="range" id="ctrl-lightY" min="0" max="1" step="0.01" value="0.5"></label><br>
+        <label>Refraction: <input type="range" id="ctrl-refraction" min="0" max="1" step="0.01" value="0.3"></label><br>
+        <label>Depth: <input type="range" id="ctrl-depth" min="0" max="1" step="0.01" value="0.5"></label><br>
+        <label>Dispersion: <input type="range" id="ctrl-dispersion" min="0" max="1" step="0.01"
+                value="0.15"></label><br>
+        <label>Frost: <input type="range" id="ctrl-frost" min="0" max="1" step="0.01" value="0.1"></label><br>
+        <button onclick="this.parentElement.style.display='none'" style="margin-top:8px;">Close</button>
+    </div>
+
+    <script src="glass-shader.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>

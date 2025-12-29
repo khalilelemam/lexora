@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exia Diagnostic Session</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    
+    <!-- Lexend: The gold standard for dyslexia fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-cream: #F9F7F2;
+            --text-dark: #2A3326;
+            --highlight: rgba(88, 252, 236, 0.2); /* Mint Low Opacity */
+            --ruler-line: #A2C7E5; /* Soft Blue */
+        }
+
+        body {
+            background-color: var(--bg-cream);
+            color: var(--text-dark);
+            font-family: 'Lexend', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            cursor: none; /* HIDE MOUSE during test */
+        }
+
+        /* The Reading Surface */
+        .paper-surface {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Scientific Typography Settings */
+        .text-content {
+            font-size: 32px; /* Large enough to reduce strain */
+            line-height: 2.5; /* Generous spacing prevents line skipping */
+            letter-spacing: 0.02em; /* Character distinction */
+            text-align: left;
+            user-select: none; /* Prevent highlighting */
+        }
+
+        .word {
+            display: inline-block;
+            padding: 2px 4px;
+            border-radius: 6px;
+            /* NO HOVER EFFECTS - Must be static for data integrity */
+        }
+
+        /* The "Reading Ruler" (Focus Aid) */
+        .focus-ruler {
+            position: absolute;
+            left: -50px;
+            right: -50px;
+            height: 90px; /* Matches line-height roughly */
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,0.8) 20%, 
+                rgba(255,255,255,0.8) 80%, 
+                rgba(255,255,255,0) 100%
+            );
+            border-top: 1px solid var(--ruler-line);
+            border-bottom: 1px solid var(--ruler-line);
+            pointer-events: none;
+            mix-blend-mode: multiply;
+            opacity: 0; /* Hidden initially */
+            transition: top 0.3s ease-out, opacity 0.5s ease;
+        }
+
+        /* Progress Bar (Calm, not urgent) */
+        .progress-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: #E2E8F0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #FF99C9; /* Pink */
+            width: 0%;
+            transition: width 0.5s linear;
+        }
+
+        /* Calibration Dot */
+        .calib-dot {
+            width: 20px; height: 20px;
+            background: #58FCEC; /* Mint */
+            border-radius: 50%;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 0 4px rgba(88, 252, 236, 0.3);
+        }
+
+        /* Ambient Vignette (Focus attention to center) */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle, transparent 50%, rgba(42, 51, 38, 0.05) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Top Progress (Gamification) -->
+    <div class="progress-container">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <!-- Vignette for Focus -->
+    <div class="vignette"></div>
+
+    <!-- Main Container -->
+    <div class="h-full flex flex-col items-center justify-center p-8">
+        
+        <!-- STATE 1: Calibration -->
+        <div id="calibration-screen" class="text-center">
+            <h2 class="text-2xl font-bold mb-4 text-slate-400">Follow the dot...</h2>
+            <div class="calib-dot" id="calib-dot"></div>
+        </div>
+
+        <!-- STATE 2: The Reading Test -->
+        <div id="reading-screen" class="paper-surface hidden">
+            <!-- The Ruler Guide -->
+            <div class="focus-ruler" id="ruler"></div>
+
+            <div class="text-content" id="text-area">
+                <!-- Text injected via JS -->
+            </div>
+        </div>
+
+        <!-- Camera Feedback (Tiny & Unobtrusive) -->
+        <div class="fixed bottom-6 right-6 flex items-center gap-3 bg-white/80 backdrop-blur px-4 py-2 rounded-full border border-slate-200 shadow-sm opacity-50">
+            <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Eye Tracking Active</span>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const textToRead = "The quick brown fox jumps over the lazy dog. Summer days are long and warm, perfect for swimming in the cool blue lake. Reading can be a fun adventure when you take your time.";
+        
+        // --- ELEMENTS ---
+        const calibScreen = document.getElementById('calibration-screen');
+        const calibDot = document.getElementById('calib-dot');
+        const readScreen = document.getElementById('reading-screen');
+        const textArea = document.getElementById('text-area');
+        const ruler = document.getElementById('ruler');
+        const progressBar = document.getElementById('progress');
+
+        // --- STEP 1: CALIBRATION SEQUENCE ---
+        // Moves the dot to corners to calibrate the camera
+        const tl = gsap.timeline({
+            onComplete: startReadingTest
+        });
+
+        tl.to(calibDot, { duration: 1, x: -300, ease: "power2.inOut" }) // Left
+          .to(calibDot, { duration: 1, x: 300, ease: "power2.inOut" })  // Right
+          .to(calibDot, { duration: 1, x: 0, y: -200, ease: "power2.inOut" }) // Top
+          .to(calibDot, { duration: 1, y: 200, ease: "power2.inOut" })  // Bottom
+          .to(calibDot, { duration: 0.5, x: 0, y: 0, scale: 0.1, opacity: 0 }); // Center & Vanish
+
+        // --- STEP 2: READING TEST LOGIC ---
+        function startReadingTest() {
+            calibScreen.style.display = 'none';
+            readScreen.classList.remove('hidden');
+            
+            // 1. Break text into static words
+            const words = textToRead.split(' ');
+            textArea.innerHTML = words.map(w => `<span class="word">${w}</span>`).join(' ');
+
+            // 2. Animate the "Ruler" (Simulating user reading progress)
+            // In the real app, this 'y' value would be driven by the Eye Tracker coordinates
+            ruler.style.opacity = '1';
+            
+            // Simulation: Moving ruler down line by line
+            let lineIndex = 0;
+            const lineHeight = 80; // Approximate px height per line
+            const totalLines = 3; 
+
+            const readingInterval = setInterval(() => {
+                lineIndex++;
+                if (lineIndex > totalLines) {
+                    clearInterval(readingInterval);
+                    finishTest();
+                } else {
+                    // Move ruler down
+                    ruler.style.top = (lineIndex * lineHeight) + 'px';
+                    // Update progress bar
+                    progressBar.style.width = (lineIndex / totalLines * 100) + '%';
+                }
+            }, 3000); // Change line every 3 seconds (Simulation)
+        }
+
+        function finishTest() {
+            // End state
+            readScreen.innerHTML = `
+                <div class="text-center animate-bounce">
+                    <h2 class="text-4xl font-bold text-exia-charcoal mb-4">Great Job! 🎉</h2>
+                    <p class="text-xl text-slate-500">Analyzing your reading map...</p>
+                </div>
+            `;
+        }
+
+    </script>
+</body>
+</html>
