@@ -48,9 +48,12 @@ erDiagram
     USER {
         uuid id PK
         varchar email UK
+        varchar password_hash
         varchar name
         varchar role
         varchar avatar_url
+        boolean email_verified
+        boolean is_suspended
         varchar stripe_customer_id
         timestamp created_at
         timestamp updated_at
@@ -104,6 +107,21 @@ erDiagram
         varchar relationship_type
         boolean is_primary
         timestamp claimed_at
+        timestamp created_at
+    }
+
+    CLAIM_REQUEST {
+        uuid id PK
+        uuid child_id FK
+        uuid requesting_user_id FK
+        uuid classroom_id FK
+        varchar status
+        varchar parent_national_id
+        varchar parent_phone
+        text relationship_notes
+        text rejection_reason
+        uuid resolved_by_id FK
+        timestamp resolved_at
         timestamp created_at
     }
 
@@ -266,6 +284,11 @@ erDiagram
     CHILD ||--o{ CHILD_GUARDIAN : has
     CHILD ||--|| READING_PREFERENCE : has
     LANGUAGE ||--o{ CHILD : speaks
+
+    CHILD ||--o{ CLAIM_REQUEST : claimed_via
+    USER ||--o{ CLAIM_REQUEST : requests
+    CLASSROOM ||--o{ CLAIM_REQUEST : context_for
+    USER ||--o{ CLAIM_REQUEST : resolves
 
     CHILD ||--o{ TEST : takes
     USER ||--o{ TEST : conducts

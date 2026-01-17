@@ -211,6 +211,31 @@ The system shall secure API communications:
 
 ---
 
+### NFR-5.7 PII Protection
+
+The system shall protect Personally Identifiable Information (PII):
+
+**Field-Level Encryption:**
+
+- National ID numbers encrypted at rest using AES-256
+- Encryption keys managed separately from database
+- Decryption only occurs at application layer when explicitly needed
+
+**PII Access Controls:**
+
+- Access to sensitive fields (national ID, phone) requires explicit user action
+- All PII access logged in audit trail (who viewed, when, why)
+- Automatic masking in UI (show only last 4 digits of national ID, last 2 of phone)
+- Full reveal requires confirmation and is logged
+
+**Data Minimization:**
+
+- PII collected only when necessary (claim requests)
+- Clear purpose stated at collection time
+- PII not included in logs or error messages
+
+---
+
 ## 6. Usability Requirements
 
 ### NFR-6.1 Accessibility
@@ -366,6 +391,7 @@ The system shall retain data appropriately:
 - Session data: Retained indefinitely
 - Logs: Retained for 90 days
 - Audit logs: Retained for 1 year
+- Claim request PII: Deleted 30 days after resolution (approved or rejected)
 
 ---
 
@@ -385,6 +411,7 @@ The system shall support data deletion:
 - Account deletion removes personal data
 - Child profile deletion removes child data
 - Anonymization option for ML training data
+- Claim request PII purged on parent request or automatically after retention period
 
 ---
 

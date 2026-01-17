@@ -128,26 +128,73 @@ The system shall allow parents to claim child profiles created by teachers:
 2. Parent joins the platform later
 3. Parent requests to claim (link) the child to their account
 
-**Claim Process:**
+**Discovery Process:**
 
-- Parent searches for child by name within a specific classroom
-- System sends verification request to the teacher
-- Teacher confirms the parent-child relationship
-- Child profile is linked to both teacher and parent as guardians
+- Parent navigates to "Link My Child" feature
+- Parent searches by child's full name
+- System displays matching children with classroom name and teacher name
+- Parent selects their child to initiate claim
+
+**Claim Request Submission:**
+
+- Parent provides verification information:
+  - National ID number (required, for teacher verification)
+  - Phone number (required, for teacher to contact)
+  - Relationship notes (optional, explains relationship to child)
+- System creates pending claim request
+- Teacher receives notification of new claim request
+
+**Teacher Review Process:**
+
+- Teacher views claim request with:
+  - Parent name and email
+  - Masked national ID (last 4 digits visible, full reveal on click with logging)
+  - Masked phone number (last 2 digits visible, full reveal on click with logging)
+  - Relationship notes
+- Teacher verifies identity (offline check against school records, phone call)
+- Teacher approves or rejects with required reason for rejection
 
 **Constraints:**
 
 - Original creator (teacher) remains as guardian
 - Parent becomes additional guardian with PARENT relationship type
 - Both guardians can view child's progress and test results
+- One pending claim per parent-child pair (no duplicates)
+- PII (national ID, phone) deleted 30 days after resolution
 
 **Acceptance Criteria:**
 
-- Parent can initiate claim request
+- Parent can search and find their child by name
+- Parent can submit claim with verification info
 - Teacher receives notification of claim request
-- Teacher can approve or deny claim
+- Teacher sees masked PII with option to reveal (logged)
+- Teacher can approve or reject with reason
 - Approved claim links child to parent account
+- Rejected claim notifies parent with reason
 - Child profile shows both guardians after claim
+
+---
+
+### FR-2.5 Claim Request Management
+
+The system shall allow parents to manage their claim requests:
+
+**View Claims:**
+
+- Parent can view all pending and resolved claim requests
+- Each claim shows status (pending, approved, rejected)
+- Rejected claims display rejection reason
+
+**Cancel Claims:**
+
+- Parent can cancel pending claim requests
+- Cancellation deletes the claim and associated PII immediately
+
+**Acceptance Criteria:**
+
+- Parent can view list of their claim requests
+- Pending claims can be cancelled
+- Cancellation removes PII from system
 
 ---
 
