@@ -1,0 +1,306 @@
+graph TB
+    %% ========================================
+    %% ML Service Composite Structure
+    %% ========================================
+    
+    subgraph MLService["ML Service (FastAPI Application)"]
+        direction TB
+        
+        subgraph APILayer["API Layer"]
+            direction LR
+            HealthRouter["Health Router
+            ---
+            GET /health"]
+            PredictRouter["Predict Router
+            ---
+            POST /v1/eye-tracker/predict
+            POST /v1/webcam/predict"]
+        end
+        
+        subgraph CoreInfra["Core Infrastructure"]
+            direction LR
+            Middleware["Middleware
+            ---
+            • CORS
+            • Logging
+            • Error Handling"]
+            Lifespan["Lifespan Manager
+            ---
+            • Model Loading
+            • Warmup
+            • Cleanup"]
+            ExceptionHandler["Exception Handler
+            ---
+            • Global Error Handling
+            • HTTP Error Mapping"]
+        end
+        
+        subgraph EyeTrackerPipeline["Eye Tracker Pipeline"]
+            direction TB
+            ETFeatures["Feature Processor
+            ---
+            • Normalize coordinates
+            • Calculate saccades
+            • Extract features
+            • Create sequences
+            • Apply scaling"]
+            ETModel["Prediction Service
+            ---
+            • 3-task neural network
+            • Syllables input
+            • Meaningful input
+            • Pseudo input
+            • Risk classification"]
+            ETScaler["StandardScaler
+            ---
+            • Feature normalization
+            • Loaded from scaler.pkl"]
+        end
+        
+        subgraph WebcamPipeline["Webcam Pipeline"]
+            direction TB
+            WCFeatures["Feature Processor
+            ---
+            • I-VT algorithm
+            • Fixation detection
+            • Signal smoothing
+            • Feature extraction
+            • Sequence creation"]
+            WCModel["Prediction Service
+            ---
+            • UDA classifier
+            • Domain adaptation
+            • Risk classification"]
+            WCScaler["StandardScaler
+            ---
+            • Target domain scaling
+            • Loaded from .pkl"]
+        end
+        
+        subgraph DataSchemas["Data Schemas (Pydantic)"]
+            direction LR
+            RequestSchemas["Request Models
+            ---
+            • PredictionRequest
+            • WebcamPredictionRequest
+            • GazeSequence
+            • GazePoint"]
+            ResponseSchemas["Response Models
+            ---
+            • PredictionResponse
+            • PredictionMetadata
+            • HealthResponse
+            • RiskLevel"]
+        end
+        
+        subgraph Configuration["Configuration"]
+            Settings["Settings
+            ---
+            • Model paths
+            • Thresholds
+            • Sequence params
+            • Server config"]
+        end
+    end
+    
+    %% ========================================
+    %% Tobii Service Composite Structure
+    %% ========================================
+    
+    subgraph TobiiServiceComp["Tobii Service (Desktop Application)"]
+        direction TB
+        
+        subgraph TobiiAPI["API Layer (FastAPI)"]
+            direction LR
+            TobiiRouter["Tobii Router
+            ---
+            GET /status
+            GET /device-info
+            POST /start-capture
+            POST /stop-capture
+            GET /gaze-data
+            DELETE /clear-data"]
+        end
+        
+        subgraph HardwareLayer["Hardware Interface"]
+            direction TB
+            TobiiService["Tobii Service
+            ---
+            • Device initialization
+            • Gaze data callback
+            • Data buffering
+            • Subscribe/Unsubscribe"]
+            TobiiSDK["Tobii Research SDK
+            ---
+            • find_all_eyetrackers()
+            • subscribe_to()
+            • GAZE_DATA events"]
+        end
+        
+        subgraph GUILayer["GUI Layer (PyQt5)"]
+            direction TB
+            ServiceManager["Service Manager
+            ---
+            • Main window
+            • Service control
+            • Process management"]
+            Widgets["UI Widgets
+            ---
+            • Status display
+            • Control buttons
+            • System tray"]
+            Styles["Style Manager
+            ---
+            • Theme colors
+            • Button styles
+            • Layout"]
+        end
+        
+        subgraph TobiiData["Data Models"]
+            TobiiGazePoint["GazePoint
+            ---
+            • fixation_x
+            • fixation_y
+            • timestamp"]
+        end
+        
+        subgraph TobiiConfig["Configuration"]
+            TConfig["Settings
+            ---
+            • API host/port
+            • Log level"]
+        end
+    end
+    
+    %% ========================================
+    %% External Hardware
+    %% ========================================
+    
+    subgraph Hardware["Physical Hardware"]
+        direction LR
+        EyeTracker["Tobii Eye Tracker
+        ---
+        • Device name
+        • Serial number
+        • Firmware version
+        • Gaze sampling"]
+        Webcam["Standard Webcam
+        ---
+        • Video capture
+        • Face tracking
+        • Gaze estimation"]
+    end
+    
+    %% ========================================
+    %% Client Applications
+    %% ========================================
+    
+    subgraph Clients["Client Applications"]
+        direction TB
+        WebApp["Web Application
+        ---
+        • Reading tasks UI
+        • Data collection
+        • Results display"]
+        DesktopApp["Desktop Client
+        ---
+        • Local processing
+        • Offline mode"]
+    end
+    
+    %% ========================================
+    %% Persistence Layer
+    %% ========================================
+    
+    subgraph Storage["Model Storage"]
+        direction TB
+        ETModels["Eye Tracker Models
+        ---
+        • dyslexia-profile-model.h5
+        • scaler.pkl"]
+        WCModels["Webcam Models
+        ---
+        • dyslexia-uda-classifier.h5
+        • target-domain-scaler.pkl"]
+    end
+    
+    %% ========================================
+    %% Internal Connections - ML Service
+    %% ========================================
+    
+    PredictRouter -->|uses| ETFeatures
+    PredictRouter -->|uses| ETModel
+    PredictRouter -->|uses| WCFeatures
+    PredictRouter -->|uses| WCModel
+    
+    ETFeatures -->|uses| ETScaler
+    ETModel -->|loads from| ETModels
+    
+    WCFeatures -->|uses| WCScaler
+    WCModel -->|loads from| WCModels
+    
+    PredictRouter -->|validates with| RequestSchemas
+    PredictRouter -->|returns| ResponseSchemas
+    HealthRouter -->|returns| ResponseSchemas
+    
+    Middleware -->|wraps| PredictRouter
+    Middleware -->|wraps| HealthRouter
+    
+    Lifespan -->|initializes| ETFeatures
+    Lifespan -->|initializes| ETModel
+    Lifespan -->|initializes| WCFeatures
+    Lifespan -->|initializes| WCModel
+    
+    Settings -->|configures| ETFeatures
+    Settings -->|configures| ETModel
+    Settings -->|configures| WCFeatures
+    Settings -->|configures| WCModel
+    
+    %% ========================================
+    %% Internal Connections - Tobii Service
+    %% ========================================
+    
+    TobiiRouter -->|delegates to| TobiiService
+    TobiiService -->|uses| TobiiSDK
+    TobiiService -->|creates| TobiiGazePoint
+    
+    ServiceManager -->|controls| TobiiRouter
+    ServiceManager -->|uses| Widgets
+    ServiceManager -->|applies| Styles
+    
+    TConfig -->|configures| TobiiRouter
+    
+    %% ========================================
+    %% External Connections
+    %% ========================================
+    
+    Clients -->|HTTP POST| PredictRouter
+    Clients -->|HTTP GET| HealthRouter
+    
+    WebApp -->|HTTP| TobiiRouter
+    DesktopApp -->|HTTP| TobiiRouter
+    
+    TobiiSDK -->|reads from| EyeTracker
+    WCFeatures -->|processes from| Webcam
+    
+    TobiiService -.->|sends data to| PredictRouter
+    
+    %% ========================================
+    %% Styling
+    %% ========================================
+    
+    classDef mlService fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef tobiiService fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef hardware fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef client fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef storage fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef component fill:#ffffff,stroke:#666,stroke-width:1px
+    
+    class MLService mlService
+    class TobiiServiceComp tobiiService
+    class Hardware hardware
+    class Clients client
+    class Storage storage
+    
+    class APILayer,CoreInfra,EyeTrackerPipeline,WebcamPipeline,DataSchemas,Configuration component
+    class TobiiAPI,HardwareLayer,GUILayer,TobiiData,TobiiConfig component
