@@ -1,0 +1,300 @@
+erDiagram
+    LANGUAGE {
+        uuid id PK
+        varchar code UK
+        varchar name
+    }
+
+    GAME {
+        uuid id PK
+        varchar code UK
+        varchar name
+        text description
+        int max_levels
+        boolean is_active
+    }
+
+    CONTENT_TYPE {
+        uuid id PK
+        varchar code UK
+        varchar name
+        text description
+    }
+
+    CONTENT_CATEGORY {
+        uuid id PK
+        varchar name UK
+        text description
+    }
+
+    EXERCISE_TYPE {
+        uuid id PK
+        varchar code UK
+        varchar name
+        text description
+    }
+
+    SUBSCRIPTION_PLAN {
+        uuid id PK
+        varchar code UK
+        varchar name
+        decimal price
+        varchar currency
+        int test_limit_per_month
+        boolean has_advanced_analytics
+        boolean has_full_content_access
+    }
+
+    USER {
+        uuid id PK
+        varchar email UK
+        varchar name
+        varchar role
+        varchar avatar_url
+        varchar stripe_customer_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    USER_SUBSCRIPTION {
+        uuid id PK
+        uuid user_id FK
+        uuid plan_id FK
+        varchar stripe_subscription_id UK
+        varchar status
+        timestamp started_at
+        timestamp current_period_end
+        timestamp cancelled_at
+        timestamp created_at
+    }
+
+    NOTIFICATION {
+        uuid id PK
+        uuid user_id FK
+        varchar title
+        text message
+        varchar notification_type
+        boolean is_read
+        varchar action_url
+        timestamp created_at
+    }
+
+    NOTIFICATION_PREFERENCE {
+        uuid id PK
+        uuid user_id FK
+        boolean test_results
+        boolean weekly_summary
+        boolean assignment_notifications
+        boolean inactivity_alerts
+    }
+
+    CHILD {
+        uuid id PK
+        uuid language_id FK
+        varchar name
+        int age
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    CHILD_GUARDIAN {
+        uuid id PK
+        uuid child_id FK
+        uuid user_id FK
+        varchar relationship_type
+        boolean is_primary
+        timestamp claimed_at
+        timestamp created_at
+    }
+
+    READING_PREFERENCE {
+        uuid id PK
+        uuid child_id FK
+        varchar font_family
+        float letter_spacing_em
+        varchar background_color_hex
+        int text_size_px
+        float audio_speed
+    }
+
+    TEST {
+        uuid id PK
+        uuid child_id FK
+        uuid conducted_by_id FK
+        varchar test_mode
+        varchar risk_level
+        float dyslexia_probability
+        float confidence
+        varchar fixation_data_url
+        varchar report_url
+        timestamp created_at
+    }
+
+    TEST_TASK {
+        uuid id PK
+        uuid test_id FK
+        uuid content_id FK
+        int task_order
+        varchar task_type
+    }
+
+    CLASSROOM {
+        uuid id PK
+        uuid teacher_id FK
+        uuid language_id FK
+        varchar name
+        varchar join_code UK
+        boolean is_active
+        timestamp created_at
+    }
+
+    CLASSROOM_ENROLLMENT {
+        uuid id PK
+        uuid classroom_id FK
+        uuid child_id FK
+        timestamp enrolled_at
+        timestamp unenrolled_at
+    }
+
+    ASSIGNMENT {
+        uuid id PK
+        uuid classroom_id FK
+        uuid teacher_id FK
+        varchar assignment_type
+        uuid game_id FK
+        uuid content_id FK
+        uuid exercise_type_id FK
+        varchar title
+        text description
+        timestamp due_date
+        timestamp created_at
+    }
+
+    ASSIGNMENT_COMPLETION {
+        uuid id PK
+        uuid assignment_id FK
+        uuid child_id FK
+        timestamp completed_at
+        float score
+        int time_spent_seconds
+    }
+
+    SESSION {
+        uuid id PK
+        uuid child_id FK
+        uuid created_by_id FK
+        varchar session_type
+        varchar session_code UK
+        timestamp expires_at
+        timestamp created_at
+    }
+
+    SESSION_ACTIVITY {
+        uuid id PK
+        uuid session_id FK
+        uuid game_id FK
+        uuid content_id FK
+        uuid exercise_id FK
+        varchar activity_type
+        float score
+        int time_spent_seconds
+        timestamp completed_at
+    }
+
+    GAME_PROGRESS {
+        uuid id PK
+        uuid child_id FK
+        uuid game_id FK
+        int current_level
+        int total_score
+        float accuracy_rate
+        int total_time_seconds
+        timestamp last_played_at
+        timestamp created_at
+    }
+
+    CONTENT {
+        uuid id PK
+        uuid content_type_id FK
+        uuid language_id FK
+        uuid approved_by_id FK
+        varchar title
+        text body
+        int difficulty_level
+        int min_age
+        int max_age
+        varchar status
+        timestamp created_at
+        timestamp approved_at
+    }
+
+    CONTENT_CATEGORY_MAPPING {
+        uuid id PK
+        uuid content_id FK
+        uuid category_id FK
+    }
+
+    EXERCISE {
+        uuid id PK
+        uuid exercise_type_id FK
+        uuid language_id FK
+        uuid approved_by_id FK
+        text question
+        varchar correct_answer
+        text options_json
+        int difficulty_level
+        varchar status
+        timestamp created_at
+    }
+
+    EXERCISE_PROGRESS {
+        uuid id PK
+        uuid child_id FK
+        uuid exercise_type_id FK
+        int total_attempts
+        int correct_attempts
+        float accuracy_rate
+        timestamp last_attempted_at
+    }
+
+    USER ||--o{ USER_SUBSCRIPTION : subscribes
+    USER ||--o{ NOTIFICATION : receives
+    USER ||--|| NOTIFICATION_PREFERENCE : has
+    SUBSCRIPTION_PLAN ||--o{ USER_SUBSCRIPTION : defines
+
+    USER ||--o{ CHILD_GUARDIAN : is
+    CHILD ||--o{ CHILD_GUARDIAN : has
+    CHILD ||--|| READING_PREFERENCE : has
+    LANGUAGE ||--o{ CHILD : speaks
+
+    CHILD ||--o{ TEST : takes
+    USER ||--o{ TEST : conducts
+    TEST ||--o{ TEST_TASK : has
+    CONTENT ||--o{ TEST_TASK : used_in
+
+    USER ||--o{ CLASSROOM : owns
+    LANGUAGE ||--o{ CLASSROOM : uses
+    CLASSROOM ||--o{ CLASSROOM_ENROLLMENT : has
+    CHILD ||--o{ CLASSROOM_ENROLLMENT : in
+    CLASSROOM ||--o{ ASSIGNMENT : has
+    ASSIGNMENT ||--o{ ASSIGNMENT_COMPLETION : has
+    CHILD ||--o{ ASSIGNMENT_COMPLETION : does
+
+    USER ||--o{ SESSION : creates
+    CHILD ||--o{ SESSION : joins
+    SESSION ||--o{ SESSION_ACTIVITY : has
+
+    GAME ||--o{ GAME_PROGRESS : tracks
+    CHILD ||--o{ GAME_PROGRESS : has
+
+    CONTENT_TYPE ||--o{ CONTENT : categorizes
+    LANGUAGE ||--o{ CONTENT : in
+    USER ||--o{ CONTENT : approves
+    CONTENT ||--o{ CONTENT_CATEGORY_MAPPING : has
+    CONTENT_CATEGORY ||--o{ CONTENT_CATEGORY_MAPPING : tags
+
+    EXERCISE_TYPE ||--o{ EXERCISE : categorizes
+    LANGUAGE ||--o{ EXERCISE : in
+    USER ||--o{ EXERCISE : approves
+    CHILD ||--o{ EXERCISE_PROGRESS : has
+    EXERCISE_TYPE ||--o{ EXERCISE_PROGRESS : tracks

@@ -1,0 +1,384 @@
+// ==============================================
+// LEXORA DATABASE SCHEMA - dbdiagram.io format
+// ==============================================
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum role {
+  PARENT
+  TEACHER
+  ADMIN
+}
+
+Enum subscription_status {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  EXPIRED
+}
+
+Enum notification_type {
+  TEST_RESULT
+  ASSIGNMENT
+  ENROLLMENT
+  WEEKLY_SUMMARY
+  CLAIM_REQUEST
+}
+
+Enum relationship_type {
+  PARENT
+  TEACHER
+}
+
+Enum font_family {
+  OPEN_DYSLEXIC
+  ARIAL
+  COMIC_SANS
+}
+
+Enum test_mode {
+  TOBII
+  WEBCAM
+}
+
+Enum risk_level {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+Enum task_type {
+  SYLLABLES
+  PSEUDO_WORDS
+  MEANINGFUL_TEXT
+  PARAGRAPH
+}
+
+Enum assignment_type {
+  GAME
+  READING
+  EXERCISE
+}
+
+Enum session_type {
+  LEARNING
+  GAMES
+}
+
+Enum activity_type {
+  GAME
+  READING
+  EXERCISE
+}
+
+Enum content_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============ LOOKUP TABLES ============
+
+Table language {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+}
+
+Table game {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  description text
+  max_levels int
+  is_active boolean [default: true]
+}
+
+Table content_type {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  description text
+}
+
+Table content_category {
+  id uuid [pk]
+  name varchar [unique, not null]
+  description text
+}
+
+Table exercise_type {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  description text
+}
+
+Table subscription_plan {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  price decimal
+  currency varchar [default: 'SAR']
+  test_limit_per_month int [note: 'null = unlimited']
+  has_advanced_analytics boolean
+  has_full_content_access boolean
+}
+
+// ============ USER DOMAIN ============
+
+Table user {
+  id uuid [pk]
+  email varchar [unique, not null]
+  name varchar [not null]
+  role role [not null]
+  avatar_url varchar
+  stripe_customer_id varchar
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table user_subscription {
+  id uuid [pk]
+  user_id uuid [not null, ref: > user.id]
+  plan_id uuid [not null, ref: > subscription_plan.id]
+  stripe_subscription_id varchar [unique]
+  status subscription_status [not null]
+  started_at timestamp [not null]
+  current_period_end timestamp
+  cancelled_at timestamp
+  created_at timestamp [default: `now()`]
+}
+
+Table notification {
+  id uuid [pk]
+  user_id uuid [not null, ref: > user.id]
+  title varchar [not null]
+  message text
+  notification_type notification_type [not null]
+  is_read boolean [default: false]
+  action_url varchar
+  created_at timestamp [default: `now()`]
+}
+
+Table notification_preference {
+  id uuid [pk]
+  user_id uuid [unique, not null, ref: - user.id]
+  test_results boolean [default: true]
+  weekly_summary boolean [default: true]
+  assignment_notifications boolean [default: true]
+  inactivity_alerts boolean [default: true]
+}
+
+// ============ CHILD DOMAIN ============
+
+Table child {
+  id uuid [pk]
+  language_id uuid [not null, ref: > language.id]
+  name varchar [not null]
+  age int [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table child_guardian {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  user_id uuid [not null, ref: > user.id]
+  relationship_type relationship_type [not null]
+  is_primary boolean [default: false]
+  claimed_at timestamp
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (child_id, user_id) [unique]
+  }
+}
+
+Table reading_preference {
+  id uuid [pk]
+  child_id uuid [unique, not null, ref: - child.id]
+  font_family font_family [default: 'ARIAL']
+  letter_spacing_em float [default: 0]
+  background_color_hex varchar [default: '#FFFFFF']
+  text_size_px int [default: 18]
+  audio_speed float [default: 1.0]
+}
+
+// ============ TEST DOMAIN ============
+
+Table test {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  conducted_by_id uuid [not null, ref: > user.id]
+  test_mode test_mode [not null]
+  risk_level risk_level
+  dyslexia_probability float
+  confidence float
+  fixation_data_url varchar
+  report_url varchar
+  created_at timestamp [default: `now()`]
+}
+
+Table test_task {
+  id uuid [pk]
+  test_id uuid [not null, ref: > test.id]
+  content_id uuid [not null, ref: > content.id]
+  task_order int [not null]
+  task_type task_type [not null]
+
+  indexes {
+    (test_id, task_order) [unique]
+  }
+}
+
+// ============ CLASSROOM DOMAIN ============
+
+Table classroom {
+  id uuid [pk]
+  teacher_id uuid [not null, ref: > user.id]
+  language_id uuid [not null, ref: > language.id]
+  name varchar [not null]
+  join_code varchar [unique, not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+}
+
+Table classroom_enrollment {
+  id uuid [pk]
+  classroom_id uuid [not null, ref: > classroom.id]
+  child_id uuid [not null, ref: > child.id]
+  enrolled_at timestamp [default: `now()`]
+  unenrolled_at timestamp
+
+  indexes {
+    (classroom_id, child_id) [unique]
+  }
+}
+
+Table assignment {
+  id uuid [pk]
+  classroom_id uuid [not null, ref: > classroom.id]
+  teacher_id uuid [not null, ref: > user.id]
+  assignment_type assignment_type [not null]
+  game_id uuid [ref: > game.id]
+  content_id uuid [ref: > content.id]
+  exercise_type_id uuid [ref: > exercise_type.id]
+  title varchar [not null]
+  description text
+  due_date timestamp
+  created_at timestamp [default: `now()`]
+}
+
+Table assignment_completion {
+  id uuid [pk]
+  assignment_id uuid [not null, ref: > assignment.id]
+  child_id uuid [not null, ref: > child.id]
+  completed_at timestamp [default: `now()`]
+  score float
+  time_spent_seconds int
+
+  indexes {
+    (assignment_id, child_id) [unique]
+  }
+}
+
+// ============ SESSION DOMAIN ============
+
+Table session {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  created_by_id uuid [not null, ref: > user.id]
+  session_type session_type [not null]
+  session_code varchar [unique, not null]
+  expires_at timestamp [not null]
+  created_at timestamp [default: `now()`]
+}
+
+Table session_activity {
+  id uuid [pk]
+  session_id uuid [not null, ref: > session.id]
+  game_id uuid [ref: > game.id]
+  content_id uuid [ref: > content.id]
+  exercise_id uuid [ref: > exercise.id]
+  activity_type activity_type [not null]
+  score float
+  time_spent_seconds int
+  completed_at timestamp [default: `now()`]
+}
+
+// ============ GAME PROGRESS ============
+
+Table game_progress {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  game_id uuid [not null, ref: > game.id]
+  current_level int [default: 1]
+  total_score int [default: 0]
+  accuracy_rate float
+  total_time_seconds int [default: 0]
+  last_played_at timestamp
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (child_id, game_id) [unique]
+  }
+}
+
+// ============ CONTENT DOMAIN ============
+
+Table content {
+  id uuid [pk]
+  content_type_id uuid [not null, ref: > content_type.id]
+  language_id uuid [not null, ref: > language.id]
+  approved_by_id uuid [ref: > user.id]
+  title varchar [not null]
+  body text [not null]
+  difficulty_level int [note: '1-5 scale']
+  min_age int
+  max_age int
+  status content_status [default: 'PENDING']
+  created_at timestamp [default: `now()`]
+  approved_at timestamp
+}
+
+Table content_category_mapping {
+  id uuid [pk]
+  content_id uuid [not null, ref: > content.id]
+  category_id uuid [not null, ref: > content_category.id]
+
+  indexes {
+    (content_id, category_id) [unique]
+  }
+}
+
+// ============ EXERCISE DOMAIN ============
+
+Table exercise {
+  id uuid [pk]
+  exercise_type_id uuid [not null, ref: > exercise_type.id]
+  language_id uuid [not null, ref: > language.id]
+  approved_by_id uuid [ref: > user.id]
+  question text [not null]
+  correct_answer varchar [not null]
+  options_json text [note: 'JSON array for multiple choice']
+  difficulty_level int
+  status content_status [default: 'PENDING']
+  created_at timestamp [default: `now()`]
+}
+
+Table exercise_progress {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  exercise_type_id uuid [not null, ref: > exercise_type.id]
+  total_attempts int [default: 0]
+  correct_attempts int [default: 0]
+  accuracy_rate float
+  last_attempted_at timestamp
+
+  indexes {
+    (child_id, exercise_type_id) [unique]
+  }
+}
