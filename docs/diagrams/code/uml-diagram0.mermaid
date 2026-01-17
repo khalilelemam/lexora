@@ -1,0 +1,375 @@
+classDiagram
+    %% ========================================
+    %% ML Service - Core API Layer
+    %% ========================================
+    
+    class FastAPI {
+        <<Main ML Service>>
+        +title: str
+        +version: str
+        +description: str
+        +include_router()
+        +add_exception_handler()
+    }
+    
+    class Settings {
+        +APP_NAME: str
+        +APP_VERSION: str
+        +DEBUG: bool
+        +EYE_TRACKER_MODEL_PATH: Path
+        +EYE_TRACKER_SCALER_PATH: Path
+        +WEBCAM_MODEL_PATH: Path
+        +WEBCAM_SCALER_PATH: Path
+        +LOW_RISK_THRESHOLD: float
+        +HIGH_RISK_THRESHOLD: float
+        +EYE_TRACKER_MAX_SEQUENCES: int
+        +EYE_TRACKER_SEQUENCE_LENGTH: int
+        +EYE_TRACKER_SEQUENCE_STEP: int
+        +WEBCAM_MAX_SEQUENCES: int
+        +WEBCAM_MIN_SEQUENCES: int
+    }
+    
+    %% ========================================
+    %% ML Service - Routers
+    %% ========================================
+    
+    class HealthRouter {
+        <<APIRouter>>
+        +get_health() HealthResponse
+    }
+    
+    class PredictRouter {
+        <<APIRouter>>
+        +predict_eye_tracker(request) PredictionResponse
+        +predict_webcam(request) PredictionResponse
+    }
+    
+    %% ========================================
+    %% ML Service - Schemas (Data Models)
+    %% ========================================
+    
+    class GazePoint {
+        <<BaseModel>>
+        +fixation_x: float
+        +fixation_y: float
+        +timestamp: int
+    }
+    
+    class GazeSequence {
+        <<BaseModel>>
+        +gaze_points: List[GazePoint]
+        +validate_timestamps_ordered()
+    }
+    
+    class PredictionRequest {
+        <<BaseModel>>
+        +syllables_task: GazeSequence
+        +meaningful_task: GazeSequence
+        +pseudo_task: GazeSequence
+        +screen_width: int
+        +screen_height: int
+    }
+    
+    class WebcamPredictionRequest {
+        <<BaseModel>>
+        +gaze_data: List[RawGazePoint]
+        +screen_width: int
+        +screen_height: int
+    }
+    
+    class RawGazePoint {
+        <<BaseModel>>
+        +x: float
+        +y: float
+        +timestamp: int
+    }
+    
+    class PredictionMetadata {
+        <<BaseModel>>
+        +sequences_analyzed: int
+        +total_fixations: int
+    }
+    
+    class PredictionResponse {
+        <<BaseModel>>
+        +dyslexia_probability: float
+        +risk_level: Literal["low", "medium", "high"]
+        +confidence: float
+        +metadata: PredictionMetadata
+    }
+    
+    class HealthResponse {
+        <<BaseModel>>
+        +status: str
+        +models_loaded: dict
+    }
+    
+    class RiskLevel {
+        <<Enum>>
+        LOW
+        MEDIUM
+        HIGH
+        +from_probability(prob, low_th, high_th) RiskLevel
+    }
+    
+    %% ========================================
+    %% ML Service - Eye Tracker Services
+    %% ========================================
+    
+    class EyeTrackerFeatureProcessor {
+        -scaler: StandardScaler
+        +__init__()
+        +process_gaze_points(gaze_points, screen_width, screen_height) ndarray
+        -_load_scaler() StandardScaler
+        -_calculate_saccade_amplitudes() ndarray
+        -_calculate_saccade_velocities() ndarray
+        -_create_sequences(features) ndarray
+        -_pad_sequences(sequences) ndarray
+    }
+    
+    class EyeTrackerPredictionService {
+        <<3-Task Neural Network>>
+        -model: keras.Model
+        +__init__()
+        +predict(syllables, meaningful, pseudo) dict
+        +is_loaded() bool
+        -_load_model()
+        -_warmup_model()
+    }
+    
+    %% ========================================
+    %% ML Service - Webcam Services
+    %% ========================================
+    
+    class WebcamFeatureProcessor {
+        <<I-VT Fixation Detection>>
+        -velocity_threshold: float
+        -min_fixation_duration_ms: float
+        -ema_alpha: float
+        +__init__()
+        +process(raw_points, screen_width, screen_height) ndarray
+        +normalize_coordinates() List
+        +smooth_signal() List
+        +detect_fixations() List[ndarray]
+        +extract_features(fixations) ndarray
+        +create_sequences(features) ndarray
+        +pad_sequences(sequences) ndarray
+    }
+    
+    class WebcamPredictionService {
+        <<UDA Domain Adaptation>>
+        -model: keras.Model
+        -scaler: StandardScaler
+        +__init__()
+        +predict(sequences) dict
+        +is_loaded() bool
+        -_load_model()
+        -_load_scaler()
+        -_warmup_model()
+    }
+    
+    %% ========================================
+    %% ML Service - Core Components
+    %% ========================================
+    
+    class MiddlewareManager {
+        <<core>>
+        +setup_middleware(app)
+    }
+    
+    class ExceptionHandler {
+        <<core>>
+        +global_exception_handler(request, exc)
+    }
+    
+    class LifespanManager {
+        <<core>>
+        +lifespan(app)
+        +load_models()
+    }
+    
+    %% ========================================
+    %% Tobii Service - Core
+    %% ========================================
+    
+    class TobiiAPI {
+        <<FastAPI>>
+        +title: str
+        +description: str
+        +include_router()
+    }
+    
+    class TobiiRouter {
+        <<APIRouter>>
+        +get_status() dict
+        +get_device_info() dict
+        +start_capture() dict
+        +stop_capture() dict
+        +get_gaze_data() dict
+        +clear_data() dict
+    }
+    
+    class TobiiService {
+        <<Hardware Interface>>
+        -eyetracker: EyeTracker
+        -gaze_data: List[GazePoint]
+        -is_capturing: bool
+        +__init__()
+        +is_connected() bool
+        +get_device_info() dict
+        +start_capture()
+        +stop_capture()
+        +get_gaze_data() List[dict]
+        +clear_data()
+        -_initialize_eyetracker()
+        -_gaze_data_callback(gaze_data)
+    }
+    
+    class TobiiGazePoint {
+        <<BaseModel>>
+        +fixation_x: float
+        +fixation_y: float
+        +timestamp: int
+        +dict()
+    }
+    
+    class TobiiConfig {
+        +API_HOST: str
+        +API_PORT: int
+        +LOG_LEVEL: str
+    }
+    
+    %% ========================================
+    %% Tobii Service - GUI Components
+    %% ========================================
+    
+    class ServiceManagerGUI {
+        <<QMainWindow>>
+        -service_process: subprocess.Popen
+        -status_label: QLabel
+        -start_button: QPushButton
+        -stop_button: QPushButton
+        +__init__()
+        +start_service()
+        +stop_service()
+        +check_service_status()
+        -setup_ui()
+        -update_status()
+    }
+    
+    class StatusWidget {
+        <<QWidget>>
+        +update_status(status)
+        +show_message(message)
+    }
+    
+    class ControlWidget {
+        <<QWidget>>
+        +enable_start_button()
+        +enable_stop_button()
+        +disable_buttons()
+    }
+    
+    class StyleManager {
+        +APP_STYLE: str
+        +BUTTON_STYLE: str
+        +STATUS_STYLE: str
+        +apply_styles(widget)
+    }
+    
+    %% ========================================
+    %% External Dependencies
+    %% ========================================
+    
+    class StandardScaler {
+        <<sklearn>>
+        +transform(X) ndarray
+        +fit_transform(X) ndarray
+    }
+    
+    class KerasModel {
+        <<keras>>
+        +predict(X) ndarray
+        +load_model(path) Model
+    }
+    
+    class TobiiResearch {
+        <<tobii_research>>
+        +find_all_eyetrackers() List[EyeTracker]
+        +EyeTracker
+        +EYETRACKER_GAZE_DATA
+    }
+    
+    class EyeTracker {
+        <<tobii_research>>
+        +device_name: str
+        +serial_number: str
+        +model: str
+        +firmware_version: str
+        +subscribe_to(event, callback)
+        +unsubscribe_from(event, callback)
+    }
+    
+    %% ========================================
+    %% Relationships - ML Service
+    %% ========================================
+    
+    FastAPI --> HealthRouter : includes
+    FastAPI --> PredictRouter : includes
+    FastAPI --> MiddlewareManager : uses
+    FastAPI --> ExceptionHandler : uses
+    FastAPI --> LifespanManager : uses
+    
+    HealthRouter --> HealthResponse : returns
+    PredictRouter --> PredictionRequest : receives
+    PredictRouter --> WebcamPredictionRequest : receives
+    PredictRouter --> PredictionResponse : returns
+    PredictRouter --> EyeTrackerFeatureProcessor : uses
+    PredictRouter --> EyeTrackerPredictionService : uses
+    PredictRouter --> WebcamFeatureProcessor : uses
+    PredictRouter --> WebcamPredictionService : uses
+    
+    PredictionRequest --> GazeSequence : contains
+    GazeSequence --> GazePoint : contains
+    WebcamPredictionRequest --> RawGazePoint : contains
+    PredictionResponse --> PredictionMetadata : contains
+    PredictionResponse --> RiskLevel : uses
+    
+    EyeTrackerFeatureProcessor --> StandardScaler : uses
+    EyeTrackerFeatureProcessor --> GazePoint : processes
+    EyeTrackerPredictionService --> KerasModel : uses
+    EyeTrackerPredictionService --> RiskLevel : uses
+    
+    WebcamFeatureProcessor --> RawGazePoint : processes
+    WebcamPredictionService --> KerasModel : uses
+    WebcamPredictionService --> StandardScaler : uses
+    WebcamPredictionService --> RiskLevel : uses
+    
+    Settings --> FastAPI : configures
+    Settings --> EyeTrackerFeatureProcessor : configures
+    Settings --> EyeTrackerPredictionService : configures
+    Settings --> WebcamFeatureProcessor : configures
+    Settings --> WebcamPredictionService : configures
+    
+    %% ========================================
+    %% Relationships - Tobii Service
+    %% ========================================
+    
+    TobiiAPI --> TobiiRouter : includes
+    TobiiRouter --> TobiiService : uses
+    TobiiService --> TobiiGazePoint : creates
+    TobiiService --> TobiiResearch : uses
+    TobiiService --> EyeTracker : interacts with
+    TobiiConfig --> TobiiAPI : configures
+    
+    ServiceManagerGUI --> StatusWidget : contains
+    ServiceManagerGUI --> ControlWidget : contains
+    ServiceManagerGUI --> StyleManager : uses
+    ServiceManagerGUI --> TobiiAPI : manages
+    
+    %% ========================================
+    %% Inter-Service Communication
+    %% ========================================
+    
+    TobiiService ..> PredictRouter : HTTP API calls
+    TobiiGazePoint ..> GazePoint : data format compatible
