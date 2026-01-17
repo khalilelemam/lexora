@@ -1,0 +1,107 @@
+title Lexora Platform Flow Chart
+direction right
+
+// Account Management Group
+Account Management [color: lightblue, icon: user-check] {
+  Register or Login [shape: rectangle, icon: log-in, color: lightblue]
+  Manage Child Profiles [shape: rectangle, icon: users, color: lightblue]
+  Manage Subscription [shape: rectangle, icon: credit-card, color: lightblue]
+  Receive Notifications [shape: rectangle, icon: bell, color: lightblue]
+}
+
+// Profile Claiming & Linking Group
+Profile Claiming and Linking [color: orange, icon: link] {
+  Search and Claim Child [shape: rectangle, icon: search, color: orange]
+  Manage Claim Requests [shape: rectangle, icon: list, color: orange]
+  Adjudicate Claims [shape: rectangle, icon: check-circle, color: orange]
+}
+
+// Dyslexia Screening Test Group
+Dyslexia Screening Test [color: purple, icon: activity] {
+  Initiate Test Session [shape: rectangle, icon: play, color: purple]
+  Calibrate Eye Tracker [shape: rectangle, icon: crosshair, color: purple]
+  Perform Tobii Test [shape: rectangle, icon: eye, color: purple]
+  Perform Webcam Test [shape: rectangle, icon: video, color: purple]
+  View or Download Reports [shape: rectangle, icon: file-text, color: purple]
+  Retake Task [shape: rectangle, icon: refresh-ccw, color: purple]
+}
+
+// Learning & Games Group
+Learning and Games [color: green, icon: gamepad] {
+  Generate Session Link [shape: rectangle, icon: link, color: green]
+  Access Session [shape: rectangle, icon: log-in, color: green]
+  Play Games [shape: rectangle, icon: play-circle, color: green]
+  Read with Assistive Tools [shape: rectangle, icon: book-open, color: green]
+  Do Interactive Exercises [shape: rectangle, icon: edit-3, color: green]
+}
+
+// Classroom Management Group
+Classroom Management [color: blue, icon: users] {
+  Create Classroom [shape: rectangle, icon: plus-square, color: blue]
+  Generate Join Code [shape: rectangle, icon: key, color: blue]
+  Assign Tasks [shape: rectangle, icon: clipboard, color: blue]
+  Track Student Progress [shape: rectangle, icon: trending-up, color: blue]
+  Enroll Child via Code [shape: rectangle, icon: user-plus, color: blue]
+}
+
+// Admin Console Group
+Admin Console [color: red, icon: shield] {
+  Approve Generated Content [shape: rectangle, icon: check, color: red]
+  Manage Users [shape: rectangle, icon: users, color: red]
+  Override Subscription [shape: rectangle, icon: slash, color: red]
+}
+
+// Actors
+Guardian [shape: oval, icon: user, color: lightyellow]
+Parent [shape: oval, icon: user, color: yellow]
+Teacher [shape: oval, icon: user, color: orange]
+Child [shape: oval, icon: smile, color: lightgreen]
+Admin [shape: oval, icon: user-check, color: red]
+Tobii Hardware [shape: oval, icon: globe, color: gray]
+ML Service [shape: oval, icon: cpu, color: gray]
+LLM Service [shape: oval, icon: message-circle, color: gray]
+
+// Relationships: Account Management
+Guardian > Register or Login
+Guardian > Manage Child Profiles
+Guardian > Receive Notifications
+Parent > Manage Subscription
+
+// Relationships: Profile Claiming & Linking
+Parent > Search and Claim Child
+Parent > Manage Claim Requests
+Teacher > Adjudicate Claims
+
+// Relationships: Dyslexia Screening Test
+Guardian > Initiate Test Session
+Guardian > View or Download Reports
+Initiate Test Session > Retake Task
+Child > Calibrate Eye Tracker
+Child > Perform Tobii Test
+Child > Perform Webcam Test
+Perform Tobii Test > Calibrate Eye Tracker
+Perform Webcam Test > Calibrate Eye Tracker
+Perform Tobii Test > Tobii Hardware: Streams Data
+Perform Tobii Test > ML Service: Sends Fixations
+Perform Webcam Test > ML Service: Sends Raw Gaze
+
+// Relationships: Learning & Games
+Guardian > Generate Session Link
+Generate Session Link > Access Session
+Child > Access Session
+Access Session > Play Games
+Access Session > Read with Assistive Tools
+Access Session > Do Interactive Exercises
+
+// Relationships: Classroom Management
+Teacher > Create Classroom
+Teacher > Generate Join Code
+Teacher > Assign Tasks
+Teacher > Track Student Progress
+Parent > Enroll Child via Code
+
+// Relationships: Admin Console
+Admin > Approve Generated Content
+Admin > Manage Users
+Admin > Override Subscription
+LLM Service > Approve Generated Content: Generates Drafts
