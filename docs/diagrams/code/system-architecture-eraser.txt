@@ -1,0 +1,89 @@
+textSize small
+title Lexora System Architecture
+
+// LAYER 1: CLIENT LAYER (Top) - color: blue
+Client Layer [color: blue, icon: users] {
+  Web Browser [icon: chrome, label: "Web Browser (Next.js)"] {
+    Guardian Dashboard [icon: user, label: "Guardian Dashboard"]
+    Child Interface [icon: gamepad, label: "Learning/Games/Test"]
+    Admin Interface [icon: shield, label: "Admin Dashboard"]
+  }
+  Tobii Helper App [icon: monitor, label: "Tobii Helper Desktop App"]
+  Tobii Eye Tracker [icon: eye, label: "Tobii Eye Tracker Hardware"]
+}
+
+// LAYER 2: APPLICATION LAYER (Middle) - color: green
+Application Layer [color: green, icon: server] {
+  Next.js Backend [icon: nextdotjs, label: "Next.js Backend"] {
+    Authentication [icon: key, label: "Authentication (OAuth 2.0)"]
+    REST API [icon: cloud, label: "REST API Endpoints"]
+    Business Logic [icon: code, label: "Business Logic"]
+  }
+  ML Prediction Service [icon: python, label: "ML Prediction Service (FastAPI)"] {
+    "Eye Tracker Prediction     (3-task)" [icon: eye]
+    "Webcam Prediction      (1-task)" [icon: camera]
+    "TensorFlow/ Keras Models" [icon: tensorflow]
+    Docker Container [icon: docker, label: "Dockerized"]
+  }
+}
+
+// LAYER 3: DATA LAYER (Bottom-Middle) - color: orange
+Data Layer [color: orange, icon: database] {
+  PostgreSQL DB [icon: postgresql, label: "PostgreSQL (Prisma ORM)"]
+  S3 Storage [icon: aws-s3, label: "S3-Compatible Object Storage"] {
+    Fixation Data [icon: activity, label: "Fixation Data"]
+    PDF Reports [icon: file, label: "PDF Reports"]
+  }
+}
+
+// LAYER 4: EXTERNAL SERVICES (Right Side) - color: purple
+External Services [color: purple, icon: globe] {
+  Google OAuth [icon: google, label: "Google OAuth"]
+  Stripe Clerk [icon: stripe, label: "Stripe/Clerk"]
+  LLM API [icon: openai, label: "LLM API (OpenAI/ Gemini)"]
+  TTS API [icon: volume-2, label: "Text-to-Speech API"]
+}
+
+// LAYER 5: CI/CD & DEPLOYMENT (Bottom) - color: gray
+CICD Deployment [color: gray, icon: github, textSize: medium] {
+  GitHub Repository [icon: github, label: "GitHub Repo"]
+  GitHub Actions [icon: githubactions, label: "GitHub Actions"] {
+    ML Service Workflow [icon: flask, label: "ML Service Build/Test/ Push"]
+    Tobii Helper Workflow [icon: monitor, label: "Tobii Helper Build/Release"]
+  }
+  Deployment Targets [icon: cloud-upload, label: "Deployment Targets"] {
+    Vercel Deploy [icon: vercel, label: "Vercel (Frontend/Backend)"]
+    Cloud Provider Deploy [icon: cloud, label: "Cloud Provider (ML Service)"]
+    GHCR [icon: package, label: "GitHub Container Registry"]
+    GH Releases [icon: upload, label: "GitHub Releases"]
+  }
+}
+
+// CONNECTIONS
+
+// Client Layer <-> Application Layer
+Web Browser <> Next.js Backend: HTTPS REST API [color: blue, textSize: medium]
+Web Browser <> Tobii Helper App: WebSocket (localhost) [color: blue, textSize: medium]
+
+// Tobii connection
+Tobii Helper App > Tobii Eye Tracker: USB/SDK [color: blue, textSize: medium]
+
+// Application Layer <-> ML Service
+Next.js Backend > ML Prediction Service: HTTPS REST (Docker) [color: green, textSize: medium]
+
+// Application Layer <-> Data Layer
+Next.js Backend <> PostgreSQL DB: Prisma ORM (Encrypted) [color: orange, textSize: medium]
+Next.js Backend <> S3 Storage: AWS SDK (Encrypted) [color: orange, textSize: medium]
+
+// Application Layer <-> External Services
+Authentication > Google OAuth: OAuth 2.0 HTTPS [color: purple, textSize: medium]
+Next.js Backend > Stripe Clerk: Payments/ Subscriptions HTTPS [color: purple, textSize: medium]
+Next.js Backend > LLM API: Content Generation HTTPS [color: purple, textSize: medium]
+Next.js Backend > TTS API: Text-to-Speech HTTPS [color: purple, textSize: medium]
+
+// CI/CD & Deployment Connections
+GitHub Repository > GitHub Actions: Trigger [color: purple, textSize: medium]
+ML Service Workflow > GHCR: Push Docker Image [color: purple, textSize: medium]
+Tobii Helper Workflow > GH Releases: Upload Binaries [color: purple, textSize: medium]
+GitHub Actions > Vercel Deploy: Deploy  Frontend/ Backend [color: purple, textSize: medium]
+GitHub Actions > Cloud Provider Deploy: Deploy ML Service [color: purple, textSize: medium]

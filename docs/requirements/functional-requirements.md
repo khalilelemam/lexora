@@ -118,6 +118,39 @@ The system shall provide authentication mechanisms for guardians:
 
 ---
 
+### FR-2.4 Child Profile Claiming
+
+The system shall allow parents to claim child profiles created by teachers:
+
+**Scenario:**
+
+1. Teacher creates child profile for a student in their classroom
+2. Parent joins the platform later
+3. Parent requests to claim (link) the child to their account
+
+**Claim Process:**
+
+- Parent searches for child by name within a specific classroom
+- System sends verification request to the teacher
+- Teacher confirms the parent-child relationship
+- Child profile is linked to both teacher and parent as guardians
+
+**Constraints:**
+
+- Original creator (teacher) remains as guardian
+- Parent becomes additional guardian with PARENT relationship type
+- Both guardians can view child's progress and test results
+
+**Acceptance Criteria:**
+
+- Parent can initiate claim request
+- Teacher receives notification of claim request
+- Teacher can approve or deny claim
+- Approved claim links child to parent account
+- Child profile shows both guardians after claim
+
+---
+
 ## 3. Platform & Device Control
 
 ### FR-3.1 Device Restrictions
