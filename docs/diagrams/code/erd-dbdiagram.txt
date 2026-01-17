@@ -79,6 +79,12 @@ Enum content_status {
   REJECTED
 }
 
+Enum claim_request_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ============ LOOKUP TABLES ============
 
 Table language {
@@ -132,9 +138,12 @@ Table subscription_plan {
 Table user {
   id uuid [pk]
   email varchar [unique, not null]
+  password_hash varchar [note: 'null for OAuth-only users']
   name varchar [not null]
   role role [not null]
   avatar_url varchar
+  email_verified boolean [default: false]
+  is_suspended boolean [default: false]
   stripe_customer_id varchar
   created_at timestamp [default: `now()`]
   updated_at timestamp
@@ -194,6 +203,25 @@ Table child_guardian {
 
   indexes {
     (child_id, user_id) [unique]
+  }
+}
+
+Table claim_request {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  requesting_user_id uuid [not null, ref: > user.id, note: 'Parent who wants to claim']
+  classroom_id uuid [not null, ref: > classroom.id, note: 'Auto-populated from child enrollment']
+  status claim_request_status [not null, default: 'PENDING']
+  parent_national_id varchar [note: 'For teacher verification']
+  parent_phone varchar [note: 'For teacher to contact']
+  relationship_notes text [note: 'Parent explains relationship']
+  rejection_reason text [note: 'Teacher explains why rejected']
+  resolved_by_id uuid [ref: > user.id, note: 'Teacher who approved/rejected']
+  resolved_at timestamp
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (child_id, requesting_user_id) [unique, note: 'Prevent duplicate claims']
   }
 }
 
