@@ -1,0 +1,966 @@
+// ==============================================
+// LEXORA DATABASE SCHEMA - IMPROVED VERSION
+// ==============================================
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+// IMPROVEMENTS:
+// 1. Reorganized into logical domain groups
+// 2. Simplified table names for clarity
+// 3. Added composite indexes for performance
+// 4. Improved foreign key naming consistency
+// 5. Better separation of concerns
+// 6. Added missing constraints
+// ==============================================
+
+// ============================================
+// 1. CORE REFERENCE DATA (Lookups)
+// ============================================
+
+Table languages {
+  id uuid [pk]
+  code varchar(10) [unique, not null, note: 'ISO 639-1 code: en, ar, etc.']
+  name varchar(100) [not null]
+  is_rtl boolean [default: false, note: 'Right-to-left language']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+}
+
+Table subscription_plans {
+  id uuid [pk]
+  code varchar(50) [unique, not null, note: 'FREE, BASIC, PREMIUM']
+  name varchar(100) [not null]
+  price_monthly decimal(10,2) [not null]
+  price_yearly decimal(10,2)
+  currency varchar(3) [default: 'SAR']
+  
+  // Feature limits
+  monthly_test_limit int [note: 'NULL = unlimited']
+  max_children int [note: 'NULL = unlimited']
+  max_classrooms int [note: 'NULL = unlimited for teachers']
+  
+  // Feature flags
+  has_advanced_analytics boolean [default: false]
+  has_premium_content boolean [default: false]
+  has_ai_recommendations boolean [default: false]
+  has_progress_reports boolean [default: false]
+  
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+}
+
+// ============================================
+// 2. USER MANAGEMENT
+// ============================================
+
+Table users {
+  id uuid [pk]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null, note: 'bcrypt/argon2 hash']
+  full_name varchar(200) [not null]
+  role user_role [not null]
+  
+  // Profile
+  avatar_url varchar(500)
+  phone varchar(20)
+  national_id varchar(20) [note: 'For teacher verification']
+  
+  // Status
+  email_verified_at timestamp
+  is_active boolean [default: true, note: 'Replaces is_suspended']
+  last_login_at timestamp
+  
+  // Billing
+  stripe_customer_id varchar(100)
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    email [name: 'idx_users_email']
+    role [name: 'idx_users_role']
+    (is_active, role) [name: 'idx_users_active_role']
+  }
+}
+
+Table user_subscriptions {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  plan_id uuid [not null, ref: > subscription_plans.id]
+  
+  // Stripe integration
+  stripe_subscription_id varchar(100) [unique]
+  stripe_price_id varchar(100)
+  
+  // Status
+  status subscription_status [not null]
+  
+  // Dates
+  started_at timestamp [not null]
+  current_period_start timestamp [not null]
+  current_period_end timestamp [not null]
+  cancelled_at timestamp
+  ended_at timestamp
+  
+  // Usage tracking
+  tests_used_this_period int [default: 0]
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    user_id [name: 'idx_subscriptions_user']
+    status [name: 'idx_subscriptions_status']
+    (user_id, status) [name: 'idx_subscriptions_user_active']
+  }
+}
+
+Table user_preferences {
+  id uuid [pk]
+  user_id uuid [unique, not null, ref: - users.id]
+  
+  // Notification preferences
+  notify_test_results boolean [default: true]
+  notify_weekly_summary boolean [default: true]
+  notify_assignments boolean [default: true]
+  notify_inactivity_alerts boolean [default: true]
+  notify_child_claims boolean [default: true]
+  
+  // UI preferences
+  preferred_language_id uuid [ref: > languages.id]
+  theme varchar(20) [default: 'LIGHT', note: 'LIGHT, DARK, AUTO']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table notifications {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  
+  notification_type notification_type [not null]
+  title varchar(200) [not null]
+  message text
+  action_url varchar(500)
+  
+  // Related entities (optional)
+  related_child_id uuid [ref: > children.id]
+  related_test_id uuid [ref: > tests.id]
+  related_assignment_id uuid [ref: > assignments.id]
+  
+  is_read boolean [default: false]
+  read_at timestamp
+  
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    (user_id, is_read) [name: 'idx_notifications_user_unread']
+    created_at [name: 'idx_notifications_created']
+  }
+}
+
+// ============================================
+// 3. CHILDREN & GUARDIANS
+// ============================================
+
+Table children {
+  id uuid [pk]
+  primary_language_id uuid [not null, ref: > languages.id]
+  
+  // Basic info
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  date_of_birth date [not null]
+  gender varchar(20) [note: 'MALE, FEMALE, OTHER']
+  
+  // Educational info
+  grade_level int [note: '1-12']
+  student_id varchar(50) [note: 'School student ID']
+  
+  // Risk assessment
+  current_risk_level risk_level [note: 'From latest test']
+  last_tested_at timestamp
+  
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    primary_language_id [name: 'idx_children_language']
+    current_risk_level [name: 'idx_children_risk']
+    is_active [name: 'idx_children_active']
+  }
+}
+
+Table child_guardians {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  guardian_id uuid [not null, ref: > users.id]
+  
+  relationship relationship_type [not null]
+  is_primary_contact boolean [default: false]
+  
+  // Claim tracking
+  claimed_at timestamp [not null, default: `now()`]
+  claimed_via claim_via [note: 'CREATED, CLAIMED, TEACHER_ASSIGNED']
+  
+  // Permissions
+  can_view_tests boolean [default: true]
+  can_manage_profile boolean [default: true]
+  
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    (child_id, guardian_id) [unique, name: 'idx_guardians_child_user']
+    guardian_id [name: 'idx_guardians_user']
+    (child_id, is_primary_contact) [name: 'idx_guardians_primary']
+  }
+}
+
+Table child_claim_requests {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  requesting_user_id uuid [not null, ref: > users.id]
+  
+  // Request details
+  relationship relationship_type [not null]
+  parent_national_id varchar(20)
+  parent_phone varchar(20)
+  relationship_proof text [note: 'Explanation of relationship']
+  
+  // Resolution
+  status claim_status [not null, default: 'PENDING']
+  resolved_by_id uuid [ref: > users.id, note: 'Teacher/Admin who resolved']
+  resolved_at timestamp
+  rejection_reason text
+  
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    (child_id, requesting_user_id, status) [unique, name: 'idx_claims_unique_pending']
+    status [name: 'idx_claims_status']
+  }
+}
+
+Table child_reading_preferences {
+  id uuid [pk]
+  child_id uuid [unique, not null, ref: - children.id]
+  
+  // Text appearance
+  font_family font_family [default: 'ARIAL']
+  font_size_px int [default: 18, note: '12-32']
+  line_height_em float [default: 1.5, note: '1.0-2.5']
+  letter_spacing_em float [default: 0, note: '-0.1 to 0.5']
+  word_spacing_em float [default: 0, note: '0 to 1.0']
+  
+  // Colors
+  background_color varchar(7) [default: '#FFFFFF']
+  text_color varchar(7) [default: '#000000']
+  highlight_color varchar(7) [default: '#FFFF00']
+  
+  // Audio
+  enable_audio boolean [default: true]
+  audio_speed float [default: 1.0, note: '0.5-2.0']
+  voice_gender varchar(20) [default: 'NEUTRAL']
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+// ============================================
+// 4. TESTING & ASSESSMENT
+// ============================================
+
+Table tests {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  conducted_by_id uuid [not null, ref: > users.id]
+  
+  // Test configuration
+  test_mode test_mode [not null]
+  language_id uuid [not null, ref: > languages.id]
+  
+  // Results
+  risk_level risk_level
+  dyslexia_probability float [note: '0.0 - 1.0']
+  confidence_score float [note: '0.0 - 1.0']
+  
+  // Task metrics
+  total_fixations int
+  total_duration_seconds int
+  average_fixation_ms float
+  
+  // Data storage
+  raw_gaze_data_url varchar(500) [note: 'S3/storage URL']
+  processed_features_url varchar(500)
+  report_pdf_url varchar(500)
+  
+  // Status
+  status test_status [default: 'COMPLETED']
+  notes text [note: 'Tester notes']
+  
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    child_id [name: 'idx_tests_child']
+    (child_id, created_at) [name: 'idx_tests_child_recent']
+    risk_level [name: 'idx_tests_risk']
+    test_mode [name: 'idx_tests_mode']
+  }
+}
+
+Table test_tasks {
+  id uuid [pk]
+  test_id uuid [not null, ref: > tests.id]
+  
+  task_type task_type [not null]
+  task_order int [not null, note: '1, 2, 3']
+  content_id uuid [ref: > content_items.id, note: 'Reading material used']
+  
+  // Task-specific metrics
+  fixation_count int
+  duration_seconds int
+  average_fixation_duration_ms float
+  regression_count int [note: 'Backward eye movements']
+  
+  // Raw data for this specific task
+  gaze_points_url varchar(500)
+  
+  completed_at timestamp
+  
+  indexes {
+    test_id [name: 'idx_tasks_test']
+    (test_id, task_order) [unique, name: 'idx_tasks_test_order']
+  }
+}
+
+Table test_insights {
+  id uuid [pk]
+  test_id uuid [unique, not null, ref: - tests.id]
+  
+  // AI-generated insights
+  strengths text [note: 'Positive patterns observed']
+  challenges text [note: 'Areas needing attention']
+  recommendations text [note: 'Suggested interventions']
+  
+  // Comparison with norms
+  percentile int [note: 'Compared to age group']
+  comparison_group varchar(100) [note: 'Age/grade cohort']
+  
+  generated_at timestamp [default: `now()`]
+}
+
+// ============================================
+// 5. CLASSROOM MANAGEMENT
+// ============================================
+
+Table classrooms {
+  id uuid [pk]
+  teacher_id uuid [not null, ref: > users.id]
+  language_id uuid [not null, ref: > languages.id]
+  
+  name varchar(200) [not null]
+  description text
+  grade_level int [note: '1-12']
+  
+  // Access
+  join_code varchar(10) [unique, not null, note: 'e.g., ABC123']
+  is_joinable boolean [default: true]
+  
+  is_archived boolean [default: false]
+  archived_at timestamp
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    teacher_id [name: 'idx_classrooms_teacher']
+    join_code [name: 'idx_classrooms_code']
+    (teacher_id, is_archived) [name: 'idx_classrooms_teacher_active']
+  }
+}
+
+Table classroom_enrollments {
+  id uuid [pk]
+  classroom_id uuid [not null, ref: > classrooms.id]
+  child_id uuid [not null, ref: > children.id]
+  
+  enrolled_by_id uuid [not null, ref: > users.id, note: 'Teacher or parent']
+  enrollment_method enrollment_method [note: 'JOIN_CODE, TEACHER_ADD, PARENT_ADD']
+  
+  enrolled_at timestamp [default: `now()`]
+  unenrolled_at timestamp
+  unenrolled_by_id uuid [ref: > users.id]
+  
+  indexes {
+    (classroom_id, child_id) [unique, name: 'idx_enrollments_unique']
+    classroom_id [name: 'idx_enrollments_classroom']
+    child_id [name: 'idx_enrollments_child']
+  }
+}
+
+// ============================================
+// 6. ASSIGNMENTS & LEARNING ACTIVITIES
+// ============================================
+
+Table assignments {
+  id uuid [pk]
+  classroom_id uuid [not null, ref: > classrooms.id]
+  created_by_id uuid [not null, ref: > users.id, note: 'Teacher']
+  
+  title varchar(200) [not null]
+  description text
+  instructions text
+  
+  assignment_type assignment_type [not null]
+  
+  // Type-specific references
+  game_id uuid [ref: > games.id]
+  content_id uuid [ref: > content_items.id]
+  exercise_type_id uuid [ref: > exercise_types.id]
+  
+  // Configuration
+  estimated_minutes int
+  passing_score float [note: '0-100, null = no passing score']
+  max_attempts int [note: 'NULL = unlimited']
+  
+  // Scheduling
+  assigned_at timestamp [default: `now()`]
+  due_date timestamp
+  is_published boolean [default: true]
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    classroom_id [name: 'idx_assignments_classroom']
+    (classroom_id, due_date) [name: 'idx_assignments_classroom_due']
+    assignment_type [name: 'idx_assignments_type']
+  }
+}
+
+Table assignment_submissions {
+  id uuid [pk]
+  assignment_id uuid [not null, ref: > assignments.id]
+  child_id uuid [not null, ref: > children.id]
+  
+  attempt_number int [not null, default: 1]
+  
+  // Results
+  score float [note: '0-100']
+  is_passing boolean
+  time_spent_seconds int
+  
+  // Feedback
+  teacher_feedback text
+  feedback_given_by_id uuid [ref: > users.id]
+  feedback_given_at timestamp
+  
+  submitted_at timestamp [default: `now()`]
+  
+  indexes {
+    (assignment_id, child_id) [name: 'idx_submissions_assignment_child']
+    assignment_id [name: 'idx_submissions_assignment']
+    child_id [name: 'idx_submissions_child']
+  }
+}
+
+// ============================================
+// 7. LEARNING SESSIONS
+// ============================================
+
+Table learning_sessions {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  created_by_id uuid [not null, ref: > users.id, note: 'Parent/Teacher']
+  
+  session_type session_type [not null]
+  session_code varchar(10) [unique, not null, note: 'Quick join code']
+  
+  // Session details
+  title varchar(200)
+  planned_duration_minutes int
+  
+  // Status
+  started_at timestamp [default: `now()`]
+  ended_at timestamp
+  expires_at timestamp [not null, note: 'Auto-expire after 24h']
+  
+  indexes {
+    child_id [name: 'idx_sessions_child']
+    session_code [name: 'idx_sessions_code']
+    (child_id, started_at) [name: 'idx_sessions_child_recent']
+  }
+}
+
+Table session_activities {
+  id uuid [pk]
+  session_id uuid [not null, ref: > learning_sessions.id]
+  
+  activity_type activity_type [not null]
+  activity_order int [not null, note: 'Sequence within session']
+  
+  // Activity references
+  game_id uuid [ref: > games.id]
+  content_id uuid [ref: > content_items.id]
+  exercise_id uuid [ref: > exercises.id]
+  
+  // Results
+  score float
+  accuracy float [note: '0.0-1.0']
+  time_spent_seconds int
+  
+  started_at timestamp
+  completed_at timestamp
+  
+  indexes {
+    session_id [name: 'idx_activities_session']
+    (session_id, activity_order) [name: 'idx_activities_session_order']
+  }
+}
+
+// ============================================
+// 8. GAMES & PROGRESS
+// ============================================
+
+Table games {
+  id uuid [pk]
+  code varchar(50) [unique, not null, note: 'MEMORY_MATCH, WORD_BUILDER']
+  name varchar(100) [not null]
+  description text
+  
+  // Configuration
+  max_levels int [not null]
+  difficulty_progression varchar(20) [default: 'LINEAR', note: 'LINEAR, ADAPTIVE']
+  
+  // Metadata
+  thumbnail_url varchar(500)
+  icon_url varchar(500)
+  min_age int
+  max_age int
+  
+  // Skill tags
+  skills_practiced text [note: 'JSON array: ["phonics", "fluency"]']
+  
+  is_active boolean [default: true]
+  is_premium boolean [default: false]
+  
+  created_at timestamp [default: `now()`]
+}
+
+Table game_progress {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  game_id uuid [not null, ref: > games.id]
+  
+  // Progress
+  current_level int [default: 1]
+  highest_level_reached int [default: 1]
+  
+  // Stats
+  total_plays int [default: 0]
+  total_score int [default: 0]
+  total_time_seconds int [default: 0]
+  average_accuracy float
+  
+  // Streaks
+  current_streak_days int [default: 0]
+  longest_streak_days int [default: 0]
+  
+  last_played_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    (child_id, game_id) [unique, name: 'idx_progress_child_game']
+    child_id [name: 'idx_progress_child']
+  }
+}
+
+Table game_sessions {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  game_id uuid [not null, ref: > games.id]
+  
+  level_played int [not null]
+  score int
+  accuracy float
+  time_seconds int
+  completed boolean [default: false]
+  
+  played_at timestamp [default: `now()`]
+  
+  indexes {
+    (child_id, game_id) [name: 'idx_game_sessions_child_game']
+    played_at [name: 'idx_game_sessions_date']
+  }
+}
+
+// ============================================
+// 9. CONTENT LIBRARY
+// ============================================
+
+Table content_types {
+  id uuid [pk]
+  code varchar(50) [unique, not null, note: 'STORY, ARTICLE, POEM']
+  name varchar(100) [not null]
+  description text
+  is_active boolean [default: true]
+}
+
+Table content_categories {
+  id uuid [pk]
+  parent_category_id uuid [ref: > content_categories.id, note: 'For hierarchical categories']
+  
+  code varchar(50) [unique, not null, note: 'ANIMALS, SCIENCE, HISTORY']
+  name varchar(100) [not null]
+  description text
+  icon_url varchar(500)
+  
+  display_order int [default: 0]
+  is_active boolean [default: true]
+}
+
+Table content_items {
+  id uuid [pk]
+  content_type_id uuid [not null, ref: > content_types.id]
+  language_id uuid [not null, ref: > languages.id]
+  
+  title varchar(300) [not null]
+  subtitle varchar(300)
+  body text [not null]
+  
+  // Metadata
+  author varchar(200)
+  source varchar(200) [note: 'Original source/attribution']
+  
+  // Difficulty
+  difficulty_level int [not null, note: '1-5']
+  reading_age_min int [note: 'Minimum reading age']
+  reading_age_max int [note: 'Maximum reading age']
+  word_count int
+  
+  // Media
+  cover_image_url varchar(500)
+  audio_url varchar(500)
+  
+  // Status
+  status content_status [default: 'PENDING']
+  submitted_by_id uuid [ref: > users.id]
+  approved_by_id uuid [ref: > users.id]
+  approved_at timestamp
+  
+  // Usage
+  view_count int [default: 0]
+  is_premium boolean [default: false]
+  
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  
+  indexes {
+    language_id [name: 'idx_content_language']
+    (language_id, status) [name: 'idx_content_language_status']
+    difficulty_level [name: 'idx_content_difficulty']
+  }
+}
+
+Table content_category_links {
+  content_id uuid [not null, ref: > content_items.id]
+  category_id uuid [not null, ref: > content_categories.id]
+  
+  indexes {
+    (content_id, category_id) [pk, name: 'pk_content_categories']
+    category_id [name: 'idx_cat_links_category']
+  }
+}
+
+Table content_reading_history {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  content_id uuid [not null, ref: > content_items.id]
+  
+  // Reading metrics
+  time_spent_seconds int
+  completion_percentage int [note: '0-100']
+  was_completed boolean [default: false]
+  
+  // Rating
+  rating int [note: '1-5 stars, optional']
+  
+  last_read_at timestamp [default: `now()`]
+  first_read_at timestamp [default: `now()`]
+  read_count int [default: 1]
+  
+  indexes {
+    (child_id, content_id) [unique, name: 'idx_history_child_content']
+    child_id [name: 'idx_history_child']
+    last_read_at [name: 'idx_history_date']
+  }
+}
+
+// ============================================
+// 10. EXERCISES & PRACTICE
+// ============================================
+
+Table exercise_types {
+  id uuid [pk]
+  code varchar(50) [unique, not null, note: 'PHONICS, COMPREHENSION, VOCABULARY']
+  name varchar(100) [not null]
+  description text
+  icon_url varchar(500)
+  is_active boolean [default: true]
+}
+
+Table exercises {
+  id uuid [pk]
+  exercise_type_id uuid [not null, ref: > exercise_types.id]
+  language_id uuid [not null, ref: > languages.id]
+  
+  question text [not null]
+  question_audio_url varchar(500)
+  
+  // Answer configuration
+  answer_type answer_type [not null, note: 'MULTIPLE_CHOICE, TRUE_FALSE, FILL_BLANK, MATCH']
+  correct_answer text [not null, note: 'JSON for complex answers']
+  answer_options text [note: 'JSON array for choices']
+  
+  // Metadata
+  difficulty_level int [not null, note: '1-5']
+  skill_tags text [note: 'JSON array of skills']
+  explanation text [note: 'Why this answer is correct']
+  
+  // Status
+  status content_status [default: 'PENDING']
+  approved_by_id uuid [ref: > users.id]
+  approved_at timestamp
+  
+  is_premium boolean [default: false]
+  
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    exercise_type_id [name: 'idx_exercises_type']
+    (language_id, exercise_type_id) [name: 'idx_exercises_lang_type']
+  }
+}
+
+Table exercise_progress {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  exercise_type_id uuid [not null, ref: > exercise_types.id]
+  
+  // Aggregate stats
+  total_attempts int [default: 0]
+  correct_attempts int [default: 0]
+  accuracy_rate float [note: 'Auto-calculated']
+  
+  // Performance tracking
+  average_time_seconds float
+  fastest_time_seconds int
+  
+  last_attempted_at timestamp
+  created_at timestamp [default: `now()`]
+  
+  indexes {
+    (child_id, exercise_type_id) [unique, name: 'idx_ex_progress_child_type']
+    child_id [name: 'idx_ex_progress_child']
+  }
+}
+
+Table exercise_attempts {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  exercise_id uuid [not null, ref: > exercises.id]
+  
+  // Attempt details
+  child_answer text [not null]
+  is_correct boolean [not null]
+  time_seconds int
+  
+  // Context
+  from_assignment_id uuid [ref: > assignments.id, note: 'If part of assignment']
+  from_session_id uuid [ref: > learning_sessions.id, note: 'If part of session']
+  
+  attempted_at timestamp [default: `now()`]
+  
+  indexes {
+    child_id [name: 'idx_attempts_child']
+    exercise_id [name: 'idx_attempts_exercise']
+    attempted_at [name: 'idx_attempts_date']
+  }
+}
+
+// ============================================
+// 11. ANALYTICS & INSIGHTS
+// ============================================
+
+Table child_analytics_summary {
+  id uuid [pk]
+  child_id uuid [not null, ref: > children.id]
+  
+  period_type analytics_period [not null, note: 'DAILY, WEEKLY, MONTHLY']
+  period_start date [not null]
+  period_end date [not null]
+  
+  // Activity metrics
+  total_sessions int [default: 0]
+  total_time_minutes int [default: 0]
+  activities_completed int [default: 0]
+  
+  // Performance metrics
+  average_score float
+  average_accuracy float
+  improvement_rate float [note: 'Compared to previous period']
+  
+  // Content breakdown
+  reading_time_minutes int [default: 0]
+  games_time_minutes int [default: 0]
+  exercises_time_minutes int [default: 0]
+  
+  // Engagement
+  login_days int [note: 'Days active in period']
+  longest_streak int
+  
+  generated_at timestamp [default: `now()`]
+  
+  indexes {
+    child_id [name: 'idx_analytics_child']
+    (child_id, period_type, period_start) [unique, name: 'idx_analytics_unique_period']
+  }
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+Enum user_role {
+  PARENT
+  TEACHER
+  ADMIN
+}
+
+Enum subscription_status {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+}
+
+Enum notification_type {
+  TEST_COMPLETED
+  TEST_RESULTS_READY
+  ASSIGNMENT_CREATED
+  ASSIGNMENT_DUE_SOON
+  ASSIGNMENT_COMPLETED
+  ENROLLMENT_NEW
+  CLAIM_REQUEST_NEW
+  CLAIM_REQUEST_APPROVED
+  CLAIM_REQUEST_REJECTED
+  WEEKLY_SUMMARY
+  MILESTONE_ACHIEVED
+  INACTIVITY_REMINDER
+}
+
+Enum relationship_type {
+  PARENT
+  GUARDIAN
+  TEACHER
+  OTHER
+}
+
+Enum claim_via {
+  CREATED
+  CLAIMED
+  TEACHER_ASSIGNED
+}
+
+Enum claim_status {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+Enum font_family {
+  OPEN_DYSLEXIC
+  ARIAL
+  COMIC_SANS
+  VERDANA
+  TIMES_NEW_ROMAN
+}
+
+Enum test_mode {
+  TOBII_EYE_TRACKER
+  WEBCAM_GAZE
+}
+
+Enum test_status {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+Enum risk_level {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+Enum task_type {
+  SYLLABLES
+  PSEUDO_WORDS
+  MEANINGFUL_TEXT
+  PARAGRAPH
+}
+
+Enum assignment_type {
+  GAME
+  READING
+  EXERCISE
+  MIXED
+}
+
+Enum session_type {
+  FREE_PLAY
+  GUIDED_LEARNING
+  ASSESSMENT
+  PRACTICE
+}
+
+Enum activity_type {
+  GAME
+  READING
+  EXERCISE
+}
+
+Enum content_status {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+Enum enrollment_method {
+  JOIN_CODE
+  TEACHER_ADD
+  PARENT_ADD
+}
+
+Enum analytics_period {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+Enum answer_type {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  FILL_BLANK
+  SHORT_ANSWER
+  MATCHING
+}
+
