@@ -1,0 +1,97 @@
+title Guardian Session Sharing Flow
+
+// Actors
+Guardian [icon: user, color: blue]
+Child [icon: user, color: green]
+LexoraWeb [icon: monitor, label: Lexora Web App]
+Backend [icon: server, label: Next.js Backend]
+Database [icon: database, label: Database]
+ChildDevice [icon: tablet, label: Child's Device]
+
+// Guardian creates session
+Guardian > LexoraWeb: Open child's learning dashboard
+LexoraWeb > Backend: Fetch available content for child
+Backend > Database: Query appropriate exercises, games, lessons
+Database > Backend: Return content list
+Backend > LexoraWeb: Return available content
+LexoraWeb > Guardian: Display content options
+
+// Select session content
+Guardian > LexoraWeb: Select learning activity type
+alt [label: Learning Session] {
+  Guardian > LexoraWeb: Choose lesson content
+}
+alt [label: Games Session] {
+  Guardian > LexoraWeb: Choose game type
+}
+alt [label: Exercise Session] {
+  Guardian > LexoraWeb: Choose exercise set
+}
+
+// Generate session
+Guardian > LexoraWeb: Click "Create Session"
+LexoraWeb > Backend: Request new session
+Backend <> Backend: Generate unique session code
+Backend > Database: Create session record
+Database > Backend: Confirm session created
+Backend > LexoraWeb: Return session details
+
+// Display sharing options
+LexoraWeb > Guardian: Show session sharing options
+LexoraWeb > Guardian: Display session code
+LexoraWeb > Guardian: Show shareable link
+LexoraWeb > Guardian: Show copy buttons
+
+// Sharing methods
+alt [label: Share via code] {
+  Guardian > LexoraWeb: Copy session code
+  Guardian > Child: Tell child the session code
+}
+
+alt [label: Share via link] {
+  Guardian > LexoraWeb: Copy session link
+  Guardian > Child: Send link via messaging app
+}
+
+// Child joins session
+Child > ChildDevice: Open Lexora or click link
+
+alt [label: Via session code] {
+  ChildDevice > LexoraWeb: Open join session page
+  LexoraWeb > Child: Show code entry form
+  Child > LexoraWeb: Enter session code
+}
+
+alt [label: Via direct link] {
+  ChildDevice > LexoraWeb: Open session link directly
+}
+
+// Validate and start session
+LexoraWeb > Backend: Validate session code/link
+Backend > Database: Check session validity
+Database > Backend: Return session details
+
+alt [label: Session expired or invalid] {
+  Backend > LexoraWeb: Return error
+  LexoraWeb > Child: Show session not found message
+  LexoraWeb > Child: Prompt to ask guardian for new session
+}
+
+// Start session
+Backend > LexoraWeb: Return session content
+LexoraWeb > Child: Launch learning activity
+Child > LexoraWeb: Complete activity
+
+// Track progress
+LexoraWeb > Backend: Report activity progress
+Backend > Database: Update session progress
+Backend > Database: Update child's learning record
+Database > Backend: Confirm update
+
+// Session completion
+Child > LexoraWeb: Finish activity
+LexoraWeb > Backend: Mark session complete
+Backend > Database: Save completion record
+Backend > Guardian: Send completion notification
+LexoraWeb > Child: Show completion message
+LexoraWeb > Child: Display achievement or reward

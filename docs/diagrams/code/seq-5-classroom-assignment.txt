@@ -1,0 +1,87 @@
+title Classroom Assignment Flow
+
+// Actors
+Teacher [icon: user, color: purple]
+LexoraWeb [icon: monitor, label: Lexora Web App]
+Backend [icon: server, label: Next.js Backend]
+Database [icon: database, label: Database]
+Guardian [icon: user, color: blue]
+
+// Teacher accesses classroom
+Teacher > LexoraWeb: Open classroom management
+LexoraWeb > Backend: Fetch teacher's classrooms
+Backend > Database: Query classrooms for teacher
+Database > Backend: Return classroom list
+Backend > LexoraWeb: Return classrooms
+LexoraWeb > Teacher: Display classroom list
+
+// Select classroom and view students
+Teacher > LexoraWeb: Select classroom
+LexoraWeb > Backend: Fetch classroom students
+Backend > Database: Query students in classroom
+Database > Backend: Return student list with screening status
+Backend > LexoraWeb: Return student details
+LexoraWeb > Teacher: Display students with status indicators
+
+// Filter students for assignment
+LexoraWeb > Teacher: Show filter options
+Teacher > LexoraWeb: Filter by screening status
+
+alt [label: Filter by needs screening] {
+  LexoraWeb > Teacher: Show students pending screening
+}
+alt [label: Filter by dyslexia indicators] {
+  LexoraWeb > Teacher: Show students with positive indicators
+}
+alt [label: Filter by all students] {
+  LexoraWeb > Teacher: Show complete roster
+}
+
+// Create assignment
+Teacher > LexoraWeb: Click "Create Assignment"
+LexoraWeb > Teacher: Display assignment form
+Teacher > LexoraWeb: Enter assignment details
+Teacher > LexoraWeb: Select assignment type
+Teacher > LexoraWeb: Set due date
+Teacher > LexoraWeb: Select target students or whole class
+
+// Submit assignment
+Teacher > LexoraWeb: Click "Assign"
+LexoraWeb > Backend: Create assignment
+Backend > Database: Save assignment record
+Backend > Database: Create assignment entries for each student
+Database > Backend: Confirm assignments created
+
+// Notify guardians
+Backend <> Backend: Queue notifications for guardians
+Backend > Guardian: Send email notification per student
+Backend > LexoraWeb: Return success
+LexoraWeb > Teacher: Show assignment created confirmation
+
+// Create session for entire class (bulk operation)
+Teacher > LexoraWeb: Click "Create Session for Class"
+LexoraWeb > Teacher: Display session type selection
+Teacher > LexoraWeb: Select activity type (learning/games/exercises)
+Teacher > LexoraWeb: Confirm class-wide session
+
+LexoraWeb > Backend: Create bulk sessions for all students
+Backend <> Backend: Generate session per student
+Backend > Database: Save all session records
+Backend > Guardian: Send session links to all guardians
+Backend > LexoraWeb: Return session summary
+LexoraWeb > Teacher: Show sessions created for all students
+
+// Track assignment progress
+Teacher > LexoraWeb: View assignment dashboard
+LexoraWeb > Backend: Fetch assignment progress
+Backend > Database: Query completion status per student
+Database > Backend: Return progress data
+Backend > LexoraWeb: Return aggregated progress
+LexoraWeb > Teacher: Display completion chart
+LexoraWeb > Teacher: Show individual student status
+
+// Assignment completion handling
+LexoraWeb > Teacher: Highlight students who completed
+LexoraWeb > Teacher: Show students with pending assignments
+Teacher > LexoraWeb: Click on student for detailed view
+LexoraWeb > Teacher: Display student's submission or results

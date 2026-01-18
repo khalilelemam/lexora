@@ -1,0 +1,100 @@
+title Webcam-Based Screening Test Flow
+
+// Actors
+Guardian [icon: user, color: blue]
+Child [icon: user, color: green]
+LexoraWeb [icon: monitor, label: Lexora Web App]
+MediaPipe [icon: video, label: MediaPipe Gaze Tracker]
+Backend [icon: server, label: Next.js Backend]
+S3 [icon: aws-s3, label: AWS S3]
+MLService [icon: cpu, label: ML Service]
+
+// Test Initiation
+Guardian > LexoraWeb: Start webcam screening test
+LexoraWeb > Guardian: Prompt to select child
+Guardian > LexoraWeb: Select child profile
+LexoraWeb > MediaPipe: Request camera access
+MediaPipe > LexoraWeb: Return camera status
+
+// Camera Access Handling
+alt [label: Camera access denied] {
+  LexoraWeb > Guardian: Show permission required message
+  LexoraWeb > Guardian: Display instructions to enable camera
+  Guardian > LexoraWeb: Grant camera permission
+}
+
+// Environment Setup Tips
+LexoraWeb > Guardian: Display setup tips
+LexoraWeb > Guardian: Good lighting recommendation
+LexoraWeb > Guardian: Face positioning guidance
+LexoraWeb > Guardian: Minimize background movement
+
+// Calibration Phase
+LexoraWeb > Guardian: Show calibration instructions
+Guardian > Child: Hand over to child for test
+LexoraWeb > Child: Display 5-point calibration screen
+Child > LexoraWeb: Follow calibration points
+MediaPipe > LexoraWeb: Evaluate calibration quality
+
+alt [label: Poor calibration quality] {
+  LexoraWeb > Child: Show calibration quality warning
+  LexoraWeb > Guardian: Ask to recalibrate or proceed anyway
+  alt [label: Recalibrate] {
+    Guardian > LexoraWeb: Choose to recalibrate
+    LexoraWeb > Child: Restart calibration
+  }
+  alt [label: Proceed with warning] {
+    Guardian > LexoraWeb: Choose to proceed
+    LexoraWeb > Child: Continue with accuracy notice
+  }
+}
+
+LexoraWeb > Child: Ready to begin reading task
+
+// Reading Task (Single Longer Paragraph)
+LexoraWeb > Child: Display reading paragraph
+LexoraWeb > MediaPipe: Start raw gaze data collection
+MediaPipe > LexoraWeb: Stream raw gaze coordinates
+LexoraWeb <> LexoraWeb: Buffer raw gaze data locally
+
+// Task completion detection
+LexoraWeb <> LexoraWeb: Detect reading completion (gaze reached end)
+alt [label: Auto-detection triggered] {
+  LexoraWeb > MediaPipe: Stop gaze collection
+}
+alt [label: Child clicks Done manually] {
+  Child > LexoraWeb: Click "I'm Done" button
+  LexoraWeb > MediaPipe: Stop gaze collection
+}
+
+// Review Options
+LexoraWeb > Guardian: Show task preview
+LexoraWeb > Guardian: Display "Continue" and "Didn't Finish" buttons
+alt [label: Guardian clicks Didn't Finish] {
+  Guardian > LexoraWeb: Click "Didn't Finish"
+  LexoraWeb <> LexoraWeb: Clear buffered gaze data
+  LexoraWeb > Child: Restart reading task
+}
+Guardian > LexoraWeb: Confirm task complete
+
+// Data Submission
+LexoraWeb > Backend: Submit raw gaze data with child profile
+
+// ML Processing (Raw gaze to fixations + prediction)
+Backend > MLService: Send raw gaze data for processing
+MLService > MLService: Convert raw gaze to fixations
+MLService > MLService: Extract reading features
+MLService > MLService: Run dyslexia profile model
+MLService > Backend: Return fixations and prediction result
+
+// Data Storage
+Backend > S3: Upload fixations (returned from ML)
+S3 > Backend: Return file reference
+Backend <> Backend: Save test record with prediction
+
+// Result Display
+Backend > LexoraWeb: Return test result
+LexoraWeb > Guardian: Display screening result
+LexoraWeb > Guardian: Show accuracy notice (webcam-based)
+LexoraWeb > Guardian: Show next steps and recommendations
+LexoraWeb > Guardian: Suggest Tobii test for higher accuracy
