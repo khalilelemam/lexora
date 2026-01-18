@@ -1,0 +1,82 @@
+title Child Claiming Process
+
+// Actors
+Guardian [icon: user, color: blue]
+LexoraWeb [icon: monitor, label: Lexora Web App]
+Backend [icon: server, label: Next.js Backend]
+Database [icon: database, label: Database]
+Teacher [icon: user-check, color: purple]
+
+// Guardian initiates claim
+Guardian > LexoraWeb: Navigate to claim child page
+LexoraWeb > Guardian: Display claim form
+
+// Search for child
+Guardian > LexoraWeb: Search for student
+LexoraWeb > Backend: Search for matching students
+Backend > Database: Query matching students
+Database > Backend: Return matching students list
+Backend > LexoraWeb: Return search results
+
+alt [label: No matches found] {
+  LexoraWeb > Guardian: Show no results message
+  LexoraWeb > Guardian: Suggest checking spelling or contacting school
+}
+
+// Select child to claim
+LexoraWeb > Guardian: Display matching children (limited info)
+Guardian > LexoraWeb: Select child to claim
+LexoraWeb > Guardian: Show claim confirmation form
+Guardian > LexoraWeb: Enter verification details
+
+// Submit claim request
+LexoraWeb > Backend: Submit claim request
+Backend <> Backend: Validate claim details
+Backend > Database: Create pending claim request
+Database > Backend: Confirm claim created
+
+// Notification to teacher
+Backend > Teacher: Send claim notification email
+Backend > LexoraWeb: Return claim submitted confirmation
+LexoraWeb > Guardian: Show claim pending message
+LexoraWeb > Guardian: Explain teacher approval required
+
+// Teacher reviews claim
+Teacher > LexoraWeb: Open pending claims dashboard
+LexoraWeb > Backend: Fetch pending claims for teacher's students
+Backend > Database: Query pending claims
+Database > Backend: Return pending claims
+Backend > LexoraWeb: Return claims list
+LexoraWeb > Teacher: Display pending claims
+
+// Teacher makes decision
+Teacher > LexoraWeb: Review claim details
+alt [label: Approve claim] {
+  Teacher > LexoraWeb: Click approve
+  LexoraWeb > Backend: Approve claim request
+  Backend > Database: Link guardian to child
+  Backend > Database: Mark claim as approved
+  Database > Backend: Confirm update
+  Backend > Guardian: Send approval notification email
+  Backend > LexoraWeb: Return success
+  LexoraWeb > Teacher: Show claim approved
+}
+
+alt [label: Reject claim] {
+  Teacher > LexoraWeb: Click reject
+  Teacher > LexoraWeb: Enter rejection reason
+  LexoraWeb > Backend: Reject claim request
+  Backend > Database: Mark claim as rejected with reason
+  Database > Backend: Confirm update
+  Backend > Guardian: Send rejection notification with reason
+  Backend > LexoraWeb: Return success
+  LexoraWeb > Teacher: Show claim rejected
+}
+
+// Guardian receives result
+Guardian > LexoraWeb: Open notifications
+LexoraWeb > Guardian: Display claim result
+alt [label: Claim approved] {
+  LexoraWeb > Guardian: Show child added to dashboard
+  Guardian > LexoraWeb: View child's profile and tests
+}

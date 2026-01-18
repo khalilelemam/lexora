@@ -1,0 +1,134 @@
+title Tobii Eye Tracker Screening Test Flow
+
+// Actors
+Guardian [icon: user, color: blue]
+Child [icon: user, color: green]
+LexoraWeb [icon: monitor, label: Lexora Web App]
+TobiiApp [icon: eye, label: Tobii Service]
+Backend [icon: server, label: Next.js Backend]
+S3 [icon: aws-s3, label: AWS S3]
+MLService [icon: cpu, label: ML Service]
+
+// Test Initiation
+Guardian > LexoraWeb: Start Tobii screening test
+LexoraWeb > Guardian: Prompt to select child
+Guardian > LexoraWeb: Select child profile
+LexoraWeb > TobiiApp: Check Tobii service availability
+TobiiApp > LexoraWeb: Return connection status
+
+// Connection Failure Path
+alt [label: Tobii not connected] {
+  LexoraWeb > Guardian: Show connection error
+  LexoraWeb > Guardian: Display troubleshooting steps
+  Guardian > LexoraWeb: Retry connection
+}
+
+// Calibration Phase
+LexoraWeb > Guardian: Show calibration instructions
+Guardian > Child: Hand over to child for test
+LexoraWeb > Child: Display 5-point calibration screen
+Child > LexoraWeb: Follow calibration points
+
+TobiiApp > LexoraWeb: Report calibration quality
+
+alt [label: Calibration failed] {
+  LexoraWeb > Child: Show calibration failed message
+  LexoraWeb > Child: Ask to recalibrate
+  Child > LexoraWeb: Retry calibration
+}
+
+LexoraWeb > Child: Calibration successful, ready to begin
+
+// Task 1: Syllables Reading
+LexoraWeb > Child: Display Task 1 - Syllables
+LexoraWeb > TobiiApp: Start gaze data streaming
+TobiiApp > LexoraWeb: Stream fixation data (WebSocket, 30Hz)
+// Task 1 completion detection
+LexoraWeb <> LexoraWeb: Detect reading completion (gaze reached end)
+alt [label: Auto-detection triggered] {
+  LexoraWeb > TobiiApp: Pause gaze streaming
+}
+alt [label: Child clicks Done manually] {
+  Child > LexoraWeb: Click "I'm Done" button
+  LexoraWeb > TobiiApp: Pause gaze streaming
+}
+LexoraWeb <> LexoraWeb: Store Task 1 fixations locally
+
+// Task 1 Review Options
+LexoraWeb > Guardian: Show Task 1 preview
+LexoraWeb > Guardian: Display "Continue" and "Didn't Finish" buttons
+alt [label: Guardian clicks Didn't Finish] {
+  Guardian > LexoraWeb: Click "Didn't Finish"
+  LexoraWeb <> LexoraWeb: Clear Task 1 data
+  LexoraWeb > Child: Restart Task 1
+}
+Guardian > LexoraWeb: Click Continue
+
+// Task 2: Pseudo-words Reading
+LexoraWeb > Child: Display Task 2 - Pseudo-words
+LexoraWeb > TobiiApp: Resume gaze streaming
+TobiiApp > LexoraWeb: Stream fixation data (WebSocket, 30Hz)
+// Task 2 completion detection
+LexoraWeb <> LexoraWeb: Detect reading completion (gaze reached end)
+alt [label: Auto-detection triggered] {
+  LexoraWeb > TobiiApp: Pause gaze streaming
+}
+alt [label: Child clicks Done manually] {
+  Child > LexoraWeb: Click "I'm Done" button
+  LexoraWeb > TobiiApp: Pause gaze streaming
+}
+LexoraWeb <> LexoraWeb: Store Task 2 fixations locally
+
+// Task 2 Review Options
+LexoraWeb > Guardian: Show Task 2 preview
+LexoraWeb > Guardian: Display "Continue" and "Didn't Finish" buttons
+alt [label: Guardian clicks Didn't Finish] {
+  Guardian > LexoraWeb: Click "Didn't Finish"
+  LexoraWeb <> LexoraWeb: Clear Task 2 data
+  LexoraWeb > Child: Restart Task 2
+}
+Guardian > LexoraWeb: Click Continue
+
+// Task 3: Meaningful Text Reading
+LexoraWeb > Child: Display Task 3 - Meaningful text paragraph
+LexoraWeb > TobiiApp: Resume gaze streaming
+TobiiApp > LexoraWeb: Stream fixation data (WebSocket, 30Hz)
+
+// Task 3 completion detection
+LexoraWeb <> LexoraWeb: Detect reading completion (gaze reached end)
+alt [label: Auto-detection triggered] {
+  LexoraWeb > TobiiApp: Stop gaze streaming
+}
+alt [label: Child clicks Done manually] {
+  Child > LexoraWeb: Click "I'm Done" button
+  LexoraWeb > TobiiApp: Stop gaze streaming
+}
+LexoraWeb <> LexoraWeb: Store Task 3 fixations locally
+
+// Task 3 Review Options
+LexoraWeb > Guardian: Show Task 3 preview
+LexoraWeb > Guardian: Display "Continue" and "Didn't Finish" buttons
+alt [label: Guardian clicks Didn't Finish] {
+  Guardian > LexoraWeb: Click "Didn't Finish"
+  LexoraWeb <> LexoraWeb: Clear Task 3 data
+  LexoraWeb > Child: Restart Task 3
+}
+Guardian > LexoraWeb: Click Continue - all tasks complete
+
+// Data Submission
+LexoraWeb <> LexoraWeb: Combine all 3 tasks' fixation data
+LexoraWeb > Backend: Submit all fixation data with child profile
+Backend > S3: Upload raw fixation data
+S3 > Backend: Return file reference
+
+// ML Prediction
+Backend > MLService: Request prediction with file reference
+MLService > MLService: Extract reading features from fixations
+MLService > MLService: Run dyslexia profile model
+MLService > Backend: Return prediction result with confidence
+
+// Result Handling
+Backend <> Backend: Save test record and prediction
+Backend > LexoraWeb: Return test result
+LexoraWeb > Guardian: Display screening result
+LexoraWeb > Guardian: Show next steps and recommendations

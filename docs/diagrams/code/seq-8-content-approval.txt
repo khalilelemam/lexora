@@ -1,0 +1,121 @@
+title AI Content Generation and Approval Flow
+
+// Actors
+CronJob [icon: clock, label: Cron Job Scheduler]
+Admin [icon: shield, color: red]
+LexoraWeb [icon: monitor, label: Lexora Web App]
+Backend [icon: server, label: Next.js Backend]
+LLMService [icon: cpu, label: LLM API Service]
+Database [icon: database, label: Database]
+
+// ==========================================
+// AUTOMATIC CONTENT GENERATION (Cron Job)
+// ==========================================
+
+CronJob > Backend: Trigger weekly content generation
+Backend > Database: Check content inventory per language
+Database > Backend: Return content counts by type and difficulty
+
+// Generate content for each language
+Backend > Backend: Determine content gaps to fill
+Backend > LLMService: Request batch content generation
+LLMService > LLMService: Generate reading paragraphs
+LLMService > LLMService: Generate exercise questions
+LLMService > LLMService: Generate game word lists
+LLMService > Backend: Return generated content batch
+
+Backend > Database: Save all content as pending approval
+Database > Backend: Confirm content saved
+Backend > Backend: Log generation results
+
+// ==========================================
+// ADMIN CONTENT REVIEW
+// ==========================================
+
+// View pending content
+Admin > LexoraWeb: Open content review queue
+LexoraWeb > Backend: Fetch pending content
+Backend > Database: Query content awaiting review
+Database > Backend: Return pending items
+Backend > LexoraWeb: Return review queue
+LexoraWeb > Admin: Display pending content list
+
+// Review individual content
+Admin > LexoraWeb: Select content to review
+LexoraWeb > Backend: Fetch content details
+Backend > Database: Query full content record
+Database > Backend: Return content with metadata
+Backend > LexoraWeb: Return content details
+LexoraWeb > Admin: Display content preview
+LexoraWeb > Admin: Show age group and difficulty
+LexoraWeb > Admin: Display appropriateness checklist
+
+// Admin reviews content
+Admin > LexoraWeb: Check dyslexia-friendliness criteria
+Admin > LexoraWeb: Verify age appropriateness
+Admin > LexoraWeb: Review content clarity
+
+alt [label: Edit content manually] {
+  Admin > LexoraWeb: Click "Edit"
+  LexoraWeb > Admin: Display content editor
+  Admin > LexoraWeb: Make manual adjustments
+  Admin > LexoraWeb: Save changes
+  LexoraWeb > Backend: Update content
+  Backend > Database: Save edited content
+  Backend > LexoraWeb: Confirm saved
+}
+
+// ==========================================
+// APPROVAL/REJECTION
+// ==========================================
+
+alt [label: Approve content] {
+  Admin > LexoraWeb: Click "Approve"
+  LexoraWeb > Backend: Submit approval
+  Backend > Database: Update content status to active
+  Database > Backend: Confirm update
+  Backend > LexoraWeb: Return success
+  LexoraWeb > Admin: Show content approved
+}
+
+alt [label: Reject content] {
+  Admin > LexoraWeb: Click "Reject"
+  LexoraWeb > Backend: Submit rejection
+  Backend > Database: Delete rejected content
+  Database > Backend: Confirm deletion
+  Backend > LexoraWeb: Return success
+  LexoraWeb > Admin: Show content rejected
+}
+
+// ==========================================
+// CONTENT MANAGEMENT
+// ==========================================
+
+// View approved content
+Admin > LexoraWeb: Navigate to approved content
+LexoraWeb > Backend: Fetch approved content
+Backend > Database: Query approved items
+Database > Backend: Return approved list
+Backend > LexoraWeb: Return content list
+LexoraWeb > Admin: Display approved content
+
+// Edit existing content
+Admin > LexoraWeb: Select content to edit
+LexoraWeb > Admin: Display edit form
+Admin > LexoraWeb: Modify content details
+Admin > LexoraWeb: Click "Save Changes"
+LexoraWeb > Backend: Submit updates
+Backend > Database: Update content record
+Database > Backend: Confirm update
+Backend > LexoraWeb: Return success
+LexoraWeb > Admin: Show update confirmation
+
+// Unpublish content
+Admin > LexoraWeb: Click "Unpublish"
+LexoraWeb > Admin: Confirm unpublish action
+Admin > LexoraWeb: Confirm
+LexoraWeb > Backend: Request unpublish
+Backend > Database: Update content status
+Database > Backend: Confirm update
+Backend > LexoraWeb: Return success
+LexoraWeb > Admin: Show content unpublished

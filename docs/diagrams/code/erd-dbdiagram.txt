@@ -64,6 +64,7 @@ Enum assignment_type {
 
 Enum session_type {
   LEARNING
+  EXERCISE
   GAMES
 }
 
@@ -138,7 +139,6 @@ Table subscription_plan {
 Table user {
   id uuid [pk]
   email varchar [unique, not null]
-  password_hash varchar [note: 'null for OAuth-only users']
   name varchar [not null]
   role role [not null]
   avatar_url varchar
