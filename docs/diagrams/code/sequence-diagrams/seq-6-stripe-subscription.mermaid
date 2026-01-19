@@ -1,0 +1,75 @@
+sequenceDiagram
+    title Subscription and Payment Flow
+    actor User
+    participant LexoraWeb as Lexora Web App
+    participant Backend as Next.js Backend
+    participant Database
+    participant PaymentProvider as Payment Provider
+
+    %% View Plans
+    User->>LexoraWeb: Navigate to pricing page
+    LexoraWeb->>Backend: Fetch available plans
+    Backend->>Database: Query subscription plans
+    Database-->>Backend: Return plans with pricing
+    Backend-->>LexoraWeb: Return plan options
+    LexoraWeb-->>User: Display subscription tiers
+
+    %% Select and Pay
+    User->>LexoraWeb: Select plan & Click "Subscribe"
+    
+    alt User not logged in
+        LexoraWeb-->>User: Redirect to login
+        User->>LexoraWeb: Complete login
+        LexoraWeb-->>User: Return to subscription flow
+    end
+    
+    LexoraWeb->>Backend: Request payment session
+    Backend->>PaymentProvider: Create payment session
+    PaymentProvider-->>Backend: Return session details
+    Backend-->>LexoraWeb: Return checkout information
+    LexoraWeb-->>User: Redirect to payment page
+    
+    User->>PaymentProvider: Enter details & Confirm
+    
+    alt Payment successful
+        PaymentProvider->>Backend: Webhook: Payment success
+        Backend->>Database: Create subscription & Update status
+        Database-->>Backend: Confirm updates
+        Backend-->>PaymentProvider: Acknowledge webhook
+        PaymentProvider-->>User: Show success page
+        User->>LexoraWeb: Redirect back to app
+        LexoraWeb-->>User: Show subscription activated
+    else Payment failed
+        PaymentProvider-->>User: Show payment error
+    else Payment cancelled
+        PaymentProvider-->>User: Return to pricing page
+    end
+
+    %% Recurring
+    note right of PaymentProvider: Recurring Payment
+    PaymentProvider->>PaymentProvider: Process recurring charge
+    alt Success
+        PaymentProvider->>Backend: Webhook: Success
+        Backend->>Database: Extend subscription
+        Backend-->>User: Send receipt email
+    else Failed
+        PaymentProvider->>Backend: Webhook: Failed
+        Backend->>Database: Update status
+        Backend-->>User: Request payment method update
+    end
+
+    %% Manage / Cancel
+    User->>LexoraWeb: Open subscription settings
+    LexoraWeb->>Backend: Fetch details
+    Backend->>Database: Query subscription
+    Backend->>PaymentProvider: Fetch billing details
+    Backend-->>LexoraWeb: Return status
+    LexoraWeb-->>User: Display details
+    
+    User->>LexoraWeb: Click "Cancel Subscription" & Confirm
+    LexoraWeb->>Backend: Process cancellation
+    Backend->>PaymentProvider: Cancel subscription
+    PaymentProvider-->>Backend: Confirm cancellation
+    Backend->>Database: Update status to cancelled
+    Backend-->>LexoraWeb: Return confirmation
+    LexoraWeb-->>User: Show access until end of billing period
