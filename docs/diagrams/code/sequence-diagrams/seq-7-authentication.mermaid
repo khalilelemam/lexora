@@ -1,0 +1,96 @@
+sequenceDiagram
+    title Authentication Flows
+    actor User
+    participant LexoraWeb as Lexora Web App
+    participant Backend as Next.js Backend
+    participant AuthService as Auth Service
+    participant GoogleOAuth as Google OAuth
+    participant EmailService as Email Service
+
+    %% FLOW 1: Google OAuth
+    rect rgb(240, 248, 255)
+    note right of User: FLOW 1: Google OAuth Login
+    User->>LexoraWeb: Click "Continue with Google"
+    LexoraWeb->>GoogleOAuth: Redirect to Google sign-in
+    GoogleOAuth-->>User: Display Google account selection
+    User->>GoogleOAuth: Select account and authorize
+    GoogleOAuth-->>LexoraWeb: Redirect with authorization code
+    
+    LexoraWeb->>Backend: Exchange authorization code
+    Backend->>AuthService: Process OAuth callback
+    AuthService->>GoogleOAuth: Exchange code for tokens
+    GoogleOAuth-->>AuthService: Return access token
+    AuthService->>GoogleOAuth: Fetch user profile
+    GoogleOAuth-->>AuthService: Return profile data
+    
+    AuthService->>AuthService: Check if user exists
+    
+    alt Existing user
+        AuthService->>AuthService: Create session
+        AuthService-->>Backend: Return authenticated session
+        Backend-->>LexoraWeb: Return session with user data
+        LexoraWeb-->>User: Redirect to dashboard
+    else New user
+        AuthService->>AuthService: Create user account & session
+        AuthService-->>Backend: Return session (new user flag)
+        Backend-->>LexoraWeb: Return session with onboarding flag
+        LexoraWeb-->>User: Display role selection
+        User->>LexoraWeb: Select role (Guardian/Teacher)
+        LexoraWeb->>Backend: Update user role
+        Backend->>AuthService: Save role
+        Backend-->>LexoraWeb: Confirm role saved
+        LexoraWeb-->>User: Redirect to onboarding
+    end
+    end
+
+    %% FLOW 2: Magic Link
+    rect rgb(255, 250, 240)
+    note right of User: FLOW 2: Magic Link
+    User->>LexoraWeb: Click "Continue with Email"
+    LexoraWeb-->>User: Display email input form
+    User->>LexoraWeb: Enter email & Click "Send Magic Link"
+    
+    LexoraWeb->>Backend: Request magic link
+    Backend->>AuthService: Generate magic link token
+    AuthService->>EmailService: Send magic link email
+    EmailService-->>User: Deliver email with login link
+    AuthService-->>Backend: Confirm email sent
+    Backend-->>LexoraWeb: Return success
+    LexoraWeb-->>User: Show "Check your email" message
+    
+    User->>EmailService: Click magic link in email
+    EmailService->>LexoraWeb: Open magic link URL
+    
+    LexoraWeb->>Backend: Verify magic link token
+    Backend->>AuthService: Validate token
+    
+    alt Token valid
+        AuthService->>AuthService: Invalidate token & Check user exists
+        alt Existing user
+            AuthService-->>Backend: Return authenticated session
+            Backend-->>LexoraWeb: Return session
+            LexoraWeb-->>User: Redirect to dashboard
+        else New user
+            AuthService->>AuthService: Create account & session
+            AuthService-->>Backend: Return session (new user flag)
+            Backend-->>LexoraWeb: Return session
+            LexoraWeb-->>User: Role selection & Onboarding
+        end
+    else Token expired or invalid
+        AuthService-->>Backend: Return token error
+        Backend-->>LexoraWeb: Return error
+        LexoraWeb-->>User: Show link expired message
+    end
+    end
+
+    %% FLOW 3: Logout
+    rect rgb(255, 240, 240)
+    note right of User: FLOW 3: Logout
+    User->>LexoraWeb: Click "Logout"
+    LexoraWeb->>Backend: Request logout
+    Backend->>AuthService: Invalidate session
+    AuthService-->>Backend: Confirm session cleared
+    Backend-->>LexoraWeb: Return success
+    LexoraWeb->>LexoraWeb: Clear local session data
+    LexoraWeb-->>User: Redirect to home page
+    end
