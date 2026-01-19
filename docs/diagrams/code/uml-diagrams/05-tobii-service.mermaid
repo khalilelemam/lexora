@@ -1,0 +1,179 @@
+graph TB
+    %% ========================================
+    %% PART 5: TOBII SERVICE (DESKTOP APP)
+    %% ========================================
+    %% Focus: Desktop app for Tobii eye tracker
+    %% Purpose: Show how hardware integration works
+    %% ========================================
+    
+    subgraph TobiiService["Tobii Service (Desktop Application)"]
+        direction TB
+        
+        subgraph GUILayer["GUI Layer (PyQt5)"]
+            direction TB
+            ServiceManager["Service Manager
+            ---
+            Main Window:
+            • Start/Stop buttons
+            • Status display
+            • System tray icon
+            
+            Controls the service"]
+            
+            Widgets["UI Widgets
+            ---
+            Components:
+            • Status indicator (green/red)
+            • Control buttons
+            • Device info display
+            
+            User interface elements"]
+            
+            Styles["Style Manager
+            ---
+            Styling:
+            • Theme colors
+            • Button styles
+            • Layout settings
+            
+            Visual appearance"]
+        end
+        
+        subgraph APILayer["API Layer (FastAPI)"]
+            direction LR
+            TobiiRouter["Tobii Router
+            ---
+            Endpoints:
+            GET  /status          → Service status
+            GET  /device-info     → Device details
+            POST /start-capture   → Begin recording
+            POST /stop-capture    → Stop recording
+            GET  /gaze-data       → Get collected data
+            DELETE /clear-data    → Clear buffer
+            
+            REST API for control"]
+        end
+        
+        subgraph HardwareLayer["Hardware Interface"]
+            direction TB
+            TobiiServiceCore["Tobii Service
+            ---
+            Core Logic:
+            • Device initialization
+            • Gaze data callback
+            • Data buffering
+            • Subscribe/Unsubscribe
+            
+            Manages eye tracker"]
+            
+            TobiiSDK["Tobii Research SDK
+            ---
+            Python Library:
+            • find_all_eyetrackers()
+            • subscribe_to(GAZE_DATA)
+            • EyeTracker object
+            
+            Hardware interface"]
+        end
+        
+        subgraph DataLayer["Data Layer"]
+            direction LR
+            TobiiGazePoint["GazePoint Model
+            ---
+            Data Structure:
+            • fixation_x: float
+            • fixation_y: float
+            • timestamp: int
+            
+            Pydantic model"]
+            
+            TConfig["Configuration
+            ---
+            Settings:
+            • API host/port
+            • Log level
+            • Device settings
+            
+            App config"]
+        end
+    end
+    
+    subgraph Hardware["Physical Hardware"]
+        EyeTracker["Tobii Eye Tracker
+        ---
+        Device Properties:
+        • Device name
+        • Serial number
+        • Firmware version
+        • Sampling rate (60-120 Hz)
+        
+        Physical eye tracker"]
+    end
+    
+    %% Relationships
+    ServiceManager -->|controls| TobiiRouter
+    ServiceManager -->|uses| Widgets
+    ServiceManager -->|applies| Styles
+    
+    TobiiRouter -->|delegates to| TobiiServiceCore
+    TobiiServiceCore -->|uses| TobiiSDK
+    TobiiServiceCore -->|creates| TobiiGazePoint
+    
+    TobiiSDK -->|reads from| EyeTracker
+    
+    TConfig -->|configures| TobiiRouter
+    TConfig -->|configures| TobiiServiceCore
+    
+    %% Styling
+    classDef desktop fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef gui fill:#e8eaf6,stroke:#3f51b5,stroke-width:1px
+    classDef api fill:#e1f5ff,stroke:#0288d1,stroke-width:1px
+    classDef hardware fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef data fill:#fff9c4,stroke:#f57f17,stroke-width:1px
+    
+    class TobiiService desktop
+    class GUILayer,ServiceManager,Widgets,Styles gui
+    class APILayer,TobiiRouter api
+    class HardwareLayer,TobiiServiceCore,TobiiSDK hardware
+    class DataLayer,TobiiGazePoint,TConfig data
+    class Hardware,EyeTracker hardware
+    
+    %% ========================================
+    %% EXPLANATION
+    %% ========================================
+    %% TOBII SERVICE ARCHITECTURE:
+    %% 
+    %% PURPOSE:
+    %% Desktop app that runs on Windows/Mac/Linux
+    %% Connects to physical Tobii eye tracker
+    %% Provides REST API for gaze data collection
+    %% 
+    %% LAYERS:
+    %% 
+    %% 1. GUI LAYER (PyQt5)
+    %%    → Desktop interface for users
+    %%    → Start/stop service
+    %%    → View device status
+    %% 
+    %% 2. API LAYER (FastAPI)
+    %%    → HTTP endpoints for remote control
+    %%    → Web app calls these endpoints
+    %%    → Stateless REST API
+    %% 
+    %% 3. HARDWARE LAYER
+    %%    → Tobii SDK: Low-level device communication
+    %%    → Service: Business logic and buffering
+    %%    → Callback-based data collection
+    %% 
+    %% 4. DATA LAYER
+    %%    → GazePoint: Data model
+    %%    → Config: Application settings
+    %% 
+    %% WORKFLOW:
+    %% 1. User clicks "Start" in GUI
+    %% 2. Service calls Tobii SDK
+    %% 3. SDK subscribes to eye tracker
+    %% 4. Gaze data flows to callback
+    %% 5. Data buffered in memory
+    %% 6. Web app fetches via API
+    %% 7. Data sent to ML service for analysis

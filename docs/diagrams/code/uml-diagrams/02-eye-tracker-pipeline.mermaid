@@ -1,0 +1,120 @@
+graph TB
+    %% ========================================
+    %% PART 2: EYE TRACKER PREDICTION PIPELINE
+    %% ========================================
+    %% Focus: Tobii eye tracker data processing
+    %% Purpose: Show how professional eye tracker data flows
+    %% ========================================
+    
+    subgraph EyeTrackerPipeline["Eye Tracker Pipeline (High-Precision Hardware)"]
+        direction TB
+        
+        subgraph Input["Input Layer"]
+            RawData["Raw Gaze Data
+            ---
+            From Tobii eye tracker:
+            • 3 reading tasks
+            • Syllables
+            • Pseudo-words
+            • Meaningful text
+            
+            High-precision fixation points"]
+        end
+        
+        subgraph Processing["Feature Processing"]
+            ETFeatures["Feature Processor
+            ---
+            Step 1: Normalize coordinates
+            Step 2: Calculate saccades
+            Step 3: Extract features:
+              • Fixation duration
+              • Saccade amplitude
+              • Reading velocity
+            Step 4: Create sequences
+            Step 5: Apply scaling
+            
+            Transforms raw data → ML features"]
+            
+            ETScaler["StandardScaler
+            ---
+            • Normalizes features
+            • Loaded from scaler.pkl
+            • Trained on reference data
+            
+            Ensures consistent scale"]
+        end
+        
+        subgraph Prediction["Prediction Service"]
+            ETModel["3-Task Neural Network
+            ---
+            Input branches:
+            • Syllables task features
+            • Meaningful text features
+            • Pseudo-words features
+            
+            Output:
+            • Dyslexia probability (0-1)
+            • Confidence score
+            • Risk level (LOW/MED/HIGH)
+            
+            Model: dyslexia-profile-model.h5"]
+        end
+        
+        subgraph Output["Output Layer"]
+            Result["Prediction Result
+            ---
+            • risk_level: 'HIGH'
+            • dyslexia_probability: 0.78
+            • confidence: 0.85
+            • metadata: task details"]
+        end
+    end
+    
+    subgraph Storage["Model Storage"]
+        ETModels["Eye Tracker Models
+        ---
+        Files on disk:
+        • dyslexia-profile-model.h5
+        • scaler.pkl
+        
+        Loaded at startup"]
+    end
+    
+    %% Data flow
+    RawData --> ETFeatures
+    ETFeatures -->|uses| ETScaler
+    ETFeatures --> ETModel
+    ETModel -->|loads from| ETModels
+    ETModel --> Result
+    
+    %% Styling
+    classDef pipeline fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:1px
+    classDef model fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef storage fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class EyeTrackerPipeline pipeline
+    class Input,Processing,Prediction,Output process
+    class ETModel model
+    class Storage,ETModels storage
+    
+    %% ========================================
+    %% EXPLANATION
+    %% ========================================
+    %% EYE TRACKER PIPELINE (Professional Hardware):
+    %% 
+    %% INPUT: High-precision gaze data from Tobii device
+    %% - Tracks exact eye position at 60-120 Hz
+    %% - Very accurate fixation detection
+    %% 
+    %% PROCESSING:
+    %% 1. Feature extraction: Calculate reading metrics
+    %% 2. Scaling: Normalize using pre-trained scaler
+    %% 3. Sequencing: Group into temporal sequences
+    %% 
+    %% PREDICTION:
+    %% - 3-branch neural network
+    %% - Each branch processes one reading task
+    %% - Combines to give final risk assessment
+    %% 
+    %% OUTPUT: Structured prediction with confidence

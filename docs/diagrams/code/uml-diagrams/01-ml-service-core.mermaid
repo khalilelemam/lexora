@@ -1,0 +1,92 @@
+graph TB
+    %% ========================================
+    %% PART 1: ML SERVICE - CORE STRUCTURE
+    %% ========================================
+    %% Focus: API Layer + Core Infrastructure
+    %% Purpose: Show the foundational FastAPI setup
+    %% ========================================
+    
+    subgraph MLService["ML Service (FastAPI Application)"]
+        direction TB
+        
+        subgraph APILayer["API Layer - Entry Points"]
+            direction LR
+            HealthRouter["Health Router
+            ---
+            GET /health
+            
+            Returns service status
+            and model health"]
+            
+            PredictRouter["Predict Router
+            ---
+            POST /v1/eye-tracker/predict
+            POST /v1/webcam/predict
+            
+            Main prediction endpoints"]
+        end
+        
+        subgraph CoreInfra["Core Infrastructure - Cross-Cutting Concerns"]
+            direction LR
+            Middleware["Middleware
+            ---
+            • CORS (cross-origin)
+            • Request logging
+            • Error handling
+            
+            Wraps all requests"]
+            
+            Lifespan["Lifespan Manager
+            ---
+            • Model loading (startup)
+            • Model warmup
+            • Resource cleanup (shutdown)
+            
+            Manages app lifecycle"]
+            
+            ExceptionHandler["Exception Handler
+            ---
+            • Catches all errors
+            • Maps to HTTP codes
+            • Returns JSON errors
+            
+            Global error handling"]
+        end
+        
+        subgraph Configuration["Configuration"]
+            Settings["Settings
+            ---
+            • Model file paths
+            • Risk thresholds
+            • Sequence parameters
+            • Server config (host/port)
+            
+            Environment-based config"]
+        end
+    end
+    
+    %% Relationships
+    Middleware -->|wraps| PredictRouter
+    Middleware -->|wraps| HealthRouter
+    Lifespan -->|loads at startup| Settings
+    Settings -->|provides config to| HealthRouter
+    Settings -->|provides config to| PredictRouter
+    
+    %% Styling
+    classDef mlService fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef component fill:#ffffff,stroke:#666,stroke-width:1px
+    
+    class MLService mlService
+    class APILayer,CoreInfra,Configuration component
+    
+    %% ========================================
+    %% EXPLANATION
+    %% ========================================
+    %% This shows the OUTER SHELL of the ML service:
+    %% 
+    %% 1. API Layer: Where HTTP requests come in
+    %% 2. Core Infrastructure: Cross-cutting concerns (logging, errors, lifecycle)
+    %% 3. Configuration: Settings that control behavior
+    %% 
+    %% REQUEST FLOW:
+    %% Client → Middleware → Router → (prediction logic in next diagram)

@@ -1,0 +1,125 @@
+graph TB
+    %% ========================================
+    %% PART 3: WEBCAM PREDICTION PIPELINE
+    %% ========================================
+    %% Focus: Webcam-based gaze estimation (accessible)
+    %% Purpose: Show low-cost alternative to eye trackers
+    %% ========================================
+    
+    subgraph WebcamPipeline["Webcam Pipeline (Accessible Alternative)"]
+        direction TB
+        
+        subgraph Input["Input Layer"]
+            WebcamData["Raw Webcam Data
+            ---
+            From standard webcam:
+            • Video frames
+            • Face detection
+            • Gaze estimation
+            
+            Lower precision than Tobii
+            but more accessible"]
+        end
+        
+        subgraph Processing["Feature Processing"]
+            WCFeatures["Feature Processor
+            ---
+            Algorithm: I-VT
+            (Identification by Velocity Threshold)
+            
+            Steps:
+            1. Fixation detection
+            2. Signal smoothing (EMA)
+            3. Feature extraction
+            4. Sequence creation
+            
+            Compensates for webcam noise"]
+            
+            WCScaler["StandardScaler
+            ---
+            • Target domain scaling
+            • Loaded from target-domain-scaler.pkl
+            • Adapted for webcam data
+            
+            Bridges domain gap"]
+        end
+        
+        subgraph Prediction["Prediction Service"]
+            WCModel["UDA Classifier
+            ---
+            UDA = Unsupervised Domain Adaptation
+            
+            Why needed:
+            • Webcam ≠ eye tracker data
+            • Model trained on eye tracker
+            • UDA bridges the gap
+            
+            Output:
+            • Dyslexia probability
+            • Risk classification
+            
+            Model: dyslexia-uda-classifier.h5"]
+        end
+        
+        subgraph Output["Output Layer"]
+            Result["Prediction Result
+            ---
+            • risk_level: 'MEDIUM'
+            • dyslexia_probability: 0.62
+            • confidence: 1.0 (default)
+            • metadata: fixation count"]
+        end
+    end
+    
+    subgraph Storage["Model Storage"]
+        WCModels["Webcam Models
+        ---
+        Files on disk:
+        • dyslexia-uda-classifier.h5
+        • target-domain-scaler.pkl
+        
+        Loaded at startup"]
+    end
+    
+    %% Data flow
+    WebcamData --> WCFeatures
+    WCFeatures -->|uses| WCScaler
+    WCFeatures --> WCModel
+    WCModel -->|loads from| WCModels
+    WCModel --> Result
+    
+    %% Styling
+    classDef pipeline fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef process fill:#fff9c4,stroke:#f57f17,stroke-width:1px
+    classDef model fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef storage fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class WebcamPipeline pipeline
+    class Input,Processing,Prediction,Output process
+    class WCModel model
+    class Storage,WCModels storage
+    
+    %% ========================================
+    %% EXPLANATION
+    %% ========================================
+    %% WEBCAM PIPELINE (Accessible Option):
+    %% 
+    %% INPUT: Estimated gaze from webcam
+    %% - Uses computer vision
+    %% - Noisier than eye tracker
+    %% - But accessible (any webcam works)
+    %% 
+    %% PROCESSING:
+    %% - I-VT Algorithm: Separates fixations from saccades
+    %% - Signal smoothing: Reduces webcam noise
+    %% - Domain adaptation: Makes webcam data compatible
+    %% 
+    %% PREDICTION:
+    %% - UDA Model: Bridges eye tracker → webcam domain gap
+    %% - Trained to work with noisier data
+    %% - Still provides reliable risk assessment
+    %% 
+    %% TRADE-OFF:
+    %% ✓ More accessible (no special hardware)
+    %% ✗ Lower precision than Tobii
+    %% ✓ Still clinically useful
