@@ -1,0 +1,66 @@
+sequenceDiagram
+    title Guardian Session Sharing Flow
+    actor Guardian
+    actor Child
+    participant LexoraWeb as Lexora Web App
+    participant Backend as Next.js Backend
+    participant Database
+    participant ChildDevice as Child's Device
+
+    %% Create Session
+    Guardian->>LexoraWeb: Open child's dashboard
+    LexoraWeb->>Backend: Fetch available content
+    Backend->>Database: Query exercises/games
+    Database-->>Backend: Return content list
+    Backend-->>LexoraWeb: Return available content
+    LexoraWeb-->>Guardian: Display content options
+    
+    Guardian->>LexoraWeb: Select content & Click "Create Session"
+    LexoraWeb->>Backend: Request new session
+    Backend->>Backend: Generate unique session code
+    Backend->>Database: Create session record
+    Database-->>Backend: Confirm session created
+    Backend-->>LexoraWeb: Return session details
+    
+    LexoraWeb-->>Guardian: Show Code and Shareable Link
+
+    %% Share
+    alt Share via code
+        Guardian->>Child: Tell child the session code
+    else Share via link
+        Guardian->>Child: Send link via messaging app
+    end
+
+    %% Child Joins
+    Child->>ChildDevice: Open Lexora or click link
+    alt Via session code
+        ChildDevice->>LexoraWeb: Open join page
+        Child->>LexoraWeb: Enter session code
+    else Via direct link
+        ChildDevice->>LexoraWeb: Open session link directly
+    end
+
+    %% Validate
+    LexoraWeb->>Backend: Validate session code/link
+    Backend->>Database: Check session validity
+    Database-->>Backend: Return session details
+    
+    alt Session expired/invalid
+        Backend-->>LexoraWeb: Return error
+        LexoraWeb-->>Child: Show session not found
+    else Valid Session
+        Backend-->>LexoraWeb: Return session content
+        LexoraWeb-->>Child: Launch learning activity
+        Child->>LexoraWeb: Complete activity
+        
+        %% Progress
+        LexoraWeb->>Backend: Report activity progress
+        Backend->>Database: Update session & child record
+        
+        %% Completion
+        Child->>LexoraWeb: Finish activity
+        LexoraWeb->>Backend: Mark session complete
+        Backend->>Database: Save completion record
+        Backend->>Guardian: Send completion notification
+        LexoraWeb-->>Child: Show completion/reward
+    end
