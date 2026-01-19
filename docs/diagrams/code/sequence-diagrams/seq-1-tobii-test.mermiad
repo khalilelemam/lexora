@@ -1,0 +1,67 @@
+sequenceDiagram
+    title Tobii Eye Tracker Screening Test Flow
+    actor Guardian
+    actor Child
+    participant LexoraWeb as Lexora Web App
+    participant TobiiApp as Tobii Service
+    participant Backend as Next.js Backend
+    participant S3 as AWS S3
+    participant MLService as ML Service
+
+    %% Init
+    Guardian->>LexoraWeb: Start Tobii screening
+    LexoraWeb-->>Guardian: Select child
+    Guardian->>LexoraWeb: Select child
+    LexoraWeb->>TobiiApp: Check Tobii service availability
+    TobiiApp-->>LexoraWeb: Return connection status
+    
+    alt Tobii not connected
+        LexoraWeb-->>Guardian: Show error & troubleshooting
+        Guardian->>LexoraWeb: Retry connection
+    end
+
+    %% Calibration
+    LexoraWeb-->>Guardian: Calibration instructions
+    Guardian->>Child: Hand over to child
+    LexoraWeb-->>Child: Display 5-point calibration
+    Child->>LexoraWeb: Follow points
+    TobiiApp-->>LexoraWeb: Report calibration quality
+    
+    alt Calibration failed
+        LexoraWeb-->>Child: Show fail message
+        Child->>LexoraWeb: Retry calibration
+    end
+
+    %% Tasks Loop (Simulated for 1, 2, 3)
+    note right of Child: Task 1: Syllables
+    LexoraWeb-->>Child: Display Task 1
+    LexoraWeb->>TobiiApp: Start gaze streaming
+    TobiiApp-->>LexoraWeb: Stream fixation data (WebSocket)
+    
+    alt Completion
+        LexoraWeb->>LexoraWeb: Detect end OR Child clicks Done
+        LexoraWeb->>TobiiApp: Pause gaze streaming
+    end
+    LexoraWeb->>LexoraWeb: Store Task 1 locally
+    
+    Guardian->>LexoraWeb: Review & Continue (Task 2 & 3 follow similar pattern)
+
+    note right of Child: Task 2: Pseudo-words & Task 3: Meaningful Text
+    %% (Abbreviated for brevity as logic duplicates Task 1)
+    LexoraWeb-->>Child: Complete Tasks 2 & 3
+    
+    %% Data Submission
+    LexoraWeb->>LexoraWeb: Combine all tasks
+    LexoraWeb->>Backend: Submit all fixation data
+    Backend->>S3: Upload raw data
+    S3-->>Backend: Return file reference
+    
+    %% Prediction
+    Backend->>MLService: Request prediction
+    MLService->>MLService: Extract features & Run model
+    MLService-->>Backend: Return result with confidence
+    
+    %% Result
+    Backend->>Backend: Save record
+    Backend-->>LexoraWeb: Return result
+    LexoraWeb-->>Guardian: Display result & recommendations
