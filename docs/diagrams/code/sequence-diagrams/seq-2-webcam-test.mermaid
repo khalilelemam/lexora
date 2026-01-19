@@ -1,0 +1,80 @@
+sequenceDiagram
+    title Webcam-Based Screening Test Flow
+    actor Guardian
+    actor Child
+    participant LexoraWeb as Lexora Web App
+    participant MediaPipe as MediaPipe Gaze Tracker
+    participant Backend as Next.js Backend
+    participant S3 as AWS S3
+    participant MLService as ML Service
+
+    %% Init
+    Guardian->>LexoraWeb: Start webcam screening test
+    LexoraWeb-->>Guardian: Prompt to select child
+    Guardian->>LexoraWeb: Select child profile
+    LexoraWeb->>MediaPipe: Request camera access
+    MediaPipe-->>LexoraWeb: Return camera status
+    
+    alt Camera access denied
+        LexoraWeb-->>Guardian: Show permission instructions
+        Guardian->>LexoraWeb: Grant camera permission
+    end
+    
+    LexoraWeb-->>Guardian: Display setup tips (lighting, position)
+    
+    %% Calibration
+    LexoraWeb-->>Guardian: Calibration instructions
+    Guardian->>Child: Hand over device
+    LexoraWeb-->>Child: Display 5-point calibration
+    Child->>LexoraWeb: Follow calibration points
+    MediaPipe-->>LexoraWeb: Evaluate calibration quality
+    
+    alt Poor calibration
+        LexoraWeb-->>Child: Show warning
+        alt Recalibrate
+            Guardian->>LexoraWeb: Choose recalibrate
+            LexoraWeb-->>Child: Restart calibration
+        else Proceed
+            Guardian->>LexoraWeb: Proceed with warning
+        end
+    end
+
+    %% Reading Task
+    LexoraWeb-->>Child: Display reading paragraph
+    LexoraWeb->>MediaPipe: Start raw gaze data collection
+    MediaPipe-->>LexoraWeb: Stream raw gaze coordinates
+    
+    %% Completion
+    alt Auto-detection
+        LexoraWeb->>LexoraWeb: Detect reading end
+        LexoraWeb->>MediaPipe: Stop gaze collection
+    else Manual
+        Child->>LexoraWeb: Click "I'm Done"
+        LexoraWeb->>MediaPipe: Stop gaze collection
+    end
+
+    %% Review
+    LexoraWeb-->>Guardian: Show task preview
+    alt Guardian clicks Didn't Finish
+        Guardian->>LexoraWeb: Click "Didn't Finish"
+        LexoraWeb->>LexoraWeb: Clear data
+        LexoraWeb-->>Child: Restart task
+    else Confirm
+        Guardian->>LexoraWeb: Confirm task complete
+    end
+    
+    %% Processing
+    LexoraWeb->>Backend: Submit raw gaze data
+    Backend->>MLService: Send raw gaze for processing
+    MLService->>MLService: Convert to fixations & Extract features
+    MLService->>MLService: Run dyslexia profile model
+    MLService-->>Backend: Return fixations & prediction
+    
+    %% Storage
+    Backend->>S3: Upload fixations
+    S3-->>Backend: Return file reference
+    Backend->>Backend: Save test record
+    
+    %% Result
+    Backend-->>LexoraWeb: Return test result
+    LexoraWeb-->>Guardian: Display screening result & accuracy notice
