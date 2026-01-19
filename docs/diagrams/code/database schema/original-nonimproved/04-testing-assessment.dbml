@@ -1,0 +1,93 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 4: TESTING & ASSESSMENT
+// ==============================================
+// Dyslexia screening tests and results (CORE FEATURE)
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum test_mode {
+  TOBII
+  WEBCAM
+}
+
+Enum risk_level {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+Enum task_type {
+  SYLLABLES
+  PSEUDO_WORDS
+  MEANINGFUL_TEXT
+  PARAGRAPH
+}
+
+// ============ REFERENCE TABLES ============
+
+Table child {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Children & Guardians'
+}
+
+Table user {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from User Management'
+}
+
+Table content {
+  id uuid [pk]
+  title varchar [not null]
+  
+  Note: 'Reference only - from Content Library'
+}
+
+// ============ TEST TABLES ============
+
+Table test {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  conducted_by_id uuid [not null, ref: > user.id]
+  test_mode test_mode [not null]
+  risk_level risk_level
+  dyslexia_probability float [note: '0.0-1.0 probability score']
+  confidence float [note: '0.0-1.0 model confidence']
+  fixation_data_url varchar [note: 'S3 URL to raw gaze data']
+  report_url varchar [note: 'Generated PDF report URL']
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Main test record - dyslexia screening results'
+}
+
+Table test_task {
+  id uuid [pk]
+  test_id uuid [not null, ref: > test.id]
+  content_id uuid [not null, ref: > content.id]
+  task_order int [not null, note: '1, 2, 3']
+  task_type task_type [not null]
+
+  indexes {
+    (test_id, task_order) [unique]
+  }
+  
+  Note: 'Each test has 3 tasks: syllables, pseudo-words, meaningful text'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// child → test (one-to-many: child can have multiple tests over time)
+// user → test (one-to-many: tester conducts multiple tests)
+// test → test_task (one-to-many: each test has 3 tasks)
+// content → test_task (one-to-many: reading material used in tasks)
+
+// ============ WORKFLOW ============
+// 1. User creates test for child (test_mode: TOBII or WEBCAM)
+// 2. Child completes 3 reading tasks (syllables, pseudo-words, meaningful text)
+// 3. ML service analyzes gaze data → returns risk_level and probability
+// 4. System stores results and generates PDF report
+// 5. Guardians are notified of results

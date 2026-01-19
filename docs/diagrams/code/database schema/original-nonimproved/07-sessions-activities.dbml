@@ -1,0 +1,98 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 7: SESSIONS & ACTIVITIES
+// ==============================================
+// Learning sessions with mixed activities
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum session_type {
+  LEARNING
+  EXERCISE
+  GAMES
+}
+
+Enum activity_type {
+  GAME
+  READING
+  EXERCISE
+}
+
+// ============ REFERENCE TABLES ============
+
+Table child {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Children & Guardians'
+}
+
+Table user {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from User Management'
+}
+
+Table game {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Core Reference Data'
+}
+
+Table content {
+  id uuid [pk]
+  title varchar [not null]
+  
+  Note: 'Reference only - from Content Library'
+}
+
+Table exercise {
+  id uuid [pk]
+  question text [not null]
+  
+  Note: 'Reference only - from Exercises & Practice'
+}
+
+// ============ SESSION TABLES ============
+
+Table session {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  created_by_id uuid [not null, ref: > user.id]
+  session_type session_type [not null]
+  session_code varchar [unique, not null, note: 'Quick join code like "XYZ789"']
+  expires_at timestamp [not null, note: 'Auto-expire after 24h']
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Time-bound learning sessions with multiple activities'
+}
+
+Table session_activity {
+  id uuid [pk]
+  session_id uuid [not null, ref: > session.id]
+  game_id uuid [ref: > game.id, note: 'If activity_type = GAME']
+  content_id uuid [ref: > content.id, note: 'If activity_type = READING']
+  exercise_id uuid [ref: > exercise.id, note: 'If activity_type = EXERCISE']
+  activity_type activity_type [not null]
+  score float
+  time_spent_seconds int
+  completed_at timestamp [default: `now()`]
+  
+  Note: 'Individual activities within a session'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// child → session (one-to-many: child can have multiple sessions)
+// session → session_activity (one-to-many: session contains multiple activities)
+// session_activity → game/content/exercise (polymorphic based on activity_type)
+
+// ============ WORKFLOW ============
+// 1. Parent/teacher creates session for child
+// 2. System generates unique session_code
+// 3. Child joins session using code
+// 4. Child completes activities in sequence (games, reading, exercises)
+// 5. Each activity tracked individually in session_activity
+// 6. Session expires after 24 hours

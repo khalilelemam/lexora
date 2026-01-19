@@ -1,0 +1,71 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 5: CLASSROOM MANAGEMENT
+// ==============================================
+// Teacher classrooms and student enrollments
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ REFERENCE TABLES ============
+
+Table user {
+  id uuid [pk]
+  name varchar [not null]
+  role varchar [note: 'TEACHER']
+  
+  Note: 'Reference only - from User Management'
+}
+
+Table language {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Core Reference Data'
+}
+
+Table child {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Children & Guardians'
+}
+
+// ============ CLASSROOM TABLES ============
+
+Table classroom {
+  id uuid [pk]
+  teacher_id uuid [not null, ref: > user.id]
+  language_id uuid [not null, ref: > language.id]
+  name varchar [not null, note: 'e.g., "3rd Grade Reading - Room 204"']
+  join_code varchar [unique, not null, note: 'e.g., "ABC123" - for easy enrollment']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Virtual classrooms created by teachers'
+}
+
+Table classroom_enrollment {
+  id uuid [pk]
+  classroom_id uuid [not null, ref: > classroom.id]
+  child_id uuid [not null, ref: > child.id]
+  enrolled_at timestamp [default: `now()`]
+  unenrolled_at timestamp [note: 'null = still enrolled']
+
+  indexes {
+    (classroom_id, child_id) [unique]
+  }
+  
+  Note: 'Students enrolled in classrooms - many-to-many relationship'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// user (teacher) → classroom (one-to-many: teacher can have multiple classrooms)
+// classroom → classroom_enrollment ← child (many-to-many junction)
+// language → classroom (one-to-many: classroom has one teaching language)
+
+// ============ JOIN CODE WORKFLOW ============
+// 1. Teacher creates classroom → system generates unique join_code (e.g., "ABC123")
+// 2. Teacher shares join_code with parents
+// 3. Parent uses join_code to enroll their child
+// 4. Child appears in teacher's classroom roster
+// 5. Teacher becomes child's guardian automatically (with limited permissions)

@@ -1,0 +1,69 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 8: GAME PROGRESS
+// ==============================================
+// Educational games and progress tracking
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ REFERENCE TABLES ============
+
+Table game {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  description text
+  max_levels int
+  is_active boolean [default: true]
+  
+  Note: 'Educational games catalog - from Core Reference Data'
+}
+
+Table child {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Children & Guardians'
+}
+
+// ============ GAME PROGRESS TABLE ============
+
+Table game_progress {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  game_id uuid [not null, ref: > game.id]
+  current_level int [default: 1, note: 'Current progress level']
+  total_score int [default: 0, note: 'Cumulative score']
+  accuracy_rate float [note: '0.0-1.0']
+  total_time_seconds int [default: 0]
+  last_played_at timestamp
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (child_id, game_id) [unique]
+  }
+  
+  Note: 'Tracks overall progress per child per game - one record per child-game pair'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// child → game_progress ← game (many-to-many junction with progress data)
+// One child can have progress in multiple games
+// One game can have progress records from multiple children
+
+// ============ WORKFLOW ============
+// 1. Child starts playing a game → creates game_progress record
+// 2. As child plays, record updates:
+//    - current_level increases when levels completed
+//    - total_score accumulates
+//    - accuracy_rate calculated from performance
+//    - total_time_seconds tracks total playtime
+// 3. Parent/teacher can view progress to see:
+//    - Which games child has played
+//    - How far they've progressed
+//    - Performance metrics (accuracy, time)
+
+// ============ EXAMPLE GAMES ============
+// - MEMORY_MATCH: Match pairs of words/images
+// - WORD_BUILDER: Build words from letters
+// - PHONICS_FARM: Learn letter sounds
+// - READING_RACE: Speed reading comprehension

@@ -1,0 +1,101 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 2: USER MANAGEMENT
+// ==============================================
+// Users, subscriptions, notifications, preferences
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum role {
+  PARENT
+  TEACHER
+  ADMIN
+}
+
+Enum subscription_status {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  EXPIRED
+}
+
+Enum notification_type {
+  TEST_RESULT
+  ASSIGNMENT
+  ENROLLMENT
+  WEEKLY_SUMMARY
+  CLAIM_REQUEST
+}
+
+// ============ REFERENCE TABLES (from Domain 1) ============
+
+Table subscription_plan {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  price decimal
+  
+  Note: 'Reference only - defined in Core Reference Data'
+}
+
+// ============ USER TABLES ============
+
+Table user {
+  id uuid [pk]
+  email varchar [unique, not null]
+  name varchar [not null]
+  role role [not null]
+  avatar_url varchar
+  email_verified boolean [default: false]
+  is_suspended boolean [default: false]
+  stripe_customer_id varchar
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  Note: 'User accounts - parents, teachers, admins'
+}
+
+Table user_subscription {
+  id uuid [pk]
+  user_id uuid [not null, ref: > user.id]
+  plan_id uuid [not null, ref: > subscription_plan.id]
+  stripe_subscription_id varchar [unique]
+  status subscription_status [not null]
+  started_at timestamp [not null]
+  current_period_end timestamp
+  cancelled_at timestamp
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Billing subscriptions linked to Stripe'
+}
+
+Table notification {
+  id uuid [pk]
+  user_id uuid [not null, ref: > user.id]
+  title varchar [not null]
+  message text
+  notification_type notification_type [not null]
+  is_read boolean [default: false]
+  action_url varchar
+  created_at timestamp [default: `now()`]
+  
+  Note: 'In-app notifications for users'
+}
+
+Table notification_preference {
+  id uuid [pk]
+  user_id uuid [unique, not null, ref: - user.id]
+  test_results boolean [default: true]
+  weekly_summary boolean [default: true]
+  assignment_notifications boolean [default: true]
+  inactivity_alerts boolean [default: true]
+  
+  Note: 'User notification settings - one per user'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// user → user_subscription (one-to-many)
+// user → notification (one-to-many)
+// user ↔ notification_preference (one-to-one)
+// subscription_plan → user_subscription (one-to-many)

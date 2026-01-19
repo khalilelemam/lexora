@@ -1,0 +1,103 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 6: ASSIGNMENTS & LEARNING
+// ==============================================
+// Teacher assignments and student submissions
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum assignment_type {
+  GAME
+  READING
+  EXERCISE
+}
+
+// ============ REFERENCE TABLES ============
+
+Table classroom {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Classroom Management'
+}
+
+Table user {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from User Management (teacher)'
+}
+
+Table child {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Children & Guardians'
+}
+
+Table game {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Core Reference Data'
+}
+
+Table content {
+  id uuid [pk]
+  title varchar [not null]
+  
+  Note: 'Reference only - from Content Library'
+}
+
+Table exercise_type {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Core Reference Data'
+}
+
+// ============ ASSIGNMENT TABLES ============
+
+Table assignment {
+  id uuid [pk]
+  classroom_id uuid [not null, ref: > classroom.id]
+  teacher_id uuid [not null, ref: > user.id]
+  assignment_type assignment_type [not null]
+  game_id uuid [ref: > game.id, note: 'If type = GAME']
+  content_id uuid [ref: > content.id, note: 'If type = READING']
+  exercise_type_id uuid [ref: > exercise_type.id, note: 'If type = EXERCISE']
+  title varchar [not null]
+  description text
+  due_date timestamp
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Homework/activities assigned by teacher to classroom'
+}
+
+Table assignment_completion {
+  id uuid [pk]
+  assignment_id uuid [not null, ref: > assignment.id]
+  child_id uuid [not null, ref: > child.id]
+  completed_at timestamp [default: `now()`]
+  score float [note: '0-100']
+  time_spent_seconds int
+
+  indexes {
+    (assignment_id, child_id) [unique]
+  }
+  
+  Note: 'Student work submitted for assignments'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// classroom → assignment (one-to-many: classroom has many assignments)
+// assignment → assignment_completion ← child (many-to-many junction)
+// assignment → game/content/exercise_type (polymorphic - depends on assignment_type)
+
+// ============ WORKFLOW ============
+// 1. Teacher creates assignment for classroom (picks type: GAME/READING/EXERCISE)
+// 2. All students in classroom see the assignment
+// 3. Student completes assignment → creates assignment_completion record
+// 4. Teacher reviews submissions and scores
+// 5. Parents see child's completion status and scores

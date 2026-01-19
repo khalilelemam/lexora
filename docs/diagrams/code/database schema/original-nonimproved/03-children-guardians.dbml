@@ -1,0 +1,118 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 3: CHILDREN & GUARDIANS
+// ==============================================
+// Child profiles, guardian relationships, claim requests
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum relationship_type {
+  PARENT
+  TEACHER
+}
+
+Enum claim_request_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+Enum font_family {
+  OPEN_DYSLEXIC
+  ARIAL
+  COMIC_SANS
+}
+
+// ============ REFERENCE TABLES ============
+
+Table language {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Core Reference Data'
+}
+
+Table user {
+  id uuid [pk]
+  email varchar [unique, not null]
+  name varchar [not null]
+  
+  Note: 'Reference only - from User Management'
+}
+
+Table classroom {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Classroom Management'
+}
+
+// ============ CHILD TABLES ============
+
+Table child {
+  id uuid [pk]
+  language_id uuid [not null, ref: > language.id]
+  name varchar [not null]
+  age int [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  
+  Note: 'Child profiles managed by guardians'
+}
+
+Table child_guardian {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  user_id uuid [not null, ref: > user.id]
+  relationship_type relationship_type [not null]
+  is_primary boolean [default: false]
+  claimed_at timestamp
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (child_id, user_id) [unique]
+  }
+  
+  Note: 'Many-to-many: children can have multiple guardians (parents + teachers)'
+}
+
+Table claim_request {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  requesting_user_id uuid [not null, ref: > user.id]
+  classroom_id uuid [not null, ref: > classroom.id]
+  status claim_request_status [not null, default: 'PENDING']
+  parent_national_id varchar
+  parent_phone varchar
+  relationship_notes text
+  rejection_reason text
+  resolved_by_id uuid [ref: > user.id]
+  resolved_at timestamp
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (child_id, requesting_user_id) [unique]
+  }
+  
+  Note: 'Parents request to claim teacher-created children'
+}
+
+Table reading_preference {
+  id uuid [pk]
+  child_id uuid [unique, not null, ref: - child.id]
+  font_family font_family [default: 'ARIAL']
+  letter_spacing_em float [default: 0]
+  background_color_hex varchar [default: '#FFFFFF']
+  text_size_px int [default: 18]
+  audio_speed float [default: 1.0]
+  
+  Note: 'Personalized reading settings per child - one-to-one'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// child → child_guardian ← user (many-to-many junction)
+// child → claim_request (one-to-many)
+// child ↔ reading_preference (one-to-one)
+// language → child (one-to-many)
