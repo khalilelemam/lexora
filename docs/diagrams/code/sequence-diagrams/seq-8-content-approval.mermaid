@@ -1,0 +1,100 @@
+sequenceDiagram
+    title AI Content Generation and Approval Flow
+    actor CronJob as Cron Job Scheduler
+    actor Admin
+    participant LexoraWeb as Lexora Web App
+    participant Backend as Next.js Backend
+    participant LLMService as LLM API Service
+    participant Database
+
+    %% AUTOMATIC CONTENT GENERATION
+    rect rgb(240, 248, 255)
+    note right of CronJob: AUTOMATIC CONTENT GENERATION
+    CronJob->>Backend: Trigger weekly content generation
+    Backend->>Database: Check content inventory per language
+    Database-->>Backend: Return content counts by type/difficulty
+    
+    Backend->>Backend: Determine content gaps to fill
+    Backend->>LLMService: Request batch content generation
+    LLMService->>LLMService: Generate reading paragraphs
+    LLMService->>LLMService: Generate exercise questions
+    LLMService->>LLMService: Generate game word lists
+    LLMService-->>Backend: Return generated content batch
+    
+    Backend->>Database: Save all content as pending approval
+    Database-->>Backend: Confirm content saved
+    Backend->>Backend: Log generation results
+    end
+
+    %% ADMIN CONTENT REVIEW
+    rect rgb(255, 245, 238)
+    note right of CronJob: ADMIN CONTENT REVIEW
+    Admin->>LexoraWeb: Open content review queue
+    LexoraWeb->>Backend: Fetch pending content
+    Backend->>Database: Query content awaiting review
+    Database-->>Backend: Return pending items
+    Backend-->>LexoraWeb: Return review queue
+    LexoraWeb-->>Admin: Display pending content list
+    
+    Admin->>LexoraWeb: Select content to review
+    LexoraWeb->>Backend: Fetch content details
+    Backend->>Database: Query full content record
+    Database-->>Backend: Return content with metadata
+    Backend-->>LexoraWeb: Return content details
+    LexoraWeb-->>Admin: Display content preview
+    
+    Admin->>LexoraWeb: Check dyslexia-friendliness criteria
+    
+    alt Edit content manually
+        Admin->>LexoraWeb: Click "Edit"
+        LexoraWeb-->>Admin: Display content editor
+        Admin->>LexoraWeb: Make manual adjustments & Save
+        LexoraWeb->>Backend: Update content
+        Backend->>Database: Save edited content
+        Backend-->>LexoraWeb: Confirm saved
+    end
+    end
+
+    %% APPROVAL/REJECTION
+    rect rgb(240, 255, 240)
+    alt Approve content
+        Admin->>LexoraWeb: Click "Approve"
+        LexoraWeb->>Backend: Submit approval
+        Backend->>Database: Update status to active
+        Database-->>Backend: Confirm update
+        Backend-->>LexoraWeb: Return success
+        LexoraWeb-->>Admin: Show content approved
+    else Reject content
+        Admin->>LexoraWeb: Click "Reject"
+        LexoraWeb->>Backend: Submit rejection
+        Backend->>Database: Delete rejected content
+        Database-->>Backend: Confirm deletion
+        Backend-->>LexoraWeb: Return success
+        LexoraWeb-->>Admin: Show content rejected
+    end
+    end
+    
+    %% CONTENT MANAGEMENT
+    rect rgb(250, 250, 250)
+    note right of CronJob: CONTENT MANAGEMENT
+    Admin->>LexoraWeb: Navigate to approved content
+    LexoraWeb->>Backend: Fetch approved content
+    Backend->>Database: Query approved items
+    Database-->>Backend: Return list
+    Backend-->>LexoraWeb: Return content list
+    
+    %% Edit existing
+    Admin->>LexoraWeb: Edit existing content & Save
+    LexoraWeb->>Backend: Submit updates
+    Backend->>Database: Update content record
+    Database-->>Backend: Confirm update
+    Backend-->>LexoraWeb: Return success
+    
+    %% Unpublish
+    Admin->>LexoraWeb: Click "Unpublish" & Confirm
+    LexoraWeb->>Backend: Request unpublish
+    Backend->>Database: Update content status
+    Database-->>Backend: Confirm update
+    Backend-->>LexoraWeb: Return success
+    LexoraWeb-->>Admin: Show content unpublished
+    end
