@@ -1,0 +1,90 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 1: CORE REFERENCE DATA
+// ==============================================
+// Lookup tables used throughout the system
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum role {
+  PARENT
+  TEACHER
+  ADMIN
+}
+
+Enum subscription_status {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  EXPIRED
+}
+
+Enum font_family {
+  OPEN_DYSLEXIC
+  ARIAL
+  COMIC_SANS
+}
+
+// ============ LOOKUP TABLES ============
+
+Table language {
+  id uuid [pk]
+  code varchar [unique, not null, note: 'ISO 639-1: en, ar, etc.']
+  name varchar [not null]
+  
+  Note: 'Supported languages for content and UI'
+}
+
+Table subscription_plan {
+  id uuid [pk]
+  code varchar [unique, not null, note: 'FREE, BASIC, PREMIUM']
+  name varchar [not null]
+  price decimal
+  currency varchar [default: 'SAR']
+  test_limit_per_month int [note: 'null = unlimited']
+  has_advanced_analytics boolean
+  has_full_content_access boolean
+  
+  Note: 'Available subscription tiers and features'
+}
+
+Table game {
+  id uuid [pk]
+  code varchar [unique, not null, note: 'MEMORY_MATCH, WORD_BUILDER']
+  name varchar [not null]
+  description text
+  max_levels int
+  is_active boolean [default: true]
+  
+  Note: 'Educational games catalog'
+}
+
+Table content_type {
+  id uuid [pk]
+  code varchar [unique, not null, note: 'STORY, ARTICLE, POEM']
+  name varchar [not null]
+  description text
+  
+  Note: 'Types of reading materials'
+}
+
+Table content_category {
+  id uuid [pk]
+  name varchar [unique, not null, note: 'ANIMALS, SCIENCE, HISTORY']
+  description text
+  
+  Note: 'Categories for organizing content'
+}
+
+Table exercise_type {
+  id uuid [pk]
+  code varchar [unique, not null, note: 'PHONICS, COMPREHENSION, VOCABULARY']
+  name varchar [not null]
+  description text
+  
+  Note: 'Types of practice exercises'
+}
+
+// ============ RELATIONSHIPS ============
+// These tables are referenced by other domains but don't reference anything themselves
