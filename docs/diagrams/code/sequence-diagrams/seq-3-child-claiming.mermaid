@@ -1,0 +1,63 @@
+sequenceDiagram
+    title Child Claiming Process
+    actor Guardian
+    participant LexoraWeb as Lexora Web App
+    participant Backend as Next.js Backend
+    participant Database
+    actor Teacher
+
+    %% Search
+    Guardian->>LexoraWeb: Navigate to claim child & Search
+    LexoraWeb->>Backend: Search for matching students
+    Backend->>Database: Query matching students
+    Database-->>Backend: Return list
+    Backend-->>LexoraWeb: Return search results
+    
+    alt No matches found
+        LexoraWeb-->>Guardian: Show no results / suggestions
+    end
+
+    %% Submit Claim
+    LexoraWeb-->>Guardian: Display matching children
+    Guardian->>LexoraWeb: Select child & Enter verification
+    LexoraWeb->>Backend: Submit claim request
+    Backend->>Backend: Validate details
+    Backend->>Database: Create pending claim request
+    Database-->>Backend: Confirm created
+    
+    Backend->>Teacher: Send claim notification email
+    Backend-->>LexoraWeb: Return confirmation
+    LexoraWeb-->>Guardian: Show claim pending approval
+
+    %% Teacher Review
+    Teacher->>LexoraWeb: Open pending claims dashboard
+    LexoraWeb->>Backend: Fetch pending claims
+    Backend->>Database: Query pending claims
+    Database-->>Backend: Return pending claims
+    Backend-->>LexoraWeb: Return claims list
+    LexoraWeb-->>Teacher: Display pending claims
+    
+    Teacher->>LexoraWeb: Review claim details
+    
+    alt Approve claim
+        Teacher->>LexoraWeb: Click approve
+        LexoraWeb->>Backend: Approve claim request
+        Backend->>Database: Link guardian to child & mark approved
+        Database-->>Backend: Confirm update
+        Backend->>Guardian: Send approval email
+        LexoraWeb-->>Teacher: Show claim approved
+    else Reject claim
+        Teacher->>LexoraWeb: Click reject & Enter reason
+        LexoraWeb->>Backend: Reject claim request
+        Backend->>Database: Mark rejected with reason
+        Database-->>Backend: Confirm update
+        Backend->>Guardian: Send rejection email
+        LexoraWeb-->>Teacher: Show claim rejected
+    end
+
+    %% Result
+    Guardian->>LexoraWeb: Open notifications
+    LexoraWeb-->>Guardian: Display claim result
+    alt Claim approved
+        LexoraWeb-->>Guardian: Show child added to dashboard
+    end
