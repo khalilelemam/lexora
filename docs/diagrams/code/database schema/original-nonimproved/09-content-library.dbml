@@ -1,0 +1,107 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 9: CONTENT LIBRARY
+// ==============================================
+// Reading materials with categorization
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum content_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============ REFERENCE TABLES ============
+
+Table language {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Core Reference Data'
+}
+
+Table user {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from User Management (for approval)'
+}
+
+// ============ CONTENT LOOKUP TABLES ============
+
+Table content_type {
+  id uuid [pk]
+  code varchar [unique, not null, note: 'STORY, ARTICLE, POEM']
+  name varchar [not null]
+  description text
+  
+  Note: 'Types of reading content'
+}
+
+Table content_category {
+  id uuid [pk]
+  name varchar [unique, not null, note: 'ANIMALS, SCIENCE, HISTORY']
+  description text
+  
+  Note: 'Categories for organizing content'
+}
+
+// ============ CONTENT TABLES ============
+
+Table content {
+  id uuid [pk]
+  content_type_id uuid [not null, ref: > content_type.id]
+  language_id uuid [not null, ref: > language.id]
+  approved_by_id uuid [ref: > user.id, note: 'Admin who approved']
+  title varchar [not null]
+  body text [not null, note: 'The actual reading material']
+  difficulty_level int [note: '1-5 scale']
+  min_age int [note: 'Minimum recommended age']
+  max_age int [note: 'Maximum recommended age']
+  status content_status [default: 'PENDING']
+  created_at timestamp [default: `now()`]
+  approved_at timestamp
+  
+  Note: 'Reading materials (stories, articles, poems)'
+}
+
+Table content_category_mapping {
+  id uuid [pk]
+  content_id uuid [not null, ref: > content.id]
+  category_id uuid [not null, ref: > content_category.id]
+
+  indexes {
+    (content_id, category_id) [unique]
+  }
+  
+  Note: 'Many-to-many: one content can have multiple categories'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// content_type → content (one-to-many: type has many content items)
+// language → content (one-to-many: language has many content items)
+// content → content_category_mapping ← content_category (many-to-many)
+
+// ============ WORKFLOW ============
+// 1. Admin/teacher creates new content → status = PENDING
+// 2. Admin reviews and approves → status = APPROVED, approved_at set
+// 3. Approved content appears in library for children
+// 4. Content filtered by:
+//    - Language (matches child's primary language)
+//    - Difficulty level (1-5)
+//    - Age range (min_age to max_age)
+//    - Categories (ANIMALS, SCIENCE, etc.)
+// 5. Child reads content → tracked in session_activity or reading history
+
+// ============ EXAMPLE CONTENT ============
+// Type: STORY, Category: ANIMALS, Difficulty: 2
+// "The Little Fox's Adventure" - age 6-8
+
+// Type: ARTICLE, Category: SCIENCE, Difficulty: 4
+// "How Plants Grow" - age 10-12
+
+// Type: POEM, Category: NATURE, Difficulty: 3
+// "Seasons of the Year" - age 8-10

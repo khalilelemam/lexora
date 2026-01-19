@@ -1,0 +1,117 @@
+// ==============================================
+// LEXORA DATABASE - DOMAIN 10: EXERCISES & PRACTICE
+// ==============================================
+// Practice exercises with progress tracking
+// Copy this to https://dbdiagram.io/d
+// ==============================================
+
+// ============ ENUMS ============
+
+Enum content_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============ REFERENCE TABLES ============
+
+Table language {
+  id uuid [pk]
+  code varchar [unique, not null]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Core Reference Data'
+}
+
+Table user {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from User Management (for approval)'
+}
+
+Table child {
+  id uuid [pk]
+  name varchar [not null]
+  
+  Note: 'Reference only - from Children & Guardians'
+}
+
+// ============ EXERCISE LOOKUP TABLE ============
+
+Table exercise_type {
+  id uuid [pk]
+  code varchar [unique, not null, note: 'PHONICS, COMPREHENSION, VOCABULARY']
+  name varchar [not null]
+  description text
+  
+  Note: 'Categories of exercises'
+}
+
+// ============ EXERCISE TABLES ============
+
+Table exercise {
+  id uuid [pk]
+  exercise_type_id uuid [not null, ref: > exercise_type.id]
+  language_id uuid [not null, ref: > language.id]
+  approved_by_id uuid [ref: > user.id]
+  question text [not null]
+  correct_answer varchar [not null]
+  options_json text [note: 'JSON array for multiple choice options']
+  difficulty_level int [note: '1-5 scale']
+  status content_status [default: 'PENDING']
+  created_at timestamp [default: `now()`]
+  
+  Note: 'Practice questions/exercises'
+}
+
+Table exercise_progress {
+  id uuid [pk]
+  child_id uuid [not null, ref: > child.id]
+  exercise_type_id uuid [not null, ref: > exercise_type.id]
+  total_attempts int [default: 0]
+  correct_attempts int [default: 0]
+  accuracy_rate float [note: 'correct_attempts / total_attempts']
+  last_attempted_at timestamp
+
+  indexes {
+    (child_id, exercise_type_id) [unique]
+  }
+  
+  Note: 'Aggregate progress per child per exercise type'
+}
+
+// ============ KEY RELATIONSHIPS ============
+// exercise_type → exercise (one-to-many: type has many exercises)
+// child → exercise_progress ← exercise_type (many-to-many junction with stats)
+
+// ============ WORKFLOW ============
+// 1. Admin creates exercises → status = PENDING
+// 2. Admin approves → status = APPROVED
+// 3. Child attempts exercise:
+//    - Answer checked against correct_answer
+//    - exercise_progress updated:
+//      * total_attempts incremented
+//      * correct_attempts incremented if correct
+//      * accuracy_rate recalculated
+// 4. Teachers/parents view progress to see:
+//    - Which exercise types child has practiced
+//    - Accuracy rates per type
+//    - Areas needing more practice
+
+// ============ EXAMPLE EXERCISES ============
+
+// Type: PHONICS, Difficulty: 1
+// Q: "What sound does 'B' make?"
+// Options: ["buh", "puh", "duh"]
+// Correct: "buh"
+
+// Type: COMPREHENSION, Difficulty: 3
+// Q: "The cat sat on the mat. Where was the cat?"
+// Options: ["on the mat", "under the mat", "near the mat"]
+// Correct: "on the mat"
+
+// Type: VOCABULARY, Difficulty: 4
+// Q: "What does 'enormous' mean?"
+// Options: ["very small", "very large", "very fast"]
+// Correct: "very large"
