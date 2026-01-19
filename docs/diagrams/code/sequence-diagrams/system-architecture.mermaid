@@ -1,0 +1,102 @@
+graph TB
+    %% Styles for Layers
+    classDef clientLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef appLayer fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef dataLayer fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef extLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    classDef cicdLayer fill:#f5f5f5,stroke:#616161,stroke-width:2px;
+
+    %% LAYER 1: CLIENT LAYER
+    subgraph Client_Layer [Client Layer]
+        direction TB
+        subgraph Web_Browser [Web Browser Next.js]
+            Guardian_Dashboard[Guardian Dashboard]
+            Child_Interface[Child Interface]
+            Admin_Interface[Admin Interface]
+        end
+        Tobii_Helper[Tobii Helper Desktop App]
+        Tobii_Hardware[Tobii Eye Tracker Hardware]
+    end
+
+    %% LAYER 2: APPLICATION LAYER
+    subgraph Application_Layer [Application Layer]
+        direction TB
+        subgraph Next_Backend [Next.js Backend]
+            Auth[Authentication OAuth 2.0]
+            REST_API[REST API Endpoints]
+            Biz_Logic[Business Logic]
+        end
+        subgraph ML_Service [ML Prediction Service FastAPI]
+            Eye_Track_Pred[Eye Tracker Prediction 3-task]
+            Webcam_Pred[Webcam Prediction 1-task]
+            TF_Models[TensorFlow/Keras Models]
+            Docker_Cont[Dockerized]
+        end
+    end
+
+    %% LAYER 3: DATA LAYER
+    subgraph Data_Layer [Data Layer]
+        Postgres[PostgreSQL Prisma ORM]
+        subgraph S3 [S3-Compatible Object Storage]
+            Fixation_Data[Fixation Data]
+            PDF_Reports[PDF Reports]
+        end
+    end
+
+    %% LAYER 4: EXTERNAL SERVICES
+    subgraph External_Services [External Services]
+        Google_OAuth[Google OAuth]
+        Stripe_Clerk[Stripe/Clerk]
+        LLM_API[LLM API OpenAI/Gemini]
+        TTS_API[Text-to-Speech API]
+    end
+
+    %% LAYER 5: CI/CD & DEPLOYMENT
+    subgraph CICD_Deployment [CI/CD & Deployment]
+        GitHub_Repo[GitHub Repo]
+        subgraph GitHub_Actions [GitHub Actions]
+            ML_Workflow[ML Service Build/Test/Push]
+            Tobii_Workflow[Tobii Helper Build/Release]
+        end
+        subgraph Deployment_Targets [Deployment Targets]
+            Vercel[Vercel Frontend/Backend]
+            Cloud_Deploy[Cloud Provider ML Service]
+            GHCR[GitHub Container Registry]
+            GH_Releases[GitHub Releases]
+        end
+    end
+
+    %% Apply Styles
+    class Client_Layer clientLayer
+    class Application_Layer appLayer
+    class Data_Layer dataLayer
+    class External_Services extLayer
+    class CICD_Deployment cicdLayer
+
+    %% CONNECTIONS
+    %% Client <-> App
+    Web_Browser <-->|HTTPS REST API| Next_Backend
+    Web_Browser <-->|WebSocket localhost| Tobii_Helper
+
+    %% Tobii Connection
+    Tobii_Helper -->|USB/SDK| Tobii_Hardware
+
+    %% App <-> ML
+    Next_Backend -->|HTTPS REST Docker| ML_Service
+
+    %% App <-> Data
+    Next_Backend <-->|Prisma ORM Encrypted| Postgres
+    Next_Backend <-->|AWS SDK Encrypted| S3
+
+    %% App <-> External
+    Auth -->|OAuth 2.0 HTTPS| Google_OAuth
+    Next_Backend -->|Payments/Subscriptions HTTPS| Stripe_Clerk
+    Next_Backend -->|Content Generation HTTPS| LLM_API
+    Next_Backend -->|Text-to-Speech HTTPS| TTS_API
+
+    %% CI/CD Connections
+    GitHub_Repo -->|Trigger| GitHub_Actions
+    ML_Workflow -->|Push Docker Image| GHCR
+    Tobii_Workflow -->|Upload Binaries| GH_Releases
+    GitHub_Actions -->|Deploy Frontend/Backend| Vercel
+    GitHub_Actions -->|Deploy ML Service| Cloud_Deploy
