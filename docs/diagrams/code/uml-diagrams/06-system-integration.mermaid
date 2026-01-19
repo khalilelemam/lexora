@@ -1,0 +1,180 @@
+graph TB
+    %% ========================================
+    %% PART 6: COMPLETE SYSTEM INTEGRATION
+    %% ========================================
+    %% Focus: How all parts work together
+    %% Purpose: End-to-end system view
+    %% ========================================
+    
+    subgraph Users["👥 Users"]
+        direction LR
+        Teacher["Teacher/Parent
+        ---
+        Uses web browser"]
+        Child["Child
+        ---
+        Takes reading test"]
+    end
+    
+    subgraph ClientApps["🖥️ Client Applications"]
+        direction TB
+        WebApp["Web Application
+        ---
+        • Reading tasks UI
+        • Test administration
+        • Results display
+        • Dashboard"]
+        
+        DesktopApp["Desktop Client
+        (Optional)
+        ---
+        • Offline mode
+        • Local processing"]
+    end
+    
+    subgraph TobiiDesktop["💻 Tobii Desktop Service"]
+        direction TB
+        TobiiGUI["GUI Application
+        ---
+        • Start/stop service
+        • Device management"]
+        
+        TobiiAPI["REST API
+        ---
+        • Capture control
+        • Data retrieval"]
+    end
+    
+    subgraph MLServer["🧠 ML Service (Cloud/Server)"]
+        direction TB
+        PredictAPI["Prediction API
+        ---
+        • Eye tracker endpoint
+        • Webcam endpoint"]
+        
+        ETModel["Eye Tracker
+        Pipeline"]
+        
+        WCModel["Webcam
+        Pipeline"]
+    end
+    
+    subgraph Hardware["🔌 Physical Hardware"]
+        direction LR
+        TobiiDevice["Tobii Eye Tracker
+        ---
+        High-precision
+        Professional device"]
+        
+        WebcamDevice["Standard Webcam
+        ---
+        Consumer-grade
+        Accessible option"]
+    end
+    
+    subgraph Storage["💾 Storage"]
+        direction TB
+        ModelFiles["ML Models
+        ---
+        • Neural networks (.h5)
+        • Scalers (.pkl)"]
+        
+        Database["Database
+        ---
+        • Test results
+        • User data
+        • History"]
+    end
+    
+    %% User interactions
+    Teacher -->|administers test| WebApp
+    Child -->|performs reading tasks| WebApp
+    
+    %% Hardware connections
+    TobiiDevice -->|USB| TobiiDesktop
+    WebcamDevice -->|USB| WebApp
+    
+    %% Service connections
+    WebApp -->|HTTP| TobiiAPI
+    WebApp -->|HTTP| PredictAPI
+    DesktopApp -->|HTTP| TobiiAPI
+    DesktopApp -->|HTTP| PredictAPI
+    
+    TobiiAPI -->|gaze data| PredictAPI
+    
+    %% Internal service connections
+    PredictAPI -->|if eye tracker| ETModel
+    PredictAPI -->|if webcam| WCModel
+    
+    ETModel -->|loads| ModelFiles
+    WCModel -->|loads| ModelFiles
+    
+    PredictAPI -->|saves results| Database
+    
+    %% Response flow
+    PredictAPI -.->|prediction results| WebApp
+    WebApp -.->|displays results| Teacher
+    
+    %% Styling
+    classDef user fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef client fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef tobii fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef ml fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef hardware fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef storage fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class Users,Teacher,Child user
+    class ClientApps,WebApp,DesktopApp client
+    class TobiiDesktop,TobiiGUI,TobiiAPI tobii
+    class MLServer,PredictAPI,ETModel,WCModel ml
+    class Hardware,TobiiDevice,WebcamDevice hardware
+    class Storage,ModelFiles,Database storage
+    
+    %% ========================================
+    %% EXPLANATION - END-TO-END WORKFLOW
+    %% ========================================
+    %% 
+    %% OPTION 1: EYE TRACKER WORKFLOW (Professional)
+    %% ──────────────────────────────────────────────
+    %% 1. Teacher opens web app
+    %% 2. Starts Tobii desktop service
+    %% 3. Child sits at computer with Tobii device
+    %% 4. Web app starts test
+    %% 5. Web app calls Tobii API → start capture
+    %% 6. Child reads 3 tasks (syllables, pseudo, meaningful)
+    %% 7. Tobii device tracks eye movements → desktop service
+    %% 8. Web app calls Tobii API → get gaze data
+    %% 9. Web app sends gaze data → ML service
+    %% 10. ML service → Eye Tracker Pipeline
+    %% 11. Pipeline processes data → predicts risk
+    %% 12. Results saved to database
+    %% 13. Web app displays results to teacher
+    %% 
+    %% OPTION 2: WEBCAM WORKFLOW (Accessible)
+    %% ──────────────────────────────────────────────
+    %% 1. Teacher opens web app
+    %% 2. Child sits at computer with webcam
+    %% 3. Web app starts test
+    %% 4. Web app uses webcam for gaze estimation
+    %% 5. Child reads tasks
+    %% 6. Web app estimates gaze from video
+    %% 7. Web app sends estimated gaze → ML service
+    %% 8. ML service → Webcam Pipeline (with UDA)
+    %% 9. Pipeline predicts risk
+    %% 10. Results saved to database
+    %% 11. Web app displays results
+    %% 
+    %% KEY DIFFERENCE:
+    %% Eye Tracker: Needs desktop service + hardware
+    %% Webcam: Works directly in browser
+    %% 
+    %% DEPLOYMENT:
+    %% ┌─────────────────┐
+    %% │ Teacher's PC    │ → Web browser + (optional: Tobii service)
+    %% └─────────────────┘
+    %%         ↕
+    %% ┌─────────────────┐
+    %% │ Cloud Server    │ → ML Service (FastAPI)
+    %% │                 │ → Database
+    %% │                 │ → ML Models
+    %% └─────────────────┘

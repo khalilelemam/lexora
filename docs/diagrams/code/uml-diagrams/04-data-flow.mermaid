@@ -1,0 +1,156 @@
+graph LR
+    %% ========================================
+    %% PART 4: DATA FLOW & VALIDATION
+    %% ========================================
+    %% Focus: Request/response flow and validation
+    %% Purpose: Show how data moves through the system
+    %% ========================================
+    
+    subgraph Client["Client Application"]
+        direction TB
+        ClientRequest["HTTP Request
+        ---
+        POST /v1/eye-tracker/predict
+        
+        JSON Body:
+        {
+          syllablesTask: {...},
+          meaningfulTask: {...},
+          pseudoTask: {...}
+        }"]
+    end
+    
+    subgraph APILayer["API Layer"]
+        direction TB
+        PredictRouter["Predict Router
+        ---
+        1. Receive request
+        2. Validate with Pydantic
+        3. Call prediction pipeline
+        4. Format response"]
+    end
+    
+    subgraph Validation["Request Validation (Pydantic)"]
+        direction TB
+        RequestSchemas["Request Models
+        ---
+        PredictionRequest:
+        • syllables_task: GazeSequence
+        • meaningful_task: GazeSequence
+        • pseudo_task: GazeSequence
+        • screen_width: int
+        • screen_height: int
+        
+        GazeSequence:
+        • gaze_points: List[GazePoint]
+        
+        GazePoint:
+        • fixation_x: float (0-1)
+        • fixation_y: float (0-1)
+        • timestamp: int
+        
+        Auto-validates data types
+        and constraints"]
+    end
+    
+    subgraph PipelineExecution["Pipeline Execution"]
+        direction LR
+        FeatureProcess["Feature
+        Processing"]
+        ModelPredict["Model
+        Prediction"]
+    end
+    
+    subgraph ResponseFormat["Response Formatting"]
+        direction TB
+        ResponseSchemas["Response Models
+        ---
+        PredictionResponse:
+        • dyslexia_probability: float
+        • risk_level: 'LOW'|'MED'|'HIGH'
+        • confidence: float
+        • metadata: PredictionMetadata
+        
+        PredictionMetadata:
+        • sequences_analyzed: int
+        • total_fixations: int
+        
+        Structured output"]
+    end
+    
+    subgraph ClientReceive["Client Receives"]
+        direction TB
+        ClientResponse["HTTP Response
+        ---
+        Status: 200 OK
+        
+        JSON Body:
+        {
+          dyslexiaProbability: 0.78,
+          riskLevel: 'HIGH',
+          confidence: 0.85,
+          metadata: {...}
+        }"]
+    end
+    
+    %% Data flow
+    ClientRequest --> PredictRouter
+    PredictRouter -->|validates| RequestSchemas
+    RequestSchemas -->|valid data| FeatureProcess
+    FeatureProcess --> ModelPredict
+    ModelPredict -->|raw prediction| ResponseSchemas
+    ResponseSchemas -->|formatted| PredictRouter
+    PredictRouter --> ClientResponse
+    
+    %% Error path
+    RequestSchemas -.->|validation error| ErrorResponse["400 Bad Request
+    ---
+    {
+      detail: 'Invalid gaze point'
+    }"]
+    ErrorResponse -.-> ClientResponse
+    
+    %% Styling
+    classDef client fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef api fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef validation fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef pipeline fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px
+    classDef response fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#c62828,stroke-width:1px,stroke-dasharray: 5 5
+    
+    class Client,ClientRequest,ClientReceive,ClientResponse client
+    class APILayer,PredictRouter api
+    class Validation,RequestSchemas validation
+    class PipelineExecution,FeatureProcess,ModelPredict pipeline
+    class ResponseFormat,ResponseSchemas response
+    class ErrorResponse error
+    
+    %% ========================================
+    %% EXPLANATION
+    %% ========================================
+    %% DATA FLOW THROUGH ML SERVICE:
+    %% 
+    %% 1. CLIENT SENDS REQUEST
+    %%    → JSON with gaze data from 3 reading tasks
+    %% 
+    %% 2. VALIDATION (Pydantic)
+    %%    → Checks data types
+    %%    → Validates constraints (e.g., coordinates 0-1)
+    %%    → Ensures timestamps are ordered
+    %%    → Returns 400 if invalid
+    %% 
+    %% 3. PIPELINE EXECUTION
+    %%    → Feature processing
+    %%    → Model prediction
+    %%    (see separate pipeline diagrams)
+    %% 
+    %% 4. RESPONSE FORMATTING
+    %%    → Structures prediction as JSON
+    %%    → Converts snake_case → camelCase
+    %%    → Adds metadata
+    %% 
+    %% 5. CLIENT RECEIVES
+    %%    → 200 OK with prediction
+    %%    → or 400/500 with error details
+    %% 
+    %% KEY BENEFIT: Type-safe, validated data flow
