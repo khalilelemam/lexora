@@ -1,5 +1,7 @@
 import multiprocessing
 import logging
+import os
+import sys
 from typing import Optional, Tuple
 import uvicorn
 import psutil
@@ -8,6 +10,31 @@ import socket
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Plain-text log config for frozen executables (PyInstaller with console=False).
+# Uvicorn's default formatter calls sys.stderr.isatty() which fails when
+# stdout/stderr are None.
+_FROZEN_LOG_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "%(levelname)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+    },
+    "loggers": {
+        "uvicorn": {"handlers": ["default"], "level": "INFO"},
+        "uvicorn.error": {"level": "INFO"},
+        "uvicorn.access": {"handlers": ["default"], "level": "INFO"},
+    },
+}
 
 
 class ServiceManager:
@@ -18,12 +45,36 @@ class ServiceManager:
         self.current_port: int = settings.PORT
 
     def _run_server(self):
+        """Start the uvicorn server.
+
+        Handles two issues that occur in frozen executables (PyInstaller
+        with console=False):
+
+        1. sys.stdout and sys.stderr are None — uvicorn's colored formatter
+           calls .isatty() on them, raising AttributeError.
+        2. uvicorn.run("main:app") uses importlib to resolve the app by
+           string, which silently fails in frozen builds.
+        """
+        # Redirect None streams to OS null device
+        devnull = "NUL" if os.name == "nt" else "/dev/null"
+        if sys.stdout is None:
+            sys.stdout = open(devnull, "w")
+        if sys.stderr is None:
+            sys.stderr = open(devnull, "w")
+
+        # Import and pass app object directly (string imports fail when frozen)
+        from app.api import create_app
+        app = create_app()
+
+        log_config = _FROZEN_LOG_CONFIG if getattr(sys, "frozen", False) else None
+
         uvicorn.run(
-            "main:app",
+            app,
             host=settings.HOST,
             port=settings.PORT,
             log_level="info",
             reload=False,
+            log_config=log_config,
         )
 
     def check_port_available(self) -> Tuple[bool, Optional[int]]:
