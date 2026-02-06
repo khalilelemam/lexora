@@ -73,6 +73,8 @@ class ServiceManager:
         # process spawned by multiprocessing.
         from app.api import create_app
 
+        app = create_app()
+
         try:
             app = create_app()
         except Exception:
