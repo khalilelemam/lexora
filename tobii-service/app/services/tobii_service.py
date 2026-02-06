@@ -1,7 +1,6 @@
-"""Tobii eye tracker service."""
-
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 import tobii_research as tr
 
 from app.models.gaze import GazePoint
@@ -10,16 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 class TobiiService:
-    """Service for interacting with Tobii eye tracker."""
-
     def __init__(self):
-        self.eyetracker: Optional[tr.EyeTracker] = None
-        self.gaze_data: List[GazePoint] = []
+        self.eyetracker: tr.EyeTracker | None = None
+        self.gaze_data: list[GazePoint] = []
         self.is_capturing: bool = False
         self._initialize_eyetracker()
 
     def _initialize_eyetracker(self) -> None:
-        """Initialize connection to Tobii eye tracker."""
         try:
             eyetrackers = tr.find_all_eyetrackers()
             if eyetrackers:
@@ -29,11 +25,9 @@ class TobiiService:
             logger.error(f"Failed to initialize eye tracker: {e}")
 
     def is_connected(self) -> bool:
-        """Check if eye tracker is connected."""
         return self.eyetracker is not None
 
-    def get_device_info(self) -> Optional[Dict[str, str]]:
-        """Get information about connected device."""
+    def get_device_info(self) -> dict[str, str] | None:
         if not self.eyetracker:
             return None
 
@@ -44,8 +38,7 @@ class TobiiService:
             "firmware_version": self.eyetracker.firmware_version,
         }
 
-    def _gaze_data_callback(self, gaze_data: Dict[str, Any]) -> None:
-        """Callback function to handle incoming gaze data."""
+    def _gaze_data_callback(self, gaze_data: dict[str, Any]) -> None:
         try:
             left_gaze = gaze_data.get("left_gaze_point_on_display_area", (None, None))
             right_gaze = gaze_data.get("right_gaze_point_on_display_area", (None, None))
@@ -76,7 +69,6 @@ class TobiiService:
             logger.error(f"Error processing gaze data: {e}")
 
     def start_capture(self) -> None:
-        """Start capturing gaze data."""
         if not self.eyetracker:
             raise RuntimeError("No eye tracker connected")
 
@@ -91,7 +83,6 @@ class TobiiService:
         logger.info("Started gaze data capture")
 
     def stop_capture(self) -> None:
-        """Stop capturing gaze data."""
         if not self.eyetracker:
             raise RuntimeError("No eye tracker connected")
 
@@ -105,11 +96,9 @@ class TobiiService:
         self.is_capturing = False
         logger.info("Stopped gaze data capture")
 
-    def get_gaze_data(self) -> List[Dict[str, Any]]:
-        """Get collected gaze data."""
-        return [point.dict() for point in self.gaze_data]
+    def get_gaze_data(self) -> list[dict[str, Any]]:
+        return [point.model_dump() for point in self.gaze_data]
 
     def clear_data(self) -> None:
-        """Clear the gaze data buffer."""
         self.gaze_data.clear()
         logger.info("Cleared gaze data buffer")

@@ -1,7 +1,8 @@
-import logging
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
-from typing import Dict, Any
 import asyncio
+import logging
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from app.services.tobii_service import TobiiService
 
@@ -12,8 +13,7 @@ tobii_service = TobiiService()
 
 
 @router.get("/status")
-async def get_status() -> Dict[str, Any]:
-    """Check if Tobii eye tracker is connected and return device info."""
+async def get_status() -> dict[str, Any]:
     try:
         is_connected = tobii_service.is_connected()
         device_info = tobii_service.get_device_info() if is_connected else None
@@ -24,7 +24,6 @@ async def get_status() -> Dict[str, Any]:
 
 @router.websocket("/gaze")
 async def gaze_websocket(websocket: WebSocket):
-    """WebSocket endpoint for streaming real-time gaze data from Tobii eye tracker."""
     await websocket.accept()
 
     try:
