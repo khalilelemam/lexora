@@ -525,7 +525,7 @@ To run the service from source:
 
 ```powershell
 # Clone repository
-git clone https://github.com/Khalil-Elemam/eglex.git
+git clone https://github.com/khalilelemam/eglex.git
 cd eglex/tobii-service
 
 # Create virtual environment
@@ -542,36 +542,10 @@ python gui_window.py
 uvicorn main:app --host 127.0.0.1 --port 28980
 ```
 
-### File Structure
-
-```
-tobii-service/
-├── gui_window.py          # Main application entry
-├── main.py                # FastAPI server
-├── requirements.txt       # Dependencies
-├── app/
-│   ├── api.py            # FastAPI app factory
-│   ├── config.py         # Settings (CORS, port)
-│   ├── models/
-│   │   └── gaze.py       # Data models
-│   ├── routers/
-│   │   └── tobii.py      # API endpoints
-│   └── services/
-│       └── tobii_service.py  # Tobii SDK integration
-├── gui/
-│   ├── widgets.py        # UI components
-│   ├── styles.py         # Theme colors
-│   └── service_manager.py    # Server lifecycle
-└── assets/
-    └── eye.ico          # Application icon
-```
-
----
-
 ## Support
 
 For issues or questions:
-- **GitHub Issues:** [Report bugs](https://github.com/Khalil-Elemam/eglex/issues)
+- **GitHub Issues:** [Report bugs](https://github.com/khalilelemam/eglex/issues)
 - **API Questions:** Open a discussion in the repository
 
 ---

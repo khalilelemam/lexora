@@ -166,7 +166,7 @@ jobs:
             
             ### Documentation
             
-            - [User Guide](https://github.com/Khalil-Elemam/eglex/blob/main/tobii-service/README.md)
-            - [API Documentation](https://github.com/Khalil-Elemam/eglex/blob/main/tobii-service/API.md)
+            - [User Guide](https://github.com/khalilelemam/eglex/blob/main/tobii-service/README.md)
+            - [API Documentation](https://github.com/khalilelemam/eglex/blob/main/tobii-service/API.md)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
