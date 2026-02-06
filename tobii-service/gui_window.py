@@ -1,20 +1,21 @@
-import customtkinter as ctk
 import multiprocessing
 import threading
-import pystray
-from pystray import MenuItem as item
-from PIL import Image
 from pathlib import Path
 
-from gui.service_manager import ServiceManager
-from app.services.tobii_service import TobiiService
+import customtkinter as ctk
+import pystray
+from PIL import Image
+from pystray import MenuItem as item
+
 from app.config import settings
+from app.services.tobii_service import TobiiService
+from gui.service_manager import ServiceManager
 from gui.widgets import (
-    HeaderWidget,
-    StatusCard,
+    ConfirmDialog,
     ControlButtons,
     ExitButton,
-    ConfirmDialog,
+    HeaderWidget,
+    StatusCard,
 )
 
 ctk.set_appearance_mode("light")
@@ -113,37 +114,31 @@ class TobiiServiceGUI:
             self.update_status()
 
     def on_exit(self):
-        """Exit button: Stop service and minimize to tray (tray stays running)."""
         if self.service_manager.is_running():
             self.service_manager.stop()
         self.minimize_to_tray()
 
     def on_close_window(self):
-        """Window X button: Stop service and minimize to tray."""
         if self.service_manager.is_running():
             self.service_manager.stop()
         self.minimize_to_tray()
 
     def show_window(self):
-        """Show the main window from tray."""
         self.root.deiconify()
         self.root.lift()
         self.root.focus_force()
         self.is_minimized_to_tray = False
 
     def minimize_to_tray(self):
-        """Minimize window to system tray."""
         self.root.withdraw()
         self.is_minimized_to_tray = True
 
     def on_minimize_event(self, event):
-        """Handle minimize button click (- button)."""
         if self.root.state() == "iconic":
             self.minimize_to_tray()
             self.root.after(10, self.root.withdraw)
 
     def on_tray_exit(self, icon, item):
-        """Exit from tray menu: Stop service and quit application completely."""
         if self.service_manager.is_running():
             self.service_manager.stop()
         icon.stop()
@@ -171,11 +166,6 @@ class TobiiServiceGUI:
         tray_thread.start()
 
     def run(self, start_minimized=False):
-        """Run the application.
-
-        Args:
-            start_minimized: If True, start with window hidden (tray only).
-        """
         if start_minimized:
             self.root.withdraw()
             self.is_minimized_to_tray = True

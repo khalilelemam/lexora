@@ -1,11 +1,11 @@
-import multiprocessing
 import logging
+import multiprocessing
 import os
-import sys
-from typing import Optional, Tuple
-import uvicorn
-import psutil
 import socket
+import sys
+
+import psutil
+import uvicorn
 
 from app.config import settings
 
@@ -41,30 +41,43 @@ class ServiceManager:
     """Manages the FastAPI server lifecycle on fixed port."""
 
     def __init__(self):
-        self.server_process: Optional[multiprocessing.Process] = None
+        self.server_process: multiprocessing.Process | None = None
         self.current_port: int = settings.PORT
 
     def _run_server(self):
         """Start the uvicorn server.
 
-        Handles two issues that occur in frozen executables (PyInstaller
+        Handles three issues that occur in frozen executables (PyInstaller
         with console=False):
 
         1. sys.stdout and sys.stderr are None — uvicorn's colored formatter
-           calls .isatty() on them, raising AttributeError.
+           calls .isatty() on them, raising AttributeError, so we redirect
+           these streams to the OS null device.
         2. uvicorn.run("main:app") uses importlib to resolve the app by
-           string, which silently fails in frozen builds.
+           string, which silently fails in frozen builds — so we pass the
+           app object directly.
+        3. uvicorn's default color formatter requires a real TTY, so we
+           use a plain-text log configuration when running frozen.
         """
-        # Redirect None streams to OS null device
-        devnull = "NUL" if os.name == "nt" else "/dev/null"
+        # Redirect None streams to OS null device.
+        # These file handles are intentionally kept open for the lifetime
+        # of the process — closing them would re-expose the None-stream
+        # crash.  The OS reclaims them on exit.
         if sys.stdout is None:
-            sys.stdout = open(devnull, "w")
+            sys.stdout = open(os.devnull, "w")
         if sys.stderr is None:
-            sys.stderr = open(devnull, "w")
+            sys.stderr = open(os.devnull, "w")
 
-        # Import and pass app object directly (string imports fail when frozen)
+        # Import and pass app object directly (string imports fail when frozen).
+        # This import MUST stay inside _run_server — it runs in a child
+        # process spawned by multiprocessing.
         from app.api import create_app
-        app = create_app()
+
+        try:
+            app = create_app()
+        except Exception:
+            logger.exception("Failed to initialize FastAPI application")
+            raise
 
         log_config = _FROZEN_LOG_CONFIG if getattr(sys, "frozen", False) else None
 
@@ -77,12 +90,7 @@ class ServiceManager:
             log_config=log_config,
         )
 
-    def check_port_available(self) -> Tuple[bool, Optional[int]]:
-        """Check if the port is available.
-
-        Returns:
-            Tuple of (is_available, process_id_using_port)
-        """
+    def check_port_available(self) -> tuple[bool, int | None]:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
@@ -93,7 +101,7 @@ class ServiceManager:
                 # Port is in use, find the process
                 for proc in psutil.process_iter(["pid", "name"]):
                     try:
-                        for conn in proc.connections():
+                        for conn in proc.net_connections():
                             if conn.laddr.port == settings.PORT:
                                 return False, proc.pid
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -104,16 +112,11 @@ class ServiceManager:
             logger.error(f"Error checking port: {e}")
             return True, None
 
-    def get_process_using_port(self) -> Optional[dict]:
-        """Get information about the process using the port.
-
-        Returns:
-            Dictionary with process info or None if no process found.
-        """
+    def get_process_using_port(self) -> dict | None:
         try:
             for proc in psutil.process_iter(["pid", "name", "exe"]):
                 try:
-                    for conn in proc.connections():
+                    for conn in proc.net_connections():
                         if conn.laddr.port == settings.PORT:
                             return {
                                 "pid": proc.pid,
@@ -128,14 +131,6 @@ class ServiceManager:
             return None
 
     def kill_process_on_port(self, pid: int) -> bool:
-        """Kill the process using the port.
-
-        Args:
-            pid: Process ID to kill
-
-        Returns:
-            True if process was killed successfully, False otherwise.
-        """
         try:
             proc = psutil.Process(pid)
             proc.terminate()
@@ -155,11 +150,6 @@ class ServiceManager:
             return False
 
     def start(self) -> bool:
-        """Start the FastAPI server in a separate process.
-
-        Returns:
-            True if server started successfully, False otherwise.
-        """
         if self.is_running():
             logger.warning("Service is already running")
             return False
@@ -176,11 +166,6 @@ class ServiceManager:
             return False
 
     def stop(self) -> bool:
-        """Stop the running FastAPI server.
-
-        Returns:
-            True if server stopped successfully, False otherwise.
-        """
         if not self.is_running():
             logger.warning("Service is not running")
             return False
@@ -201,23 +186,12 @@ class ServiceManager:
             return False
 
     def restart(self) -> bool:
-        """Restart the FastAPI server.
-
-        Returns:
-            True if server restarted successfully, False otherwise.
-        """
         if self.stop():
             return self.start()
         return False
 
     def is_running(self) -> bool:
-        """Check if the server process is currently running."""
         return self.server_process is not None and self.server_process.is_alive()
 
-    def get_port(self) -> Optional[int]:
-        """Get the port number the server is running on.
-
-        Returns:
-            Port number if server is running, None otherwise.
-        """
+    def get_port(self) -> int | None:
         return self.current_port if self.is_running() else None

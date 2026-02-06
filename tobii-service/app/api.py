@@ -6,7 +6,6 @@ from app.routers import tobii
 
 
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application."""
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.VERSION,
