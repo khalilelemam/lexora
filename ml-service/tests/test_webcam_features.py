@@ -28,8 +28,13 @@ class TestWebcamFeatureProcessor:
 
         result = processor.process(raw_points, 1920, 1080)
 
-        assert result.shape == (1, 82, 20, 5)
-        assert result.dtype == np.float64 or result.dtype == np.float32
+        assert result.sequences.shape == (1, 82, 20, 5)
+        assert (
+            result.sequences.dtype == np.float64 or result.sequences.dtype == np.float32
+        )
+        assert result.total_fixations > 0
+        assert result.mean_fixation_duration_ms > 0
+        assert len(result.features_data) == result.total_fixations
 
     def test_output_is_padded_to_82_sequences(self, processor):
         np.random.seed(42)
@@ -40,7 +45,7 @@ class TestWebcamFeatureProcessor:
         result = processor.process(raw_points, 1920, 1080)
 
         # Should always output exactly 82 sequences
-        assert result.shape[1] == 82
+        assert result.sequences.shape[1] == 82
 
     # --- Coordinate Normalization ---
 

@@ -4,6 +4,8 @@ from unittest.mock import Mock
 
 from app.schemas import PredictionRequest, GazeSequence
 from app.schemas.webcam import WebcamPredictionRequest, RawGazePoint
+from app.services.eye_tracker.features import TaskProcessingResult
+from app.services.webcam.features import WebcamProcessingResult
 from tests.conftest import create_gaze_points
 
 
@@ -18,8 +20,29 @@ class TestPredictEyeTrackerEndpoint:
     @pytest.fixture
     def mock_feature_processor(self):
         processor = Mock()
-        processor.process_gaze_points.return_value = np.zeros(
-            (100, 20, 5), dtype=np.float32
+        processor.process_gaze_points.return_value = TaskProcessingResult(
+            sequences=np.zeros((100, 20, 5), dtype=np.float32),
+            total_gaze_points=50,
+            valid_fixations=45,
+            mean_fixation_duration_ms=220.0,
+            features_data=[
+                {
+                    "timestamp": 1000,
+                    "duration_ms": 200.0,
+                    "fixation_x": 0.3,
+                    "fixation_y": 0.4,
+                    "saccade_amplitude": 0.0,
+                    "saccade_velocity": 0.0,
+                },
+                {
+                    "timestamp": 1250,
+                    "duration_ms": 250.0,
+                    "fixation_x": 0.5,
+                    "fixation_y": 0.4,
+                    "saccade_amplitude": 0.08,
+                    "saccade_velocity": 0.32,
+                },
+            ],
         )
         return processor
 
@@ -83,7 +106,21 @@ class TestPredictEyeTrackerEndpoint:
         response = await predict_eye_tracker(prediction_request_data, mock_request)
 
         assert response.metadata.sequences_analyzed == 300
-        assert response.metadata.total_fixations == 150  # 50 * 3 tasks
+        assert response.metadata.total_fixations == 135  # 45 valid * 3 tasks
+
+    @pytest.mark.asyncio
+    async def test_response_includes_features(
+        self, prediction_request_data, mock_request
+    ):
+        from app.routers.predict import predict_eye_tracker
+
+        response = await predict_eye_tracker(prediction_request_data, mock_request)
+
+        assert response.features is not None
+        assert len(response.features.syllables) == 2
+        assert response.features.syllables[0].fixation_x == 0.3
+        assert response.features.syllables[0].timestamp == 1000
+        assert response.features.syllables[1].saccade_amplitude == 0.08
 
     # --- Service Interaction Tests ---
 
@@ -138,7 +175,8 @@ class TestPredictEyeTrackerEndpoint:
             await predict_eye_tracker(prediction_request_data, mock_request)
 
         assert exc_info.value.status_code == 400
-        assert "Insufficient gaze points" in str(exc_info.value.detail)
+        assert exc_info.value.detail["code"] == "BAD_REQUEST"
+        assert "Insufficient gaze points" in exc_info.value.detail["message"]
 
 
 class TestPredictWebcamEndpoint:
@@ -149,7 +187,29 @@ class TestPredictWebcamEndpoint:
     @pytest.fixture
     def mock_feature_processor(self):
         processor = Mock()
-        processor.process.return_value = np.zeros((1, 82, 20, 5), dtype=np.float32)
+        processor.process.return_value = WebcamProcessingResult(
+            sequences=np.zeros((1, 82, 20, 5), dtype=np.float32),
+            features_data=[
+                {
+                    "timestamp": 1000,
+                    "duration_ms": 200.0,
+                    "fixation_x": 0.5,
+                    "fixation_y": 0.3,
+                    "saccade_amplitude": 0.0,
+                    "is_regression": False,
+                },
+                {
+                    "timestamp": 1200,
+                    "duration_ms": 180.0,
+                    "fixation_x": 0.6,
+                    "fixation_y": 0.3,
+                    "saccade_amplitude": 0.1,
+                    "is_regression": False,
+                },
+            ],
+            total_fixations=65,
+            mean_fixation_duration_ms=190.0,
+        )
         return processor
 
     @pytest.fixture
@@ -210,7 +270,18 @@ class TestPredictWebcamEndpoint:
         response = await predict_webcam(webcam_request_data, mock_request)
 
         assert response.metadata.sequences_analyzed == 82
-        assert response.metadata.total_fixations == 100
+        assert response.metadata.total_fixations == 65
+
+    @pytest.mark.asyncio
+    async def test_response_includes_features(self, webcam_request_data, mock_request):
+        from app.routers.predict import predict_webcam
+
+        response = await predict_webcam(webcam_request_data, mock_request)
+
+        assert response.features is not None
+        assert len(response.features) == 2
+        assert response.features[0].fixation_x == 0.5
+        assert response.features[1].saccade_amplitude == 0.1
 
     # --- Service Interaction Tests ---
 
@@ -255,4 +326,5 @@ class TestPredictWebcamEndpoint:
             await predict_webcam(webcam_request_data, mock_request)
 
         assert exc_info.value.status_code == 400
-        assert "Insufficient fixations detected" in str(exc_info.value.detail)
+        assert exc_info.value.detail["code"] == "BAD_REQUEST"
+        assert "Insufficient fixations detected" in exc_info.value.detail["message"]

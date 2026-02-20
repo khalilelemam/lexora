@@ -1,7 +1,16 @@
 import numpy as np
+from dataclasses import dataclass, field
 from typing import List, Tuple
 from app.config import settings
 from app.schemas.webcam import RawGazePoint
+
+
+@dataclass
+class WebcamProcessingResult:
+    sequences: np.ndarray
+    features_data: list[dict] = field(default_factory=list)
+    total_fixations: int = 0
+    mean_fixation_duration_ms: float = 0.0
 
 
 class WebcamFeatureProcessor:
@@ -181,7 +190,7 @@ class WebcamFeatureProcessor:
 
     def process(
         self, raw_points: List[RawGazePoint], screen_width: int, screen_height: int
-    ) -> np.ndarray:
+    ) -> WebcamProcessingResult:
         normalized = self.normalize_coordinates(raw_points, screen_width, screen_height)
         smoothed = self.smooth_signal(normalized)
         fixations = self.detect_fixations(smoothed)
@@ -198,6 +207,26 @@ class WebcamFeatureProcessor:
             )
 
         padded = self.pad_sequences(sequences)
-        return padded.reshape(
+        model_input = padded.reshape(
             1, settings.WEBCAM_MAX_SEQUENCES, settings.EYE_TRACKER_SEQUENCE_LENGTH, 5
+        )
+
+        # Build per-fixation feature rows (model input before sequencing)
+        features_data = [
+            {
+                "timestamp": int(fixation[0, 2]),
+                "duration_ms": float(row[0]),
+                "fixation_x": float(row[1]),
+                "fixation_y": float(row[2]),
+                "saccade_amplitude": float(row[3]),
+                "is_regression": bool(row[4]),
+            }
+            for fixation, row in zip(fixations, features)
+        ]
+
+        return WebcamProcessingResult(
+            sequences=model_input,
+            features_data=features_data,
+            total_fixations=len(features),
+            mean_fixation_duration_ms=float(features[:, 0].mean()),
         )
