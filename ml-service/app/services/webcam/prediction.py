@@ -1,8 +1,8 @@
 import logging
 import pickle
 
+import keras
 import numpy as np
-import tensorflow as tf
 
 from app.config import settings
 from app.schemas import RiskLevel
@@ -22,8 +22,8 @@ class WebcamPredictionService:
 
     def _load_model(self):
         logger.info(f"Loading webcam model from {settings.WEBCAM_MODEL_PATH}")
-        self.model = tf.keras.models.load_model(
-            settings.WEBCAM_MODEL_PATH, compile=False
+        self.model = keras.models.load_model(
+            str(settings.WEBCAM_MODEL_PATH), compile=False
         )
         logger.info("Webcam model loaded successfully")
 

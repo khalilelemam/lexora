@@ -141,17 +141,17 @@ class TestPredictionRequest:
         assert "screen_height" in str(exc_info.value)
 
     def test_camel_case_alias(self, valid_gaze_sequence):
-        # PredictionRequest accepts camelCase for its direct fields
-        # But nested GazeSequence still uses snake_case (gaze_points)
+        # PredictionRequest and nested models accept both camelCase and snake_case
+        # thanks to alias_generator=to_camel + populate_by_name=True
         data = {
             "syllablesTask": {
-                "gaze_points": [p.model_dump() for p in create_gaze_points(25)]
+                "gazePoints": [p.model_dump() for p in create_gaze_points(25)]
             },
             "meaningfulTask": {
-                "gaze_points": [p.model_dump() for p in create_gaze_points(25)]
+                "gazePoints": [p.model_dump() for p in create_gaze_points(25)]
             },
             "pseudoTask": {
-                "gaze_points": [p.model_dump() for p in create_gaze_points(25)]
+                "gazePoints": [p.model_dump() for p in create_gaze_points(25)]
             },
             "screenWidth": 1920,
             "screenHeight": 1080,

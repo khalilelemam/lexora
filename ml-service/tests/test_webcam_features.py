@@ -95,9 +95,9 @@ class TestWebcamFeatureProcessor:
 
     def test_detect_fixations_groups_slow_points(self, processor):
         # Create stationary points (should form one fixation)
-        # Using microsecond timestamps, 100ms = 100000 microseconds
+        # Using millisecond timestamps, 100ms intervals
         points = [
-            (0.5, 0.5, i * 100_000)
+            (0.5, 0.5, i * 100)
             for i in range(10)  # 100ms intervals, same location
         ]
 
@@ -107,11 +107,11 @@ class TestWebcamFeatureProcessor:
         assert len(fixations) >= 1
 
     def test_detect_fixations_filters_short_fixations(self, processor):
-        # Create very short fixations (< 50ms = 50000 microseconds)
+        # Create very short fixations (< 50ms)
         points = [
             (0.5, 0.5, 0),
-            (0.5, 0.5, 10_000),  # Only 10ms
-            (0.9, 0.9, 20_000),  # Jump (saccade)
+            (0.5, 0.5, 10),  # Only 10ms
+            (0.9, 0.9, 20),  # Jump (saccade)
         ]
 
         fixations = processor.detect_fixations(points)
@@ -130,10 +130,10 @@ class TestWebcamFeatureProcessor:
     # --- Feature Extraction ---
 
     def test_extract_features_returns_5_features(self, processor):
-        # Timestamps in microseconds
+        # Timestamps in milliseconds
         fixations = [
-            np.array([[0.3, 0.4, 100_000], [0.3, 0.4, 200_000], [0.3, 0.4, 300_000]]),
-            np.array([[0.5, 0.5, 400_000], [0.5, 0.5, 500_000], [0.5, 0.5, 600_000]]),
+            np.array([[0.3, 0.4, 100], [0.3, 0.4, 200], [0.3, 0.4, 300]]),
+            np.array([[0.5, 0.5, 400], [0.5, 0.5, 500], [0.5, 0.5, 600]]),
         ]
 
         features = processor.extract_features(fixations)
@@ -141,9 +141,9 @@ class TestWebcamFeatureProcessor:
         assert features.shape == (2, 5)
 
     def test_extract_features_duration(self, processor):
-        # 250ms = 250000 microseconds
+        # 250ms fixation
         fixations = [
-            np.array([[0.5, 0.5, 0], [0.5, 0.5, 100_000], [0.5, 0.5, 250_000]]),
+            np.array([[0.5, 0.5, 0], [0.5, 0.5, 100], [0.5, 0.5, 250]]),
         ]
 
         features = processor.extract_features(fixations)
@@ -152,7 +152,7 @@ class TestWebcamFeatureProcessor:
 
     def test_extract_features_centroid(self, processor):
         fixations = [
-            np.array([[0.4, 0.3, 0], [0.5, 0.4, 100_000], [0.6, 0.5, 200_000]]),
+            np.array([[0.4, 0.3, 0], [0.5, 0.4, 100], [0.6, 0.5, 200]]),
         ]
 
         features = processor.extract_features(fixations)
@@ -163,10 +163,8 @@ class TestWebcamFeatureProcessor:
 
     def test_extract_features_regression_flag(self, processor):
         fixations = [
-            np.array([[0.5, 0.5, 0], [0.5, 0.5, 100_000]]),
-            np.array(
-                [[0.3, 0.5, 200_000], [0.3, 0.5, 300_000]]
-            ),  # Moved left = regression
+            np.array([[0.5, 0.5, 0], [0.5, 0.5, 100]]),
+            np.array([[0.3, 0.5, 200], [0.3, 0.5, 300]]),  # Moved left = regression
         ]
 
         features = processor.extract_features(fixations)
@@ -220,9 +218,7 @@ class TestWebcamFeatureProcessor:
         # Single point at same location - no saccades but forms fixation
         # Use points that are all saccades (moving too fast)
         points = [
-            RawGazePoint(
-                x=float(i * 200), y=float(i * 200), timestamp=1000000 + i * 5000
-            )
+            RawGazePoint(x=float(i * 200), y=float(i * 200), timestamp=1000 + i * 5)
             for i in range(50)  # Very fast movement between distant points
         ]
 
@@ -232,9 +228,8 @@ class TestWebcamFeatureProcessor:
     def test_raises_on_insufficient_sequences(self, processor):
         # Too few points to generate enough sequences
         points = [
-            RawGazePoint(x=960.0, y=540.0, timestamp=1000000 + i * 100000)
-            for i in range(30)
+            RawGazePoint(x=960.0, y=540.0, timestamp=1000 + i * 100) for i in range(30)
         ]
 
-        with pytest.raises(ValueError, match="Insufficient data"):
+        with pytest.raises(ValueError, match="(No valid fixations|Insufficient data)"):
             processor.process(points, 1920, 1080)

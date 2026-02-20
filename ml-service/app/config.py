@@ -24,13 +24,13 @@ class Settings(BaseSettings):
 
     # Eye tracker model paths
     EYE_TRACKER_MODEL_PATH: Path = (
-        MODELS_DIR / "eye-tracker" / "dyslexia-profile-model.h5"
+        MODELS_DIR / "eye-tracker" / "dyslexia_profile_model.keras"
     )
     EYE_TRACKER_SCALER_PATH: Path = MODELS_DIR / "eye-tracker" / "scaler.pkl"
 
     # Webcam model paths
-    WEBCAM_MODEL_PATH: Path = MODELS_DIR / "webcam" / "dyslexia-uda-classifier.h5"
-    WEBCAM_SCALER_PATH: Path = MODELS_DIR / "webcam" / "target-domain-scaler.pkl"
+    WEBCAM_MODEL_PATH: Path = MODELS_DIR / "webcam" / "dyslexia_uda_classifier.keras"
+    WEBCAM_SCALER_PATH: Path = MODELS_DIR / "webcam" / "target_domain_scaler.pkl"
 
     # Feature engineering parameters (Eye Tracker)
     EYE_TRACKER_SEQUENCE_LENGTH: int = 20
@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # Feature engineering parameters (Webcam I-VT algorithm)
     WEBCAM_VELOCITY_THRESHOLD: float = 0.5  # normalized units/second
     WEBCAM_MIN_FIXATION_MS: int = 50
+    WEBCAM_MAX_FIXATION_MS: int = 1500
     WEBCAM_EMA_ALPHA: float = 0.5  # Exponential moving average smoothing
     WEBCAM_MAX_SEQUENCES: int = 82
     WEBCAM_MIN_SEQUENCES: int = 10  # Minimum sequences for valid prediction

@@ -164,12 +164,12 @@ POST /v1/webcam/predict
 
 ```json
 {
-  "gazePoints": [
-    {"x": 288.5, "y": 270.0, "timestamp": 1000000},
-    {"x": 290.2, "y": 271.5, "timestamp": 1016000},
-    {"x": 289.8, "y": 270.8, "timestamp": 1032000},
-    {"x": 291.1, "y": 272.0, "timestamp": 1048000},
-    {"x": 450.3, "y": 275.2, "timestamp": 1064000}
+  "gazeData": [
+    {"x": 288.5, "y": 270.0, "timestamp": 1000},
+    {"x": 290.2, "y": 271.5, "timestamp": 1016},
+    {"x": 289.8, "y": 270.8, "timestamp": 1032},
+    {"x": 291.1, "y": 272.0, "timestamp": 1048},
+    {"x": 450.3, "y": 275.2, "timestamp": 1064}
   ],
   "screenWidth": 1920,
   "screenHeight": 1080
@@ -180,7 +180,7 @@ POST /v1/webcam/predict
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `gazePoints` | RawGazePoint[] | Yes | Array of raw gaze points (minimum 100) |
+| `gazeData` | RawGazePoint[] | Yes | Array of raw gaze points (minimum 20) |
 | `screenWidth` | integer | Yes | Screen width in pixels |
 | `screenHeight` | integer | Yes | Screen height in pixels |
 
@@ -190,7 +190,7 @@ POST /v1/webcam/predict
 |-------|------|----------|-------------|-------------|
 | `x` | float | Yes | Any | X position in pixels |
 | `y` | float | Yes | Any | Y position in pixels |
-| `timestamp` | integer | Yes | >= 0 | Timestamp in microseconds |
+| `timestamp` | integer | Yes | > 0 | Timestamp in milliseconds |
 
 > **Note:** Raw gaze points can have any X/Y values. Out-of-bounds points (outside 0-screenWidth/Height) are filtered during processing.
 
@@ -232,21 +232,30 @@ POST /v1/webcam/predict
 
 ### Webcam Data
 
-- **Minimum points:** 100 raw gaze points
+- **Minimum points:** 20 raw gaze points
 - **Recommended points:** 2000+ for best results
-- **Timestamp format:** Microseconds (1 second = 1,000,000 μs)
+- **Timestamp format:** Milliseconds (1 second = 1,000 ms)
 - **Coordinate format:** Pixels (will be normalized internally)
 - **Sample rate:** ~60fps recommended (16ms intervals)
+- **Fixation filtering:** Only fixations 50-1500ms duration are used
 
 ### Timestamp Conversion
 
 ```javascript
-// JavaScript: Convert milliseconds to microseconds
+// Eye tracker (microseconds):
 const timestampMicroseconds = Date.now() * 1000;
 
-// Python: Convert seconds to microseconds
+// Webcam (milliseconds):
+const timestampMilliseconds = Date.now();
+```
+
+```python
+# Eye tracker (microseconds):
 import time
-timestamp_microseconds = int(time.time() * 1_000_000)
+timestamp_us = int(time.time() * 1_000_000)
+
+# Webcam (milliseconds):
+timestamp_ms = int(time.time() * 1000)
 ```
 
 ---
@@ -288,7 +297,7 @@ http POST http://localhost:8001/v1/eye-tracker/predict \
 
 # Webcam
 http POST http://localhost:8001/v1/webcam/predict \
-  gazePoints:='[{"x": 288.5, "y": 270.0, "timestamp": 1000000}]' \
+  gazeData:='[{"x": 288.5, "y": 270.0, "timestamp": 1000}]' \
   screenWidth:=1920 \
   screenHeight:=1080
 ```

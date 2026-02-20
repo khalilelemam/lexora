@@ -77,7 +77,7 @@ def create_gaze_points(
 
 def create_raw_gaze_points(
     count: int = 100,
-    start_timestamp: int = 1000000,
+    start_timestamp: int = 1000,
     screen_width: int = 1920,
     screen_height: int = 1080,
 ) -> list[RawGazePoint]:
@@ -86,7 +86,7 @@ def create_raw_gaze_points(
 
     Args:
         count: Number of gaze points to generate
-        start_timestamp: Starting timestamp in microseconds
+        start_timestamp: Starting timestamp in milliseconds
         screen_width: Screen width in pixels
         screen_height: Screen height in pixels
 
@@ -131,7 +131,7 @@ def create_raw_gaze_points(
                     timestamp=current_time,
                 )
             )
-            current_time += 16000  # 16ms in microseconds
+            current_time += 16  # 16ms interval (60fps)
             i += 1
 
         # Saccade to next position
