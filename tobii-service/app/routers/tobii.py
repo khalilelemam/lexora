@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from typing import Any
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
+from app.models.gaze import StatusResponse
 from app.services.tobii_service import TobiiService
 
 logger = logging.getLogger(__name__)
@@ -12,12 +12,12 @@ router = APIRouter()
 tobii_service = TobiiService()
 
 
-@router.get("/status")
-async def get_status() -> dict[str, Any]:
+@router.get("/status", response_model=StatusResponse)
+async def get_status() -> StatusResponse:
     try:
         is_connected = tobii_service.is_connected()
         device_info = tobii_service.get_device_info() if is_connected else None
-        return {"connected": is_connected, "device": device_info}
+        return StatusResponse(connected=is_connected, device=device_info)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
