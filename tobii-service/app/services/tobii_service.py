@@ -3,7 +3,7 @@ from typing import Any
 
 import tobii_research as tr
 
-from app.models.gaze import GazePoint
+from app.models.gaze import DeviceInfo, GazePoint
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +27,16 @@ class TobiiService:
     def is_connected(self) -> bool:
         return self.eyetracker is not None
 
-    def get_device_info(self) -> dict[str, str] | None:
+    def get_device_info(self) -> DeviceInfo | None:
         if not self.eyetracker:
             return None
 
-        return {
-            "device_name": self.eyetracker.device_name,
-            "serial_number": self.eyetracker.serial_number,
-            "model": self.eyetracker.model,
-            "firmware_version": self.eyetracker.firmware_version,
-        }
+        return DeviceInfo(
+            device_name=self.eyetracker.device_name,
+            serial_number=self.eyetracker.serial_number,
+            model=self.eyetracker.model,
+            firmware_version=self.eyetracker.firmware_version,
+        )
 
     def _gaze_data_callback(self, gaze_data: dict[str, Any]) -> None:
         try:
@@ -97,7 +97,7 @@ class TobiiService:
         logger.info("Stopped gaze data capture")
 
     def get_gaze_data(self) -> list[dict[str, Any]]:
-        return [point.model_dump() for point in self.gaze_data]
+        return [point.model_dump(by_alias=True) for point in self.gaze_data]
 
     def clear_data(self) -> None:
         self.gaze_data.clear()

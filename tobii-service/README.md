@@ -86,10 +86,10 @@ Returns tracker information:
 {
   "connected": true,
   "device": {
-    "device_name": "Tobii Pro Fusion",
-    "serial_number": "TPC-0123456789AB",
+    "deviceName": "Tobii Pro Fusion",
+    "serialNumber": "TPC-0123456789AB",
     "model": "Tobii Pro Fusion",
-    "firmware_version": "1.7.6-citronkola-ibland.6"
+    "firmwareVersion": "1.7.6-citronkola-ibland.6"
   }
 }
 ```
@@ -105,20 +105,20 @@ Receives batches of gaze points (array):
 ```json
 [
   {
-    "fixation_x": 0.5,
-    "fixation_y": 0.5,
+    "fixationX": 0.5,
+    "fixationY": 0.5,
     "timestamp": 1234567890123456
   },
   {
-    "fixation_x": 0.51,
-    "fixation_y": 0.49,
+    "fixationX": 0.51,
+    "fixationY": 0.49,
     "timestamp": 1234567890140000
   }
 ]
 ```
 
 **Data format:**
-- `fixation_x`, `fixation_y`: Averaged gaze coordinates from both eyes (normalized 0.0 to 1.0)
+- `fixationX`, `fixationY`: Averaged gaze coordinates from both eyes (normalized 0.0 to 1.0)
 - `timestamp`: System timestamp in **microseconds** (not milliseconds)
 - Coordinates: `x: 0.0` = left edge, `x: 1.0` = right edge; `y: 0.0` = top edge, `y: 1.0` = bottom edge
 - Response is an **array** of gaze points collected since last message (~50ms batches)
@@ -137,7 +137,7 @@ ws.onmessage = (event) => {
   const gazePoints = JSON.parse(event.data);
   // gazePoints is an array of gaze data
   gazePoints.forEach(point => {
-    console.log(`Gaze: (${point.fixation_x}, ${point.fixation_y})`);
+    console.log(`Gaze: (${point.fixationX}, ${point.fixationY})`);
     // Use the gaze data in your application
   });
 };
