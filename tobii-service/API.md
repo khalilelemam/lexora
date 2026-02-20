@@ -23,10 +23,10 @@ Web App (Browser) ──WebSocket──> Lexora Service (localhost:28980) ──
 {
   "connected": true,
   "device": {
-    "device_name": "Tobii Pro Fusion",
-    "serial_number": "TPC-0123456789AB",
+    "deviceName": "Tobii Pro Fusion",
+    "serialNumber": "TPC-0123456789AB",
     "model": "Tobii Pro Fusion",
-    "firmware_version": "1.7.6-citronkola-ibland.6"
+    "firmwareVersion": "1.7.6-citronkola-ibland.6"
   }
 }
 ```
@@ -53,13 +53,13 @@ When no device is connected:
 ```json
 [
   {
-    "fixation_x": 0.5,
-    "fixation_y": 0.5,
+    "fixationX": 0.5,
+    "fixationY": 0.5,
     "timestamp": 1234567890123456
   },
   {
-    "fixation_x": 0.51,
-    "fixation_y": 0.49,
+    "fixationX": 0.51,
+    "fixationY": 0.49,
     "timestamp": 1234567890140000
   }
 ]
@@ -71,13 +71,13 @@ When no device is connected:
 - Batches sent approximately every 50ms
 
 **Field Descriptions:**
-- `fixation_x`, `fixation_y`: Averaged gaze coordinates from both eyes (normalized 0.0 to 1.0)
+- `fixationX`, `fixationY`: Averaged gaze coordinates from both eyes (normalized 0.0 to 1.0)
 - `timestamp`: System timestamp in **microseconds** (integer, not milliseconds)
 
 **Coordinate System:**
 - Normalized coordinates (0.0 to 1.0)
-- `fixation_x: 0.0` = left edge of screen, `fixation_x: 1.0` = right edge
-- `fixation_y: 0.0` = top edge of screen, `fixation_y: 1.0` = bottom edge
+- `fixationX: 0.0` = left edge of screen, `fixationX: 1.0` = right edge
+- `fixationY: 0.0` = top edge of screen, `fixationY: 1.0` = bottom edge
 
 **Frequency:** Depends on the Tobii Pro device (typically 60Hz, 120Hz, 250Hz, or higher)
 
@@ -131,8 +131,8 @@ class EyeTrackerClient {
     // Process array of gaze points
     gazePoints.forEach(point => {
       // Convert normalized coordinates to screen pixels
-      const screenX = point.fixation_x * window.innerWidth;
-      const screenY = point.fixation_y * window.innerHeight;
+      const screenX = point.fixationX * window.innerWidth;
+      const screenY = point.fixationY * window.innerHeight;
       
       // Your application logic here
       console.log(`Gaze at: (${screenX}, ${screenY})`);
@@ -166,8 +166,8 @@ tracker.checkStatus().then(connected => {
 import { useEffect, useRef, useState } from 'react';
 
 interface GazePoint {
-  fixation_x: number;
-  fixation_y: number;
+  fixationX: number;
+  fixationY: number;
   timestamp: number;
 }
 
@@ -242,8 +242,8 @@ function MyComponent() {
       <p>Eye tracking active</p>
       {gazePoints.length > 0 && (
         <p>
-          Latest gaze: ({gazePoints[gazePoints.length - 1].fixation_x.toFixed(3)}, 
-          {gazePoints[gazePoints.length - 1].fixation_y.toFixed(3)})
+          Latest gaze: ({gazePoints[gazePoints.length - 1].fixationX.toFixed(3)}, 
+          {gazePoints[gazePoints.length - 1].fixationY.toFixed(3)})
         </p>
       )}
     </div>
@@ -372,10 +372,10 @@ class GazeSmoothing {
       this.buffer.shift();
     }
 
-    const avgX = this.buffer.reduce((sum, p) => sum + p.fixation_x, 0) / this.buffer.length;
-    const avgY = this.buffer.reduce((sum, p) => sum + p.fixation_y, 0) / this.buffer.length;
+    const avgX = this.buffer.reduce((sum, p) => sum + p.fixationX, 0) / this.buffer.length;
+    const avgY = this.buffer.reduce((sum, p) => sum + p.fixationY, 0) / this.buffer.length;
 
-    return { fixation_x: avgX, fixation_y: avgY };
+    return { fixationX: avgX, fixationY: avgY };
   }
 }
 
@@ -397,8 +397,8 @@ ws.onmessage = (event) => {
 function toScreenCoordinates(gazePoint, element = document.body) {
   const rect = element.getBoundingClientRect();
   return {
-    x: gazePoint.fixation_x * rect.width + rect.left,
-    y: gazePoint.fixation_y * rect.height + rect.top
+    x: gazePoint.fixationX * rect.width + rect.left,
+    y: gazePoint.fixationY * rect.height + rect.top
   };
 }
 ```
@@ -466,13 +466,13 @@ class MockEyeTracker {
       // Simulate batch of gaze data (like real service)
       const mockBatch = [
         {
-          fixation_x: 0.4 + Math.random() * 0.2,
-          fixation_y: 0.4 + Math.random() * 0.2,
+          fixationX: 0.4 + Math.random() * 0.2,
+          fixationY: 0.4 + Math.random() * 0.2,
           timestamp: Date.now() * 1000 // Convert to microseconds
         },
         {
-          fixation_x: 0.4 + Math.random() * 0.2,
-          fixation_y: 0.4 + Math.random() * 0.2,
+          fixationX: 0.4 + Math.random() * 0.2,
+          fixationY: 0.4 + Math.random() * 0.2,
           timestamp: Date.now() * 1000 + 16000 // ~16ms later
         }
       ];
