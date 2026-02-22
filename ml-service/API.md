@@ -109,6 +109,46 @@ POST /v1/eye-tracker/predict
   "metadata": {
     "sequencesAnalyzed": 300,
     "totalFixations": 450
+  },
+  "features": {
+    "syllables": [
+      {
+        "timestamp": 1000,
+        "durationMs": 215.3, 
+        "fixationX": 0.12, 
+        "fixationY": 0.35, 
+        "saccadeAmplitude": 0.0, 
+        "saccadeVelocity": 0.0
+      },
+      {
+        "timestamp": 1250,
+        "durationMs": 190.5, 
+        "fixationX": 0.25, 
+        "fixationY": 0.36, 
+        "saccadeAmplitude": 0.045, 
+        "saccadeVelocity": 0.237
+      }
+    ],
+    "meaningful": [
+      {
+        "timestamp": 5000,
+        "durationMs": 200.7, 
+        "fixationX": 0.10, 
+        "fixationY": 0.45, 
+        "saccadeAmplitude": 0.0, 
+        "saccadeVelocity": 0.0
+      }
+    ],
+    "pseudo": [
+      {
+        "timestamp": 9000,
+        "durationMs": 260.0, 
+        "fixationX": 0.15, 
+        "fixationY": 0.55, 
+        "saccadeAmplitude": 0.0, 
+        "saccadeVelocity": 0.0
+      }
+    ]
   }
 }
 ```
@@ -120,12 +160,25 @@ POST /v1/eye-tracker/predict
 | `confidence` | float | Model confidence (0.0 - 1.0) |
 | `metadata.sequencesAnalyzed` | integer | Number of gaze sequences processed |
 | `metadata.totalFixations` | integer | Total fixation count across all tasks |
+| `features` | object | Raw per-fixation feature vectors (model input) per task |
+
+**EyeTrackerFeatureRow Schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | integer | Fixation start time in milliseconds |
+| `durationMs` | float | Fixation duration in milliseconds |
+| `fixationX` | float | Normalized X position (0-1) |
+| `fixationY` | float | Normalized Y position (0-1) |
+| `saccadeAmplitude` | float | Saccade distance normalized by screen diagonal |
+| `saccadeVelocity` | float | Saccade amplitude per millisecond |
 
 **Error (400 Bad Request)**
 
 ```json
 {
-  "detail": "Insufficient valid fixations after filtering. Please ensure good lighting and track for the full duration."
+  "code": "BAD_REQUEST",
+  "message": "Insufficient valid fixations after filtering. Please ensure good lighting and track for the full duration."
 }
 ```
 
@@ -133,13 +186,10 @@ POST /v1/eye-tracker/predict
 
 ```json
 {
-  "detail": [
-    {
-      "type": "value_error",
-      "loc": ["body", "syllablesTask", "gazePoints"],
-      "msg": "List should have at least 20 items",
-      "input": []
-    }
+  "code": "VALIDATION_ERROR",
+  "message": "One or more fields failed validation.",
+  "details": [
+    {"field": "syllablesTask.gazePoints", "message": "List should have at least 20 items"}
   ]
 }
 ```
@@ -164,12 +214,12 @@ POST /v1/webcam/predict
 
 ```json
 {
-  "gazePoints": [
-    {"x": 288.5, "y": 270.0, "timestamp": 1000000},
-    {"x": 290.2, "y": 271.5, "timestamp": 1016000},
-    {"x": 289.8, "y": 270.8, "timestamp": 1032000},
-    {"x": 291.1, "y": 272.0, "timestamp": 1048000},
-    {"x": 450.3, "y": 275.2, "timestamp": 1064000}
+  "gazeData": [
+    {"x": 288.5, "y": 270.0, "timestamp": 1000},
+    {"x": 290.2, "y": 271.5, "timestamp": 1016},
+    {"x": 289.8, "y": 270.8, "timestamp": 1032},
+    {"x": 291.1, "y": 272.0, "timestamp": 1048},
+    {"x": 450.3, "y": 275.2, "timestamp": 1064}
   ],
   "screenWidth": 1920,
   "screenHeight": 1080
@@ -180,7 +230,7 @@ POST /v1/webcam/predict
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `gazePoints` | RawGazePoint[] | Yes | Array of raw gaze points (minimum 100) |
+| `gazeData` | RawGazePoint[] | Yes | Array of raw gaze points (minimum 20) |
 | `screenWidth` | integer | Yes | Screen width in pixels |
 | `screenHeight` | integer | Yes | Screen height in pixels |
 
@@ -190,7 +240,7 @@ POST /v1/webcam/predict
 |-------|------|----------|-------------|-------------|
 | `x` | float | Yes | Any | X position in pixels |
 | `y` | float | Yes | Any | Y position in pixels |
-| `timestamp` | integer | Yes | >= 0 | Timestamp in microseconds |
+| `timestamp` | integer | Yes | > 0 | Timestamp in milliseconds |
 
 > **Note:** Raw gaze points can have any X/Y values. Out-of-bounds points (outside 0-screenWidth/Height) are filtered during processing.
 
@@ -206,15 +256,65 @@ POST /v1/webcam/predict
   "metadata": {
     "sequencesAnalyzed": 82,
     "totalFixations": 156
-  }
+  },
+  "features": [
+    {
+      "timestamp": 1000,
+      "durationMs": 180.5, 
+      "fixationX": 0.25, 
+      "fixationY": 0.35,
+      "saccadeAmplitude": 0.0, 
+      "isRegression": false
+    },
+    {
+      "timestamp": 1200,
+      "durationMs": 200.0, 
+      "fixationX": 0.38, 
+      "fixationY": 0.36, 
+      "saccadeAmplitude": 0.13, 
+      "isRegression": false
+    },
+    {
+      "timestamp": 1450,
+      "durationMs": 150.2, 
+      "fixationX": 0.22, 
+      "fixationY": 0.35, 
+      "saccadeAmplitude": 0.16, 
+      "isRegression": true
+    }
+  ]
 }
 ```
+
+**WebcamFeatureRow Schema:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `timestamp` | integer | Fixation start time in milliseconds |
+| `durationMs` | float | Fixation duration in milliseconds |
+| `fixationX` | float | Normalized fixation X (0-1) |
+| `fixationY` | float | Normalized fixation Y (0-1) |
+| `saccadeAmplitude` | float | Saccade distance from previous fixation |
+| `isRegression` | boolean | True if eye moved backward (right-to-left) |
 
 **Error (400 Bad Request)**
 
 ```json
 {
-  "detail": "Insufficient data. Please ensure good lighting and read for the full duration."
+  "code": "BAD_REQUEST",
+  "message": "Insufficient data. Please ensure good lighting and read for the full duration."
+}
+```
+
+**Error (422 Unprocessable Entity)**
+
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "One or more fields failed validation.",
+  "details": [
+    {"field": "gazeData", "message": "List should have at least 20 items"}
+  ]
 }
 ```
 
@@ -232,21 +332,30 @@ POST /v1/webcam/predict
 
 ### Webcam Data
 
-- **Minimum points:** 100 raw gaze points
+- **Minimum points:** 20 raw gaze points
 - **Recommended points:** 2000+ for best results
-- **Timestamp format:** Microseconds (1 second = 1,000,000 μs)
+- **Timestamp format:** Milliseconds (1 second = 1,000 ms)
 - **Coordinate format:** Pixels (will be normalized internally)
 - **Sample rate:** ~60fps recommended (16ms intervals)
+- **Fixation filtering:** Only fixations 50-1500ms duration are used
 
 ### Timestamp Conversion
 
 ```javascript
-// JavaScript: Convert milliseconds to microseconds
+// Eye tracker (microseconds):
 const timestampMicroseconds = Date.now() * 1000;
 
-// Python: Convert seconds to microseconds
+// Webcam (milliseconds):
+const timestampMilliseconds = Date.now();
+```
+
+```python
+# Eye tracker (microseconds):
 import time
-timestamp_microseconds = int(time.time() * 1_000_000)
+timestamp_us = int(time.time() * 1_000_000)
+
+# Webcam (milliseconds):
+timestamp_ms = int(time.time() * 1000)
 ```
 
 ---
@@ -288,7 +397,7 @@ http POST http://localhost:8001/v1/eye-tracker/predict \
 
 # Webcam
 http POST http://localhost:8001/v1/webcam/predict \
-  gazePoints:='[{"x": 288.5, "y": 270.0, "timestamp": 1000000}]' \
+  gazeData:='[{"x": 288.5, "y": 270.0, "timestamp": 1000}]' \
   screenWidth:=1920 \
   screenHeight:=1080
 ```

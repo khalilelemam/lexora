@@ -1,7 +1,16 @@
 import numpy as np
+from dataclasses import dataclass, field
 from typing import List, Tuple
 from app.config import settings
 from app.schemas.webcam import RawGazePoint
+
+
+@dataclass
+class WebcamProcessingResult:
+    sequences: np.ndarray
+    features_data: list[dict] = field(default_factory=list)
+    total_fixations: int = 0
+    mean_fixation_duration_ms: float = 0.0
 
 
 class WebcamFeatureProcessor:
@@ -19,6 +28,7 @@ class WebcamFeatureProcessor:
     def __init__(self):
         self.velocity_threshold = settings.WEBCAM_VELOCITY_THRESHOLD
         self.min_fixation_duration_ms = settings.WEBCAM_MIN_FIXATION_MS
+        self.max_fixation_duration_ms = settings.WEBCAM_MAX_FIXATION_MS
         self.ema_alpha = settings.WEBCAM_EMA_ALPHA
 
     def normalize_coordinates(
@@ -71,8 +81,8 @@ class WebcamFeatureProcessor:
             x1, y1, t1 = points[i - 1]
             x2, y2, t2 = points[i]
 
-            # Convert microseconds to seconds for velocity calculation
-            dt_seconds = (t2 - t1) / 1_000_000.0
+            # Convert milliseconds to seconds for velocity calculation
+            dt_seconds = (t2 - t1) / 1000.0
             if dt_seconds == 0:
                 current_fixation.append(points[i])
                 continue
@@ -86,20 +96,26 @@ class WebcamFeatureProcessor:
             else:
                 if len(current_fixation) >= 2:
                     fixation_array = np.array(current_fixation)
-                    # Timestamps are in microseconds, convert to ms for comparison
-                    duration_ms = (
-                        fixation_array[-1, 2] - fixation_array[0, 2]
-                    ) / 1000.0
+                    # Timestamps are in milliseconds
+                    duration_ms = fixation_array[-1, 2] - fixation_array[0, 2]
 
-                    if duration_ms >= self.min_fixation_duration_ms:
+                    if (
+                        self.min_fixation_duration_ms
+                        <= duration_ms
+                        <= self.max_fixation_duration_ms
+                    ):
                         fixations.append(fixation_array)
 
                 current_fixation = [points[i]]
 
         if len(current_fixation) >= 2:
             fixation_array = np.array(current_fixation)
-            duration_ms = (fixation_array[-1, 2] - fixation_array[0, 2]) / 1000.0
-            if duration_ms >= self.min_fixation_duration_ms:
+            duration_ms = fixation_array[-1, 2] - fixation_array[0, 2]
+            if (
+                self.min_fixation_duration_ms
+                <= duration_ms
+                <= self.max_fixation_duration_ms
+            ):
                 fixations.append(fixation_array)
 
         return fixations
@@ -121,8 +137,8 @@ class WebcamFeatureProcessor:
         prev_centroid_y = None
 
         for fixation in fixations:
-            # Convert microseconds to milliseconds
-            duration_ms = (fixation[-1, 2] - fixation[0, 2]) / 1000.0
+            # Timestamps are in milliseconds
+            duration_ms = fixation[-1, 2] - fixation[0, 2]
             centroid_x = np.mean(fixation[:, 0])
             centroid_y = np.mean(fixation[:, 1])
 
@@ -174,7 +190,7 @@ class WebcamFeatureProcessor:
 
     def process(
         self, raw_points: List[RawGazePoint], screen_width: int, screen_height: int
-    ) -> np.ndarray:
+    ) -> WebcamProcessingResult:
         normalized = self.normalize_coordinates(raw_points, screen_width, screen_height)
         smoothed = self.smooth_signal(normalized)
         fixations = self.detect_fixations(smoothed)
@@ -191,6 +207,26 @@ class WebcamFeatureProcessor:
             )
 
         padded = self.pad_sequences(sequences)
-        return padded.reshape(
+        model_input = padded.reshape(
             1, settings.WEBCAM_MAX_SEQUENCES, settings.EYE_TRACKER_SEQUENCE_LENGTH, 5
+        )
+
+        # Build per-fixation feature rows (model input before sequencing)
+        features_data = [
+            {
+                "timestamp": int(fixation[0, 2]),
+                "duration_ms": float(row[0]),
+                "fixation_x": float(row[1]),
+                "fixation_y": float(row[2]),
+                "saccade_amplitude": float(row[3]),
+                "is_regression": bool(row[4]),
+            }
+            for fixation, row in zip(fixations, features)
+        ]
+
+        return WebcamProcessingResult(
+            sequences=model_input,
+            features_data=features_data,
+            total_fixations=len(features),
+            mean_fixation_duration_ms=float(features[:, 0].mean()),
         )
