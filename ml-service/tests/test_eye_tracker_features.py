@@ -37,8 +37,11 @@ class TestEyeTrackerFeatureProcessor:
 
         result = feature_processor.process_gaze_points(gaze_points, 1920, 1080)
 
-        assert result.shape == (100, 20, 5)
-        assert result.dtype == np.float32
+        assert result.sequences.shape == (100, 20, 5)
+        assert result.sequences.dtype == np.float32
+        assert result.total_gaze_points == 100
+        assert result.valid_fixations > 0
+        assert len(result.features_data) == result.valid_fixations
 
     def test_output_padded_when_few_sequences(self, feature_processor):
         np.random.seed(42)
@@ -47,7 +50,7 @@ class TestEyeTrackerFeatureProcessor:
         result = feature_processor.process_gaze_points(gaze_points, 1920, 1080)
 
         # Even with few input points, output is padded to (100, 20, 5)
-        assert result.shape == (100, 20, 5)
+        assert result.sequences.shape == (100, 20, 5)
 
     # --- Input Validation Tests ---
 
@@ -157,4 +160,4 @@ class TestEyeTrackerFeatureProcessor:
         result_small = feature_processor.process_gaze_points(gaze_points, 800, 600)
         result_large = feature_processor.process_gaze_points(gaze_points, 2560, 1440)
 
-        assert not np.array_equal(result_small, result_large)
+        assert not np.array_equal(result_small.sequences, result_large.sequences)

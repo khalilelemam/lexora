@@ -59,6 +59,7 @@ EYE_TRACKER_MAX_FIXATION_MS=1000
 # Webcam I-VT Algorithm
 WEBCAM_VELOCITY_THRESHOLD=0.5
 WEBCAM_MIN_FIXATION_MS=50
+WEBCAM_MAX_FIXATION_MS=1500
 WEBCAM_EMA_ALPHA=0.5
 WEBCAM_MAX_SEQUENCES=82
 WEBCAM_MIN_SEQUENCES=10
@@ -73,11 +74,11 @@ Place trained models in `models/`:
 ```
 models/
 ├── eye-tracker/
-│   ├── dyslexia-profile-model.h5
+│   ├── dyslexia_profile_model.keras
 │   └── scaler.pkl
 └── webcam/
-    ├── dyslexia-uda-classifier.h5
-    └── target-domain-scaler.pkl
+    ├── dyslexia_uda_classifier.keras
+    └── target_domain_scaler.pkl
 ```
 
 ## Testing

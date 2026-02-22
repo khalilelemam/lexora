@@ -1,9 +1,15 @@
 import logging
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 
 from app.config import settings
-from app.core import global_exception_handler, lifespan, setup_middleware
+from app.core import (
+    global_exception_handler,
+    lifespan,
+    setup_middleware,
+    validation_exception_handler,
+)
 from app.routers import health_router, predict_router
 
 logging.basicConfig(
@@ -21,6 +27,7 @@ def create_app() -> FastAPI:
     )
 
     setup_middleware(app)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, global_exception_handler)
 
     app.include_router(health_router)

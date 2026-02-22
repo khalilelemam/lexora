@@ -32,8 +32,12 @@ Dockerfile eol=lf
 *.exe    -text
 *.dll    -text
 
-
-# reduce merge conflicts in lock files
+# Reduce merge conflicts in lock files
 package-lock.json merge=union
 yarn.lock       merge=union
 pnpm-lock.yaml  merge=union
+
+# Git LFS
+*.keras filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*.h5 filter=lfs diff=lfs merge=lfs -text
