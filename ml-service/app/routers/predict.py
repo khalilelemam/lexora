@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from app.schemas import (
     EyeTrackerFeatureRow,
     EyeTrackerFeatures,
+    ErrorResponse,
     PredictionMetadata,
     PredictionRequest,
     PredictionResponse,
@@ -35,7 +36,21 @@ def _internal_error() -> HTTPException:
     )
 
 
-@router.post("/eye-tracker/predict", response_model=PredictionResponse)
+_ERROR_RESPONSES = {
+    400: {
+        "model": ErrorResponse,
+        "description": "Invalid data or insufficient fixations",
+    },
+    422: {"model": ErrorResponse, "description": "Schema validation failed"},
+    500: {"model": ErrorResponse, "description": "Internal server error"},
+}
+
+
+@router.post(
+    "/eye-tracker/predict",
+    response_model=PredictionResponse,
+    responses=_ERROR_RESPONSES,
+)
 async def predict_eye_tracker(request: PredictionRequest, http_request: Request):
     try:
         features = http_request.app.state.eye_tracker_features
@@ -89,7 +104,11 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
         raise _internal_error()
 
 
-@router.post("/webcam/predict", response_model=WebcamPredictionResponse)
+@router.post(
+    "/webcam/predict",
+    response_model=WebcamPredictionResponse,
+    responses=_ERROR_RESPONSES,
+)
 async def predict_webcam(request: WebcamPredictionRequest, http_request: Request):
     try:
         features = http_request.app.state.webcam_features

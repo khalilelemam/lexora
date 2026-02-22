@@ -306,6 +306,18 @@ POST /v1/webcam/predict
 }
 ```
 
+**Error (422 Unprocessable Entity)**
+
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "One or more fields failed validation.",
+  "details": [
+    {"field": "gazeData", "message": "List should have at least 20 items"}
+  ]
+}
+```
+
 ---
 
 ## Data Requirements

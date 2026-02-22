@@ -28,7 +28,7 @@ def _generate_gaze_points(
     return points
 
 
-def _generate_raw_gaze_points(count: int = 350) -> list[dict]:
+def _generate_raw_gaze_points(count: int = 800) -> list[dict]:
     """Generate a realistic webcam reading example with fixation-saccade patterns.
 
     Produces ~80+ fixations so the I-VT pipeline can build 10+ sequences.
@@ -48,7 +48,7 @@ def _generate_raw_gaze_points(count: int = 350) -> list[dict]:
         cx = x_progress * screen_w
         cy = lines[line_idx % len(lines)] * screen_h
 
-        # 5-8 points per fixation ≈ 80-128 ms at 16 ms/frame
+        # 5-8 points per fixation ≈ 64-112 ms at 16 ms/frame
         n_fix = min(5 + (i % 4), count - i)
         for _ in range(n_fix):
             jx = math.sin(i * 0.7) * 2  # deterministic jitter
@@ -175,5 +175,5 @@ PREDICTION_RESPONSE_EXAMPLE = {
 WEBCAM_PREDICTION_REQUEST_EXAMPLE = {
     "screenWidth": 1920,
     "screenHeight": 1080,
-    "gazeData": _generate_raw_gaze_points(350),
+    "gazeData": _generate_raw_gaze_points(800),
 }
