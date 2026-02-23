@@ -195,22 +195,6 @@ jobs:
           name: lexora-linux
           path: tobii-service/dist/Lexora-Linux-Installer.deb
 
-  create-source-archives:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4      
-      - name: Create source code zip
-        run: zip -r Lexora-source-code.zip . -x ".git/*" ".github/*" "*.pyc" "__pycache__/*" ".DS_Store"
-      - name: Create source code tar.gz
-        run: tar --exclude='.git' --exclude='.github' --exclude='*.pyc' --exclude='__pycache__' --exclude='.DS_Store' -czf Lexora-source-code.tar.gz .
-      - name: Upload source archives
-        uses: actions/upload-artifact@v4
-        with:
-          name: source-code
-          path: |
-            Lexora-source-code.zip
-            Lexora-source-code.tar.gz
 
   create-release:
     needs: [build-windows, build-macos, build-linux, create-source-archives]
@@ -228,3 +212,34 @@ jobs:
           path: artifacts
           
 
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/lexora-windows/Lexora-Setup.exe
+            artifacts/lexora-macos/Lexora-macOS-Installer.pkg
+            artifacts/lexora-linux/Lexora-Linux-Installer.deb
+            artifacts/source-code/Lexora-source-code.zip
+            artifacts/source-code/Lexora-source-code.tar.gz
+          draft: false
+          prerelease: true
+          body: |
+            ## Lexora Eye Tracker Service
+            
+            Cross-platform eye tracking service with native setup wizards.
+            
+            ### Installation
+            
+            **Windows:**
+            - Download `Lexora-Setup.exe`
+            - Double-click to run the setup wizard
+            
+            **macOS:**
+            - Download `Lexora-macOS-Installer.pkg`
+            - Double-click to run the installer
+            
+            **Linux (Ubuntu/Debian):**
+            - Download `Lexora-Linux-Installer.deb`
+            - Double click to install via Software Center, or run: `sudo dpkg -i Lexora-Linux-Installer.deb`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
