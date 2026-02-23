@@ -227,34 +227,4 @@ jobs:
         with:
           path: artifacts
           
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/lexora-windows/Lexora-Setup.exe
-            artifacts/lexora-macos/Lexora-macOS-Installer.pkg
-            artifacts/lexora-linux/Lexora-Linux-Installer.deb
-            artifacts/source-code/Lexora-source-code.zip
-            artifacts/source-code/Lexora-source-code.tar.gz
-          draft: false
-          prerelease: true
-          body: |
-            ## Lexora Eye Tracker Service
-            
-            Cross-platform eye tracking service with native setup wizards.
-            
-            ### Installation
-            
-            **Windows:**
-            - Download `Lexora-Setup.exe`
-            - Double-click to run the setup wizard
-            
-            **macOS:**
-            - Download `Lexora-macOS-Installer.pkg`
-            - Double-click to run the installer
-            
-            **Linux (Ubuntu/Debian):**
-            - Download `Lexora-Linux-Installer.deb`
-            - Double click to install via Software Center, or run: `sudo dpkg -i Lexora-Linux-Installer.deb`
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
