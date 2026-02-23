@@ -6,7 +6,7 @@ on:
       - 'lexora-v*'
 
 jobs:
- build-windows:
+  build-windows:
     runs-on: windows-latest
     defaults:
       run:
@@ -80,6 +80,7 @@ jobs:
         with:
           name: lexora-windows
           path: tobii-service/dist/Lexora-Setup.exe
+
           
   build-macos:
     runs-on: macos-latest
