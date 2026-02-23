@@ -1,10 +1,8 @@
+import { AuroraBackground } from "@/components/ui/AuroraBackground";
+import Navbar from "@/components/ui/Navbar";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Navbar from "@/components/Navbar";
-import { AuroraBackground } from "@/components/AuroraBackground";
-import Footer from "@/components/Footer";
-
+import "../globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -20,7 +18,7 @@ export const metadata: Metadata = {
   description: "exia is reading assessment tool for students and teachers",
 };
 
-export default function RootLayout({
+export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -30,10 +28,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuroraBackground />
-        <Navbar />
+         <AuroraBackground />
         {children}
-        <Footer />
       </body>
     </html>
   );

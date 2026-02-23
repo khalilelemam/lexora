@@ -1,7 +1,7 @@
 import React from "react";
-import Hero from "@/components/Hero";
-import AdventureCards from "@/components/AdventureCards";
-import Mission from "@/components/Mission";
+import Hero from "@/components/ui/Hero";
+import AdventureCards from "@/components/ui/AdventureCards";
+import Mission from "@/components/ui/Mission";
 
 const Page = () => {
   return (

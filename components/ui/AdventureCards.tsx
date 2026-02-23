@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 
 const AdventureCards = () => {
@@ -38,9 +39,11 @@ const AdventureCards = () => {
               </span>
             </div>
           </div>
-          <button className="w-full bg-[#2d2d2d] text-white py-4 rounded-2xl font-bold hover:bg-black transition-all flex items-center justify-center gap-2">
-            Play in Browser <span>→</span>
-          </button>
+          <Link href="/webcam">
+            <button className="w-full bg-[#2d2d2d] text-white py-4 rounded-2xl font-bold hover:bg-black transition-all flex items-center justify-center gap-2">
+              Play in Browser <span>→</span>
+            </button>
+          </Link>
         </div>
 
         {/* Card 2: Exia Lab */}
@@ -65,9 +68,11 @@ const AdventureCards = () => {
               </li>
             </ul>
           </div>
-          <button className="w-full bg-pink-400 hover:bg-pink-500 text-white py-4 rounded-2xl font-bold transition-all">
-            Download Software
-          </button>
+          <Link href="/eye_track">
+            <button className="w-full bg-pink-400 hover:bg-pink-500 text-white py-4 rounded-2xl font-bold transition-all">
+              Download Software
+            </button>
+          </Link>
         </div>
       </div>
     </section>

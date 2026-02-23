@@ -27,3 +27,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+/* Tailwind utility mindset */
+.input {
+  @apply w-full px-4 py-2 rounded-lg border mb-3;
+}
+
+.btn-primary {
+  @apply w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg;
+}

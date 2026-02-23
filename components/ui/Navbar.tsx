@@ -48,7 +48,7 @@ const Navbar = () => {
 
         {/* Action Button */}
         <Link
-          href="/"
+          href="/login"
           className="bg-[#1a1f2e] text-white px-6 py-2.5 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
         >
           Login
