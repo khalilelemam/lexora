@@ -79,7 +79,8 @@ jobs:
           $nsiScript | Out-File -Encoding ASCII "installer.nsi"
       
       - name: Build Windows Installer
-        run: & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+        run:
+          &"C:\Program Files (x86)\NSIS\makensis.exe"installer.nsi
       
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
