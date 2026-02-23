@@ -39,30 +39,38 @@ jobs:
           
           ; Installer settings
           Name "Lexora Setup"
-          OutFile "Lexora-Setup.exe"
+          OutFile "dist\Lexora-Setup.exe"
           InstallDir "$PROGRAMFILES\Lexora"
           
-          ; MUI Settings
+          ; Require Admin rights to install to Program Files
+          RequestExecutionLevel admin
+          
+          ; Standard Wizard UI Pages
+          !insertmacro MUI_PAGE_WELCOME
           !insertmacro MUI_PAGE_DIRECTORY
           !insertmacro MUI_PAGE_INSTFILES
+          !insertmacro MUI_PAGE_FINISH
           !insertmacro MUI_LANGUAGE "English"
           
           Section "Install"
             SetOutPath "$INSTDIR"
             
-            ; 👇 FIX: Grab the entire folder contents recursively, not just one file
+            ; Grab the entire folder built by PyInstaller
             File /r "dist\Lexora\*" 
             
             CreateDirectory "$SMPROGRAMS\Lexora"
             CreateShortCut "$SMPROGRAMS\Lexora\Lexora.lnk" "$INSTDIR\Lexora.exe"
             CreateShortCut "$DESKTOP\Lexora.lnk" "$INSTDIR\Lexora.exe"
+            
+            WriteUninstaller "$INSTDIR\Uninstall.exe"
+            CreateShortCut "$SMPROGRAMS\Lexora\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
           SectionEnd
           
           Section "Uninstall"
-            ; 👇 FIX: Ensure all dependencies are deleted on uninstall
             RMDir /r "$INSTDIR"
             
             Delete "$SMPROGRAMS\Lexora\Lexora.lnk"
+            Delete "$SMPROGRAMS\Lexora\Uninstall.lnk"
             Delete "$DESKTOP\Lexora.lnk"
             RMDir "$SMPROGRAMS\Lexora"
           SectionEnd
@@ -71,17 +79,15 @@ jobs:
           $nsiScript | Out-File -Encoding ASCII "installer.nsi"
       
       - name: Build Windows Installer
-        run: |
-          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
-          Move-Item -Path "Lexora-Setup.exe" -Destination "dist/Lexora-Setup.exe"
+        run: & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
       
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: lexora-windows
-          path: tobii-service/dist/Lexora-Setup.exe
+          # strictly target the setup file, NOT the app folder
+          path: tobii-service/dist/Lexora-Setup.exe 
 
-          
   build-macos:
     runs-on: macos-latest
     defaults:
@@ -90,33 +96,34 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4      
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller      
+      
       - name: Build executable
         run: pyinstaller lexora-macos.spec      
-      - name: Create DMG with installer
+      
+      - name: Create PKG Installer Wizard
         run: |
-          mkdir -p dist/dmg
-          cp -r dist/Lexora.app dist/dmg/
-          
-          # Create Applications symlink for drag-and-drop installation
-          ln -s /Applications dist/dmg/Applications
-          
-          # Create DMG with setup wizard background
-          hdiutil create -volname "Lexora Installer" -srcfolder dist/dmg -ov -format UDZO dist/Lexora-macOS-Installer.dmg
+          pkgbuild --root "dist/Lexora.app" \
+                   --identifier "com.eglex.lexora" \
+                   --version "1.0.0" \
+                   --install-location "/Applications/Lexora.app" \
+                   "dist/Lexora-macOS-Installer.pkg"
       
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
         with:
           name: lexora-macos
-          path: tobii-service/dist/Lexora-macOS-Installer.dmg
+          path: tobii-service/dist/Lexora-macOS-Installer.pkg
 
   build-linux:
     runs-on: ubuntu-latest
@@ -126,10 +133,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4      
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -144,71 +153,56 @@ jobs:
       - name: Build executable
         run: pyinstaller lexora-linux.spec
       
-      - name: Create Linux installer script
+      - name: Create Debian (.deb) Installer
         run: |
-          mkdir -p dist/installer
-          cat > dist/installer/install.sh << 'EOF'
-          #!/bin/bash
-          
-          echo "================================"
-          echo "  Lexora Installation Wizard"
-          echo "================================"
-          echo ""
-          
-          # Get installation directory
-          read -p "Enter installation directory [/opt/lexora]: " INSTALL_DIR
-          INSTALL_DIR=${INSTALL_DIR:-/opt/lexora}
-          
-          echo "Installing Lexora to $INSTALL_DIR..."
-          
-          # Create directory and copy files
-          sudo mkdir -p "$INSTALL_DIR"
-          sudo cp Lexora "$INSTALL_DIR/"
-          sudo chmod +x "$INSTALL_DIR/Lexora"
-          
-          # Create symlink for easy access
-          sudo ln -sf "$INSTALL_DIR/Lexora" /usr/local/bin/lexora
-          
-          # Create desktop entry
-          sudo tee /usr/share/applications/lexora.desktop > /dev/null << 'DESKTOP'
+          mkdir -p dist/lexora_1.0_amd64/DEBIAN
+          mkdir -p dist/lexora_1.0_amd64/opt/lexora
+          mkdir -p dist/lexora_1.0_amd64/usr/bin
+          mkdir -p dist/lexora_1.0_amd64/usr/share/applications
+
+          cat > dist/lexora_1.0_amd64/DEBIAN/control << 'EOF'
+          Package: lexora
+          Version: 1.0
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Lexora Team
+          Description: Lexora Eye Tracker Service
+           Cross-platform eye tracking service with setup wizard.
+          EOF
+
+          cp dist/Lexora dist/lexora_1.0_amd64/opt/lexora/
+          chmod +x dist/lexora_1.0_amd64/opt/lexora/Lexora
+
+          ln -s /opt/lexora/Lexora dist/lexora_1.0_amd64/usr/bin/lexora
+
+          cat > dist/lexora_1.0_amd64/usr/share/applications/lexora.desktop << 'EOF'
           [Desktop Entry]
           Type=Application
           Name=Lexora
-          Exec=/usr/local/bin/lexora
+          Exec=/opt/lexora/Lexora
           Icon=lexora
           Categories=Utility;
-          DESKTOP
-          
-          echo ""
-          echo "✓ Installation complete!"
-          echo "Run 'lexora' from terminal or find it in your application menu"
           EOF
-          
-          chmod +x dist/installer/install.sh
-          cp dist/Lexora dist/installer/
-          
-          # Create tar.gz with installer
-          cd dist
-          tar -czf Lexora-Linux-Installer.tar.gz installer/
+
+          dpkg-deb --build dist/lexora_1.0_amd64
+          mv dist/lexora_1.0_amd64.deb dist/Lexora-Linux-Installer.deb
       
       - name: Upload Linux installer
         uses: actions/upload-artifact@v4
         with:
           name: lexora-linux
-          path: tobii-service/dist/Lexora-Linux-Installer.tar.gz
+          path: tobii-service/dist/Lexora-Linux-Installer.deb
 
   create-source-archives:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4      
       - name: Create source code zip
-        run: |
-          zip -r Lexora-source-code.zip . -x ".git/*" ".github/*" "*.pyc" "__pycache__/*" ".DS_Store"
+        run: zip -r Lexora-source-code.zip . -x ".git/*" ".github/*" "*.pyc" "__pycache__/*" ".DS_Store"
       - name: Create source code tar.gz
-        run: |
-          tar --exclude='.git' --exclude='.github' --exclude='*.pyc' --exclude='__pycache__' --exclude='.DS_Store' -czf Lexora-source-code.tar.gz .
+        run: tar --exclude='.git' --exclude='.github' --exclude='*.pyc' --exclude='__pycache__' --exclude='.DS_Store' -czf Lexora-source-code.tar.gz .
       - name: Upload source archives
         uses: actions/upload-artifact@v4
         with:
@@ -226,17 +220,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4      
+      
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/lexora-windows/Lexora-Setup.exe
-            artifacts/lexora-macos/Lexora-macOS-Installer.dmg
-            artifacts/lexora-linux/Lexora-Linux-Installer.tar.gz
+            artifacts/lexora-macos/Lexora-macOS-Installer.pkg
+            artifacts/lexora-linux/Lexora-Linux-Installer.deb
             artifacts/source-code/Lexora-source-code.zip
             artifacts/source-code/Lexora-source-code.tar.gz
           draft: false
@@ -244,41 +240,20 @@ jobs:
           body: |
             ## Lexora Eye Tracker Service
             
-            Cross-platform eye tracking service with setup wizards for easy installation.
+            Cross-platform eye tracking service with native setup wizards.
             
             ### Installation
             
             **Windows:**
             - Download `Lexora-Setup.exe`
-            - Run the installer
-            - Follow the setup wizard (Select installation folder → Finish)
-            - App will be installed and available in Start Menu
+            - Double-click to run the setup wizard
             
             **macOS:**
-            - Download `Lexora-macOS-Installer.dmg`
-            - Open the DMG file
-            - Drag Lexora.app to Applications folder
-            - Run from Applications folder
+            - Download `Lexora-macOS-Installer.pkg`
+            - Double-click to run the installer
             
-            **Linux:**
-            - Download `Lexora-Linux-Installer.tar.gz`
-            - Extract: `tar -xzf Lexora-Linux-Installer.tar.gz`
-            - Run installer: `cd installer && ./install.sh`
-            - Follow the setup wizard (Select installation directory → Finish)
-            - Run with: `lexora` command
-            
-            **Source Code:**
-            - `Lexora-source-code.zip` - Full source code as ZIP
-            - `Lexora-source-code.tar.gz` - Full source code as TAR.GZ
-            
-            ### System Requirements
-            
-            - **OS:** Windows 10/11, macOS 10.15+, Ubuntu 20.04+
-            - **Python:** 3.10+ (bundled in executables)
-            - **Hardware:** Tobii Pro eye tracker
-            
-            ### Documentation
-            - [User Guide](https://github.com/khalilelemam/eglex/blob/main/tobii-service/README.md)
-            - [API Documentation](https://github.com/khalilelemam/eglex/blob/main/tobii-service/API.md)
+            **Linux (Ubuntu/Debian):**
+            - Download `Lexora-Linux-Installer.deb`
+            - Double click to install via Software Center, or run: `sudo dpkg -i Lexora-Linux-Installer.deb`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
