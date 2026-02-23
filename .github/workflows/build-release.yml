@@ -6,7 +6,7 @@ on:
       - 'lexora-v*'
 
 jobs:
-  build-windows:
+ build-windows:
     runs-on: windows-latest
     defaults:
       run:
@@ -14,23 +14,24 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4      
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller      
+      
       - name: Build executable
         run: pyinstaller lexora-windows.spec      
+      
       - name: Install NSIS
-        run: |
-          choco install nsis -y
-          echo "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          
-
+        run: choco install nsis -y      
+      
       - name: Create NSIS Installer Script
         run: |
           $nsiScript = @'
@@ -38,7 +39,7 @@ jobs:
           
           ; Installer settings
           Name "Lexora Setup"
-          OutFile "dist\Lexora-Setup.exe"  ; <-- FIXED: Output directly to dist folder
+          OutFile "Lexora-Setup.exe"
           InstallDir "$PROGRAMFILES\Lexora"
           
           ; MUI Settings
@@ -48,18 +49,22 @@ jobs:
           
           Section "Install"
             SetOutPath "$INSTDIR"
-            File "dist\Lexora.exe"  ; <-- FIXED: Point to PyInstaller's output directory
+            
+            ; 👇 FIX: Grab the entire folder contents recursively, not just one file
+            File /r "dist\Lexora\*" 
+            
             CreateDirectory "$SMPROGRAMS\Lexora"
             CreateShortCut "$SMPROGRAMS\Lexora\Lexora.lnk" "$INSTDIR\Lexora.exe"
             CreateShortCut "$DESKTOP\Lexora.lnk" "$INSTDIR\Lexora.exe"
           SectionEnd
           
           Section "Uninstall"
-            Delete "$INSTDIR\Lexora.exe"
+            ; 👇 FIX: Ensure all dependencies are deleted on uninstall
+            RMDir /r "$INSTDIR"
+            
             Delete "$SMPROGRAMS\Lexora\Lexora.lnk"
             Delete "$DESKTOP\Lexora.lnk"
             RMDir "$SMPROGRAMS\Lexora"
-            RMDir "$INSTDIR"
           SectionEnd
           '@
           
@@ -68,11 +73,6 @@ jobs:
       - name: Build Windows Installer
         run: |
           & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
-          # Move-Item is no longer needed since OutFile handles the placement!
-      
-      - name: Build Windows Installer
-        run: |
-          makensis installer.nsi
           Move-Item -Path "Lexora-Setup.exe" -Destination "dist/Lexora-Setup.exe"
       
       - name: Upload Windows installer
@@ -80,7 +80,7 @@ jobs:
         with:
           name: lexora-windows
           path: tobii-service/dist/Lexora-Setup.exe
-
+          
   build-macos:
     runs-on: macos-latest
     defaults:
