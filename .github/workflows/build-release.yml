@@ -56,7 +56,7 @@ jobs:
             SetOutPath "$INSTDIR"
             
             ; Grab the entire folder built by PyInstaller
-            File /r "dist\Lexora\*" 
+             File "dist\Lexora.exe"
             
             CreateDirectory "$SMPROGRAMS\Lexora"
             CreateShortCut "$SMPROGRAMS\Lexora\Lexora.lnk" "$INSTDIR\Lexora.exe"
