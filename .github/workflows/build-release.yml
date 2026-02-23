@@ -30,6 +30,7 @@ jobs:
           choco install nsis -y
           echo "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           
+
       - name: Create NSIS Installer Script
         run: |
           $nsiScript = @'
@@ -37,7 +38,7 @@ jobs:
           
           ; Installer settings
           Name "Lexora Setup"
-          OutFile "..\Lexora-Setup.exe"
+          OutFile "dist\Lexora-Setup.exe"  ; <-- FIXED: Output directly to dist folder
           InstallDir "$PROGRAMFILES\Lexora"
           
           ; MUI Settings
@@ -47,7 +48,7 @@ jobs:
           
           Section "Install"
             SetOutPath "$INSTDIR"
-            File "Lexora.exe"
+            File "dist\Lexora.exe"  ; <-- FIXED: Point to PyInstaller's output directory
             CreateDirectory "$SMPROGRAMS\Lexora"
             CreateShortCut "$SMPROGRAMS\Lexora\Lexora.lnk" "$INSTDIR\Lexora.exe"
             CreateShortCut "$DESKTOP\Lexora.lnk" "$INSTDIR\Lexora.exe"
@@ -63,6 +64,11 @@ jobs:
           '@
           
           $nsiScript | Out-File -Encoding ASCII "installer.nsi"
+      
+      - name: Build Windows Installer
+        run: |
+          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+          # Move-Item is no longer needed since OutFile handles the placement!
       
       - name: Build Windows Installer
         run: |
