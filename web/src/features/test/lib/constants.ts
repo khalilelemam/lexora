@@ -40,6 +40,16 @@ export const CALIBRATION_THRESHOLDS = {
 /** Minimum gaze points required per task (ML service minimum) */
 export const MIN_GAZE_POINTS = 20;
 
+/**
+ * EMA smoothing factor for webcam gaze coordinates.
+ * Lower α = heavier smoothing. The ML service velocity-threshold fixation
+ * detector (0.5 norm-units/s) is very sensitive to jitter — at 60 fps any
+ * frame-to-frame noise > ~16 px on a 1920-wide screen counts as a saccade.
+ * Pre-smoothing with α ≈ 0.3 reduces jitter to ~30 % of raw, so combined
+ * with the ML service's own EMA (α = 0.5) the effective noise drops to ~15 %.
+ */
+export const WEBCAM_GAZE_EMA_ALPHA = 0.3;
+
 /** Recommended minimum webcam gaze points */
 export const RECOMMENDED_WEBCAM_POINTS = 2000;
 

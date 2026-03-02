@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { WebcamGazePoint } from '../types';
+import { WEBCAM_GAZE_EMA_ALPHA } from '../lib/constants';
 
 /**
  * Webcam gaze tracking using MediaPipe FaceLandmarker.
@@ -63,6 +64,8 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   onGazePointRef.current = onGazePoint;
   // Track last iris positions for calibration
   const lastIrisRef = useRef<IrisPosition | null>(null);
+  // Track previous smoothed gaze position for EMA
+  const prevSmoothedRef = useRef<{ x: number; y: number } | null>(null);
 
   // ─── Initialize Camera ──────────────────────────────────
 
@@ -196,9 +199,22 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
             if (collectingRef.current && calibrationRef.current) {
               const screenPos = mapToScreen(iris);
               if (screenPos) {
+                // Apply EMA smoothing to reduce frame-to-frame jitter.
+                // The ML service I-VT detector uses a tight velocity threshold
+                // (0.5 norm-units/s → ~16 px/frame at 60 fps). Without smoothing,
+                // webcam iris tracking noise causes most points to be classified
+                // as saccades, producing too few fixations.
+                const alpha = WEBCAM_GAZE_EMA_ALPHA;
+                const prev = prevSmoothedRef.current;
+                const smoothed = prev
+                  ? { x: alpha * screenPos.x + (1 - alpha) * prev.x,
+                      y: alpha * screenPos.y + (1 - alpha) * prev.y }
+                  : screenPos;
+                prevSmoothedRef.current = smoothed;
+
                 onGazePointRef.current?.({
-                  x: screenPos.x,
-                  y: screenPos.y,
+                  x: smoothed.x,
+                  y: smoothed.y,
                   timestamp: Math.round(performance.now()),
                 });
                 setPointCount((prev) => prev + 1);
@@ -225,6 +241,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
 
   const startCollecting = useCallback(() => {
     setPointCount(0);
+    prevSmoothedRef.current = null; // Reset EMA state for fresh collection
     setCollecting(true);
   }, []);
 
@@ -256,6 +273,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     setModelReady(false);
     setCollecting(false);
     calibrationRef.current = null;
+    prevSmoothedRef.current = null;
   }, []);
 
   // Cleanup on unmount

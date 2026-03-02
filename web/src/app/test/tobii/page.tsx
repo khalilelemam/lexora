@@ -323,7 +323,15 @@ export default function TobiiTestPage() {
         return (
           <ErrorScreen
             error={tobiiState.error ?? 'An unexpected error occurred'}
-            onRetry={() => dispatch({ type: 'RETRY_SUBMIT' })}
+            // Tobii data quality is reliable — always allow retrying submission
+            onRetry={
+              syllablesRef.current.length > 0 ||
+              pseudoWordsRef.current.length > 0 ||
+              meaningfulTextRef.current.length > 0
+                ? () => dispatch({ type: 'RETRY_SUBMIT' })
+                : undefined
+            }
+            onStartOver={handleNewTest}
             onGoHome={handleExit}
           />
         );

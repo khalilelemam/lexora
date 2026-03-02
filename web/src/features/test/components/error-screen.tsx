@@ -1,15 +1,18 @@
 'use client';
 
-import { AlertCircle, RotateCcw, Home } from 'lucide-react';
+import { AlertCircle, RotateCcw, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ErrorScreenProps {
   error: string;
+  /** Re-submit the same data (only useful for transient network errors) */
   onRetry?: () => void;
+  /** Restart the entire test flow from the beginning */
+  onStartOver?: () => void;
   onGoHome?: () => void;
 }
 
-export function ErrorScreen({ error, onRetry, onGoHome }: ErrorScreenProps) {
+export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScreenProps) {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
@@ -25,7 +28,13 @@ export function ErrorScreen({ error, onRetry, onGoHome }: ErrorScreenProps) {
         {onRetry && (
           <Button onClick={onRetry}>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Try Again
+            Retry Submission
+          </Button>
+        )}
+        {onStartOver && (
+          <Button variant={onRetry ? 'outline' : 'default'} onClick={onStartOver}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Start Over
           </Button>
         )}
         {onGoHome && (

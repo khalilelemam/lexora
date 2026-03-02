@@ -254,7 +254,14 @@ export default function WebcamTestPage() {
         return (
           <ErrorScreen
             error={webcamState.error ?? 'An unexpected error occurred'}
-            onRetry={() => dispatch({ type: 'RETRY_SUBMIT' })}
+            // Only offer "Retry Submission" when we have enough data —
+            // otherwise re-submitting the same insufficient data just loops.
+            onRetry={
+              gazeDataRef.current.length >= MIN_GAZE_POINTS
+                ? () => dispatch({ type: 'RETRY_SUBMIT' })
+                : undefined
+            }
+            onStartOver={handleNewTest}
             onGoHome={handleExit}
           />
         );
