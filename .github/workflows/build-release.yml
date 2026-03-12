@@ -33,6 +33,7 @@ jobs:
         run: choco install nsis -y      
       
       - name: Create NSIS Installer Script
+        # Fixed PowerShell here-string syntax (closing '@ must have zero indentation)
         run: |
           $nsiScript = @'
           !include "MUI2.nsh"
@@ -202,16 +203,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4      
       - name: Create source code zip
-        run: zip -r Lexora-source-code.zip . -x ".git/*" ".github/*" "*.pyc" "__pycache__/*" ".DS_Store"
-      - name: Create source code tar.gz
-        run: tar --exclude='.git' --exclude='.github' --exclude='*.pyc' --exclude='__pycache__' --exclude='.DS_Store' -czf Lexora-source-code.tar.gz .
+        run: zip -r Lexora-source-code.zip . -x ".git/*" ".github/*" "*.pyc" "__pycache__/*" ".DS_Store" "Lexora-source-code.zip"
       - name: Upload source archives
         uses: actions/upload-artifact@v4
         with:
           name: source-code
-          path: |
-            Lexora-source-code.zip
-            Lexora-source-code.tar.gz
+          path: Lexora-source-code.zip
 
   create-release:
     needs: [build-windows, build-macos, build-linux, create-source-archives]
@@ -229,14 +226,13 @@ jobs:
           path: artifacts
           
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/lexora-windows/Lexora-Setup.exe
             artifacts/lexora-macos/Lexora-macOS-Installer.pkg
             artifacts/lexora-linux/Lexora-Linux-Installer.deb
             artifacts/source-code/Lexora-source-code.zip
-            artifacts/source-code/Lexora-source-code.tar.gz
           draft: false
           prerelease: true
           body: |
