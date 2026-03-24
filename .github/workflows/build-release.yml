@@ -200,7 +200,7 @@ jobs:
 
 
   create-release:
-    needs: [build-windows, build-macos, build-linux, create-source-archives]
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
