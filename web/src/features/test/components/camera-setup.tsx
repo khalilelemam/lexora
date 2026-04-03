@@ -58,13 +58,13 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-        <Camera className="h-8 w-8 text-muted-foreground" />
+      <div className="bg-muted flex h-16 w-16 items-center justify-center rounded-full">
+        <Camera className="text-muted-foreground h-8 w-8" />
       </div>
 
       <div className="text-center">
         <h2 className="text-2xl font-semibold">Camera Setup</h2>
-        <p className="mt-1 text-muted-foreground">
+        <p className="text-muted-foreground mt-1">
           We need access to your camera to track eye movement.
         </p>
       </div>
@@ -72,7 +72,7 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
       {/* Camera preview (separate element — the real video lives at page level) */}
       <Card className="w-full max-w-md overflow-hidden">
         <CardContent className="p-0">
-          <div className="relative aspect-[4/3] bg-muted">
+          <div className="bg-muted relative aspect-4/3">
             <video
               ref={previewRef}
               className="h-full w-full object-cover"
@@ -81,11 +81,11 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
               muted
             />
             {!cameraReady && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted">
+              <div className="bg-muted absolute inset-0 flex items-center justify-center">
                 {initializing ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
                 ) : (
-                  <Camera className="h-8 w-8 text-muted-foreground" />
+                  <Camera className="text-muted-foreground h-8 w-8" />
                 )}
               </div>
             )}
@@ -99,7 +99,7 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
           {cameraReady ? (
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           ) : (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
           )}
           <span>Camera {cameraReady ? 'ready' : 'initializing...'}</span>
         </div>
@@ -107,15 +107,15 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
           {modelReady ? (
             <CheckCircle2 className="h-4 w-4 text-green-600" />
           ) : (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
           )}
           <span>Face tracking model {modelReady ? 'loaded' : 'loading...'}</span>
         </div>
       </div>
 
       {/* Environment tips */}
-      <div className="w-full max-w-md rounded-md bg-muted p-3 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground">Tips for best results:</p>
+      <div className="bg-muted text-muted-foreground w-full max-w-md rounded-md p-3 text-sm">
+        <p className="text-foreground font-medium">Tips for best results:</p>
         <ul className="mt-1 list-inside list-disc space-y-1">
           <li>Sit about arm&apos;s length from the screen</li>
           <li>Make sure your face is well-lit (no backlighting)</li>

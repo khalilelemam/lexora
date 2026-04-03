@@ -34,7 +34,7 @@ function getAOIXBounds() {
  * Map raw gaze coordinates from AOI space to normalized element space.
  * Raw coordinates are calibrated within AOI [0.2, 0.8] for X-axis.
  * This remaps them to [0, 1] so they span the full paragraph width.
- * 
+ *
  * Formula: mappedX = (rawX - aoiMin) / (aoiMax - aoiMin)
  */
 function mapAOICoordinateToElement(rawCoord: number, aoiMin: number, aoiMax: number): number {
@@ -56,7 +56,10 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLParagraphElement>(null);
   const [scaleRatio, setScaleRatio] = useState(1);
-  const [contentDimensions, setContentDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [contentDimensions, setContentDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const [textOffset, setTextOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Normalised timeline: cumulative duration offsets (ms) for each fixation
@@ -70,7 +73,10 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
   }, [features]);
 
   const totalDuration = useMemo(
-    () => (timeline.length > 0 ? timeline[timeline.length - 1] + features[features.length - 1].durationMs : 0),
+    () =>
+      timeline.length > 0
+        ? timeline[timeline.length - 1] + features[features.length - 1].durationMs
+        : 0,
     [timeline, features],
   );
 
@@ -167,8 +173,8 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     if (features.length > 0) {
       const debugData = {
         totalFeatures: features.length,
-        firstTenY: features.slice(0, 10).map(f => f.fixationY),
-        firstTenX: features.slice(0, 10).map(f => f.fixationX),
+        firstTenY: features.slice(0, 10).map((f) => f.fixationY),
+        firstTenX: features.slice(0, 10).map((f) => f.fixationX),
       };
 
       console.log('=== GAZE REPLAY VISUALIZER DEBUG ===', debugData);
@@ -180,7 +186,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
           title: '=== GAZE REPLAY FEATURES ===',
           data: debugData,
         }),
-      }).catch(() => { });
+      }).catch(() => {});
 
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
@@ -202,13 +208,13 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
             title: 'Replay container dimensions',
             data: containerData,
           }),
-        }).catch(() => { });
+        }).catch(() => {});
 
         // Calculate expected pixel positions
         const containerHeight = rect.height;
         const pixelData = {
           containerHeight,
-          yValuesAsPixels: features.slice(0, 10).map(f => f.fixationY * containerHeight),
+          yValuesAsPixels: features.slice(0, 10).map((f) => f.fixationY * containerHeight),
         };
 
         console.log('Y-values as pixels:', pixelData);
@@ -220,7 +226,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
             title: 'Y-values converted to pixels',
             data: pixelData,
           }),
-        }).catch(() => { });
+        }).catch(() => {});
       }
     }
   }, [features]);
@@ -283,7 +289,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
   return (
     <div className="flex w-full flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex items-center gap-2 text-sm">
         <Eye className="h-4 w-4" />
         <span>Gaze Replay</span>
         {currentIndex >= 0 && (
@@ -296,7 +302,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       {/* Replay canvas — text with overlaid bubbles */}
       <div
         ref={containerRef}
-        className="relative overflow-hidden rounded-lg border bg-background p-6 sm:p-8"
+        className="bg-background relative overflow-hidden rounded-lg border p-6 sm:p-8"
         dir={direction}
       >
         {/* Exact replica wrapper with scaling for alignment */}
@@ -311,10 +317,11 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
           <p
             ref={contentRef}
             className={cn(
-              'whitespace-pre-line text-base leading-[2] tracking-wide sm:text-lg',
-              'font-normal text-muted-foreground/60 select-none',
+              'text-base tracking-wide whitespace-pre-line sm:text-lg',
+              'text-muted-foreground/60 font-normal select-none',
               direction === 'rtl' && 'text-right',
             )}
+            style={{ lineHeight: 2 }}
           >
             {content}
           </p>
@@ -330,8 +337,8 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
 
             // Calculate bubble position relative to ACTUAL TEXT CONTENT
             // CRITICAL FIX: Include textOffset to account for text position within container
-            const bubbleTop = textOffset.y + (f.fixationY * contentDimensions.height);
-            const bubbleLeft = textOffset.x + (mappedX * contentDimensions.width);
+            const bubbleTop = textOffset.y + f.fixationY * contentDimensions.height;
+            const bubbleLeft = textOffset.x + mappedX * contentDimensions.width;
 
             return (
               <div
@@ -380,10 +387,10 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
                 const currMappedX = mapGazeX(curr.fixationX);
 
                 // CRITICAL FIX: Include textOffset to match bubble positioning
-                const prevTop = textOffset.y + (prev.fixationY * contentDimensions.height);
-                const prevLeft = textOffset.x + (prevMappedX * contentDimensions.width);
-                const currTop = textOffset.y + (curr.fixationY * contentDimensions.height);
-                const currLeft = textOffset.x + (currMappedX * contentDimensions.width);
+                const prevTop = textOffset.y + prev.fixationY * contentDimensions.height;
+                const prevLeft = textOffset.x + prevMappedX * contentDimensions.width;
+                const currTop = textOffset.y + curr.fixationY * contentDimensions.height;
+                const currLeft = textOffset.x + currMappedX * contentDimensions.width;
 
                 return (
                   <line
@@ -404,9 +411,9 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+      <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-150"
+          className="bg-primary h-full rounded-full transition-all duration-150"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -432,7 +439,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
 
         {/* Speed selector */}
         <div className="flex items-center gap-1">
-          <span className="mr-1 text-xs text-muted-foreground">Speed:</span>
+          <span className="text-muted-foreground mr-1 text-xs">Speed:</span>
           {SPEED_OPTIONS.map((s) => (
             <Button
               key={s}
@@ -448,7 +455,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       </div>
 
       {/* Legend */}
-      <div className="flex items-center flex-wrap gap-4 text-xs text-muted-foreground">
+      <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rounded-full bg-blue-400 opacity-50" />
           <span>Forward fixation</span>
@@ -459,7 +466,15 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="16" height="4" className="mr-1">
-            <line x1="0" y1="2" x2="16" y2="2" stroke="#9ca3af" strokeWidth="2" strokeDasharray="4 4" />
+            <line
+              x1="0"
+              y1="2"
+              x2="16"
+              y2="2"
+              stroke="#9ca3af"
+              strokeWidth="2"
+              strokeDasharray="4 4"
+            />
           </svg>
           <span>Return sweep</span>
         </div>

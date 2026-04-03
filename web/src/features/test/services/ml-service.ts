@@ -1,4 +1,4 @@
-import type { PredictionResult, RiskLevel, GazeFeature } from '@/features/test/types';
+import type { PredictionResult, RiskLevel } from '@/features/test/types';
 
 /** ML prediction request timeout (ms) */
 const ML_PREDICTION_TIMEOUT = 15_000;

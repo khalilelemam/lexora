@@ -103,7 +103,6 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   const calibrationRef = useRef<CalibrationMapping | null>(null);
   const rafRef = useRef<number>(0);
   const onGazePointRef = useRef(onGazePoint);
-  onGazePointRef.current = onGazePoint;
   // Track last iris positions for calibration
   const lastIrisRef = useRef<IrisPosition | null>(null);
   // Track last head pose for diagnostics
@@ -248,31 +247,35 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
 
   // ─── Map Iris → Screen Coordinates ──────────────────────
 
-  const mapToScreen = useCallback(
-    (iris: IrisPosition): { x: number; y: number } | null => {
-      const cal = calibrationRef.current;
-      if (!cal) return null;
+  const mapToScreen = useCallback((iris: IrisPosition): { x: number; y: number } | null => {
+    const cal = calibrationRef.current;
+    if (!cal) return null;
 
-      // Average both eyes
-      const ix = (iris.leftX + iris.rightX) / 2;
-      const iy = (iris.leftY + iris.rightY) / 2;
+    // Average both eyes
+    const ix = (iris.leftX + iris.rightX) / 2;
+    const iy = (iris.leftY + iris.rightY) / 2;
 
-      // Include head pose in prediction (model uses it for better Y-axis mapping)
-      const hp = lastHeadPoseRef.current;
-      const yaw = hp?.yaw ?? 0;
-      const pitch = hp?.pitch ?? 0;
+    // Include head pose in prediction (model uses it for better Y-axis mapping)
+    const hp = lastHeadPoseRef.current;
+    const yaw = hp?.yaw ?? 0;
+    const pitch = hp?.pitch ?? 0;
 
-      return cal.predict(ix, iy, yaw, pitch);
-    },
-    [],
-  );
+    return cal.predict(ix, iy, yaw, pitch);
+  }, []);
 
   // ─── Detection Loop ─────────────────────────────────────
   // Always runs when camera + model are ready — keeps lastIrisRef fresh
   // for calibration sampling. Gaze point emission is gated by `collecting`.
 
   const collectingRef = useRef(false);
-  collectingRef.current = collecting;
+
+  useEffect(() => {
+    onGazePointRef.current = onGazePoint;
+  }, [onGazePoint]);
+
+  useEffect(() => {
+    collectingRef.current = collecting;
+  }, [collecting]);
 
   useEffect(() => {
     if (!enabled || !cameraReady || !modelReady) return;
@@ -312,9 +315,9 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
                 const prev = prevSmoothedRef.current;
                 const smoothed = prev
                   ? {
-                    x: alpha * screenPos.x + (1 - alpha) * prev.x,
-                    y: alpha * screenPos.y + (1 - alpha) * prev.y
-                  }
+                      x: alpha * screenPos.x + (1 - alpha) * prev.x,
+                      y: alpha * screenPos.y + (1 - alpha) * prev.y,
+                    }
                   : screenPos;
                 prevSmoothedRef.current = smoothed;
 

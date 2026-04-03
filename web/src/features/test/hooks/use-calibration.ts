@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { CalibrationResult, CalibrationQuality, CalibrationDiagnostics, HeadPoseSample, ModelDiagnostic } from '../types';
+import type {
+  CalibrationResult,
+  CalibrationQuality,
+  CalibrationDiagnostics,
+  HeadPoseSample,
+  ModelDiagnostic,
+} from '../types';
 import {
   CALIBRATION_POINTS,
   CALIBRATION_DOT_DURATION,
@@ -13,7 +19,11 @@ import {
   computeCalibrationDiagnostics,
   logCalibrationDiagnostics,
 } from '../lib/calibration-diagnostics';
-import { trainAllModels, type TrainingSample, type CalibrationModel } from '../lib/calibration-models';
+import {
+  trainAllModels,
+  type TrainingSample,
+  type CalibrationModel,
+} from '../lib/calibration-models';
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -53,11 +63,11 @@ function evaluatePoints(
   heldSplit: CollectedSample[][],
   points: typeof CALIBRATION_POINTS,
   screenWidth: number,
-  screenHeight: number
+  screenHeight: number,
 ): PointResult[] {
   return points.map((pt, i) => {
     if (!heldSplit[i] || heldSplit[i].length === 0) return { index: i, error: 0 };
-    const errors = heldSplit[i].map(s => {
+    const errors = heldSplit[i].map((s) => {
       const pred = model.predict(s.observedX, s.observedY, s.yaw, s.pitch);
       const targetX = pt.x * screenWidth;
       const targetY = pt.y * screenHeight;
@@ -73,10 +83,10 @@ function getFlaggedPoints(results: PointResult[]): number[] {
   const THRESHOLD = 80;
   const MAX_FLAGS = 5;
   return results
-    .filter(r => r.error > THRESHOLD)
+    .filter((r) => r.error > THRESHOLD)
     .sort((a, b) => b.error - a.error)
     .slice(0, MAX_FLAGS)
-    .map(r => r.index);
+    .map((r) => r.index);
 }
 
 const MERGE_WEIGHTS = [
@@ -87,7 +97,7 @@ const MERGE_WEIGHTS = [
 function mergePoint(
   freshSamples: CollectedSample[],
   oldSamples: CollectedSample[],
-  round: number
+  round: number,
 ): CollectedSample[] {
   const { newW, oldW } = MERGE_WEIGHTS[Math.min(round, 1)];
   const newCount = Math.round(freshSamples.length * newW * 2);
@@ -95,11 +105,13 @@ function mergePoint(
   if (freshSamples.length === 0) return oldSamples;
   if (oldSamples.length === 0) return freshSamples;
   return [
-    ...Array.from({ length: newCount }, () =>
-      freshSamples[Math.floor(Math.random() * freshSamples.length)]
+    ...Array.from(
+      { length: newCount },
+      () => freshSamples[Math.floor(Math.random() * freshSamples.length)],
     ),
-    ...Array.from({ length: oldCount }, () =>
-      oldSamples[Math.floor(Math.random() * oldSamples.length)]
+    ...Array.from(
+      { length: oldCount },
+      () => oldSamples[Math.floor(Math.random() * oldSamples.length)],
     ),
   ];
 }
@@ -119,11 +131,9 @@ export function useCalibration() {
     Array.from({ length: points.length }, () => []),
   );
   const trainSplitRef = useRef<CollectedSample[][]>(
-    Array.from({ length: points.length }, () => [])
+    Array.from({ length: points.length }, () => []),
   );
-  const heldSplitRef = useRef<CollectedSample[][]>(
-    Array.from({ length: points.length }, () => [])
-  );
+  const heldSplitRef = useRef<CollectedSample[][]>(Array.from({ length: points.length }, () => []));
   const recalRoundRef = useRef<number>(0);
 
   const currentPointIndex = collectionOrder[collectionCursor] ?? 0;
@@ -311,7 +321,13 @@ export function useCalibration() {
       const comparison = trainAllModels(trainingSamples, screenWidth, screenHeight);
       const bestModel = comparison.best;
 
-      const pointResults = evaluatePoints(bestModel, heldSplitRef.current, points as any, screenWidth, screenHeight);
+      const pointResults = evaluatePoints(
+        bestModel,
+        heldSplitRef.current,
+        points,
+        screenWidth,
+        screenHeight,
+      );
       const flaggedPoints = getFlaggedPoints(pointResults);
 
       let lowAccuracyWarning = false;
@@ -438,7 +454,9 @@ export function useCalibration() {
             if (n < 2) return 0;
             const ma = a.reduce((s, v) => s + v, 0) / n;
             const mb = b.reduce((s, v) => s + v, 0) / n;
-            let num = 0, da = 0, db = 0;
+            let num = 0,
+              da = 0,
+              db = 0;
             for (let i = 0; i < n; i++) {
               num += (a[i] - ma) * (b[i] - mb);
               da += (a[i] - ma) ** 2;
@@ -478,7 +496,7 @@ export function useCalibration() {
         lowAccuracyWarning,
       };
     },
-    [points],
+    [points, collectionOrder],
   );
 
   // ─── Reset ──────────────────────────────────────────

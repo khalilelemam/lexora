@@ -26,9 +26,7 @@ export function useTobiiStatus() {
       const data = (await response.json()) as TobiiStatus;
       setStatus(data);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Cannot connect to Tobii Helper app',
-      );
+      setError(err instanceof Error ? err.message : 'Cannot connect to Tobii Helper app');
       setStatus(null);
     } finally {
       setChecking(false);
@@ -53,7 +51,10 @@ export function useTobiiGazeStream({ enabled, onGazeData }: UseTobiiGazeStreamOp
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const onGazeDataRef = useRef(onGazeData);
-  onGazeDataRef.current = onGazeData;
+
+  useEffect(() => {
+    onGazeDataRef.current = onGazeData;
+  }, [onGazeData]);
 
   useEffect(() => {
     if (!enabled) {
@@ -62,7 +63,6 @@ export function useTobiiGazeStream({ enabled, onGazeData }: UseTobiiGazeStreamOp
         wsRef.current.close();
         wsRef.current = null;
       }
-      setConnected(false);
       return;
     }
 

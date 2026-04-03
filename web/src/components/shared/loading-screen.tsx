@@ -15,13 +15,11 @@ export function LoadingScreen({
 }: LoadingScreenProps) {
   return (
     <div
-      className={cn(
-        'flex min-h-[400px] flex-col items-center justify-center gap-4',
-        className,
-      )}
+      className={cn('flex flex-col items-center justify-center gap-4', className)}
+      style={{ minHeight: 400 }}
     >
-      <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      <p className="text-lg font-medium text-muted-foreground">{message}</p>
+      <Loader2 className="text-primary h-10 w-10 animate-spin" />
+      <p className="text-muted-foreground text-lg font-medium">{message}</p>
     </div>
   );
 }

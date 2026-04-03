@@ -58,6 +58,11 @@ export interface PipelineMetrics {
   meanFixationDurationMs: number | null;
   fixationDurationSd: number | null;
   dataRetentionPct: number | null;
+  normalizedRetentionPct?: number | null;
+  fixationRetentionPct?: number | null;
+  totalPipelineRetentionPct?: number | null;
+  outOfBoundsPoints?: number | null;
+  invalidFixationPoints?: number | null;
   meanSaccadeAmplitude: number | null;
   totalRegressions: number | null;
   intraFixationJitter: number | null;
@@ -244,8 +249,8 @@ export interface ValidationPointResult {
 export interface ModelDiagnostic {
   kind: string;
   trainingErrorPx: number;
-  validationErrorPx: number;  // Post-validation mean error
-  validationJitterStdDev: number;  // Mean jitter across validation points
+  validationErrorPx: number; // Post-validation mean error
+  validationJitterStdDev: number; // Mean jitter across validation points
   info: string;
   isBest: boolean;
   /** Per-point mean error in px */

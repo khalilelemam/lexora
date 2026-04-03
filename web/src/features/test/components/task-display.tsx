@@ -73,7 +73,7 @@ export function TaskDisplay({
   const [showDialog, setShowDialog] = useState(false);
   const autoDetectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gazeCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef(0);
   const dismissCountRef = useRef(0);
   const crossDwellStartRef = useRef<number | null>(null);
   const crossMissCountRef = useRef(0);
@@ -87,7 +87,9 @@ export function TaskDisplay({
 
   // Keep a ref so timers can read the *current* value without stale closures
   const pointCountRef = useRef(pointCount);
-  pointCountRef.current = pointCount;
+  useEffect(() => {
+    pointCountRef.current = pointCount;
+  }, [pointCount]);
 
   const isArabic = language === 'ar';
   const isSyllables = taskType === 'syllables';
@@ -171,7 +173,7 @@ export function TaskDisplay({
         title: '=== LINE CENTER MEASUREMENT DEBUG ===',
         data: debugData,
       }),
-    }).catch(() => { });
+    }).catch(() => {});
 
     // Calculate the vertical center of each line and normalize
     const lineCenters: number[] = [];
@@ -181,8 +183,8 @@ export function TaskDisplay({
       const rects = lineMap.get(lineKey)!;
 
       // Calculate the absolute vertical center of this line
-      const minTop = Math.min(...rects.map(r => r.top));
-      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      const minTop = Math.min(...rects.map((r) => r.top));
+      const maxBottom = Math.max(...rects.map((r) => r.bottom));
       const lineCenterAbsolute = (minTop + maxBottom) / 2;
 
       // CRITICAL FIX: Normalize relative to TEXT CONTENT (not container)
@@ -211,7 +213,7 @@ export function TaskDisplay({
             title: `Line ${lineIndex} measurement`,
             data: lineData,
           }),
-        }).catch(() => { });
+        }).catch(() => {});
       }
     });
 
@@ -227,7 +229,7 @@ export function TaskDisplay({
         title: '=== FINAL LINE CENTERS ===',
         data: finalData,
       }),
-    }).catch(() => { });
+    }).catch(() => {});
 
     onLineCentersReady(lineCenters);
   }, [isShortContent, onLineCentersReady, content]);
@@ -257,7 +259,7 @@ export function TaskDisplay({
             overage: container.scrollHeight - container.clientHeight,
           },
         }),
-      }).catch(() => { });
+      }).catch(() => {});
     }
   }, [isShortContent, content]);
 
@@ -279,7 +281,7 @@ export function TaskDisplay({
         <p
           className={cn(
             'whitespace-pre-line',
-            'text-xl leading-[2] tracking-wide sm:text-2xl sm:leading-[2] md:text-3xl md:leading-[2]',
+            'text-xl leading-loose tracking-wide sm:text-2xl sm:leading-loose md:text-3xl md:leading-loose',
             'font-normal select-none',
             isArabic && 'text-right',
           )}
@@ -333,9 +335,7 @@ export function TaskDisplay({
       const crossCenterY = rect.top + rect.height / 2;
 
       // Euclidean distance from gaze to cross center
-      const dist = Math.sqrt(
-        (pos.x - crossCenterX) ** 2 + (pos.y - crossCenterY) ** 2,
-      );
+      const dist = Math.sqrt((pos.x - crossCenterX) ** 2 + (pos.y - crossCenterY) ** 2);
 
       if (dist <= CROSS_PROXIMITY_PX) {
         // Gaze is near the cross — start or continue dwell
@@ -413,23 +413,23 @@ export function TaskDisplay({
   // ─── Render ─────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 z-40 cursor-none bg-background">
+    <div className="bg-background fixed inset-0 z-40 cursor-none">
       {/* Rigid AOI-bounded reading surface (10%-65% Y, 20%-80% X) */}
       <div
         ref={paragraphContainerRef}
         className="absolute flex flex-col items-center justify-center overflow-hidden"
         style={{
           top: '10%',
-          bottom: '35%',  // Height = 55% (100% - 10% - 35%)
+          bottom: '35%', // Height = 55% (100% - 10% - 35%)
           left: '20%',
-          right: '20%',   // Width = 60% (100% - 20% - 20%)
+          right: '20%', // Width = 60% (100% - 20% - 20%)
         }}
         dir={isArabic ? 'rtl' : 'ltr'}
       >
         {/* Content with optimised reading typography */}
         <div
           className={cn(
-            'w-full h-full overflow-hidden',
+            'h-full w-full overflow-hidden',
             isShortContent && 'flex items-center justify-center',
           )}
         >
@@ -438,7 +438,7 @@ export function TaskDisplay({
             <div className="flex flex-col items-center justify-center gap-6">
               <pre
                 className={cn(
-                  'whitespace-pre-wrap text-center font-mono',
+                  'text-center font-mono whitespace-pre-wrap',
                   'text-3xl leading-loose tracking-[0.25em] sm:text-4xl md:text-5xl',
                   'select-none',
                 )}
@@ -447,7 +447,12 @@ export function TaskDisplay({
               </pre>
               {/* Fixation cross — end marker */}
               <div className="mt-4 flex items-center justify-center" aria-hidden="true">
-                <span ref={crossRef} className="text-4xl font-light text-muted-foreground/60 select-none">+</span>
+                <span
+                  ref={crossRef}
+                  className="text-muted-foreground/60 text-4xl font-light select-none"
+                >
+                  +
+                </span>
               </div>
             </div>
           ) : (
@@ -456,13 +461,15 @@ export function TaskDisplay({
               {renderParagraphWithWords()}
               {/* Fixation cross — placed at the text's natural end */}
               <div
-                className={cn(
-                  'mt-6 flex',
-                  isArabic ? 'justify-start' : 'justify-end',
-                )}
+                className={cn('mt-6 flex', isArabic ? 'justify-start' : 'justify-end')}
                 aria-hidden="true"
               >
-                <span ref={crossRef} className="text-4xl font-light text-muted-foreground/60 select-none">+</span>
+                <span
+                  ref={crossRef}
+                  className="text-muted-foreground/60 text-4xl font-light select-none"
+                >
+                  +
+                </span>
               </div>
             </div>
           )}
@@ -471,7 +478,7 @@ export function TaskDisplay({
         {/* Subtle live indicator */}
         {isCollecting && (
           <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2">
-            <div className="flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+            <div className="bg-muted/60 text-muted-foreground flex items-center gap-1.5 rounded-full px-3 py-1 text-xs backdrop-blur-sm">
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
               <span>Tracking</span>
             </div>
@@ -483,14 +490,12 @@ export function TaskDisplay({
       <Dialog open={showDialog} onOpenChange={(open) => !open && handleContinueReading()}>
         <DialogContent showCloseButton={false} className="sm:max-w-md">
           <DialogHeader>
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <BookOpen className="h-6 w-6 text-primary" />
+            <div className="bg-primary/10 mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
+              <BookOpen className="text-primary h-6 w-6" />
             </div>
             <DialogTitle className="text-center">Has the reader finished?</DialogTitle>
             <DialogDescription className="text-center">
-              {dismissCountRef.current === 0
-                ? 'It looks like enough time has passed for this passage. Is the child done reading?'
-                : 'Still reading? Take as much time as needed.'}
+              It looks like enough time has passed for this passage. Is the child done reading?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-row justify-center gap-3 sm:justify-center">
