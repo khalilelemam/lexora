@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { CALIBRATION_POINTS } from '../lib/constants';
 import type { GazeFeature } from '../types';
 
 interface GazeReplayViewerProps {
@@ -18,6 +19,29 @@ interface GazeReplayViewerProps {
 const SPEED_OPTIONS = [0.5, 1, 2, 4] as const;
 
 /**
+ * Extract AOI X bounds from calibration points.
+ * AOI X spans from min X value to max X value in calibration grid.
+ */
+function getAOIXBounds() {
+  const xs = CALIBRATION_POINTS.map((p) => p.x);
+  return {
+    min: Math.min(...xs),
+    max: Math.max(...xs),
+  };
+}
+
+/**
+ * Map raw gaze coordinates from AOI space to normalized element space.
+ * Raw coordinates are calibrated within AOI [0.2, 0.8] for X-axis.
+ * This remaps them to [0, 1] so they span the full paragraph width.
+ * 
+ * Formula: mappedX = (rawX - aoiMin) / (aoiMax - aoiMin)
+ */
+function mapAOICoordinateToElement(rawCoord: number, aoiMin: number, aoiMax: number): number {
+  return Math.max(0, Math.min(1, (rawCoord - aoiMin) / (aoiMax - aoiMin)));
+}
+
+/**
  * Replays gaze fixations as animated bubbles overlaid on the reading content.
  * Similar to Lexplore's visualization — each bubble represents a fixation,
  * sized proportionally to its duration, coloured red for regressions.
@@ -30,6 +54,10 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLParagraphElement>(null);
+  const [scaleRatio, setScaleRatio] = useState(1);
+  const [contentDimensions, setContentDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [textOffset, setTextOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Normalised timeline: cumulative duration offsets (ms) for each fixation
   const timeline = useMemo(() => {
@@ -121,9 +149,136 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     [maxDuration],
   );
 
+  // ─── AOI coordinate mapping ────────────────────────
+
+  const aoiBounds = useMemo(() => getAOIXBounds(), []);
+
+  const mapGazeX = useCallback(
+    (rawX: number) => mapAOICoordinateToElement(rawX, aoiBounds.min, aoiBounds.max),
+    [aoiBounds],
+  );
+
   // ─── Progress ──────────────────────────────────────
 
   const progress = currentIndex >= 0 ? Math.round(((currentIndex + 1) / features.length) * 100) : 0;
+
+  // DEBUG: Log feature Y values and container dimensions
+  useEffect(() => {
+    if (features.length > 0) {
+      const debugData = {
+        totalFeatures: features.length,
+        firstTenY: features.slice(0, 10).map(f => f.fixationY),
+        firstTenX: features.slice(0, 10).map(f => f.fixationX),
+      };
+
+      console.log('=== GAZE REPLAY VISUALIZER DEBUG ===', debugData);
+
+      fetch('http://localhost:8001/debug/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '=== GAZE REPLAY FEATURES ===',
+          data: debugData,
+        }),
+      }).catch(() => { });
+
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const containerData = {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          offsetWidth: containerRef.current.offsetWidth,
+          offsetHeight: containerRef.current.offsetHeight,
+        };
+
+        console.log('Replay container dimensions:', containerData);
+
+        fetch('http://localhost:8001/debug/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'Replay container dimensions',
+            data: containerData,
+          }),
+        }).catch(() => { });
+
+        // Calculate expected pixel positions
+        const containerHeight = rect.height;
+        const pixelData = {
+          containerHeight,
+          yValuesAsPixels: features.slice(0, 10).map(f => f.fixationY * containerHeight),
+        };
+
+        console.log('Y-values as pixels:', pixelData);
+
+        fetch('http://localhost:8001/debug/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: 'Y-values converted to pixels',
+            data: pixelData,
+          }),
+        }).catch(() => { });
+      }
+    }
+  }, [features]);
+
+  // ─── Measure content dimensions for exact replica ──
+
+  useEffect(() => {
+    if (!contentRef.current || !containerRef.current) return;
+
+    // CRITICAL FIX: Measure actual TEXT content bounds (not container)
+    // This must match the measurement in task-display.tsx for alignment
+    const allWords = contentRef.current.querySelectorAll('[data-word]');
+
+    if (allWords.length === 0) {
+      // No words found; use container dimensions as fallback
+      const contentRect = contentRef.current.getBoundingClientRect();
+      const containerRect = containerRef.current.getBoundingClientRect();
+      setContentDimensions({ width: contentRect.width, height: contentRect.height });
+      setTextOffset({ x: 0, y: 0 });
+      setScaleRatio(1);
+      return;
+    }
+
+    // Get text content bounds (same as task-display)
+    let textTop = Infinity;
+    let textBottom = -Infinity;
+    let textLeft = Infinity;
+    let textRight = -Infinity;
+
+    allWords.forEach((word) => {
+      const rect = (word as HTMLElement).getBoundingClientRect();
+      textTop = Math.min(textTop, rect.top);
+      textBottom = Math.max(textBottom, rect.bottom);
+      textLeft = Math.min(textLeft, rect.left);
+      textRight = Math.max(textRight, rect.right);
+    });
+
+    const textHeight = Math.max(0, textBottom - textTop);
+    const textWidth = Math.max(0, textRight - textLeft);
+
+    // For horizontal scaling, also consider container width
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const availableWidth = containerRect.width - 32; // accounting for padding
+    const calculatedScale = Math.min(1, availableWidth / textWidth);
+
+    // CRITICAL: Calculate text offset within the scaled container
+    // This is the position of text relative to container top-left
+    const offsetY = textTop - containerRect.top;
+    const offsetX = textLeft - containerRect.left;
+
+    setContentDimensions({ width: textWidth, height: textHeight });
+    setTextOffset({ x: offsetX, y: offsetY });
+    setScaleRatio(calculatedScale);
+
+    console.log('[REPLAY FIX] Text bounds:', { textTop, textBottom, textHeight, textWidth });
+    console.log('[REPLAY FIX] Text offset:', { offsetX, offsetY });
+    console.log('[REPLAY FIX] Calculated scale:', calculatedScale);
+  }, [content]);
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -144,62 +299,108 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
         className="relative overflow-hidden rounded-lg border bg-background p-6 sm:p-8"
         dir={direction}
       >
-        {/* The reading content (for spatial reference) */}
-        <p
-          className={cn(
-            'whitespace-pre-line text-base leading-[2] tracking-wide sm:text-lg',
-            'font-normal text-muted-foreground/60 select-none',
-            direction === 'rtl' && 'text-right',
-          )}
+        {/* Exact replica wrapper with scaling for alignment */}
+        <div
+          className="relative inline-block"
+          style={{
+            transformOrigin: 'top left',
+            transform: `scale(${scaleRatio})`,
+          }}
         >
-          {content}
-        </p>
+          {/* The reading content (for spatial reference) - EXACT REPLICA */}
+          <p
+            ref={contentRef}
+            className={cn(
+              'whitespace-pre-line text-base leading-[2] tracking-wide sm:text-lg',
+              'font-normal text-muted-foreground/60 select-none',
+              direction === 'rtl' && 'text-right',
+            )}
+          >
+            {content}
+          </p>
+        </div>
 
-        {/* Gaze trail (faded past fixations) */}
-        {trail.map((idx) => {
-          const f = features[idx];
-          const size = getBubbleSize(f.durationMs);
-          const isCurrent = idx === currentIndex;
-          return (
-            <div
-              key={idx}
-              className={cn(
-                'pointer-events-none absolute rounded-full',
-                f.isRegression ? 'bg-red-500' : 'bg-primary',
-                isCurrent ? 'opacity-70' : 'opacity-20',
-              )}
-              style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                left: `${f.fixationX * 100}%`,
-                top: `${f.fixationY * 100}%`,
-                transform: 'translate(-50%, -50%)',
-                transition: isCurrent ? 'none' : 'opacity 0.3s',
-              }}
-            />
-          );
-        })}
+        {/* Gaze trail (faded past fixations) - positioned relative to content */}
+        {contentDimensions &&
+          trail.map((idx) => {
+            const f = features[idx];
+            const size = getBubbleSize(f.durationMs);
+            const isCurrent = idx === currentIndex;
+            const mappedX = mapGazeX(f.fixationX);
+
+            // Calculate bubble position relative to ACTUAL TEXT CONTENT
+            // CRITICAL FIX: Include textOffset to account for text position within container
+            const bubbleTop = textOffset.y + (f.fixationY * contentDimensions.height);
+            const bubbleLeft = textOffset.x + (mappedX * contentDimensions.width);
+
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  'pointer-events-none absolute rounded-full',
+                  f.isRegression ? 'bg-red-500' : 'bg-blue-400',
+                  isCurrent ? 'opacity-70' : 'opacity-20',
+                )}
+                style={{
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  left: `${bubbleLeft}px`,
+                  top: `${bubbleTop}px`,
+                  transform: 'translate(-50%, -50%)',
+                  transition: isCurrent ? 'none' : 'opacity 0.3s',
+                  // Inverse scale to counteract parent scaling
+                  transformOrigin: 'center',
+                }}
+              />
+            );
+          })}
 
         {/* Saccade lines connecting consecutive fixations */}
-        <svg className="pointer-events-none absolute inset-0 h-full w-full">
-          {trail.length > 1 &&
-            trail.slice(1).map((idx, i) => {
-              const prev = features[trail[i]];
-              const curr = features[idx];
-              return (
-                <line
-                  key={`${trail[i]}-${idx}`}
-                  x1={`${prev.fixationX * 100}%`}
-                  y1={`${prev.fixationY * 100}%`}
-                  x2={`${curr.fixationX * 100}%`}
-                  y2={`${curr.fixationY * 100}%`}
-                  stroke={curr.isRegression ? '#ef4444' : 'hsl(var(--primary))'}
-                  strokeWidth={1}
-                  opacity={0.2}
-                />
-              );
-            })}
-        </svg>
+        {contentDimensions && (
+          <svg className="pointer-events-none absolute inset-0 h-full w-full">
+            {trail.length > 1 &&
+              trail.slice(1).map((idx, i) => {
+                const prev = features[trail[i]];
+                const curr = features[idx];
+
+                let strokeColor = '#60a5fa'; // Standard Forward Saccades (blue-400)
+                let lineOpacity = 0.5;
+                let dashArray = 'none';
+
+                if (curr.isReturnSweep) {
+                  strokeColor = '#9ca3af'; // gray-400
+                  lineOpacity = 0.4;
+                  dashArray = '4 4';
+                } else if (curr.isRegression) {
+                  strokeColor = '#ef4444'; // red-500
+                  lineOpacity = 0.5;
+                }
+
+                const prevMappedX = mapGazeX(prev.fixationX);
+                const currMappedX = mapGazeX(curr.fixationX);
+
+                // CRITICAL FIX: Include textOffset to match bubble positioning
+                const prevTop = textOffset.y + (prev.fixationY * contentDimensions.height);
+                const prevLeft = textOffset.x + (prevMappedX * contentDimensions.width);
+                const currTop = textOffset.y + (curr.fixationY * contentDimensions.height);
+                const currLeft = textOffset.x + (currMappedX * contentDimensions.width);
+
+                return (
+                  <line
+                    key={`${trail[i]}-${idx}`}
+                    x1={prevLeft}
+                    y1={prevTop}
+                    x2={currLeft}
+                    y2={currTop}
+                    stroke={strokeColor}
+                    strokeWidth={1}
+                    strokeDasharray={dashArray}
+                    opacity={lineOpacity}
+                  />
+                );
+              })}
+          </svg>
+        )}
       </div>
 
       {/* Progress bar */}
@@ -247,14 +448,20 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="flex items-center flex-wrap gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-primary opacity-50" />
+          <div className="h-3 w-3 rounded-full bg-blue-400 opacity-50" />
           <span>Forward fixation</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rounded-full bg-red-500 opacity-50" />
           <span>Regression (backward)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <svg width="16" height="4" className="mr-1">
+            <line x1="0" y1="2" x2="16" y2="2" stroke="#9ca3af" strokeWidth="2" strokeDasharray="4 4" />
+          </svg>
+          <span>Return sweep</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span>Bubble size = fixation duration</span>

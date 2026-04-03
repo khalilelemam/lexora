@@ -21,6 +21,7 @@ class WebcamFeatureRow(BaseModel):
     fixation_y: float
     saccade_amplitude: float
     is_regression: bool
+    is_return_sweep: Optional[bool] = False
 
 
 class EyeTrackerFeatureRow(BaseModel):
@@ -61,6 +62,33 @@ class PredictionRequest(BaseModel):
     screen_height: Optional[int] = Field(default=1050, gt=0)
 
 
+class PipelineMetrics(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
+
+    feature_extraction_ms: Optional[float] = None
+    inference_ms: Optional[float] = None
+    total_ms: Optional[float] = None
+    total_fixations: Optional[int] = None
+    mean_fixation_duration_ms: Optional[float] = None
+    fixation_duration_sd: Optional[float] = None
+    # Data Funnel (detailed retention tracking)
+    normalized_retention_pct: Optional[float] = None
+    fixation_retention_pct: Optional[float] = None
+    total_pipeline_retention_pct: Optional[float] = None
+    # Invalid Data Tracking
+    out_of_bounds_points: Optional[int] = None
+    invalid_fixation_points: Optional[int] = None
+    # Spatial metrics
+    mean_saccade_amplitude: Optional[float] = None
+    total_regressions: Optional[int] = None
+    intra_fixation_jitter: Optional[float] = None
+    # Legacy field (kept for backwards compatibility)
+    data_retention_pct: Optional[float] = None
+
+
 class PredictionMetadata(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -69,6 +97,7 @@ class PredictionMetadata(BaseModel):
 
     sequences_analyzed: int
     total_fixations: int
+    pipeline_metrics: Optional[PipelineMetrics] = None
 
 
 class PredictionResponse(BaseModel):

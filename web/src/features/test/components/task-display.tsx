@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { BookOpen, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +40,11 @@ interface TaskDisplayProps {
    * Used for gaze-based end-of-reading detection.
    */
   getLastGazePosition?: () => { x: number; y: number } | null;
+  /**
+   * Optional: callback to provide normalized line centers (Y-values 0-1)
+   * Called after DOM measurement completes
+   */
+  onLineCentersReady?: (lineCenters: number[]) => void;
 }
 
 /**
@@ -49,6 +54,11 @@ interface TaskDisplayProps {
  * 1. Primary: gaze enters a proximity radius of the fixation cross for `CROSS_DWELL_MS`
  * 2. Fallback: time-based estimate from word count
  * Both require `MIN_GAZE_POINTS` before the dialog can appear.
+ *
+ * Y-Axis Line Snapping:
+ * - For paragraph content, measures the vertical centers of each line via DOM
+ * - Normalizes line centers relative to the content container (0.0-1.0)
+ * - Calls onLineCentersReady with the computed centers
  */
 export function TaskDisplay({
   taskType,
@@ -58,6 +68,7 @@ export function TaskDisplay({
   isCollecting,
   onDone,
   getLastGazePosition,
+  onLineCentersReady,
 }: TaskDisplayProps) {
   const [showDialog, setShowDialog] = useState(false);
   const autoDetectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,6 +81,9 @@ export function TaskDisplay({
 
   // Ref to the fixation cross element — used to compute its screen position
   const crossRef = useRef<HTMLSpanElement>(null);
+
+  // Ref to the paragraph container for line center measurement
+  const paragraphContainerRef = useRef<HTMLDivElement>(null);
 
   // Keep a ref so timers can read the *current* value without stale closures
   const pointCountRef = useRef(pointCount);
@@ -89,12 +103,202 @@ export function TaskDisplay({
     setShowDialog(true);
   }, []);
 
+  // ─── Measure line centers for Y-axis snapping ──────
+
+  useLayoutEffect(() => {
+    if (isShortContent || !paragraphContainerRef.current || !onLineCentersReady) {
+      return;
+    }
+
+    // Get all word spans
+    const wordSpans = paragraphContainerRef.current.querySelectorAll('[data-word]');
+    if (wordSpans.length === 0) {
+      onLineCentersReady([]);
+      return;
+    }
+
+    // Group spans by their Y-coordinate (getBoundingClientRect().top)
+    // to identify distinct physical lines
+    const lineMap = new Map<number, Array<{ top: number; bottom: number }>>();
+
+    wordSpans.forEach((span) => {
+      const rect = (span as HTMLElement).getBoundingClientRect();
+      const lineKey = Math.round(rect.top); // Group by rounded top value
+
+      if (!lineMap.has(lineKey)) {
+        lineMap.set(lineKey, []);
+      }
+      lineMap.get(lineKey)!.push({ top: rect.top, bottom: rect.bottom });
+    });
+
+    // CRITICAL FIX: Find the first and last word to get text content bounds
+    // This ensures line centers are relative to TEXT, not the container
+    const firstWordRect = (wordSpans[0] as HTMLElement).getBoundingClientRect();
+    const lastWordRect = (wordSpans[wordSpans.length - 1] as HTMLElement).getBoundingClientRect();
+
+    const textTop = firstWordRect.top;
+    const textBottom = lastWordRect.bottom;
+    const textHeight = textBottom - textTop;
+
+    // Get the paragraph container's bounding box (for backward compat logging only)
+    const containerRect = paragraphContainerRef.current.getBoundingClientRect();
+
+    // DEBUG: Log container and screen measurements
+    const debugData = {
+      containerTop: containerRect.top,
+      containerBottom: containerRect.bottom,
+      textTop: textTop,
+      textBottom: textBottom,
+      textHeight: textHeight,
+      containerLeft: containerRect.left,
+      containerRight: containerRect.right,
+      containerHeight: containerRect.height,
+      containerWidth: containerRect.width,
+      windowInnerHeight: window.innerHeight,
+      windowInnerWidth: window.innerWidth,
+      screenHeight: window.screen.height,
+      screenWidth: window.screen.width,
+      detectedLines: lineMap.size,
+    };
+
+    console.log('=== LINE CENTER MEASUREMENT DEBUG ===', debugData);
+
+    // Send to server
+    fetch('http://localhost:8001/debug/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '=== LINE CENTER MEASUREMENT DEBUG ===',
+        data: debugData,
+      }),
+    }).catch(() => { });
+
+    // Calculate the vertical center of each line and normalize
+    const lineCenters: number[] = [];
+    const sortedLineKeys = Array.from(lineMap.keys()).sort((a, b) => a - b);
+
+    sortedLineKeys.forEach((lineKey, lineIndex) => {
+      const rects = lineMap.get(lineKey)!;
+
+      // Calculate the absolute vertical center of this line
+      const minTop = Math.min(...rects.map(r => r.top));
+      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      const lineCenterAbsolute = (minTop + maxBottom) / 2;
+
+      // CRITICAL FIX: Normalize relative to TEXT CONTENT (not container)
+      // This ensures line centers are consistent regardless of container padding
+      if (textHeight > 0) {
+        const normalizedCenter = (lineCenterAbsolute - textTop) / textHeight;
+        const clamped = Math.max(0, Math.min(1, normalizedCenter));
+        lineCenters.push(clamped);
+
+        // DEBUG: Log each line's measurements
+        const lineData = {
+          rawTopPx: minTop,
+          rawBottomPx: maxBottom,
+          lineCenterAbsolutePx: lineCenterAbsolute,
+          textTopPx: textTop,
+          textHeightPx: textHeight,
+          normalizedCenter: normalizedCenter,
+          clamped: clamped,
+        };
+        console.log(`Line ${lineIndex}:`, lineData);
+
+        fetch('http://localhost:8001/debug/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `Line ${lineIndex} measurement`,
+            data: lineData,
+          }),
+        }).catch(() => { });
+      }
+    });
+
+    const finalData = {
+      finalNormalizedLineCenters: lineCenters,
+      totalLines: lineCenters.length,
+    };
+    console.log('Final normalized line centers:', finalData);
+    fetch('http://localhost:8001/debug/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '=== FINAL LINE CENTERS ===',
+        data: finalData,
+      }),
+    }).catch(() => { });
+
+    onLineCentersReady(lineCenters);
+  }, [isShortContent, onLineCentersReady, content]);
+
+  // ─── Detect overflow outside AOI bounds ─────────────────
+
+  useLayoutEffect(() => {
+    if (isShortContent || !paragraphContainerRef.current) return;
+
+    const container = paragraphContainerRef.current;
+    const hasOverflow = container.scrollHeight > container.clientHeight;
+
+    if (hasOverflow) {
+      const message = `[OVERFLOW] Text exceeds AOI bounds - Container: ${container.clientHeight}px, Content: ${container.scrollHeight}px`;
+      console.error(message);
+
+      // Send debug log to server
+      fetch('/api/debug/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'AOI Overflow Detected',
+          data: {
+            message,
+            containerHeight: container.clientHeight,
+            scrollHeight: container.scrollHeight,
+            overage: container.scrollHeight - container.clientHeight,
+          },
+        }),
+      }).catch(() => { });
+    }
+  }, [isShortContent, content]);
+
   // ─── Compute estimated reading time ─────────────────
 
   const estimatedSeconds = useCallback(() => {
     const wordCount = content.split(/\s+/).filter(Boolean).length;
     return Math.max(MIN_AUTO_DETECT_SECONDS, (wordCount / ESTIMATED_READING_WPM) * 60);
   }, [content]);
+
+  // ─── Render paragraph with word wrapping for measurement ───
+
+  const renderParagraphWithWords = () => {
+    // Split content into words, preserving whitespace
+    const words = content.split(/(\s+)/);
+
+    return (
+      <div ref={paragraphContainerRef}>
+        <p
+          className={cn(
+            'whitespace-pre-line',
+            'text-xl leading-[2] tracking-wide sm:text-2xl sm:leading-[2] md:text-3xl md:leading-[2]',
+            'font-normal select-none',
+            isArabic && 'text-right',
+          )}
+        >
+          {words.map((word, idx) => {
+            // Don't wrap whitespace in spans
+            if (/^\s+$/.test(word)) {
+              return word;
+            }
+            return (
+              <span key={idx} data-word={idx}>
+                {word}
+              </span>
+            );
+          })}
+        </p>
+      </div>
+    );
+  };
 
   // ─── Keyboard shortcut for testing (Enter key) ─────
   useEffect(() => {
@@ -209,25 +413,29 @@ export function TaskDisplay({
   // ─── Render ─────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 z-40 flex cursor-none items-center justify-center bg-background">
-      {/* Reading surface */}
+    <div className="fixed inset-0 z-40 cursor-none bg-background">
+      {/* Rigid AOI-bounded reading surface (10%-65% Y, 20%-80% X) */}
       <div
-        className={cn(
-          'flex h-full w-full flex-col items-center justify-center px-8 py-12',
-          'sm:px-16 md:px-24 lg:px-32',
-        )}
+        ref={paragraphContainerRef}
+        className="absolute flex flex-col items-center justify-center overflow-hidden"
+        style={{
+          top: '10%',
+          bottom: '35%',  // Height = 55% (100% - 10% - 35%)
+          left: '20%',
+          right: '20%',   // Width = 60% (100% - 20% - 20%)
+        }}
         dir={isArabic ? 'rtl' : 'ltr'}
       >
         {/* Content with optimised reading typography */}
         <div
           className={cn(
-            'w-full max-w-5xl',
+            'w-full h-full overflow-hidden',
             isShortContent && 'flex items-center justify-center',
           )}
         >
           {isShortContent ? (
             // Syllables & pseudo-words: monospaced, large, evenly spaced
-            <div className="flex flex-col items-center gap-6">
+            <div className="flex flex-col items-center justify-center gap-6">
               <pre
                 className={cn(
                   'whitespace-pre-wrap text-center font-mono',
@@ -245,16 +453,7 @@ export function TaskDisplay({
           ) : (
             // Paragraphs / meaningful text: large body text with end marker
             <div>
-              <p
-                className={cn(
-                  'whitespace-pre-line',
-                  'text-xl leading-[2] tracking-wide sm:text-2xl sm:leading-[2] md:text-3xl md:leading-[2]',
-                  'font-normal select-none',
-                  isArabic && 'text-right',
-                )}
-              >
-                {content}
-              </p>
+              {renderParagraphWithWords()}
               {/* Fixation cross — placed at the text's natural end */}
               <div
                 className={cn(

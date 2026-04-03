@@ -31,9 +31,9 @@ interface EyeTrackerGazePoint {
 }
 
 interface EyeTrackerPredictInput {
-  syllablesTask: { gazePoints: EyeTrackerGazePoint[] };
-  meaningfulTask: { gazePoints: EyeTrackerGazePoint[] };
-  pseudoTask: { gazePoints: EyeTrackerGazePoint[] };
+  syllablesTask: { gazePoints: EyeTrackerGazePoint[]; normalizedLineCenters?: number[] };
+  meaningfulTask: { gazePoints: EyeTrackerGazePoint[]; normalizedLineCenters?: number[] };
+  pseudoTask: { gazePoints: EyeTrackerGazePoint[]; normalizedLineCenters?: number[] };
   screenWidth?: number;
   screenHeight?: number;
 }
@@ -62,6 +62,7 @@ interface WebcamPredictInput {
   gazeData: WebcamGazePoint[];
   screenWidth: number;
   screenHeight: number;
+  normalizedLineCenters?: number[];
 }
 
 interface WebcamPredictResponse {
@@ -76,6 +77,7 @@ interface WebcamPredictResponse {
     fixationY: number;
     saccadeAmplitude: number;
     isRegression: boolean;
+    isReturnSweep?: boolean;
   }>;
 }
 
@@ -148,6 +150,7 @@ export async function predictWebcam(input: WebcamPredictInput): Promise<Predicti
       fixationY: f.fixationY,
       saccadeAmplitude: f.saccadeAmplitude,
       isRegression: f.isRegression,
+      isReturnSweep: f.isReturnSweep,
     })),
   };
 }

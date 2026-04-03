@@ -24,3 +24,4 @@ class WebcamPredictionRequest(BaseModel):
     screen_width: int = Field(gt=0)
     screen_height: int = Field(gt=0)
     gaze_data: List[RawGazePoint] = Field(min_length=20)
+    normalized_line_centers: List[float] = Field(default_factory=list)

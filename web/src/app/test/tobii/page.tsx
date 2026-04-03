@@ -46,6 +46,13 @@ export default function TobiiTestPage() {
   // Content refs (generated once per task entry)
   const [taskContent, setTaskContent] = useState<Record<string, string>>({});
 
+  // Y-Axis Line Snapping: store normalized line centers for each task
+  const lineCentersRef = useRef<Record<string, number[]>>({
+    syllables: [],
+    'pseudo-words': [],
+    'meaningful-text': [],
+  });
+
   // Are we in a task state that should stream gaze data?
   const isTaskActive = ['task-syllables', 'task-pseudo-words', 'task-meaningful-text'].includes(
     tobiiState.currentState,
@@ -93,6 +100,10 @@ export default function TobiiTestPage() {
     dispatch({ type: 'CALIBRATION_RETRY' });
   }, [dispatch]);
 
+  const handleLineCentersReady = useCallback((taskKey: string, centers: number[]) => {
+    lineCentersRef.current[taskKey] = centers;
+  }, []);
+
   const handleTaskDone = useCallback(() => {
     dispatch({ type: 'TASK_COMPLETE' });
   }, [dispatch]);
@@ -136,6 +147,7 @@ export default function TobiiTestPage() {
       meaningfulTextRef.current,
       screen.width,
       screen.height,
+      lineCentersRef.current,
     );
 
     if (result.success) {
@@ -222,6 +234,7 @@ export default function TobiiTestPage() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
+            onLineCentersReady={(centers) => handleLineCentersReady('syllables', centers)}
             getLastGazePosition={() => {
               if (!lastGazeRef.current) return null;
               return {
@@ -252,6 +265,7 @@ export default function TobiiTestPage() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
+            onLineCentersReady={(centers) => handleLineCentersReady('pseudo-words', centers)}
             getLastGazePosition={() => {
               if (!lastGazeRef.current) return null;
               return {
@@ -285,6 +299,7 @@ export default function TobiiTestPage() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
+            onLineCentersReady={(centers) => handleLineCentersReady('meaningful-text', centers)}
             getLastGazePosition={() => {
               if (!lastGazeRef.current) return null;
               return {
@@ -326,8 +341,8 @@ export default function TobiiTestPage() {
             // Tobii data quality is reliable — always allow retrying submission
             onRetry={
               syllablesRef.current.length > 0 ||
-              pseudoWordsRef.current.length > 0 ||
-              meaningfulTextRef.current.length > 0
+                pseudoWordsRef.current.length > 0 ||
+                meaningfulTextRef.current.length > 0
                 ? () => dispatch({ type: 'RETRY_SUBMIT' })
                 : undefined
             }

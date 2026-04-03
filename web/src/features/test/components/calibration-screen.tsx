@@ -5,9 +5,19 @@ import { Target, CheckCircle2, AlertTriangle, XCircle, RefreshCw } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { CalibrationResult, CalibrationQuality } from '../types';
+import type {
+  CalibrationResult,
+  CalibrationQuality,
+  CalibrationDiagnostics,
+  HeadPoseSample,
+  ValidationPointResult,
+  ModelDiagnostic,
+  HeadPoseDrift,
+} from '../types';
 import { useCalibration } from '../hooks';
-import { CALIBRATION_DOT_DURATION } from '../lib/constants';
+import { CALIBRATION_DOT_DURATION, CALIBRATION_POINTS } from '../lib/constants';
+import { DEBUG_GAZE_OVERLAY } from '../lib/debug-config';
+import { evaluateModelsOnValidation } from '../lib/calibration-models';
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -17,8 +27,10 @@ interface CalibrationScreenProps {
   onGetGazeSample?: () => { x: number; y: number } | null;
   /** For webcam: called to get iris position for each calibration point */
   onGetIrisSample?: () => { x: number; y: number } | null;
+  /** For webcam: called to get head pose for diagnostics */
+  onGetHeadPoseSample?: () => { yaw: number; pitch: number } | null;
   /** Called when calibration is complete */
-  onComplete: (result: CalibrationResult, mapping?: { xCoeffs: number[]; yCoeffs: number[] }) => void;
+  onComplete: (result: CalibrationResult, mapping?: { predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number } }) => void;
   /** Whether to block on poor quality (Tobii) or allow proceeding (webcam) */
   blockOnPoor?: boolean;
 }
@@ -33,11 +45,14 @@ const QUALITY_CONFIG: Record<CalibrationQuality, { color: string; icon: typeof C
 const DOT_TRAVEL_MS = 400;
 /** Time in ms for the dot to settle before sampling begins */
 const DOT_SETTLE_MS = 200;
+/** Strict per-point validation threshold for targeted recalibration */
+const STRICT_POINT_ERROR_THRESHOLD_PX = 120;
 
 export function CalibrationScreen({
   mode,
   onGetGazeSample,
   onGetIrisSample,
+  onGetHeadPoseSample,
   onComplete,
   blockOnPoor = false,
 }: CalibrationScreenProps) {
@@ -46,9 +61,12 @@ export function CalibrationScreen({
     currentPointIndex,
     currentPoint,
     totalPoints,
+    collectionStep,
+    collectionTotal,
     result,
     dotDuration,
     startCalibration,
+    startTargetedRecalibration,
     addSample,
     advancePoint,
     computeTobiiCalibration,
@@ -67,6 +85,15 @@ export function CalibrationScreen({
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>(null);
 
+  // ─── Diagnostics state ──────────────────────────────
+  const headPoseSamplesRef = useRef<HeadPoseSample[]>([]);
+  const mappingRef = useRef<{ predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number } } | null>(null);
+  const allModelsRef = useRef<any[]>([]);  // Store all three models for post-validation re-evaluation
+  const diagnosticsRef = useRef<CalibrationDiagnostics | null>(null);
+  const modelDiagnosticsRef = useRef<ModelDiagnostic[] | null>(null);
+  const headPoseDriftRef = useRef<HeadPoseDrift | null>(null);
+  const [failedPointIndices, setFailedPointIndices] = useState<number[]>([]);
+
   // ─── Start countdown then calibration ───────────────
 
   useEffect(() => {
@@ -83,7 +110,7 @@ export function CalibrationScreen({
   // ─── Animate dot and collect samples ────────────────
 
   useEffect(() => {
-    if (phase !== 'collecting') return;
+    if (phase !== 'collecting' && phase !== 'recalibrating') return;
 
     // Step 1: Show dot and animate to position
     setDotVisible(true);
@@ -101,7 +128,15 @@ export function CalibrationScreen({
           if (sample) addSample(sample.x, sample.y);
         } else if (mode === 'webcam' && onGetIrisSample) {
           const sample = onGetIrisSample();
-          if (sample) addSample(sample.x, sample.y);
+          if (sample) {
+            const pose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
+            addSample(sample.x, sample.y, pose.yaw, pose.pitch);
+          }
+        }
+        // Collect head pose for diagnostics
+        if (mode === 'webcam' && onGetHeadPoseSample) {
+          const pose = onGetHeadPoseSample();
+          if (pose) headPoseSamplesRef.current.push(pose);
         }
       }, 50); // ~20 samples per second
     }, DOT_TRAVEL_MS + DOT_SETTLE_MS);
@@ -118,7 +153,7 @@ export function CalibrationScreen({
       clearTimeout(advanceTimer);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [phase, currentPointIndex, mode, onGetGazeSample, onGetIrisSample, addSample, advancePoint, dotDuration, currentPoint]);
+  }, [phase, currentPointIndex, mode, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample, addSample, advancePoint, dotDuration, currentPoint]);
 
   // ─── Compute results when validation phase starts ───
 
@@ -129,14 +164,34 @@ export function CalibrationScreen({
       const calibResult = computeTobiiCalibration();
       void calibResult;
     } else {
-      const { result: calibResult, mapping } = computeWebcamCalibration(
+      const {
+        result: calibResult,
+        mapping,
+        diagnostics,
+        modelDiagnostics,
+        allModels,
+        flaggedPoints
+      } = computeWebcamCalibration(
         window.screen.width,
         window.screen.height,
+        headPoseSamplesRef.current,
       );
+
+      mappingRef.current = mapping;
+      diagnosticsRef.current = diagnostics;
+      modelDiagnosticsRef.current = modelDiagnostics;
+      allModelsRef.current = allModels ?? [];
+
+      if (flaggedPoints.length > 0) {
+        setFailedPointIndices(flaggedPoints);
+        startTargetedRecalibration(flaggedPoints);
+      } else {
+        setFailedPointIndices([]);
+      }
+
       void calibResult;
-      void mapping;
     }
-  }, [phase, mode, computeTobiiCalibration, computeWebcamCalibration]);
+  }, [phase, mode, computeTobiiCalibration, computeWebcamCalibration, startTargetedRecalibration]);
 
   // ─── Handle retry ───────────────────────────────────
 
@@ -147,19 +202,26 @@ export function CalibrationScreen({
     setDotVisible(false);
     setIsSampling(false);
     setDotPos({ x: 0.5, y: 0.5 });
+    // Reset diagnostics state
+    headPoseSamplesRef.current = [];
+    mappingRef.current = null;
+    allModelsRef.current = [];
+    diagnosticsRef.current = null;
+    modelDiagnosticsRef.current = null;
+    headPoseDriftRef.current = null;
+    setFailedPointIndices([]);
   }, [resetCalibration]);
 
   // ─── Handle continue ───────────────────────────────
 
   const handleContinue = useCallback(() => {
     if (!result) return;
-    if (mode === 'webcam') {
-      const { mapping } = computeWebcamCalibration(window.screen.width, window.screen.height);
-      onComplete(result, mapping);
+    if (mode === 'webcam' && mappingRef.current) {
+      onComplete(result, mappingRef.current);
     } else {
       onComplete(result);
     }
-  }, [result, mode, computeWebcamCalibration, onComplete]);
+  }, [result, mode, onComplete]);
 
   // ─── Countdown Screen ──────────────────────────────
 
@@ -182,13 +244,23 @@ export function CalibrationScreen({
 
   // ─── Dot Collection Screen ─────────────────────────
 
-  if (phase === 'collecting') {
+  if (phase === 'collecting' || phase === 'recalibrating') {
+    const isRecalibrating = phase === 'recalibrating';
+
     return (
       <div className="fixed inset-0 z-50 cursor-none bg-background">
         {/* Progress indicator */}
         <div className="absolute left-4 top-4 text-sm text-muted-foreground">
-          Point {currentPointIndex + 1} of {totalPoints}
+          {isRecalibrating
+            ? `Recalibrating ${collectionStep} of ${collectionTotal} (grid #${currentPointIndex + 1})`
+            : `Point ${collectionStep} of ${collectionTotal}`}
         </div>
+
+        {isRecalibrating && failedPointIndices.length > 0 && (
+          <div className="absolute right-4 top-4 max-w-md rounded-md border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-xs text-orange-700 dark:text-orange-300">
+            Smart targeted recalibration: only high-error points are repeated to reduce fatigue.
+          </div>
+        )}
 
         {/* Calibration dot — animated with CSS transition */}
         {dotVisible && (
@@ -203,7 +275,10 @@ export function CalibrationScreen({
               // For webcam: clicking helps with calibration accuracy
               if (mode === 'webcam' && onGetIrisSample) {
                 const sample = onGetIrisSample();
-                if (sample) addSample(sample.x, sample.y);
+                if (sample) {
+                  const pose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
+                  addSample(sample.x, sample.y, pose.yaw, pose.pitch);
+                }
               }
             }}
           >
@@ -212,14 +287,19 @@ export function CalibrationScreen({
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300',
                 isSampling
-                  ? 'scale-100 bg-primary/20'
-                  : 'scale-75 bg-primary/10',
+                  ? isRecalibrating
+                    ? 'scale-100 bg-orange-500/25'
+                    : 'scale-100 bg-primary/20'
+                  : isRecalibrating
+                    ? 'scale-75 bg-orange-500/15'
+                    : 'scale-75 bg-primary/10',
               )}
             >
               {/* Inner dot */}
               <div
                 className={cn(
-                  'rounded-full bg-primary transition-all duration-300',
+                  'rounded-full transition-all duration-300',
+                  isRecalibrating ? 'bg-orange-500' : 'bg-primary',
                   isSampling ? 'h-4 w-4' : 'h-3 w-3',
                 )}
               />
@@ -233,10 +313,13 @@ export function CalibrationScreen({
   // ─── Processing ────────────────────────────────────
 
   if (phase === 'validating') {
+    const isRetrainPass = failedPointIndices.length > 0;
     return (
       <div className="flex flex-col items-center gap-4">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-muted-foreground">Analyzing calibration...</p>
+        <p className="text-muted-foreground">
+          {isRetrainPass ? 'Re-training and validating updated calibration...' : 'Analyzing calibration...'}
+        </p>
       </div>
     );
   }
@@ -287,6 +370,146 @@ export function CalibrationScreen({
               )}
             </ul>
           </div>
+        )}
+
+        {/* ── Diagnostics Panel (debug mode only) ── */}
+        {DEBUG_GAZE_OVERLAY && diagnosticsRef.current && (
+          <details className="w-full max-w-2xl rounded-md border bg-muted/30 p-4 text-left">
+            <summary className="cursor-pointer text-sm font-medium">
+              🔬 Calibration Diagnostics
+            </summary>
+            <div className="mt-3 space-y-4 text-xs font-mono">
+              {/* Summary metrics */}
+              <div>
+                <div className="font-sans text-sm font-medium">Summary</div>
+                <div>
+                  Mean Error: {diagnosticsRef.current.meanErrorPx.toFixed(1)}px
+                  ({(diagnosticsRef.current.meanErrorNormalized * 100).toFixed(2)}% normalized)
+                </div>
+                <div>Median Error: {diagnosticsRef.current.medianErrorPx.toFixed(1)}px</div>
+              </div>
+
+              {/* Per-point errors */}
+              <div>
+                <div className="font-sans text-sm font-medium">Per-Point Errors</div>
+                {diagnosticsRef.current.perPointErrors.map((p, i) => (
+                  <div key={i}>
+                    Point ({p.point.x},{p.point.y}): mean={p.meanError.toFixed(1)}px
+                    std={p.stdError.toFixed(1)}px samples={p.sampleCount}
+                  </div>
+                ))}
+              </div>
+
+              {/* Axis correlation */}
+              <div>
+                <div className="font-sans text-sm font-medium">Axis Correlation</div>
+                <div className={diagnosticsRef.current.corrX > 0.85 ? 'text-green-600' : 'text-red-500'}>
+                  corr_x = {diagnosticsRef.current.corrX.toFixed(4)}{' '}
+                  {diagnosticsRef.current.corrX > 0.85 ? '✅' : '❌'} (threshold: 0.85)
+                </div>
+                <div className={diagnosticsRef.current.corrY > 0.85 ? 'text-green-600' : 'text-red-500'}>
+                  corr_y = {diagnosticsRef.current.corrY.toFixed(4)}{' '}
+                  {diagnosticsRef.current.corrY > 0.85 ? '✅' : '❌'} (threshold: 0.85)
+                </div>
+              </div>
+
+              {/* Screen coverage */}
+              <div>
+                <div className="font-sans text-sm font-medium">Screen Coverage</div>
+                <div>
+                  X: {diagnosticsRef.current.coverage.minX.toFixed(0)} →{' '}
+                  {diagnosticsRef.current.coverage.maxX.toFixed(0)}{' '}
+                  ({(diagnosticsRef.current.coverage.widthCoverage * 100).toFixed(1)}%)
+                  {diagnosticsRef.current.coverage.widthCoverage >= 0.3 ? ' ✅' : ' ❌ <30%'}
+                </div>
+                <div>
+                  Y: {diagnosticsRef.current.coverage.minY.toFixed(0)} →{' '}
+                  {diagnosticsRef.current.coverage.maxY.toFixed(0)}{' '}
+                  ({(diagnosticsRef.current.coverage.heightCoverage * 100).toFixed(1)}%)
+                  {diagnosticsRef.current.coverage.heightCoverage >= 0.3 ? ' ✅' : ' ❌ <30%'}
+                </div>
+              </div>
+
+              {/* Iris range */}
+              <div>
+                <div className="font-sans text-sm font-medium">Iris Input Range</div>
+                <div>
+                  X: {diagnosticsRef.current.irisRange.minX.toFixed(4)} →{' '}
+                  {diagnosticsRef.current.irisRange.maxX.toFixed(4)}
+                </div>
+                <div>
+                  Y: {diagnosticsRef.current.irisRange.minY.toFixed(4)} →{' '}
+                  {diagnosticsRef.current.irisRange.maxY.toFixed(4)}
+                </div>
+                {(diagnosticsRef.current.irisRange.maxX - diagnosticsRef.current.irisRange.minX < 0.05 ||
+                  diagnosticsRef.current.irisRange.maxY - diagnosticsRef.current.irisRange.minY < 0.05) && (
+                    <div className="text-yellow-600">
+                      ⚠️ Extremely small iris range — polynomial cannot learn screen mapping
+                    </div>
+                  )}
+              </div>
+
+              {/* Head pose */}
+              <div>
+                <div className="font-sans text-sm font-medium">Head Pose</div>
+                <div>
+                  Yaw: mean={diagnosticsRef.current.headPose.meanYaw.toFixed(4)}{' '}
+                  std={diagnosticsRef.current.headPose.stdYaw.toFixed(4)}
+                </div>
+                <div>
+                  Pitch: mean={diagnosticsRef.current.headPose.meanPitch.toFixed(4)}{' '}
+                  std={diagnosticsRef.current.headPose.stdPitch.toFixed(4)}
+                </div>
+                {(diagnosticsRef.current.headPose.stdYaw > 0.05 ||
+                  diagnosticsRef.current.headPose.stdPitch > 0.05) && (
+                    <div className="text-yellow-600">
+                      ⚠️ High head pose variance — calibration may be inconsistent
+                    </div>
+                  )}
+              </div>
+
+              {/* Heatmap pairs */}
+              <div>
+                <div className="font-sans text-sm font-medium">Heatmap (Target → Predicted)</div>
+                {diagnosticsRef.current.heatmapPairs.map((pair, i) => (
+                  <div key={i}>
+                    target=({pair.target.x.toFixed(0)},{pair.target.y.toFixed(0)}){' '}
+                    pred=({pair.predicted.x.toFixed(0)},{pair.predicted.y.toFixed(0)})
+                  </div>
+                ))}
+              </div>
+
+              {/* Model Comparison */}
+              {modelDiagnosticsRef.current && modelDiagnosticsRef.current.length > 0 && (
+                <div>
+                  <div className="font-sans text-sm font-medium">🏆 Model Comparison</div>
+                  {modelDiagnosticsRef.current.map((m, i) => (
+                    <div key={i} className={m.isBest ? 'text-green-600 font-bold' : ''}>
+                      {m.isBest ? '⭐ ' : '   '}
+                      {m.kind}: training={m.trainingErrorPx.toFixed(1)}px
+                      {' '}corr_x={m.corrX.toFixed(4)} corr_y={m.corrY.toFixed(4)}
+                      {' '}— {m.info}
+                    </div>
+                  ))}
+                  <div className="mt-2 text-muted-foreground">Per-model per-point errors (px):</div>
+                  {modelDiagnosticsRef.current.map((m, mi) => (
+                    <details key={mi} className="ml-2">
+                      <summary className={m.isBest ? 'text-green-600 cursor-pointer' : 'cursor-pointer'}>
+                        {m.kind} {m.isBest ? '(selected)' : ''}
+                      </summary>
+                      {m.perPointErrors.map((p, pi) => (
+                        <div key={pi} className="ml-4">
+                          ({p.point.x},{p.point.y}): {p.meanError.toFixed(1)}px
+                        </div>
+                      ))}
+                    </details>
+                  ))}
+                </div>
+              )}
+
+              {/* Post-calibration validation results */}
+            </div>
+          </details>
         )}
 
         <div className="flex gap-3">

@@ -1,0 +1,21 @@
+--- ml-service/app/schemas/prediction.py
++++ ml-service/app/schemas/prediction.py
+@@ -62,8 +62,13 @@
+         alias_generator=to_camel,
+     )
+ 
+-    feature_extraction_ms: float
+-    inference_ms: float
+-    total_ms: float
++    feature_extraction_ms: Optional[float] = None
++    inference_ms: Optional[float] = None
++    total_ms: Optional[float] = None
++    total_fixations: Optional[int] = None
++    mean_fixation_duration_ms: Optional[float] = None
++    fixation_duration_sd: Optional[float] = None
++    data_retention_pct: Optional[float] = None
++    mean_saccade_amplitude: Optional[float] = None
++    total_regressions: Optional[int] = None
++    intra_fixation_jitter: Optional[float] = None
+ 
+ class PredictionMetadata(BaseModel):

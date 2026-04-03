@@ -13,6 +13,7 @@ import {
   ResultsDisplay,
   ErrorScreen,
   ScreenGuard,
+  GazeDebugDot,
 } from '@/features/test/components';
 import { useTestFlow, useWebcamGaze } from '@/features/test/hooks';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
@@ -49,6 +50,9 @@ export default function WebcamTestPage() {
   // Task content
   const [taskContent, setTaskContent] = useState<string>('');
 
+  // Y-Axis Line Snapping: store normalized line centers for the reading task
+  const lineCentersRef = useRef<number[]>([]);
+
   // ─── Handlers ──────────────────────────────────────────
 
   const handleCameraReady = useCallback(() => {
@@ -58,7 +62,7 @@ export default function WebcamTestPage() {
   }, [dispatch, enterFullscreen]);
 
   const handleCalibrationComplete = useCallback(
-    (result: CalibrationResult, mapping?: { xCoeffs: number[]; yCoeffs: number[] }) => {
+    (result: CalibrationResult, mapping?: { predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number } }) => {
       if (mapping) {
         webcamGaze.setCalibrationData(mapping);
       }
@@ -76,6 +80,10 @@ export default function WebcamTestPage() {
     webcamGaze.stopCollecting();
     dispatch({ type: 'TASK_COMPLETE' });
   }, [dispatch, webcamGaze]);
+
+  const handleLineCentersReady = useCallback((centers: number[]) => {
+    lineCentersRef.current = centers;
+  }, []);
 
   const handleRetake = useCallback(() => {
     gazeDataRef.current = [];
@@ -103,7 +111,7 @@ export default function WebcamTestPage() {
       height: window.screen.height,
     };
 
-    const result = await submitWebcamTest(gazeDataRef.current, screen.width, screen.height);
+    const result = await submitWebcamTest(gazeDataRef.current, screen.width, screen.height, lineCentersRef.current);
 
     if (result.success) {
       dispatch({ type: 'SUBMIT_SUCCESS', result: result.data });
@@ -203,6 +211,7 @@ export default function WebcamTestPage() {
                 y: (iris.leftY + iris.rightY) / 2,
               };
             }}
+            onGetHeadPoseSample={() => webcamGaze.getLastHeadPose()}
             onComplete={handleCalibrationComplete}
             blockOnPoor={false}
           />
@@ -217,6 +226,7 @@ export default function WebcamTestPage() {
             pointCount={gazePointCount}
             isCollecting={webcamGaze.collecting}
             onDone={handleTaskDone}
+            onLineCentersReady={handleLineCentersReady}
             getLastGazePosition={() => {
               const last = gazeDataRef.current[gazeDataRef.current.length - 1];
               return last ? { x: last.x, y: last.y } : null;
@@ -291,6 +301,15 @@ export default function WebcamTestPage() {
             </div>
           )}
         {renderState()}
+
+        {/* Real-time gaze debug dot overlay */}
+        <GazeDebugDot
+          active={webcamState.currentState === 'task-paragraph' && webcamGaze.collecting}
+          getPosition={() => {
+            const last = gazeDataRef.current[gazeDataRef.current.length - 1];
+            return last ? { x: last.x, y: last.y } : null;
+          }}
+        />
       </FullscreenShell>
     </ScreenGuard>
   );

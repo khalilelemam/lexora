@@ -1,4 +1,5 @@
 import logging
+import time
 
 from fastapi import APIRouter, HTTPException, Request, status
 
@@ -6,6 +7,7 @@ from app.schemas import (
     EyeTrackerFeatureRow,
     EyeTrackerFeatures,
     ErrorResponse,
+    PipelineMetrics,
     PredictionMetadata,
     PredictionRequest,
     PredictionResponse,
@@ -53,28 +55,42 @@ _ERROR_RESPONSES = {
 )
 async def predict_eye_tracker(request: PredictionRequest, http_request: Request):
     try:
+        # DEBUG: Log what line centers were received
+        logger.info(f"[DEBUG] PREDICT: Received line centers in request")
+        logger.info(f"[DEBUG] - meaningful_task: {request.meaningful_task.normalized_line_centers}")
+        logger.info(f"[DEBUG] - pseudo_task: {request.pseudo_task.normalized_line_centers}")
+        
         features = http_request.app.state.eye_tracker_features
         prediction = http_request.app.state.eye_tracker_prediction
+
+        t0 = time.perf_counter()
 
         syl_result = features.process_gaze_points(
             request.syllables_task.gaze_points,
             request.screen_width,
             request.screen_height,
+            request.syllables_task.normalized_line_centers,
         )
         mean_result = features.process_gaze_points(
             request.meaningful_task.gaze_points,
             request.screen_width,
             request.screen_height,
+            request.meaningful_task.normalized_line_centers,
         )
         pseudo_result = features.process_gaze_points(
             request.pseudo_task.gaze_points,
             request.screen_width,
             request.screen_height,
+            request.pseudo_task.normalized_line_centers,
         )
+        
+        t1 = time.perf_counter()
 
         result = prediction.predict(
             syl_result.sequences, mean_result.sequences, pseudo_result.sequences
         )
+        
+        t2 = time.perf_counter()
 
         return PredictionResponse(
             dyslexia_probability=result["dyslexia_probability"],
@@ -86,6 +102,12 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
                     syl_result.valid_fixations
                     + mean_result.valid_fixations
                     + pseudo_result.valid_fixations
+                ),
+                pipeline_metrics=PipelineMetrics(
+                    feature_extraction_ms=round((t1 - t0) * 1000, 2),
+                    inference_ms=round((t2 - t1) * 1000, 2),
+                    total_ms=round((t2 - t0) * 1000, 2),
+                    **mean_result.pipeline_metrics
                 ),
             ),
             features=EyeTrackerFeatures(
@@ -111,14 +133,23 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
 )
 async def predict_webcam(request: WebcamPredictionRequest, http_request: Request):
     try:
+        # DEBUG: Log what line centers were received
+        logger.info(f"[DEBUG] WEBCAM PREDICT: Received line centers: {request.normalized_line_centers}")
+        
         features = http_request.app.state.webcam_features
         prediction = http_request.app.state.webcam_prediction
 
+        t0 = time.perf_counter()
+
         processing = features.process(
-            request.gaze_data, request.screen_width, request.screen_height
+            request.gaze_data, request.screen_width, request.screen_height, request.normalized_line_centers
         )
 
+        t1 = time.perf_counter()
+
         result = prediction.predict(processing.sequences)
+
+        t2 = time.perf_counter()
 
         return WebcamPredictionResponse(
             dyslexia_probability=result["dyslexia_probability"],
@@ -127,6 +158,12 @@ async def predict_webcam(request: WebcamPredictionRequest, http_request: Request
             metadata=PredictionMetadata(
                 sequences_analyzed=82,
                 total_fixations=processing.total_fixations,
+                pipeline_metrics=PipelineMetrics(
+                    feature_extraction_ms=round((t1 - t0) * 1000, 2),
+                    inference_ms=round((t2 - t1) * 1000, 2),
+                    total_ms=round((t2 - t0) * 1000, 2),
+                    **processing.pipeline_metrics
+                ),
             ),
             features=[WebcamFeatureRow(**f) for f in processing.features_data],
         )

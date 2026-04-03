@@ -3,28 +3,46 @@
  */
 
 /**
- * 9-point calibration pattern (normalized 0-1 coords, 3×3 grid).
- * Gives 9 data points for a 6-coefficient polynomial — properly overdetermined
- * for least-squares fitting, which significantly improves calibration quality
- * compared to 5 points.
+ * 15-point calibration pattern focused on the top-anchored reading container (3x5 grid).
+ * This increases spatial density to better capture nonlinearities in the mapping.
+ *
+ * New Area of Interest (AOI) Bounding Box:
+ *   - X columns: [0.2, 0.35, 0.5, 0.65, 0.8] (60% horizontal spread, perfectly centered)
+ *   - Y bounding box is shifted to the top 10% - 65% of the screen.
+ *     This leaves the bottom third empty to prevent eyelid occlusion and accuracy drop-off.
+ *     
+ *     The original relative grid logic (Y: 0.25, 0.5, 0.75) is strictly mapped into 
+ *     this new elevated container:
+ *       Top    (0.0 relative to AOI) -> y = 0.10
+ *       Middle (0.5 relative to AOI) -> y = 0.375
+ *       Bottom (1.0 relative to AOI) -> y = 0.65
  */
 export const CALIBRATION_POINTS = [
-  { x: 0.5, y: 0.5 },  // center
-  { x: 0.1, y: 0.1 },  // top-left
-  { x: 0.5, y: 0.1 },  // top-center
-  { x: 0.9, y: 0.1 },  // top-right
-  { x: 0.1, y: 0.5 },  // middle-left
-  { x: 0.9, y: 0.5 },  // middle-right
-  { x: 0.1, y: 0.9 },  // bottom-left
-  { x: 0.5, y: 0.9 },  // bottom-center
-  { x: 0.9, y: 0.9 },  // bottom-right
+  // Row 1 (top: 10%)
+  { x: 0.2, y: 0.10 },
+  { x: 0.35, y: 0.10 },
+  { x: 0.5, y: 0.10 },
+  { x: 0.65, y: 0.10 },
+  { x: 0.8, y: 0.10 },
+  // Row 2 (middle: 37.5%)
+  { x: 0.2, y: 0.375 },
+  { x: 0.35, y: 0.375 },
+  { x: 0.5, y: 0.375 },
+  { x: 0.65, y: 0.375 },
+  { x: 0.8, y: 0.375 },
+  // Row 3 (bottom: 65%)
+  { x: 0.2, y: 0.65 },
+  { x: 0.35, y: 0.65 },
+  { x: 0.5, y: 0.65 },
+  { x: 0.65, y: 0.65 },
+  { x: 0.8, y: 0.65 },
 ] as const;
 
 /** How long to show each calibration dot (ms) */
-export const CALIBRATION_DOT_DURATION = 1500;
+export const CALIBRATION_DOT_DURATION = 2500;
 
 /** Gaze points to collect per calibration dot */
-export const CALIBRATION_SAMPLES_PER_POINT = 30;
+export const CALIBRATION_SAMPLES_PER_POINT = 60;
 
 /**
  * Calibration quality thresholds (normalized error).

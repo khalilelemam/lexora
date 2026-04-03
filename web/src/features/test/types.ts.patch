@@ -1,0 +1,22 @@
+--- web/src/features/test/types.ts
++++ web/src/features/test/types.ts
+@@ -66,8 +66,19 @@
+ 
+ // ─── ML Prediction Results ───────────────────────────────
++export interface PipelineMetrics {
++  totalFixations: number | null;
++  meanFixationDurationMs: number | null;
++  fixationDurationSd: number | null;
++  dataRetentionPct: number | null;
++  meanSaccadeAmplitude: number | null;
++  totalRegressions: number | null;
++  intraFixationJitter: number | null;
++}
++
+ export interface PredictionMetadata {
+   sequencesAnalyzed: number;
+   totalFixations: number;
++  pipelineMetrics?: PipelineMetrics;
+ }
+ 
+ /** Per-fixation feature data returned by the ML service (for gaze replay) */

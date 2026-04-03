@@ -26,6 +26,7 @@ class GazeSequence(BaseModel):
     )
 
     gaze_points: List[GazePoint] = Field(min_length=20)
+    normalized_line_centers: List[float] = Field(default_factory=list)
 
     @field_validator("gaze_points")
     @classmethod

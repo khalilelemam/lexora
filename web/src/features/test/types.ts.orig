@@ -53,20 +53,9 @@ export interface WebcamTaskGazeData {
 export type RiskLevel = 'low' | 'medium' | 'high';
 
 // ─── ML Prediction Results ───────────────────────────────
-export interface PipelineMetrics {
-  totalFixations: number | null;
-  meanFixationDurationMs: number | null;
-  fixationDurationSd: number | null;
-  dataRetentionPct: number | null;
-  meanSaccadeAmplitude: number | null;
-  totalRegressions: number | null;
-  intraFixationJitter: number | null;
-}
-
 export interface PredictionMetadata {
   sequencesAnalyzed: number;
   totalFixations: number;
-  pipelineMetrics?: PipelineMetrics;
 }
 
 /** Per-fixation feature data returned by the ML service (for gaze replay) */
@@ -228,8 +217,6 @@ export interface HeadPoseSample {
 /** Result of validating a single calibration point post-calibration */
 export interface ValidationPointResult {
   point: { x: number; y: number };
-  /** Raw iris coordinates sampled during validation dwell */
-  irisSamples: Array<{ x: number; y: number }>;
   /** All predicted screen positions sampled during the validation dwell */
   predictions: Array<{ x: number; y: number }>;
   /** Mean Euclidean error in pixels between predictions and target */

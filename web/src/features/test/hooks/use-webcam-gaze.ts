@@ -19,10 +19,8 @@ import { WEBCAM_GAZE_EMA_ALPHA } from '../lib/constants';
  */
 
 interface CalibrationMapping {
-  /** Coefficients for X mapping: x = a0 + a1*irisX + a2*irisY + a3*irisX^2 + a4*irisY^2 + a5*irisX*irisY */
-  xCoeffs: number[];
-  /** Coefficients for Y mapping (same structure) */
-  yCoeffs: number[];
+  /** Model-agnostic predict: (irisX, irisY, yaw, pitch) → screen (px) */
+  predict: (irisX: number, irisY: number, yaw: number, pitch: number) => { x: number; y: number };
 }
 
 interface IrisPosition {
@@ -30,6 +28,13 @@ interface IrisPosition {
   leftY: number;
   rightX: number;
   rightY: number;
+}
+
+interface HeadPose {
+  /** Left-right head turn — positive = turned right (normalized by face width) */
+  yaw: number;
+  /** Up-down head nod — positive = tilted down (normalized by face height) */
+  pitch: number;
 }
 
 interface UseWebcamGazeOptions {
@@ -48,6 +53,43 @@ type FaceLandmarker = {
   close: () => void;
 };
 
+type VisionTasksModule = {
+  FaceLandmarker: {
+    createFromOptions: (
+      filesetResolver: unknown,
+      options: {
+        baseOptions: { modelAssetPath: string; delegate: 'GPU' | 'CPU' };
+        runningMode: 'VIDEO';
+        numFaces: number;
+        outputFaceBlendshapes: boolean;
+        outputFacialTransformationMatrixes: boolean;
+      },
+    ) => Promise<unknown>;
+  };
+  FilesetResolver: {
+    forVisionTasks: (wasmPath: string) => Promise<unknown>;
+  };
+};
+
+const MEDIAPIPE_VERSION = '0.10.32';
+
+async function loadVisionTasksModule(): Promise<VisionTasksModule> {
+  try {
+    const mod = (await import('@mediapipe/tasks-vision')) as VisionTasksModule;
+    return mod;
+  } catch (localErr) {
+    // Fallback: load directly from CDN if Next fails to fetch the split chunk.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - dynamic URL import is runtime-only and browser-supported.
+    const cdnMod = (await import(
+      /* webpackIgnore: true */ `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`
+    )) as VisionTasksModule;
+
+    console.warn('Falling back to CDN MediaPipe bundle after local chunk-load failure.', localErr);
+    return cdnMod;
+  }
+}
+
 export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   const [cameraReady, setCameraReady] = useState(false);
   const [modelReady, setModelReady] = useState(false);
@@ -64,6 +106,8 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   onGazePointRef.current = onGazePoint;
   // Track last iris positions for calibration
   const lastIrisRef = useRef<IrisPosition | null>(null);
+  // Track last head pose for diagnostics
+  const lastHeadPoseRef = useRef<HeadPose | null>(null);
   // Track previous smoothed gaze position for EMA
   const prevSmoothedRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -94,11 +138,11 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
 
   const initModel = useCallback(async () => {
     try {
-      const vision = await import('@mediapipe/tasks-vision');
+      const vision = await loadVisionTasksModule();
       const { FaceLandmarker: FL, FilesetResolver } = vision;
 
       const filesetResolver = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+        `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`,
       );
 
       const faceLandmarker = await FL.createFromOptions(filesetResolver, {
@@ -115,6 +159,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
 
       faceLandmarkerRef.current = faceLandmarker as unknown as FaceLandmarker;
       setModelReady(true);
+      setError(null);
     } catch (err) {
       setError(
         `Failed to load face tracking model: ${err instanceof Error ? err.message : 'Unknown error'}`,
@@ -127,16 +172,76 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
 
   const extractIrisPosition = useCallback(
     (landmarks: Array<{ x: number; y: number; z: number }>): IrisPosition | null => {
-      // Left iris: landmarks 468-472, Right iris: 473-477
-      // Center of each iris: index 468 (left), 473 (right)
       if (landmarks.length < 478) return null;
 
+      // ── Eye-relative iris normalization ──────────────────────
+      // Raw MediaPipe iris coordinates span only ~0.04 of the
+      // normalized range (e.g. 0.53–0.57), making the polynomial
+      // regression extremely sensitive to noise.  Normalizing the
+      // iris center relative to the eye bounding box expands the
+      // usable input range to roughly 0.2–0.8.
+      const leftInner = landmarks[133];
+      const leftOuter = landmarks[33];
+      const leftTop = landmarks[159];
+      const leftBottom = landmarks[145];
+
+      const rightInner = landmarks[362];
+      const rightOuter = landmarks[263];
+      const rightTop = landmarks[386];
+      const rightBottom = landmarks[374];
+
+      const leftIris = landmarks[468];
+      const rightIris = landmarks[473];
+
+      // Eye dimensions
+      const leftEyeW = Math.abs(leftOuter.x - leftInner.x);
+      const leftEyeH = Math.abs(leftBottom.y - leftTop.y);
+      const rightEyeW = Math.abs(rightOuter.x - rightInner.x);
+      const rightEyeH = Math.abs(rightBottom.y - rightTop.y);
+
+      // Blink detection — reject frame when either eye is nearly closed
+      if (leftEyeW > 0.001 && leftEyeH / leftEyeW < 0.15) return null;
+      if (rightEyeW > 0.001 && rightEyeH / rightEyeW < 0.15) return null;
+
+      // Normalize iris center within the eye bounding box
+      const leftMinX = Math.min(leftOuter.x, leftInner.x);
+      const leftMinY = Math.min(leftTop.y, leftBottom.y);
+      const rightMinX = Math.min(rightOuter.x, rightInner.x);
+      const rightMinY = Math.min(rightTop.y, rightBottom.y);
+
       return {
-        leftX: landmarks[468].x,
-        leftY: landmarks[468].y,
-        rightX: landmarks[473].x,
-        rightY: landmarks[473].y,
+        leftX: leftEyeW > 0.001 ? (leftIris.x - leftMinX) / leftEyeW : 0.5,
+        leftY: leftEyeH > 0.001 ? (leftIris.y - leftMinY) / leftEyeH : 0.5,
+        rightX: rightEyeW > 0.001 ? (rightIris.x - rightMinX) / rightEyeW : 0.5,
+        rightY: rightEyeH > 0.001 ? (rightIris.y - rightMinY) / rightEyeH : 0.5,
       };
+    },
+    [],
+  );
+
+  // ─── Extract Head Pose from Landmarks ────────────────────
+
+  const extractHeadPose = useCallback(
+    (landmarks: Array<{ x: number; y: number; z: number }>): HeadPose | null => {
+      if (landmarks.length < 478) return null;
+
+      const noseTip = landmarks[1];
+      const leftEar = landmarks[234];
+      const rightEar = landmarks[454];
+      const forehead = landmarks[10];
+      const chin = landmarks[152];
+
+      // Yaw: asymmetry of nose position relative to ear midpoint
+      const faceWidth = Math.abs(rightEar.x - leftEar.x);
+      const faceCenterX = (leftEar.x + rightEar.x) / 2;
+      const yaw = faceWidth > 0.001 ? (noseTip.x - faceCenterX) / faceWidth : 0;
+
+      // Pitch: vertical offset of nose relative to forehead-chin midpoint
+      const faceHeight = Math.abs(chin.y - forehead.y);
+      const faceCenterY = (forehead.y + chin.y) / 2;
+      const pitch = faceHeight > 0.001 ? (noseTip.y - faceCenterY) / faceHeight : 0;
+
+      return { yaw, pitch };
     },
     [],
   );
@@ -152,19 +257,12 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
       const ix = (iris.leftX + iris.rightX) / 2;
       const iy = (iris.leftY + iris.rightY) / 2;
 
-      // Polynomial mapping: val = a0 + a1*ix + a2*iy + a3*ix^2 + a4*iy^2 + a5*ix*iy
-      const computeCoord = (coeffs: number[]) =>
-        coeffs[0] +
-        coeffs[1] * ix +
-        coeffs[2] * iy +
-        coeffs[3] * ix * ix +
-        coeffs[4] * iy * iy +
-        coeffs[5] * ix * iy;
+      // Include head pose in prediction (model uses it for better Y-axis mapping)
+      const hp = lastHeadPoseRef.current;
+      const yaw = hp?.yaw ?? 0;
+      const pitch = hp?.pitch ?? 0;
 
-      return {
-        x: computeCoord(cal.xCoeffs),
-        y: computeCoord(cal.yCoeffs),
-      };
+      return cal.predict(ix, iy, yaw, pitch);
     },
     [],
   );
@@ -195,6 +293,12 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
           if (iris) {
             lastIrisRef.current = iris;
 
+            // Extract head pose for diagnostics
+            const headPose = extractHeadPose(results.faceLandmarks[0]);
+            if (headPose) {
+              lastHeadPoseRef.current = headPose;
+            }
+
             // Only emit gaze points when actively collecting (task phase)
             if (collectingRef.current && calibrationRef.current) {
               const screenPos = mapToScreen(iris);
@@ -207,8 +311,10 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
                 const alpha = WEBCAM_GAZE_EMA_ALPHA;
                 const prev = prevSmoothedRef.current;
                 const smoothed = prev
-                  ? { x: alpha * screenPos.x + (1 - alpha) * prev.x,
-                      y: alpha * screenPos.y + (1 - alpha) * prev.y }
+                  ? {
+                    x: alpha * screenPos.x + (1 - alpha) * prev.x,
+                    y: alpha * screenPos.y + (1 - alpha) * prev.y
+                  }
                   : screenPos;
                 prevSmoothedRef.current = smoothed;
 
@@ -231,7 +337,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [enabled, cameraReady, modelReady, extractIrisPosition, mapToScreen]);
+  }, [enabled, cameraReady, modelReady, extractIrisPosition, extractHeadPose, mapToScreen]);
 
   // ─── Public API ─────────────────────────────────────────
 
@@ -250,6 +356,8 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   }, []);
 
   const getLastIrisPosition = useCallback(() => lastIrisRef.current, []);
+
+  const getLastHeadPose = useCallback(() => lastHeadPoseRef.current, []);
 
   const resetCount = useCallback(() => setPointCount(0), []);
 
@@ -292,6 +400,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     // Calibration
     setCalibrationData,
     getLastIrisPosition,
+    getLastHeadPose,
     // Collection
     startCollecting,
     stopCollecting,

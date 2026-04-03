@@ -1,0 +1,41 @@
+--- ml-service/app/services/webcam/features.py
++++ ml-service/app/services/webcam/features.py
+@@ -10,6 +10,7 @@
+     features_data: list[dict] = field(default_factory=list)
+     total_fixations: int = 0
+     mean_fixation_duration_ms: float = 0.0
++    pipeline_metrics: dict = field(default_factory=dict)
+ 
+ 
+ class WebcamFeatureProcessor:
+@@ -219,10 +220,31 @@
+             for fixation, row in zip(fixations, features)
+         ]
+ 
++        # Calculate additional pipeline metrics
++        durations = features[:, 0]
++        amps = features[:, 3]
++        
++        total_raw = sum(len(f) for f in fixations)
++        retention_pct = (total_raw / len(raw_points) * 100) if raw_points else 0.0
++        
++        jitter_sum = sum(np.std(f[:, 0]) + np.std(f[:, 1]) for f in fixations)
++        mean_jitter = (jitter_sum / len(fixations)) / 2 if fixations else 0.0
++        
++        pipeline_metrics = {
++            "total_fixations": len(features),
++            "mean_fixation_duration_ms": float(durations.mean()) if len(durations) > 0 else 0.0,
++            "fixation_duration_sd": float(durations.std()) if len(durations) > 0 else 0.0,
++            "data_retention_pct": float(retention_pct),
++            "mean_saccade_amplitude": float(amps.mean()) if len(amps) > 0 else 0.0,
++            "total_regressions": int(np.sum(features[:, 4])),
++            "intra_fixation_jitter": float(mean_jitter)
++        }
++
+         return WebcamProcessingResult(
+             sequences=model_input,
+             features_data=features_data,
+             total_fixations=len(features),
+             mean_fixation_duration_ms=float(features[:, 0].mean()),
++            pipeline_metrics=pipeline_metrics
+         )

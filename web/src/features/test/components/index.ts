@@ -7,3 +7,4 @@ export { ResultsDisplay } from './results-display';
 export { ErrorScreen } from './error-screen';
 export { ScreenGuard } from './screen-guard';
 export { GazeReplayViewer } from './gaze-replay-viewer';
+export { GazeDebugDot } from './gaze-debug-dot';

@@ -42,13 +42,23 @@ export async function submitTobiiTest(
   meaningfulText: TobiiGazePoint[],
   screenWidth: number,
   screenHeight: number,
+  lineCenters?: Record<string, number[]>,
 ): Promise<ActionResult> {
   try {
     const result = await withRetry(() =>
       predictEyeTracker({
-        syllablesTask: { gazePoints: syllables },
-        meaningfulTask: { gazePoints: meaningfulText },
-        pseudoTask: { gazePoints: pseudoWords },
+        syllablesTask: {
+          gazePoints: syllables,
+          normalizedLineCenters: lineCenters?.['syllables'] ?? [],
+        },
+        meaningfulTask: {
+          gazePoints: meaningfulText,
+          normalizedLineCenters: lineCenters?.['meaningful-text'] ?? [],
+        },
+        pseudoTask: {
+          gazePoints: pseudoWords,
+          normalizedLineCenters: lineCenters?.['pseudo-words'] ?? [],
+        },
         screenWidth,
         screenHeight,
       }),
@@ -72,6 +82,7 @@ export async function submitWebcamTest(
   gazeData: WebcamGazePoint[],
   screenWidth: number,
   screenHeight: number,
+  lineCenters?: number[],
 ): Promise<ActionResult> {
   try {
     const result = await withRetry(() =>
@@ -79,6 +90,7 @@ export async function submitWebcamTest(
         gazeData,
         screenWidth,
         screenHeight,
+        normalizedLineCenters: lineCenters ?? [],
       }),
     );
     return { success: true, data: result };

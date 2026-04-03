@@ -1,0 +1,19 @@
+--- web/src/features/test/components/results-display.tsx
++++ web/src/features/test/components/results-display.tsx
+@@ -10,6 +10,7 @@
+ import { cn } from '@/lib/utils';
+ import type { PredictionResult, TestMode } from '../types';
+ import { GazeReplayViewer } from './gaze-replay-viewer';
++import { PipelineDiagnostics } from '@/components/PipelineDiagnostics';
+ 
+ interface ResultsDisplayProps {
+   result: PredictionResult;
+@@ -149,6 +150,9 @@
+           features={result.features}
+           direction={contentDirection}
+         />
++        {result.metadata?.pipelineMetrics && (
++          <PipelineDiagnostics metrics={result.metadata.pipelineMetrics} />
++        )}
+       </CardContent>
+     </Card>

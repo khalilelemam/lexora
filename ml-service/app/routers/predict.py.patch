@@ -1,0 +1,44 @@
+--- ml-service/app/routers/predict.py
++++ ml-service/app/routers/predict.py
+@@ -79,15 +79,20 @@
+                     + mean_result.valid_fixations
+                     + pseudo_result.valid_fixations
+                 ),
+-                pipeline_metrics=PipelineMetrics(
+-                    feature_extraction_ms=round((t1 - t0) * 1000, 2),
+-                    inference_ms=round((t2 - t1) * 1000, 2),
+-                    total_ms=round((t2 - t0) * 1000, 2),
+-                ),
++                pipeline_metrics=PipelineMetrics(
++                    feature_extraction_ms=round((t1 - t0) * 1000, 2),
++                    inference_ms=round((t2 - t1) * 1000, 2),
++                    total_ms=round((t2 - t0) * 1000, 2),
++                    **mean_result.pipeline_metrics
++                ),
+             ),
+             features=EyeTrackerFeatures(
+                 syllables=[EyeTrackerFeatureRow(**f) for f in syl_result.features_data],
+                 meaningful=[
+                     EyeTrackerFeatureRow(**f) for f in mean_result.features_data
+@@ -134,16 +139,17 @@
+             dyslexia_probability=result["dyslexia_probability"],
+             risk_level=result["risk_level"],
+             confidence=1.0,
+             metadata=PredictionMetadata(
+                 sequences_analyzed=82,
+                 total_fixations=processing.total_fixations,
+-                pipeline_metrics=PipelineMetrics(
+-                    feature_extraction_ms=round((t1 - t0) * 1000, 2),
+-                    inference_ms=round((t2 - t1) * 1000, 2),
+-                    total_ms=round((t2 - t0) * 1000, 2),
+-                ),
++                pipeline_metrics=PipelineMetrics(
++                    feature_extraction_ms=round((t1 - t0) * 1000, 2),
++                    inference_ms=round((t2 - t1) * 1000, 2),
++                    total_ms=round((t2 - t0) * 1000, 2),
++                    **processing.pipeline_metrics
++                ),
+             ),
+             features=[WebcamFeatureRow(**f) for f in processing.features_data],
+         )
+     except ValueError as e:

@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import type { PredictionResult, TestMode } from '../types';
 import { GazeReplayViewer } from './gaze-replay-viewer';
-import { PipelineDiagnostics } from '@/components/PipelineDiagnostics';
 
 interface ResultsDisplayProps {
   result: PredictionResult;
@@ -150,9 +149,6 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent, conten
               features={result.features}
               direction={contentDirection}
             />
-            {result.metadata?.pipelineMetrics && (
-              <PipelineDiagnostics metrics={result.metadata.pipelineMetrics} />
-            )}
           </CardContent>
         </Card>
       )}
