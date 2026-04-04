@@ -55,11 +55,6 @@ _ERROR_RESPONSES = {
 )
 async def predict_eye_tracker(request: PredictionRequest, http_request: Request):
     try:
-        # DEBUG: Log what line centers were received
-        logger.info(f"[DEBUG] PREDICT: Received line centers in request")
-        logger.info(f"[DEBUG] - meaningful_task: {request.meaningful_task.normalized_line_centers}")
-        logger.info(f"[DEBUG] - pseudo_task: {request.pseudo_task.normalized_line_centers}")
-        
         features = http_request.app.state.eye_tracker_features
         prediction = http_request.app.state.eye_tracker_prediction
 
@@ -133,9 +128,6 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
 )
 async def predict_webcam(request: WebcamPredictionRequest, http_request: Request):
     try:
-        # DEBUG: Log what line centers were received
-        logger.info(f"[DEBUG] WEBCAM PREDICT: Received line centers: {request.normalized_line_centers}")
-        
         features = http_request.app.state.webcam_features
         prediction = http_request.app.state.webcam_prediction
 

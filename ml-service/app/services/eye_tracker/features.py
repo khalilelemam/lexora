@@ -100,21 +100,11 @@ class EyeTrackerFeatureProcessor:
 
         # ─── Y-Axis Line Snapping (Stage 1 of Word/Line Mapping) ────────────────
         # If normalized_line_centers provided, snap fixation Y-coordinates to line centers
-        import logging
-        logger = logging.getLogger(__name__)
-        
         if normalized_line_centers and len(normalized_line_centers) > 0:
-            logger.info(f"[DEBUG] EYE_TRACKER: Snapping enabled. Line centers: {normalized_line_centers}")
-            logger.info(f"[DEBUG] EYE_TRACKER: Raw Y-coords (first 10): {features_filtered[:10, 2]}")
-            
             snapped_features = self._snap_to_line_centers(
                 features_filtered, normalized_line_centers
             )
-            
-            logger.info(f"[DEBUG] EYE_TRACKER: Snapped Y-coords (first 10): {snapped_features[:10, 2]}")
-            logger.info(f"[DEBUG] EYE_TRACKER: Unique Y values: {np.unique(snapped_features[:, 2])}")
         else:
-            logger.warning(f"[DEBUG] EYE_TRACKER: Snapping DISABLED. Line centers: {normalized_line_centers}")
             snapped_features = features_filtered
 
         # Raw features before scaling (for storage and visualization)

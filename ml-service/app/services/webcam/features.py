@@ -98,7 +98,6 @@ class WebcamFeatureProcessor:
         self.min_fixation_duration_ms = settings.WEBCAM_MIN_FIXATION_MS
         self.max_fixation_duration_ms = settings.WEBCAM_MAX_FIXATION_MS
         # I-DT parameters
-        # Reduced from 0.04 to 0.015 to exclude saccadic flights and achieve ~80-90% retention
         self.dispersion_threshold = 0.04
         self.duration_threshold_ms = 150
         # One Euro Filter parameters
@@ -142,7 +141,7 @@ class WebcamFeatureProcessor:
         I-DT (Identification by Dispersion Threshold) fixation detection.
         
         CRITICAL TUNING: Enforces saccadic exclusion during Phase 1.
-        - Dispersion threshold reduced to 0.015 (was 0.04) to exclude fast saccadic flights
+        - Dispersion threshold set to 0.04 to balance retention and noise rejection
         - Phase 1: Accumulate points until 150ms BUT check dispersion continuously
         - If dispersion breaks BEFORE 150ms: those are saccadic points, mark invalid, skip
         - Phase 2: Expand further while dispersion remains OK
@@ -297,13 +296,8 @@ class WebcamFeatureProcessor:
         - Assigns line_id based on which line fixation snapped to
         - Uses line_id for regression/return sweep detection
         """
-        import logging
-        logger = logging.getLogger(__name__)
-        
         if not fixations:
             return np.array([]).reshape(0, 6)
-
-        logger.debug(f"[DEBUG] extract_features: {len(fixations)} fixations, line_centers: {normalized_line_centers}")
 
         features = []
         prev_centroid_x = None
@@ -317,8 +311,6 @@ class WebcamFeatureProcessor:
             centroid_x = np.mean(fixation[:, 0])
             centroid_y = np.mean(fixation[:, 1])
             
-            raw_centroid_y = centroid_y  # Store for debug logging
-
             # ─── Y-Axis Line Snapping ──────────────────────────────────────
             if len(line_centers_arr) > 0:
                 # Find nearest line center (1D nearest neighbor search)
@@ -326,17 +318,11 @@ class WebcamFeatureProcessor:
                 current_line_id = int(np.argmin(distances))
                 # Snap to exact line center
                 centroid_y = line_centers_arr[current_line_id]
-                
-                if i < 3:  # Log first 3 fixations
-                    logger.debug(f"[DEBUG] Fixation {i}: raw_y={raw_centroid_y:.4f} → snapped_y={centroid_y:.4f} (line_id={current_line_id})")
             else:
                 # No line centers provided; estimate line_id from Y-delta
                 current_line_id = 0
                 if prev_centroid_y is not None and centroid_y - prev_centroid_y > 0.04:
                     current_line_id = prev_line_id + 1
-                
-                if i < 3:
-                    logger.debug(f"[DEBUG] Fixation {i}: y={centroid_y:.4f}, line_id={current_line_id} (no snapping)")
 
             if prev_centroid_x is not None:
                 amplitude = np.sqrt(
@@ -398,9 +384,6 @@ class WebcamFeatureProcessor:
         screen_height: int,
         normalized_line_centers: List[float] | None = None,
     ) -> WebcamProcessingResult:
-        import logging
-        logger = logging.getLogger(__name__)
-        
         # PHASE 1: Normalize coordinates, tracking out-of-bounds points
         normalized, out_of_bounds_count = self.normalize_coordinates(raw_points, screen_width, screen_height)
         
@@ -411,18 +394,7 @@ class WebcamFeatureProcessor:
         fixations, invalid_fixation_points = self.detect_fixations(smoothed)
         
         # Extract features (with Y-axis line snapping if line centers provided)
-        logger.info(f"[DEBUG] WEBCAM: Extracting features with {len(fixations)} fixations")
-        if normalized_line_centers and len(normalized_line_centers) > 0:
-            logger.info(f"[DEBUG] WEBCAM: Line centers provided: {normalized_line_centers}")
-        else:
-            logger.warning(f"[DEBUG] WEBCAM: No line centers provided, using Y-delta fallback")
-        
         features = self.extract_features(fixations, normalized_line_centers)
-        
-        logger.info(f"[DEBUG] WEBCAM: Extracted {len(features)} feature rows")
-        if len(features) > 0:
-            logger.info(f"[DEBUG] WEBCAM: Y-values (first 10): {features[:10, 2]}")
-            logger.info(f"[DEBUG] WEBCAM: Unique Y values: {np.unique(features[:, 2])}")
 
         if len(features) == 0:
             raise ValueError("No valid fixations detected")
@@ -470,21 +442,14 @@ class WebcamFeatureProcessor:
         total_pipeline_retention_pct = (total_in_fixations / raw_count * 100) if raw_count > 0 else 0.0
         
         # ═══════════════════════════════════════════════════════════════════════
-        # SANITY CHECK: Cap at 100% and log warnings if exceeded (indicates bugs)
+        # SANITY CHECK: cap percentages at 100 to avoid invalid telemetry values
         # ═══════════════════════════════════════════════════════════════════════
-        def safe_cap_percent(pct: float, stage_name: str) -> float:
-            """Cap percentage at 100% and log if exceeded."""
-            if pct > 100.0:
-                logger.warning(
-                    f"⚠️  Data Retention > 100% at stage '{stage_name}': {pct:.1f}%. "
-                    f"This indicates point double-counting. Check I-DT algorithm."
-                )
-                return 100.0
-            return pct
+        def safe_cap_percent(pct: float) -> float:
+            return min(pct, 100.0)
         
-        normalized_retention_pct = safe_cap_percent(normalized_retention_pct, "Raw→Normalized")
-        fixation_retention_pct = safe_cap_percent(fixation_retention_pct, "Normalized→Fixations")
-        total_pipeline_retention_pct = safe_cap_percent(total_pipeline_retention_pct, "Total Pipeline")
+        normalized_retention_pct = safe_cap_percent(normalized_retention_pct)
+        fixation_retention_pct = safe_cap_percent(fixation_retention_pct)
+        total_pipeline_retention_pct = safe_cap_percent(total_pipeline_retention_pct)
         
         # Calculate additional pipeline metrics
         durations = features[:, 0]
@@ -512,14 +477,6 @@ class WebcamFeatureProcessor:
             "data_retention_pct": float(total_pipeline_retention_pct),
         }
         
-        # Debug logging
-        logger.debug(
-            f"Data Funnel: Raw={raw_count} → Normalized={normalized_count} ({normalized_retention_pct:.1f}%) "
-            f"→ Fixations={total_in_fixations} ({fixation_retention_pct:.1f}%) | "
-            f"Total={total_pipeline_retention_pct:.1f}% | "
-            f"OutOfBounds={out_of_bounds_count} InvalidFixations={invalid_fixation_points}"
-        )
-
         return WebcamProcessingResult(
             sequences=model_input,
             features_data=features_data,
