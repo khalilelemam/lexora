@@ -3,7 +3,6 @@ import pytest
 
 from app.schemas.webcam import RawGazePoint
 from app.services.webcam.features import WebcamFeatureProcessor
-from tests.conftest import create_raw_gaze_points
 
 
 class TestWebcamFeatureProcessor:
@@ -37,7 +36,9 @@ class TestWebcamFeatureProcessor:
 
             while i < count:
                 fixation_x = x_progress * 1920
-                fixation_y = line_y_positions[current_line % len(line_y_positions)] * 1080
+                fixation_y = (
+                    line_y_positions[current_line % len(line_y_positions)] * 1080
+                )
 
                 fixation_points = int(np.random.randint(25, 36))
                 for _ in range(min(fixation_points, count - i)):
@@ -99,7 +100,9 @@ class TestWebcamFeatureProcessor:
 
             while i < count:
                 fixation_x = x_progress * 1920
-                fixation_y = line_y_positions[current_line % len(line_y_positions)] * 1080
+                fixation_y = (
+                    line_y_positions[current_line % len(line_y_positions)] * 1080
+                )
 
                 fixation_points = int(np.random.randint(25, 36))
                 for _ in range(min(fixation_points, count - i)):
@@ -200,8 +203,7 @@ class TestWebcamFeatureProcessor:
         # Create stationary points (should form one fixation)
         # Using millisecond timestamps, 100ms intervals
         points = [
-            (0.5, 0.5, i * 100)
-            for i in range(10)  # 100ms intervals, same location
+            (0.5, 0.5, i * 100) for i in range(10)  # 100ms intervals, same location
         ]
 
         fixations, invalid = processor.detect_fixations(points)

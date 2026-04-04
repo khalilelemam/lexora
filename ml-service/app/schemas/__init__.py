@@ -5,7 +5,6 @@ from .errors import ErrorResponse, FieldError
 from .prediction import (
     EyeTrackerFeatureRow,
     EyeTrackerFeatures,
-    PipelineMetrics,
     PredictionMetadata,
     PredictionRequest,
     PredictionResponse,
@@ -21,7 +20,6 @@ __all__ = [
     "PredictionRequest",
     "PredictionResponse",
     "PredictionMetadata",
-    "PipelineMetrics",
     "WebcamPredictionResponse",
     "EyeTrackerFeatureRow",
     "EyeTrackerFeatures",
