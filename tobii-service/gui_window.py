@@ -9,6 +9,7 @@ from pystray import MenuItem as item
 
 from app.config import settings
 from app.services.tobii_service import TobiiService
+from gui.styles import Styles
 from gui.service_manager import ServiceManager
 from gui.widgets import (
     ConfirmDialog,
@@ -19,7 +20,7 @@ from gui.widgets import (
 )
 
 ctk.set_appearance_mode("light")
-ctk.set_default_color_theme("blue")
+ctk.set_default_color_theme("green")
 
 
 class TobiiServiceGUI:
@@ -31,10 +32,11 @@ class TobiiServiceGUI:
 
         self.root = ctk.CTk()
         self.root.title(settings.APP_NAME)
-        self.root.geometry("600x520")
+        self.root.geometry("600x540")
         self.root.resizable(False, False)
+        self.root.configure(fg_color=Styles.BG_COLOR)
 
-        icon_path = str(Path(__file__).parent / "assets" / "eye.ico")
+        icon_path = str(Path(__file__).parent / "assets" / "lexora_eye.ico")
         self.root.iconbitmap(icon_path)
 
         self.tray_icon = None
@@ -50,8 +52,8 @@ class TobiiServiceGUI:
     def create_widgets(self):
         HeaderWidget.create(self.root)
 
-        content_frame = ctk.CTkFrame(self.root, fg_color="transparent")
-        content_frame.pack(fill="both", expand=True, padx=25, pady=20)
+        content_frame = ctk.CTkFrame(self.root, fg_color=Styles.BG_COLOR)
+        content_frame.pack(fill="both", expand=True, padx=28, pady=(24, 12))
 
         self.status_card = StatusCard(content_frame)
         self.control_buttons = ControlButtons(
@@ -61,6 +63,15 @@ class TobiiServiceGUI:
             on_restart=self.restart_service,
         )
         ExitButton.create(content_frame, on_exit=self.on_exit)
+
+        # ── Version footer ──────────────────────────────────────
+        footer = ctk.CTkLabel(
+            self.root,
+            text=f"v{settings.VERSION}  ·  {settings.HOST}:{settings.PORT}",
+            font=(Styles.FONT_FAMILY, 10),
+            text_color=Styles.TEXT_MUTED,
+        )
+        footer.pack(pady=(0, 10))
 
     def update_status(self):
         is_running = self.service_manager.is_running()
@@ -154,7 +165,7 @@ class TobiiServiceGUI:
                 item("Exit", self.on_tray_exit),
             )
 
-            icon_path = Path(__file__).parent / "assets" / "eye.ico"
+            icon_path = Path(__file__).parent / "assets" / "lexora_eye.ico"
             icon_image = Image.open(icon_path)
             self.tray_icon = pystray.Icon(
                 "lexora_service", icon_image, settings.APP_NAME, menu

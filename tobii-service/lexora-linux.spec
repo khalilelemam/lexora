@@ -5,7 +5,7 @@ a = Analysis(
     ['gui_window.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets/eye.ico', 'assets')],
+    datas=[('assets/lexora_eye.ico', 'assets')],
     hiddenimports=[
         'tobii_research',
         'pystray._xorg',  # Linux-specific
@@ -65,5 +65,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/eye.ico',
+    icon='assets/lexora_eye.ico',
 )
