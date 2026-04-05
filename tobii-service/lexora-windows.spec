@@ -38,6 +38,8 @@ a = Analysis(
         'gui.service_manager',
         'gui.styles',
         'gui.widgets',
+        'gui.widgets.update_dialog',
+        'gui.updater',
         'psutil',
     ],
     hookspath=[],

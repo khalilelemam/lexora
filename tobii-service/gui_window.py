@@ -11,12 +11,14 @@ from app.config import settings
 from app.services.tobii_service import TobiiService
 from gui.styles import Styles
 from gui.service_manager import ServiceManager
+from gui.updater import UpdateChecker, CHECK_INTERVAL_MS
 from gui.widgets import (
     ConfirmDialog,
     ControlButtons,
     ExitButton,
     HeaderWidget,
     StatusCard,
+    UpdateDialog,
 )
 
 ctk.set_appearance_mode("light")
@@ -45,9 +47,14 @@ class TobiiServiceGUI:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close_window)
         self.root.bind("<Unmap>", self.on_minimize_event)
 
+        self.update_checker = UpdateChecker()
+
         self.create_widgets()
         self.update_status()
         self.setup_tray()
+
+        # Check for updates after a short delay (let the UI render first)
+        self.root.after(3000, self._check_for_updates)
 
     def create_widgets(self):
         HeaderWidget.create(self.root)
@@ -84,6 +91,33 @@ class TobiiServiceGUI:
         self.control_buttons.update_button_states(is_running)
 
         self.root.after(2000, self.update_status)
+
+    # ── Auto-update integration ──────────────────────────────────
+
+    def _check_for_updates(self):
+        """Check GitHub releases for a newer version (runs in background)."""
+        self.update_checker.set_callbacks(
+            on_update_available=lambda update: self.root.after(
+                0, self._show_update_dialog, update
+            ),
+        )
+        self.update_checker.check_async()
+
+        # Schedule periodic re-checks
+        self.root.after(CHECK_INTERVAL_MS, self._check_for_updates)
+
+    def _show_update_dialog(self, update_info):
+        """Display the update dialog when a new version is found."""
+        UpdateDialog(
+            self.root,
+            update_info,
+            on_update=self._do_update,
+            on_skip=lambda: None,
+        )
+
+    def _do_update(self, update_info):
+        """Download and launch the update installer."""
+        self.update_checker.download_and_install(update_info)
 
     def start_service(self):
         is_available, pid = self.service_manager.check_port_available()
