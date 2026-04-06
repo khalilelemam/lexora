@@ -18,7 +18,7 @@ python -m venv .venv
 source .venv/bin/activate    # Linux/Mac
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 # Run the service
 python server.py
@@ -74,6 +74,11 @@ For paragraph-style tasks, sending normalized line centers from the client is st
 See `.env.example` for complete documentation of all options.
 
 Application metadata (`name`, `version`, `description`) is sourced from `pyproject.toml`.
+
+Dependency files in this repository intentionally serve different scopes:
+- `requirements.txt`: runtime dependencies (used by Docker image build)
+- `requirements-dev.txt`: runtime + testing dependencies (used for local development and CI tests)
+- `pyproject.toml`: project metadata + tool configuration
 
 ## Model Files
 
@@ -148,5 +153,6 @@ docker run -p 8001:8001 lexora-ml
 
 - Python 3.12+
 - TensorFlow 2.20+
-- See `requirements.txt` for all dependencies
+- Runtime deps: `requirements.txt`
+- Dev/test deps: `requirements-dev.txt`
 
