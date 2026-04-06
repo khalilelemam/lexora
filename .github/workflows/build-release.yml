@@ -70,12 +70,12 @@ jobs:
           Section "Uninstall"
             Delete "$INSTDIR\Lexora.exe"
             Delete "$INSTDIR\Uninstall.exe"
-            RMDir "$INSTDIR"
+            RMDir /r "$INSTDIR"
             
             Delete "$SMPROGRAMS\Lexora\Lexora.lnk"
             Delete "$SMPROGRAMS\Lexora\Uninstall.lnk"
             Delete "$DESKTOP\Lexora.lnk"
-            RMDir "$SMPROGRAMS\Lexora"
+            RMDir /r "$SMPROGRAMS\Lexora"
           SectionEnd
           '@
           
@@ -118,7 +118,7 @@ jobs:
         run: |
           pkgbuild --root "dist/Lexora.app" \
                    --identifier "com.eglex.lexora" \
-                   --version "1.0.0" \
+                   --version "${GITHUB_REF_NAME#lexora-v}" \
                    --install-location "/Applications/Lexora.app" \
                    "dist/Lexora-macOS-Installer.pkg"
       
@@ -158,28 +158,32 @@ jobs:
       
       - name: Create Debian (.deb) Installer
         run: |
-          mkdir -p dist/lexora_1.0_amd64/DEBIAN
-          mkdir -p dist/lexora_1.0_amd64/opt/lexora
-          mkdir -p dist/lexora_1.0_amd64/usr/bin
-          mkdir -p dist/lexora_1.0_amd64/usr/share/applications
+          VERSION="${GITHUB_REF_NAME#lexora-v}"
+          PKG_DIR="dist/lexora_${VERSION}_amd64"
 
-          cat > dist/lexora_1.0_amd64/DEBIAN/control << 'EOF'
+          mkdir -p "${PKG_DIR}/DEBIAN"
+          mkdir -p "${PKG_DIR}/opt/lexora"
+          mkdir -p "${PKG_DIR}/usr/bin"
+          mkdir -p "${PKG_DIR}/usr/share/applications"
+
+          cat > "${PKG_DIR}/DEBIAN/control" << EOF
           Package: lexora
-          Version: 1.0
+          Version: ${VERSION}
           Section: utils
           Priority: optional
           Architecture: amd64
+          Depends: libgtk-3-0, python3-tk
           Maintainer: Lexora Team
           Description: Lexora Eye Tracker Service
            Cross-platform eye tracking service with setup wizard.
           EOF
 
-          cp dist/Lexora dist/lexora_1.0_amd64/opt/lexora/
-          chmod +x dist/lexora_1.0_amd64/opt/lexora/Lexora
+          cp dist/Lexora "${PKG_DIR}/opt/lexora/"
+          chmod +x "${PKG_DIR}/opt/lexora/Lexora"
 
-          ln -s /opt/lexora/Lexora dist/lexora_1.0_amd64/usr/bin/lexora
+          ln -s /opt/lexora/Lexora "${PKG_DIR}/usr/bin/lexora"
 
-          cat > dist/lexora_1.0_amd64/usr/share/applications/lexora.desktop << 'EOF'
+          cat > "${PKG_DIR}/usr/share/applications/lexora.desktop" << 'EOF'
           [Desktop Entry]
           Type=Application
           Name=Lexora
@@ -188,8 +192,8 @@ jobs:
           Categories=Utility;
           EOF
 
-          dpkg-deb --build dist/lexora_1.0_amd64
-          mv dist/lexora_1.0_amd64.deb dist/Lexora-Linux-Installer.deb
+          dpkg-deb --build "${PKG_DIR}"
+          mv "${PKG_DIR}.deb" dist/Lexora-Linux-Installer.deb
       
       - name: Upload Linux installer
         uses: actions/upload-artifact@v4
