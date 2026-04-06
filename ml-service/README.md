@@ -7,7 +7,7 @@ FastAPI service for dyslexia screening using eye-tracking and webcam-based gaze 
 This service analyzes eye movement patterns during reading tasks to predict dyslexia risk. It supports two input methods:
 
 - **Eye Tracker** - High-precision eye tracker data from three reading tasks (syllables, meaningful text, pseudo-words)
-- **Webcam** - Lower-cost webcam gaze tracking using I-VT fixation detection algorithm
+- **Webcam** - Lower-cost webcam gaze tracking using One Euro smoothing + I-DT fixation detection
 
 ## Quick Start
 
@@ -56,16 +56,24 @@ EYE_TRACKER_MAX_SEQUENCES=100
 EYE_TRACKER_MIN_FIXATION_MS=80
 EYE_TRACKER_MAX_FIXATION_MS=1000
 
-# Webcam I-VT Algorithm
-WEBCAM_VELOCITY_THRESHOLD=0.5
+# Webcam I-DT + One Euro
 WEBCAM_MIN_FIXATION_MS=50
 WEBCAM_MAX_FIXATION_MS=1500
-WEBCAM_EMA_ALPHA=0.5
+WEBCAM_IDT_DISPERSION_THRESHOLD=0.04
+WEBCAM_IDT_MIN_WINDOW_MS=150
+WEBCAM_LINE_TRANSITION_THRESHOLD=0.04
+WEBCAM_ONE_EURO_MINCUTOFF=1.0
+WEBCAM_ONE_EURO_BETA=0.007
+WEBCAM_ONE_EURO_DCUTOFF=1.0
 WEBCAM_MAX_SEQUENCES=82
 WEBCAM_MIN_SEQUENCES=10
 ```
 
+For paragraph-style tasks, sending normalized line centers from the client is strongly recommended for more stable line-aware regression and return-sweep detection.
+
 See `.env.example` for complete documentation of all options.
+
+Application metadata (`name`, `version`, `description`) is sourced from `pyproject.toml`.
 
 ## Model Files
 
@@ -110,7 +118,7 @@ docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:1.0.0
 # Pass environment variables
 docker run -p 8001:8001 \
   -e DEBUG=true \
-  -e WEBCAM_VELOCITY_THRESHOLD=0.6 \
+  -e WEBCAM_IDT_DISPERSION_THRESHOLD=0.045 \
   ghcr.io/khalil-elemam/lexora-ml:latest
 ```
 
@@ -124,7 +132,7 @@ services:
       - "8001:8001"
     environment:
       DEBUG: "false"
-      WEBCAM_VELOCITY_THRESHOLD: "0.5"
+      WEBCAM_IDT_DISPERSION_THRESHOLD: "0.04"
       EYE_TRACKER_MIN_FIXATION_MS: "80"
 ```
 
