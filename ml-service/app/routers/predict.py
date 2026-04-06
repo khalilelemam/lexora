@@ -79,12 +79,18 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
             syl_result.sequences, mean_result.sequences, pseudo_result.sequences
         )
 
+        sequences_analyzed = (
+            syl_result.sequences_analyzed
+            + mean_result.sequences_analyzed
+            + pseudo_result.sequences_analyzed
+        )
+
         return PredictionResponse(
             dyslexia_probability=result["dyslexia_probability"],
             risk_level=result["risk_level"],
             confidence=result["confidence"],
             metadata=PredictionMetadata(
-                sequences_analyzed=result["sequences_analyzed"],
+                sequences_analyzed=sequences_analyzed,
                 total_fixations=(
                     syl_result.valid_fixations
                     + mean_result.valid_fixations
@@ -131,7 +137,7 @@ async def predict_webcam(request: WebcamPredictionRequest, http_request: Request
             risk_level=result["risk_level"],
             confidence=1.0,
             metadata=PredictionMetadata(
-                sequences_analyzed=82,
+                sequences_analyzed=processing.sequences_analyzed,
                 total_fixations=processing.total_fixations,
             ),
             features=[WebcamFeatureRow(**f) for f in processing.features_data],

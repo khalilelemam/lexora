@@ -1,14 +1,40 @@
 from pathlib import Path
 from typing import List
+import tomllib
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _load_project_metadata() -> dict[str, str]:
+    pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    fallback = {
+        "name": "Lexora ML Service",
+        "version": "0.0.0",
+        "description": "ML service for dyslexia risk prediction from eye-tracking and webcam gaze data",
+    }
+
+    try:
+        with open(pyproject_path, "rb") as f:
+            data = tomllib.load(f)
+        project = data.get("project", {})
+        return {
+            "name": str(project.get("name", fallback["name"])),
+            "version": str(project.get("version", fallback["version"])),
+            "description": str(project.get("description", fallback["description"])),
+        }
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        return fallback
+
+
+PROJECT_METADATA = _load_project_metadata()
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
-    APP_NAME: str = "Lexora ML Service"
-    APP_VERSION: str = "1.0.0"
+    APP_NAME: str = PROJECT_METADATA["name"]
+    APP_VERSION: str = PROJECT_METADATA["version"]
+    APP_DESCRIPTION: str = PROJECT_METADATA["description"]
     DEBUG: bool = False
 
     HOST: str = "0.0.0.0"
@@ -39,11 +65,15 @@ class Settings(BaseSettings):
     EYE_TRACKER_MIN_FIXATION_MS: int = 80
     EYE_TRACKER_MAX_FIXATION_MS: int = 1000
 
-    # Feature engineering parameters (Webcam I-VT algorithm)
-    WEBCAM_VELOCITY_THRESHOLD: float = 0.5  # normalized units/second
+    # Feature engineering parameters (Webcam)
     WEBCAM_MIN_FIXATION_MS: int = 50
     WEBCAM_MAX_FIXATION_MS: int = 1500
-    WEBCAM_EMA_ALPHA: float = 0.5  # Exponential moving average smoothing
+    WEBCAM_IDT_DISPERSION_THRESHOLD: float = 0.04
+    WEBCAM_IDT_MIN_WINDOW_MS: int = 150
+    WEBCAM_LINE_TRANSITION_THRESHOLD: float = 0.04
+    WEBCAM_ONE_EURO_MINCUTOFF: float = 1.0
+    WEBCAM_ONE_EURO_BETA: float = 0.007
+    WEBCAM_ONE_EURO_DCUTOFF: float = 1.0
     WEBCAM_MAX_SEQUENCES: int = 82
     WEBCAM_MIN_SEQUENCES: int = 10  # Minimum sequences for valid prediction
 

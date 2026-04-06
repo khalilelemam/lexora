@@ -36,7 +36,7 @@ USER appuser
 # Application files
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser models/ ./models/
-COPY --chown=appuser:appuser server.py .
+COPY --chown=appuser:appuser pyproject.toml ./pyproject.toml
 
 # Runtime environment
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 HOST=0.0.0.0 PORT=8001
@@ -47,4 +47,4 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health').read()" || exit 1
 
-CMD ["python", "server.py"]
+CMD ["sh", "-c", "uvicorn app.api:app --host ${HOST} --port ${PORT}"]

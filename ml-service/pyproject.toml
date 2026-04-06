@@ -1,3 +1,8 @@
+[project]
+name = "Lexora ML Service"
+version = "1.2.0"
+description = "ML service for dyslexia risk prediction from eye-tracking and webcam gaze data"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"

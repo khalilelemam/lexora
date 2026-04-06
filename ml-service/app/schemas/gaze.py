@@ -38,3 +38,20 @@ class GazeSequence(BaseModel):
                     f"Point {i} ({points[i].timestamp}) <= Point {i - 1} ({points[i - 1].timestamp})"
                 )
         return points
+
+    @field_validator("normalized_line_centers")
+    @classmethod
+    def validate_line_centers(cls, centers: List[float]) -> List[float]:
+        for i, value in enumerate(centers):
+            if value < 0.0 or value > 1.0:
+                raise ValueError(
+                    f"normalized_line_centers[{i}] must be within [0.0, 1.0], got {value}"
+                )
+
+        for i in range(1, len(centers)):
+            if centers[i] <= centers[i - 1]:
+                raise ValueError(
+                    "normalized_line_centers must be strictly increasing (sorted top-to-bottom)."
+                )
+
+        return centers

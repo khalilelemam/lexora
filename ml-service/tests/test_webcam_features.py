@@ -203,7 +203,8 @@ class TestWebcamFeatureProcessor:
         # Create stationary points (should form one fixation)
         # Using millisecond timestamps, 100ms intervals
         points = [
-            (0.5, 0.5, i * 100) for i in range(10)  # 100ms intervals, same location
+            (0.5, 0.5, i * 100)
+            for i in range(10)  # 100ms intervals, same location
         ]
 
         fixations, invalid = processor.detect_fixations(points)
@@ -282,6 +283,34 @@ class TestWebcamFeatureProcessor:
         assert features[0, 4] == 0  # First has no previous
         assert features[1, 4] == 1  # Moved left = regression
 
+    def test_extract_features_line_aware_regression_same_line(self, processor):
+        fixations = [
+            np.array([[0.80, 0.29, 0], [0.80, 0.31, 100]]),
+            np.array([[0.60, 0.30, 200], [0.60, 0.32, 300]]),
+        ]
+
+        features = processor.extract_features(
+            fixations, normalized_line_centers=[0.3, 0.6]
+        )
+
+        assert features.shape == (2, 6)
+        assert features[1, 4] == 1  # Moved left on same snapped line
+        assert features[1, 5] == 0  # Not a line transition
+
+    def test_extract_features_line_aware_return_sweep(self, processor):
+        fixations = [
+            np.array([[0.85, 0.29, 0], [0.85, 0.31, 100]]),
+            np.array([[0.15, 0.59, 200], [0.15, 0.61, 300]]),
+        ]
+
+        features = processor.extract_features(
+            fixations, normalized_line_centers=[0.3, 0.6]
+        )
+
+        assert features.shape == (2, 6)
+        assert features[1, 4] == 0  # Cross-line movement is not same-line regression
+        assert features[1, 5] == 1  # Moved from line 0 to line 1
+
     def test_extract_features_empty_input(self, processor):
         features = processor.extract_features([])
         assert features.shape == (0, 6)
@@ -303,6 +332,16 @@ class TestWebcamFeatureProcessor:
         sequences = processor.create_sequences(features)
 
         assert sequences.shape == (0, 20, 5)
+
+    def test_create_sequences_uses_first_five_features(self, processor):
+        features = np.zeros((20, 6), dtype=np.float32)
+        features[:, 0] = np.arange(20)  # duration
+        features[:, 5] = 1.0  # return_sweep channel should be excluded
+
+        sequences = processor.create_sequences(features)
+
+        assert sequences.shape == (1, 20, 5)
+        np.testing.assert_array_equal(sequences[0, :, 0], np.arange(20))
 
     # --- Padding ---
 

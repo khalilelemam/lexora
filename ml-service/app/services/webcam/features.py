@@ -10,23 +10,43 @@ from .filters import OneEuroFilter
 
 @dataclass
 class WebcamProcessingResult:
+    """Processed webcam payload ready for prediction and UI replay.
+
+    Attributes:
+        sequences: Model input tensor with shape (1, 82, 20, 5).
+        features_data: Per-fixation features for API responses/replay.
+        total_fixations: Count of valid fixations used.
+        mean_fixation_duration_ms: Mean fixation duration over valid fixations.
+    """
+
     sequences: np.ndarray
+    sequences_analyzed: int = 0
     features_data: list[dict] = field(default_factory=list)
     total_fixations: int = 0
     mean_fixation_duration_ms: float = 0.0
 
 
 class WebcamFeatureProcessor:
-    """Convert raw webcam gaze points into model-ready sequences."""
+    """Convert raw webcam gaze points into model-ready sequence windows.
+
+    Pipeline:
+    1. Normalize pixel coordinates to [0, 1].
+    2. Smooth x/y independently with One Euro filtering.
+    3. Detect fixations with an I-DT style dispersion window.
+    4. Extract per-fixation features.
+    5. Build sliding windows of 20 fixations with step 5.
+    6. Pad/truncate to 82 windows and reshape for model inference.
+    """
 
     def __init__(self):
         self.min_fixation_duration_ms = settings.WEBCAM_MIN_FIXATION_MS
         self.max_fixation_duration_ms = settings.WEBCAM_MAX_FIXATION_MS
-        self.dispersion_threshold = 0.04
-        self.duration_threshold_ms = 150
-        self.one_euro_mincutoff = 1.0
-        self.one_euro_beta = 0.007
-        self.one_euro_dcutoff = 1.0
+        self.dispersion_threshold = settings.WEBCAM_IDT_DISPERSION_THRESHOLD
+        self.duration_threshold_ms = settings.WEBCAM_IDT_MIN_WINDOW_MS
+        self.line_transition_threshold = settings.WEBCAM_LINE_TRANSITION_THRESHOLD
+        self.one_euro_mincutoff = settings.WEBCAM_ONE_EURO_MINCUTOFF
+        self.one_euro_beta = settings.WEBCAM_ONE_EURO_BETA
+        self.one_euro_dcutoff = settings.WEBCAM_ONE_EURO_DCUTOFF
 
     def smooth_signal(
         self, points: List[Tuple[float, float, int]]
@@ -57,7 +77,18 @@ class WebcamFeatureProcessor:
     def detect_fixations(
         self, points: List[Tuple[float, float, int]]
     ) -> tuple[List[np.ndarray], int]:
-        """Detect fixations using I-DT with non-overlapping point assignment."""
+        """Detect fixations using dispersion-threshold windows.
+
+        Returns:
+            A tuple of:
+            - list of fixation arrays with columns [x, y, timestamp_ms]
+            - count of points rejected during phase-1 saccade rejection or
+              duration validation
+
+        Notes:
+            Each source point can contribute to at most one fixation. This avoids
+            accidental double counting when window boundaries are noisy.
+        """
         if len(points) < 2:
             return [], 0
 
@@ -137,7 +168,11 @@ class WebcamFeatureProcessor:
     def normalize_coordinates(
         self, points: List[RawGazePoint], screen_width: int, screen_height: int
     ) -> tuple[List[Tuple[float, float, int]], int]:
-        """Normalize gaze coordinates to [0, 1] and count out-of-bounds points."""
+        """Normalize gaze coordinates to [0, 1] and count out-of-bounds points.
+
+        Keeping the out-of-bounds count lets us inspect capture quality later
+        without changing model features.
+        """
         normalized = []
         out_of_bounds_count = 0
 
@@ -157,7 +192,17 @@ class WebcamFeatureProcessor:
         fixations: List[np.ndarray],
         normalized_line_centers: List[float] | None = None,
     ) -> np.ndarray:
-        """Extract fixation features, including optional line-aware sweep flags."""
+        """Extract six features per fixation.
+
+        Feature order:
+            [duration_ms, centroid_x, centroid_y, amplitude, regression, return_sweep]
+
+        The model currently consumes the first five features only; return_sweep
+        is included for richer analysis/replay and future model experiments.
+
+        If ``normalized_line_centers`` is provided, fixation y values are snapped
+        to the nearest line center before regression/sweep logic is computed.
+        """
         if not fixations:
             return np.array([]).reshape(0, 6)
 
@@ -178,7 +223,10 @@ class WebcamFeatureProcessor:
                 centroid_y = line_centers_arr[current_line_id]
             else:
                 current_line_id = 0
-                if prev_centroid_y is not None and centroid_y - prev_centroid_y > 0.04:
+                if (
+                    prev_centroid_y is not None
+                    and centroid_y - prev_centroid_y > self.line_transition_threshold
+                ):
                     current_line_id = prev_line_id + 1
 
             if prev_centroid_x is not None:
@@ -187,9 +235,11 @@ class WebcamFeatureProcessor:
                     + (centroid_y - prev_centroid_y) ** 2
                 )
 
+                # Regression: leftward movement on the same reading line.
                 regression_flag = int(
                     centroid_x < prev_centroid_x and current_line_id == prev_line_id
                 )
+                # Return sweep: transition from one line to the next.
                 return_sweep_flag = 1 if current_line_id > prev_line_id else 0
             else:
                 amplitude = 0.0
@@ -214,7 +264,11 @@ class WebcamFeatureProcessor:
         return np.array(features)
 
     def create_sequences(self, features: np.ndarray) -> np.ndarray:
-        """Create overlapping model windows from fixation features."""
+        """Create overlapping windows from fixation features.
+
+        Window size and step are aligned with training config. Only the first
+        five features are included in model windows.
+        """
         window_size = settings.EYE_TRACKER_SEQUENCE_LENGTH
         step = settings.EYE_TRACKER_SEQUENCE_STEP
 
@@ -246,6 +300,7 @@ class WebcamFeatureProcessor:
         screen_height: int,
         normalized_line_centers: List[float] | None = None,
     ) -> WebcamProcessingResult:
+        """Run the full webcam feature pipeline and return model-ready output."""
         normalized, _out_of_bounds_count = self.normalize_coordinates(
             raw_points, screen_width, screen_height
         )
@@ -284,6 +339,7 @@ class WebcamFeatureProcessor:
 
         return WebcamProcessingResult(
             sequences=model_input,
+            sequences_analyzed=int(len(sequences)),
             features_data=features_data,
             total_fixations=len(features),
             mean_fixation_duration_ms=float(features[:, 0].mean()),

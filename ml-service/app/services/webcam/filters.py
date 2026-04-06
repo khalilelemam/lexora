@@ -2,7 +2,15 @@ import numpy as np
 
 
 class OneEuroFilter:
-    """1D One Euro filter for smoothing noisy gaze coordinates."""
+    """One Euro low-pass filter for a single signal dimension.
+
+    The filter adapts its effective cutoff to motion speed:
+    - Slow movement -> stronger smoothing (lower jitter)
+    - Fast movement -> weaker smoothing (lower lag)
+
+    This is useful for webcam gaze streams where per-frame noise is high,
+    but we still need responsiveness during saccades.
+    """
 
     def __init__(
         self, mincutoff: float = 1.0, beta: float = 0.007, dcutoff: float = 1.0
@@ -15,10 +23,20 @@ class OneEuroFilter:
         self.t_prev = None
 
     def _smoothing_factor(self, elapsed_s: float, cutoff: float) -> float:
+        """Compute exponential smoothing factor for a timestep and cutoff."""
         r = 2 * np.pi * cutoff * elapsed_s
         return r / (r + 1) if r > 0 else 0
 
     def filter(self, x: float, timestamp_ms: int) -> float:
+        """Filter one sample.
+
+        Args:
+            x: Current signal value.
+            timestamp_ms: Sample time in milliseconds.
+
+        Returns:
+            Smoothed signal value for the same timestamp.
+        """
         if self.x_prev is None:
             self.x_prev = x
             self.dx_prev = 0.0
