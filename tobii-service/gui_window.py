@@ -9,17 +9,20 @@ from pystray import MenuItem as item
 
 from app.config import settings
 from app.services.tobii_service import TobiiService
+from gui.styles import Styles
 from gui.service_manager import ServiceManager
+from gui.updater import UpdateChecker, CHECK_INTERVAL_MS
 from gui.widgets import (
     ConfirmDialog,
     ControlButtons,
     ExitButton,
     HeaderWidget,
     StatusCard,
+    UpdateDialog,
 )
 
 ctk.set_appearance_mode("light")
-ctk.set_default_color_theme("blue")
+ctk.set_default_color_theme("green")
 
 
 class TobiiServiceGUI:
@@ -31,10 +34,11 @@ class TobiiServiceGUI:
 
         self.root = ctk.CTk()
         self.root.title(settings.APP_NAME)
-        self.root.geometry("600x520")
+        self.root.geometry("600x540")
         self.root.resizable(False, False)
+        self.root.configure(fg_color=Styles.BG_COLOR)
 
-        icon_path = str(Path(__file__).parent / "assets" / "eye.ico")
+        icon_path = str(Path(__file__).parent / "assets" / "lexora_eye.ico")
         self.root.iconbitmap(icon_path)
 
         self.tray_icon = None
@@ -43,15 +47,20 @@ class TobiiServiceGUI:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close_window)
         self.root.bind("<Unmap>", self.on_minimize_event)
 
+        self.update_checker = UpdateChecker()
+
         self.create_widgets()
         self.update_status()
         self.setup_tray()
 
+        # Check for updates after a short delay (let the UI render first)
+        self.root.after(3000, self._check_for_updates)
+
     def create_widgets(self):
         HeaderWidget.create(self.root)
 
-        content_frame = ctk.CTkFrame(self.root, fg_color="transparent")
-        content_frame.pack(fill="both", expand=True, padx=25, pady=20)
+        content_frame = ctk.CTkFrame(self.root, fg_color=Styles.BG_COLOR)
+        content_frame.pack(fill="both", expand=True, padx=28, pady=(24, 12))
 
         self.status_card = StatusCard(content_frame)
         self.control_buttons = ControlButtons(
@@ -61,6 +70,15 @@ class TobiiServiceGUI:
             on_restart=self.restart_service,
         )
         ExitButton.create(content_frame, on_exit=self.on_exit)
+
+        # ── Version footer ──────────────────────────────────────
+        footer = ctk.CTkLabel(
+            self.root,
+            text=f"v{settings.VERSION}  ·  {settings.HOST}:{settings.PORT}",
+            font=(Styles.FONT_FAMILY, 10),
+            text_color=Styles.TEXT_MUTED,
+        )
+        footer.pack(pady=(0, 10))
 
     def update_status(self):
         is_running = self.service_manager.is_running()
@@ -73,6 +91,33 @@ class TobiiServiceGUI:
         self.control_buttons.update_button_states(is_running)
 
         self.root.after(2000, self.update_status)
+
+    # ── Auto-update integration ──────────────────────────────────
+
+    def _check_for_updates(self):
+        """Check GitHub releases for a newer version (runs in background)."""
+        self.update_checker.set_callbacks(
+            on_update_available=lambda update: self.root.after(
+                0, self._show_update_dialog, update
+            ),
+        )
+        self.update_checker.check_async()
+
+        # Schedule periodic re-checks
+        self.root.after(CHECK_INTERVAL_MS, self._check_for_updates)
+
+    def _show_update_dialog(self, update_info):
+        """Display the update dialog when a new version is found."""
+        UpdateDialog(
+            self.root,
+            update_info,
+            on_update=self._do_update,
+            on_skip=lambda: None,
+        )
+
+    def _do_update(self, update_info):
+        """Download and launch the update installer."""
+        self.update_checker.download_and_install(update_info)
 
     def start_service(self):
         is_available, pid = self.service_manager.check_port_available()
@@ -154,7 +199,7 @@ class TobiiServiceGUI:
                 item("Exit", self.on_tray_exit),
             )
 
-            icon_path = Path(__file__).parent / "assets" / "eye.ico"
+            icon_path = Path(__file__).parent / "assets" / "lexora_eye.ico"
             icon_image = Image.open(icon_path)
             self.tray_icon = pystray.Icon(
                 "lexora_service", icon_image, settings.APP_NAME, menu
