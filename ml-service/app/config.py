@@ -17,8 +17,11 @@ def _load_project_metadata() -> dict[str, str]:
         with open(pyproject_path, "rb") as f:
             data = tomllib.load(f)
         project = data.get("project", {})
+        lexora_tool = data.get("tool", {}).get("lexora", {})
         return {
-            "name": str(project.get("name", fallback["name"])),
+            "name": str(
+                lexora_tool.get("app_name", project.get("name", fallback["name"]))
+            ),
             "version": str(project.get("version", fallback["version"])),
             "description": str(project.get("description", fallback["description"])),
         }

@@ -1,7 +1,37 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "Lexora ML Service"
+name = "lexora-ml-service"
 version = "1.2.0"
 description = "ML service for dyslexia risk prediction from eye-tracking and webcam gaze data"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.109.0",
+    "uvicorn[standard]==0.27.0",
+    "tensorflow==2.20.0",
+    "keras==3.10.0",
+    "scikit-learn==1.6.1",
+    "numpy==2.0.2",
+    "pydantic==2.5.0",
+    "pydantic-settings==2.1.0",
+    "python-dotenv==1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.2",
+    "pytest-asyncio==0.24.0",
+    "httpx==0.27.0",
+    "ruff==0.14.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.lexora]
+app_name = "Lexora ML Service"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

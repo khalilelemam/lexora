@@ -18,7 +18,7 @@ python -m venv .venv
 source .venv/bin/activate    # Linux/Mac
 
 # Install dependencies
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 
 # Run the service
 python server.py
@@ -75,10 +75,10 @@ See `.env.example` for complete documentation of all options.
 
 Application metadata (`name`, `version`, `description`) is sourced from `pyproject.toml`.
 
-Dependency files in this repository intentionally serve different scopes:
-- `requirements.txt`: runtime dependencies (used by Docker image build)
-- `requirements-dev.txt`: runtime + testing dependencies (used for local development and CI tests)
-- `pyproject.toml`: project metadata + tool configuration
+Dependency management is now fully pyproject-based:
+- `pyproject.toml`: project metadata, runtime dependencies, dev extras, and tool configuration
+- Install runtime deps: `pip install .`
+- Install dev/test deps: `pip install -e .[dev]`
 
 ## Model Files
 
@@ -108,6 +108,8 @@ REAL_TF=1 pytest tests/integration/ -v          # Linux/Mac
 ## Docker
 
 Pre-built images are available on GitHub Container Registry.
+
+The Docker image installs dependencies from `pyproject.toml` via `pip install .`.
 
 ```bash
 # Pull the latest image
@@ -153,6 +155,26 @@ docker run -p 8001:8001 lexora-ml
 
 - Python 3.12+
 - TensorFlow 2.20+
-- Runtime deps: `requirements.txt`
-- Dev/test deps: `requirements-dev.txt`
+
+## Azure Deployment (Container Apps)
+
+The ML workflow includes an Azure Container Apps deploy job (best fit for your student credits).
+
+Required repository secrets:
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+- `GHCR_USERNAME`
+- `GHCR_PASSWORD`
+
+Required repository variables:
+- `AZURE_CONTAINERAPP_NAME`
+- `AZURE_RESOURCE_GROUP`
+
+Deploy behavior:
+- On `lexora-ml-v*` tags, deploys the matching image tag.
+- On manual run (`workflow_dispatch`), deploys `latest`.
+
+Prerequisite:
+- Create the Azure Container App and its environment once (initial provisioning). The workflow then updates the image on each deployment.
 
