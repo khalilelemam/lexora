@@ -59,9 +59,14 @@ jobs:
         uses: azure/CLI@v2
         with:
           inlineScript: |
-            az group create \
-              --name "${{ vars.AZURE_RESOURCE_GROUP }}" \
-              --location "${{ vars.AZURE_LOCATION }}"
+            if [ "$(az group exists --name "${{ vars.AZURE_RESOURCE_GROUP }}")" = "true" ]; then
+              existing_location=$(az group show --name "${{ vars.AZURE_RESOURCE_GROUP }}" --query location -o tsv)
+              echo "Resource group already exists in location: $existing_location"
+            else
+              az group create \
+                --name "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                --location "${{ vars.AZURE_LOCATION }}"
+            fi
 
       - name: Ensure Log Analytics workspace
         uses: azure/CLI@v2
