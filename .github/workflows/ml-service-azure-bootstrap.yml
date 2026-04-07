@@ -107,6 +107,10 @@ jobs:
           inlineScript: |
             image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.imageTag || 'latest' }}"
             target_port="${{ vars.AZURE_CONTAINERAPP_TARGET_PORT }}"
+            cpu="1.0"
+            memory="2.0Gi"
+            min_replicas="1"
+            max_replicas="1"
             if [ -z "$target_port" ]; then
               target_port="8001"
             fi
@@ -122,7 +126,11 @@ jobs:
               az containerapp update \
                 --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
                 --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-                --image "$image"
+                --image "$image" \
+                --cpu "$cpu" \
+                --memory "$memory" \
+                --min-replicas "$min_replicas" \
+                --max-replicas "$max_replicas"
             else
               az containerapp create \
                 --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
@@ -131,8 +139,10 @@ jobs:
                 --image "$image" \
                 --ingress external \
                 --target-port "$target_port" \
-                --min-replicas 0 \
-                --max-replicas 1 \
+                --cpu "$cpu" \
+                --memory "$memory" \
+                --min-replicas "$min_replicas" \
+                --max-replicas "$max_replicas" \
                 --registry-server ghcr.io \
                 --registry-username "${{ secrets.GHCR_USERNAME }}" \
                 --registry-password "${{ secrets.GHCR_PASSWORD }}"
