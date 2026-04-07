@@ -156,13 +156,38 @@ jobs:
   deploy-azure:
     name: Deploy To Azure Container Apps
     runs-on: ubuntu-latest
+    environment:
+      name: Production
     needs: build
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_TENANT_ID != '' && secrets.AZURE_SUBSCRIPTION_ID != '' && secrets.GHCR_USERNAME != '' && secrets.GHCR_PASSWORD != '' && vars.AZURE_CONTAINERAPP_NAME != '' && vars.AZURE_RESOURCE_GROUP != ''
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       id-token: write
       contents: read
 
     steps:
+      - name: Validate required secrets and variables
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
+          AZURE_CONTAINERAPP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for key in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID GHCR_USERNAME GHCR_PASSWORD AZURE_CONTAINERAPP_NAME AZURE_RESOURCE_GROUP; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required value: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Required secrets/variables are not configured."
+            exit 1
+          fi
+
       - name: Log in to Azure (OIDC)
         uses: azure/login@v2
         with:
