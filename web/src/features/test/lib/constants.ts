@@ -39,7 +39,7 @@ export const CALIBRATION_POINTS = [
 ] as const;
 
 /** How long to show each calibration dot (ms) */
-export const CALIBRATION_DOT_DURATION = 2500;
+export const CALIBRATION_DOT_DURATION = 1600;
 
 /** Gaze points to collect per calibration dot */
 export const CALIBRATION_SAMPLES_PER_POINT = 60;
