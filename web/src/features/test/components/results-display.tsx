@@ -10,7 +10,6 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import type { PredictionResult, TestMode } from '../types';
 import { GazeReplayViewer } from './gaze-replay-viewer';
-import { PipelineDiagnostics } from '@/components/PipelineDiagnostics';
 
 interface ResultsDisplayProps {
   result: PredictionResult;
@@ -18,8 +17,6 @@ interface ResultsDisplayProps {
   onNewTest: () => void;
   /** The reading content displayed during test (needed for gaze replay) */
   readingContent?: string;
-  /** Text direction of the reading content */
-  contentDirection?: 'ltr' | 'rtl';
 }
 
 const RISK_CONFIG = {
@@ -58,12 +55,12 @@ const RISK_CONFIG = {
   },
 };
 
-export function ResultsDisplay({ result, mode, onNewTest, readingContent, contentDirection = 'ltr' }: ResultsDisplayProps) {
+export function ResultsDisplay({ result, mode, onNewTest, readingContent }: ResultsDisplayProps) {
   const config = RISK_CONFIG[result.riskLevel];
   const Icon = config.icon;
   const probabilityPercent = Math.round(result.dyslexiaProbability * 100);
   const confidencePercent = Math.round(result.confidence * 100);
-
+  console.log('Prediction Result:', result); // Debug log for prediction result
   return (
     <div className="flex w-full max-w-2xl flex-col items-center gap-6">
       {/* Risk Level Header */}
@@ -148,11 +145,8 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent, conten
             <GazeReplayViewer
               content={readingContent}
               features={result.features}
-              direction={contentDirection}
+              direction="ltr"
             />
-            {result.metadata?.pipelineMetrics && (
-              <PipelineDiagnostics metrics={result.metadata.pipelineMetrics} />
-            )}
           </CardContent>
         </Card>
       )}

@@ -17,7 +17,6 @@ import {
 import { DEBUG_GAZE_OVERLAY } from '../lib/debug-config';
 import {
   computeCalibrationDiagnostics,
-  logCalibrationDiagnostics,
 } from '../lib/calibration-diagnostics';
 import {
   trainAllModels,
@@ -408,8 +407,6 @@ export function useCalibration() {
           })),
           headPoseSamples,
         });
-
-        logCalibrationDiagnostics(diagnostics);
 
         // ── Per-model diagnostics ──
         modelDiagnostics = comparison.models.map((model) => {

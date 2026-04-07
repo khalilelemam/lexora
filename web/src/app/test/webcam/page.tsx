@@ -20,23 +20,27 @@ import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import { submitWebcamTest } from '@/features/test/actions/submit-test';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
 import { WEBCAM_STEPS, getStepKeyForState, MIN_GAZE_POINTS } from '@/features/test/lib/constants';
-import type { WebcamGazePoint, WebcamTestFlowState, CalibrationResult, Language } from '@/features/test/types';
+import type { WebcamGazePoint, WebcamTestFlowState, CalibrationResult } from '@/features/test/types';
 
 export default function WebcamTestPage() {
   const router = useRouter();
-  const [language] = useState<Language>('en');
-  const { state, dispatch } = useTestFlow({ mode: 'webcam', language });
+  const { state, dispatch } = useTestFlow({ mode: 'webcam' });
   const webcamState = state as WebcamTestFlowState;
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 
-  // ─── Persistent video element for MediaPipe ────────────
-  // Lives at the page level so it survives CameraSetup unmount.
+  // Keep the video element mounted so MediaPipe can persist between UI states.
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Gaze data buffer
   const gazeDataRef = useRef<WebcamGazePoint[]>([]);
   const [gazePointCount, setGazePointCount] = useState(0);
+
+  // Task content
+  const [taskContent, setTaskContent] = useState<string>('');
+
+  // Y-Axis Line Snapping: store normalized line centers for the reading task
+  const lineCentersRef = useRef<number[]>([]);
 
   // Webcam gaze hook — page level so it persists across state transitions
   const webcamGaze = useWebcamGaze({
@@ -46,14 +50,6 @@ export default function WebcamTestPage() {
       setGazePointCount((prev) => prev + 1);
     }, []),
   });
-
-  // Task content
-  const [taskContent, setTaskContent] = useState<string>('');
-
-  // Y-Axis Line Snapping: store normalized line centers for the reading task
-  const lineCentersRef = useRef<number[]>([]);
-
-  // ─── Handlers ──────────────────────────────────────────
 
   const handleCameraReady = useCallback(() => {
     dispatch({ type: 'CAMERA_READY' });
@@ -68,12 +64,12 @@ export default function WebcamTestPage() {
       }
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
 
-      const content = getWebcamTaskContent(language);
+      const content = getWebcamTaskContent();
       setTaskContent(content);
       gazeDataRef.current = [];
       setGazePointCount(0);
     },
-    [dispatch, language, webcamGaze],
+    [dispatch, webcamGaze],
   );
 
   const handleTaskDone = useCallback(() => {
@@ -95,9 +91,8 @@ export default function WebcamTestPage() {
     dispatch({ type: 'CONTINUE' });
   }, [dispatch]);
 
-  // Auto-submit
   const handleSubmit = useCallback(async () => {
-    // Pre-submit validation — avoid BAD_REQUEST from ML service
+    // Avoid sending obviously invalid payloads to the ML service.
     if (gazeDataRef.current.length < MIN_GAZE_POINTS) {
       dispatch({
         type: 'SUBMIT_ERROR',
@@ -120,7 +115,6 @@ export default function WebcamTestPage() {
     }
   }, [dispatch]);
 
-  // Trigger submit when state transitions to 'submitting'
   useEffect(() => {
     if (webcamState.currentState === 'submitting') {
       handleSubmit();
@@ -141,14 +135,12 @@ export default function WebcamTestPage() {
     router.push('/');
   }, [router, webcamGaze, exitFullscreen]);
 
-  // Start collecting when entering task state
   useEffect(() => {
     if (webcamState.currentState === 'task-paragraph') {
       webcamGaze.startCollecting();
     }
   }, [webcamState.currentState, webcamGaze]);
 
-  // Exit fullscreen and stop camera when results are shown
   useEffect(() => {
     if (webcamState.currentState === 'results') {
       webcamGaze.cleanup();
@@ -156,19 +148,14 @@ export default function WebcamTestPage() {
     }
   }, [webcamState.currentState, webcamGaze, exitFullscreen]);
 
-  // Clean up camera on error state
   useEffect(() => {
     if (webcamState.currentState === 'error') {
       webcamGaze.cleanup();
     }
   }, [webcamState.currentState, webcamGaze]);
 
-  // ─── Step indicator ────────────────────────────────────
-
   const currentStepKey = getStepKeyForState(webcamState.currentState);
   const steps = WEBCAM_STEPS.map((s) => ({ key: s.key, label: s.label }));
-
-  // ─── Render ────────────────────────────────────────────
 
   const renderState = () => {
     switch (webcamState.currentState) {
@@ -221,8 +208,7 @@ export default function WebcamTestPage() {
         return (
           <TaskDisplay
             taskType="paragraph"
-            content={taskContent || getWebcamTaskContent(language)}
-            language={language}
+            content={taskContent || getWebcamTaskContent()}
             pointCount={gazePointCount}
             isCollecting={webcamGaze.collecting}
             onDone={handleTaskDone}
@@ -255,8 +241,7 @@ export default function WebcamTestPage() {
             result={webcamState.results}
             mode="webcam"
             onNewTest={handleNewTest}
-            readingContent={taskContent || getWebcamTaskContent(language)}
-            contentDirection={language === 'ar' ? 'rtl' : 'ltr'}
+            readingContent={taskContent || getWebcamTaskContent()}
           />
         );
 
@@ -301,8 +286,6 @@ export default function WebcamTestPage() {
             </div>
           )}
         {renderState()}
-
-        {/* Real-time gaze debug dot overlay */}
         <GazeDebugDot
           active={webcamState.currentState === 'task-paragraph' && webcamGaze.collecting}
           getPosition={() => {

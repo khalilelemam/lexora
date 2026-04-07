@@ -16,15 +16,14 @@ import {
 } from '@/features/test/components';
 import { useTestFlow, useTobiiGazeStream } from '@/features/test/hooks';
 import { submitTobiiTest } from '@/features/test/actions/submit-test';
-import { getTobiiTaskContent, TASK_LABELS } from '@/features/test/lib/test-content';
+import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { TOBII_STEPS, getStepKeyForState } from '@/features/test/lib/constants';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
-import type { TobiiGazePoint, TobiiTestFlowState, CalibrationResult, Language } from '@/features/test/types';
+import type { TobiiGazePoint, TobiiTestFlowState, CalibrationResult } from '@/features/test/types';
 
 export default function TobiiTestPage() {
   const router = useRouter();
-  const [language] = useState<Language>('en');
-  const { state, dispatch } = useTestFlow({ mode: 'tobii', language });
+  const { state, dispatch } = useTestFlow({ mode: 'tobii' });
   const tobiiState = state as TobiiTestFlowState;
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
@@ -53,7 +52,6 @@ export default function TobiiTestPage() {
     'meaningful-text': [],
   });
 
-  // Are we in a task state that should stream gaze data?
   const isTaskActive = ['task-syllables', 'task-pseudo-words', 'task-meaningful-text'].includes(
     tobiiState.currentState,
   );
@@ -76,8 +74,6 @@ export default function TobiiTestPage() {
     }, []),
   });
 
-  // ─── Handlers ──────────────────────────────────────────
-
   const handleDeviceReady = useCallback(() => {
     dispatch({ type: 'DEVICE_READY' });
     // Enter fullscreen right before calibration
@@ -88,12 +84,12 @@ export default function TobiiTestPage() {
     (result: CalibrationResult) => {
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
       // Set up first task content
-      const content = getTobiiTaskContent(language, 'syllables');
+      const content = getTobiiTaskContent('syllables');
       setTaskContent((prev) => ({ ...prev, syllables: content }));
       activeBufferRef.current = syllablesRef.current;
       setGazePointCount(0);
     },
-    [dispatch, language],
+    [dispatch],
   );
 
   const handleCalibrationRetry = useCallback(() => {
@@ -120,21 +116,20 @@ export default function TobiiTestPage() {
 
     // Set up next task content and buffer
     if (currentState === 'review-syllables') {
-      const content = getTobiiTaskContent(language, 'pseudo-words');
+      const content = getTobiiTaskContent('pseudo-words');
       setTaskContent((prev) => ({ ...prev, 'pseudo-words': content }));
       activeBufferRef.current = pseudoWordsRef.current;
       setGazePointCount(0);
     } else if (currentState === 'review-pseudo-words') {
-      const content = getTobiiTaskContent(language, 'meaningful-text');
+      const content = getTobiiTaskContent('meaningful-text');
       setTaskContent((prev) => ({ ...prev, 'meaningful-text': content }));
       activeBufferRef.current = meaningfulTextRef.current;
       setGazePointCount(0);
     }
 
     dispatch({ type: 'CONTINUE' });
-  }, [dispatch, tobiiState.currentState, language]);
+  }, [dispatch, tobiiState.currentState]);
 
-  // Auto-submit when entering submitting state
   const handleSubmit = useCallback(async () => {
     const screen = {
       width: window.screen.width,
@@ -157,7 +152,6 @@ export default function TobiiTestPage() {
     }
   }, [dispatch]);
 
-  // Trigger submit when state transitions to 'submitting'
   useEffect(() => {
     if (tobiiState.currentState === 'submitting') {
       handleSubmit();
@@ -179,19 +173,14 @@ export default function TobiiTestPage() {
     router.push('/');
   }, [router, exitFullscreen]);
 
-  // Exit fullscreen when results are shown
   useEffect(() => {
     if (tobiiState.currentState === 'results') {
       exitFullscreen();
     }
   }, [tobiiState.currentState, exitFullscreen]);
 
-  // ─── Step indicator mapping ────────────────────────────
-
   const currentStepKey = getStepKeyForState(tobiiState.currentState);
   const steps = TOBII_STEPS.map((s) => ({ key: s.key, label: s.label }));
-
-  // ─── Render Current State ──────────────────────────────
 
   const renderState = () => {
     switch (tobiiState.currentState) {
@@ -229,8 +218,7 @@ export default function TobiiTestPage() {
         return (
           <TaskDisplay
             taskType="syllables"
-            content={taskContent['syllables'] ?? getTobiiTaskContent(language, 'syllables')}
-            language={language}
+            content={taskContent['syllables'] ?? getTobiiTaskContent('syllables')}
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
@@ -260,8 +248,7 @@ export default function TobiiTestPage() {
         return (
           <TaskDisplay
             taskType="pseudo-words"
-            content={taskContent['pseudo-words'] ?? getTobiiTaskContent(language, 'pseudo-words')}
-            language={language}
+            content={taskContent['pseudo-words'] ?? getTobiiTaskContent('pseudo-words')}
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
@@ -293,9 +280,8 @@ export default function TobiiTestPage() {
             taskType="meaningful-text"
             content={
               taskContent['meaningful-text'] ??
-              getTobiiTaskContent(language, 'meaningful-text')
+              getTobiiTaskContent('meaningful-text')
             }
-            language={language}
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}

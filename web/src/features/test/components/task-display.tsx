@@ -12,7 +12,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import type { Language } from '../types';
 import {
   MIN_GAZE_POINTS,
   ESTIMATED_READING_WPM,
@@ -27,8 +26,6 @@ interface TaskDisplayProps {
   taskType: string;
   /** Reading content to display */
   content: string;
-  /** Current language (affects text direction) */
-  language: Language;
   /** Number of gaze points collected so far */
   pointCount: number;
   /** Whether gaze collection is actively happening */
@@ -63,7 +60,6 @@ interface TaskDisplayProps {
 export function TaskDisplay({
   taskType,
   content,
-  language,
   pointCount,
   isCollecting,
   onDone,
@@ -91,7 +87,6 @@ export function TaskDisplay({
     pointCountRef.current = pointCount;
   }, [pointCount]);
 
-  const isArabic = language === 'ar';
   const isSyllables = taskType === 'syllables';
   const isPseudoWords = taskType === 'pseudo-words';
   const isShortContent = isSyllables || isPseudoWords;
@@ -142,39 +137,6 @@ export function TaskDisplay({
     const textBottom = lastWordRect.bottom;
     const textHeight = textBottom - textTop;
 
-    // Get the paragraph container's bounding box (for backward compat logging only)
-    const containerRect = paragraphContainerRef.current.getBoundingClientRect();
-
-    // DEBUG: Log container and screen measurements
-    const debugData = {
-      containerTop: containerRect.top,
-      containerBottom: containerRect.bottom,
-      textTop: textTop,
-      textBottom: textBottom,
-      textHeight: textHeight,
-      containerLeft: containerRect.left,
-      containerRight: containerRect.right,
-      containerHeight: containerRect.height,
-      containerWidth: containerRect.width,
-      windowInnerHeight: window.innerHeight,
-      windowInnerWidth: window.innerWidth,
-      screenHeight: window.screen.height,
-      screenWidth: window.screen.width,
-      detectedLines: lineMap.size,
-    };
-
-    console.log('=== LINE CENTER MEASUREMENT DEBUG ===', debugData);
-
-    // Send to server
-    fetch('http://localhost:8001/debug/log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: '=== LINE CENTER MEASUREMENT DEBUG ===',
-        data: debugData,
-      }),
-    }).catch(() => {});
-
     // Calculate the vertical center of each line and normalize
     const lineCenters: number[] = [];
     const sortedLineKeys = Array.from(lineMap.keys()).sort((a, b) => a - b);
@@ -194,42 +156,8 @@ export function TaskDisplay({
         const clamped = Math.max(0, Math.min(1, normalizedCenter));
         lineCenters.push(clamped);
 
-        // DEBUG: Log each line's measurements
-        const lineData = {
-          rawTopPx: minTop,
-          rawBottomPx: maxBottom,
-          lineCenterAbsolutePx: lineCenterAbsolute,
-          textTopPx: textTop,
-          textHeightPx: textHeight,
-          normalizedCenter: normalizedCenter,
-          clamped: clamped,
-        };
-        console.log(`Line ${lineIndex}:`, lineData);
-
-        fetch('http://localhost:8001/debug/log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: `Line ${lineIndex} measurement`,
-            data: lineData,
-          }),
-        }).catch(() => {});
       }
     });
-
-    const finalData = {
-      finalNormalizedLineCenters: lineCenters,
-      totalLines: lineCenters.length,
-    };
-    console.log('Final normalized line centers:', finalData);
-    fetch('http://localhost:8001/debug/log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: '=== FINAL LINE CENTERS ===',
-        data: finalData,
-      }),
-    }).catch(() => {});
 
     onLineCentersReady(lineCenters);
   }, [isShortContent, onLineCentersReady, content]);
@@ -245,21 +173,6 @@ export function TaskDisplay({
     if (hasOverflow) {
       const message = `[OVERFLOW] Text exceeds AOI bounds - Container: ${container.clientHeight}px, Content: ${container.scrollHeight}px`;
       console.error(message);
-
-      // Send debug log to server
-      fetch('/api/debug/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'AOI Overflow Detected',
-          data: {
-            message,
-            containerHeight: container.clientHeight,
-            scrollHeight: container.scrollHeight,
-            overage: container.scrollHeight - container.clientHeight,
-          },
-        }),
-      }).catch(() => {});
     }
   }, [isShortContent, content]);
 
@@ -280,10 +193,8 @@ export function TaskDisplay({
       <div ref={paragraphContainerRef}>
         <p
           className={cn(
-            'whitespace-pre-line',
-            'text-xl leading-loose tracking-wide sm:text-2xl sm:leading-loose md:text-3xl md:leading-loose',
+            'whitespace-pre-line text-xl leading-loose tracking-wide sm:text-2xl sm:leading-loose md:text-3xl md:leading-loose',
             'font-normal select-none',
-            isArabic && 'text-right',
           )}
         >
           {words.map((word, idx) => {
@@ -424,7 +335,7 @@ export function TaskDisplay({
           left: '20%',
           right: '20%', // Width = 60% (100% - 20% - 20%)
         }}
-        dir={isArabic ? 'rtl' : 'ltr'}
+        dir="ltr"
       >
         {/* Content with optimised reading typography */}
         <div
@@ -461,7 +372,7 @@ export function TaskDisplay({
               {renderParagraphWithWords()}
               {/* Fixation cross — placed at the text's natural end */}
               <div
-                className={cn('mt-6 flex', isArabic ? 'justify-start' : 'justify-end')}
+                className="mt-6 flex justify-end"
                 aria-hidden="true"
               >
                 <span

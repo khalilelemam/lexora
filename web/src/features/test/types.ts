@@ -6,9 +6,6 @@ export type TobiiTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
 export type WebcamTaskType = 'paragraph';
 export type TaskType = TobiiTaskType | WebcamTaskType;
 
-// ─── Language ────────────────────────────────────────────
-export type Language = 'en' | 'ar';
-
 // ─── Calibration ─────────────────────────────────────────
 export type CalibrationQuality = 'good' | 'acceptable' | 'poor';
 
@@ -53,25 +50,9 @@ export interface WebcamTaskGazeData {
 export type RiskLevel = 'low' | 'medium' | 'high';
 
 // ─── ML Prediction Results ───────────────────────────────
-export interface PipelineMetrics {
-  totalFixations: number | null;
-  meanFixationDurationMs: number | null;
-  fixationDurationSd: number | null;
-  dataRetentionPct: number | null;
-  normalizedRetentionPct?: number | null;
-  fixationRetentionPct?: number | null;
-  totalPipelineRetentionPct?: number | null;
-  outOfBoundsPoints?: number | null;
-  invalidFixationPoints?: number | null;
-  meanSaccadeAmplitude: number | null;
-  totalRegressions: number | null;
-  intraFixationJitter: number | null;
-}
-
 export interface PredictionMetadata {
   sequencesAnalyzed: number;
   totalFixations: number;
-  pipelineMetrics?: PipelineMetrics;
 }
 
 /** Per-fixation feature data returned by the ML service (for gaze replay) */
@@ -142,7 +123,6 @@ export type TestAction =
 export interface TobiiTestFlowState {
   mode: 'tobii';
   currentState: TobiiTestState;
-  language: Language;
   calibration: CalibrationResult | null;
   taskData: {
     syllables: TobiiGazePoint[];
@@ -156,7 +136,6 @@ export interface TobiiTestFlowState {
 export interface WebcamTestFlowState {
   mode: 'webcam';
   currentState: WebcamTestState;
-  language: Language;
   calibration: CalibrationResult | null;
   taskData: {
     paragraph: WebcamGazePoint[];

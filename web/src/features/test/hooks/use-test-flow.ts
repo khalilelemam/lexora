@@ -1,7 +1,7 @@
 'use client';
 
 import { useReducer, useCallback } from 'react';
-import type { TestFlowState, TestAction, Language } from '../types';
+import type { TestFlowState } from '../types';
 import {
   testFlowReducer,
   createTobiiInitialState,
@@ -11,12 +11,11 @@ import type { TestMode } from '../types';
 
 interface UseTestFlowOptions {
   mode: TestMode;
-  language: Language;
 }
 
-export function useTestFlow({ mode, language }: UseTestFlowOptions) {
+export function useTestFlow({ mode }: UseTestFlowOptions) {
   const initialState: TestFlowState =
-    mode === 'tobii' ? createTobiiInitialState(language) : createWebcamInitialState(language);
+    mode === 'tobii' ? createTobiiInitialState() : createWebcamInitialState();
 
   const [state, dispatch] = useReducer(testFlowReducer, initialState);
 

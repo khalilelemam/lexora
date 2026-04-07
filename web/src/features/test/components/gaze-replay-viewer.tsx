@@ -168,69 +168,6 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
 
   const progress = currentIndex >= 0 ? Math.round(((currentIndex + 1) / features.length) * 100) : 0;
 
-  // DEBUG: Log feature Y values and container dimensions
-  useEffect(() => {
-    if (features.length > 0) {
-      const debugData = {
-        totalFeatures: features.length,
-        firstTenY: features.slice(0, 10).map((f) => f.fixationY),
-        firstTenX: features.slice(0, 10).map((f) => f.fixationX),
-      };
-
-      console.log('=== GAZE REPLAY VISUALIZER DEBUG ===', debugData);
-
-      fetch('http://localhost:8001/debug/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: '=== GAZE REPLAY FEATURES ===',
-          data: debugData,
-        }),
-      }).catch(() => {});
-
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const containerData = {
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
-          offsetWidth: containerRef.current.offsetWidth,
-          offsetHeight: containerRef.current.offsetHeight,
-        };
-
-        console.log('Replay container dimensions:', containerData);
-
-        fetch('http://localhost:8001/debug/log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: 'Replay container dimensions',
-            data: containerData,
-          }),
-        }).catch(() => {});
-
-        // Calculate expected pixel positions
-        const containerHeight = rect.height;
-        const pixelData = {
-          containerHeight,
-          yValuesAsPixels: features.slice(0, 10).map((f) => f.fixationY * containerHeight),
-        };
-
-        console.log('Y-values as pixels:', pixelData);
-
-        fetch('http://localhost:8001/debug/log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: 'Y-values converted to pixels',
-            data: pixelData,
-          }),
-        }).catch(() => {});
-      }
-    }
-  }, [features]);
-
   // ─── Measure content dimensions for exact replica ──
 
   useEffect(() => {
@@ -281,9 +218,6 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     setTextOffset({ x: offsetX, y: offsetY });
     setScaleRatio(calculatedScale);
 
-    console.log('[REPLAY FIX] Text bounds:', { textTop, textBottom, textHeight, textWidth });
-    console.log('[REPLAY FIX] Text offset:', { offsetX, offsetY });
-    console.log('[REPLAY FIX] Calculated scale:', calculatedScale);
   }, [content]);
 
   return (

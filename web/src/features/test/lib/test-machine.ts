@@ -3,16 +3,14 @@ import type {
   WebcamTestFlowState,
   TestFlowState,
   TestAction,
-  Language,
 } from '../types';
 
 // ─── Initial States ──────────────────────────────────────
 
-export function createTobiiInitialState(language: Language): TobiiTestFlowState {
+export function createTobiiInitialState(): TobiiTestFlowState {
   return {
     mode: 'tobii',
     currentState: 'idle',
-    language,
     calibration: null,
     taskData: {
       syllables: [],
@@ -24,11 +22,10 @@ export function createTobiiInitialState(language: Language): TobiiTestFlowState 
   };
 }
 
-export function createWebcamInitialState(language: Language): WebcamTestFlowState {
+export function createWebcamInitialState(): WebcamTestFlowState {
   return {
     mode: 'webcam',
     currentState: 'idle',
-    language,
     calibration: null,
     taskData: {
       paragraph: [],
@@ -116,7 +113,7 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
       return { ...state, currentState: 'submitting', error: null };
 
     case 'RESET':
-      return createTobiiInitialState(state.language);
+      return createTobiiInitialState();
 
     case 'ERROR':
       return { ...state, currentState: 'error', error: action.error };
@@ -178,7 +175,7 @@ function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTe
       return { ...state, currentState: 'submitting', error: null };
 
     case 'RESET':
-      return createWebcamInitialState(state.language);
+      return createWebcamInitialState();
 
     case 'ERROR':
       return { ...state, currentState: 'error', error: action.error };

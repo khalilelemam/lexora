@@ -446,13 +446,6 @@ export function trainAllModels(
         if (models[i].trainingError < models[bestIndex].trainingError) bestIndex = i;
     }
 
-    console.group('🏆 Model Comparison (Training)');
-    for (const m of models) {
-        const tag = m === models[bestIndex] ? ' ⭐ BEST (on training)' : '';
-        console.log(`${m.kind}: training error = ${m.trainingError.toFixed(1)}px — ${m.info}${tag}`);
-    }
-    console.groupEnd();
-
     return { models, bestIndex, best: models[bestIndex] };
 }
 
@@ -501,17 +494,6 @@ export function evaluateModelsOnValidation(
     for (let i = 1; i < validationErrors.length; i++) {
         if (validationErrors[i] < validationErrors[bestIndex]) bestIndex = i;
     }
-
-    console.group('🏆 Model Comparison (Post-Validation)');
-    for (let i = 0; i < models.length; i++) {
-        const tag = i === bestIndex ? ' ⭐ BEST' : '';
-        console.log(
-            `${models[i].kind}: validation error = ${validationErrors[i].toFixed(1)}px` +
-            ` (training: ${models[i].trainingError.toFixed(1)}px)${tag}`,
-        );
-    }
-    console.log(`✅ Best model selected by validation error: ${models[bestIndex].kind}`);
-    console.groupEnd();
 
     return { models, bestIndex, best: models[bestIndex] };
 }
