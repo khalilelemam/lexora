@@ -156,6 +156,10 @@ jobs:
   deploy-azure:
     name: Deploy To Azure Container Apps
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: ml-service-azure-deploy
+      cancel-in-progress: false
     environment:
       name: Production
     needs: build
@@ -220,7 +224,38 @@ jobs:
         uses: azure/CLI@v2
         with:
           inlineScript: |
+            cpu="1.0"
+            memory="2.0Gi"
+            min_replicas="1"
+            max_replicas="1"
             az containerapp update \
               --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
               --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}"
+              --image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}" \
+              --cpu "$cpu" \
+              --memory "$memory" \
+              --min-replicas "$min_replicas" \
+              --max-replicas "$max_replicas"
+
+      - name: Verify deployed health endpoint
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            set -euo pipefail
+            fqdn=$(az containerapp show \
+              --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --query properties.configuration.ingress.fqdn -o tsv)
+            echo "Deployed URL: https://$fqdn"
+
+            for i in $(seq 1 24); do
+              if python3 -c "import urllib.request; urllib.request.urlopen('https://$fqdn/health', timeout=5).read()" >/dev/null 2>&1; then
+                echo "Health check passed."
+                exit 0
+              fi
+              echo "Waiting for service health ($i/24)..."
+              sleep 5
+            done
+
+            echo "Health check did not pass in time."
+            exit 1

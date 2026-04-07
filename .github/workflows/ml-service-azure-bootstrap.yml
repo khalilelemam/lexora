@@ -16,6 +16,10 @@ jobs:
   bootstrap:
     name: Bootstrap Azure Container Apps
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    concurrency:
+      group: ml-service-azure-bootstrap
+      cancel-in-progress: false
     environment:
       name: Production
     permissions:
@@ -157,3 +161,25 @@ jobs:
               --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
               --query properties.configuration.ingress.fqdn -o tsv)
             echo "Container App URL: https://$fqdn"
+
+      - name: Verify bootstrap health endpoint
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            set -euo pipefail
+            fqdn=$(az containerapp show \
+              --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --query properties.configuration.ingress.fqdn -o tsv)
+
+            for i in $(seq 1 36); do
+              if python3 -c "import urllib.request; urllib.request.urlopen('https://$fqdn/health', timeout=5).read()" >/dev/null 2>&1; then
+                echo "Health check passed."
+                exit 0
+              fi
+              echo "Waiting for service health ($i/36)..."
+              sleep 5
+            done
+
+            echo "Health check did not pass in time."
+            exit 1
