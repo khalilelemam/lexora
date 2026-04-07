@@ -228,6 +228,75 @@ jobs:
             memory="2.0Gi"
             min_replicas="1"
             max_replicas="1"
+
+            ml_debug="${{ vars['ML_DEBUG'] }}"
+            ml_host="${{ vars['ML_HOST'] }}"
+            ml_port="${{ vars['ML_PORT'] }}"
+            ml_allowed_origins="${{ vars['ML_ALLOWED_ORIGINS'] }}"
+            ml_low_risk_threshold="${{ vars['ML_LOW_RISK_THRESHOLD'] }}"
+            ml_high_risk_threshold="${{ vars['ML_HIGH_RISK_THRESHOLD'] }}"
+            ml_eye_tracker_sequence_length="${{ vars['ML_EYE_TRACKER_SEQUENCE_LENGTH'] }}"
+            ml_eye_tracker_sequence_step="${{ vars['ML_EYE_TRACKER_SEQUENCE_STEP'] }}"
+            ml_eye_tracker_max_sequences="${{ vars['ML_EYE_TRACKER_MAX_SEQUENCES'] }}"
+            ml_eye_tracker_min_fixation_ms="${{ vars['ML_EYE_TRACKER_MIN_FIXATION_MS'] }}"
+            ml_eye_tracker_max_fixation_ms="${{ vars['ML_EYE_TRACKER_MAX_FIXATION_MS'] }}"
+            ml_webcam_min_fixation_ms="${{ vars['ML_WEBCAM_MIN_FIXATION_MS'] }}"
+            ml_webcam_max_fixation_ms="${{ vars['ML_WEBCAM_MAX_FIXATION_MS'] }}"
+            ml_webcam_idt_dispersion_threshold="${{ vars['ML_WEBCAM_IDT_DISPERSION_THRESHOLD'] }}"
+            ml_webcam_idt_min_window_ms="${{ vars['ML_WEBCAM_IDT_MIN_WINDOW_MS'] }}"
+            ml_webcam_line_transition_threshold="${{ vars['ML_WEBCAM_LINE_TRANSITION_THRESHOLD'] }}"
+            ml_webcam_one_euro_mincutoff="${{ vars['ML_WEBCAM_ONE_EURO_MINCUTOFF'] }}"
+            ml_webcam_one_euro_beta="${{ vars['ML_WEBCAM_ONE_EURO_BETA'] }}"
+            ml_webcam_one_euro_dcutoff="${{ vars['ML_WEBCAM_ONE_EURO_DCUTOFF'] }}"
+            ml_webcam_max_sequences="${{ vars['ML_WEBCAM_MAX_SEQUENCES'] }}"
+            ml_webcam_min_sequences="${{ vars['ML_WEBCAM_MIN_SEQUENCES'] }}"
+
+            ml_debug=${ml_debug:-false}
+            ml_host=${ml_host:-0.0.0.0}
+            ml_port=${ml_port:-8001}
+            ml_allowed_origins=${ml_allowed_origins:-http://localhost:3000,http://127.0.0.1:3000}
+            ml_low_risk_threshold=${ml_low_risk_threshold:-0.33}
+            ml_high_risk_threshold=${ml_high_risk_threshold:-0.66}
+            ml_eye_tracker_sequence_length=${ml_eye_tracker_sequence_length:-20}
+            ml_eye_tracker_sequence_step=${ml_eye_tracker_sequence_step:-5}
+            ml_eye_tracker_max_sequences=${ml_eye_tracker_max_sequences:-100}
+            ml_eye_tracker_min_fixation_ms=${ml_eye_tracker_min_fixation_ms:-80}
+            ml_eye_tracker_max_fixation_ms=${ml_eye_tracker_max_fixation_ms:-1000}
+            ml_webcam_min_fixation_ms=${ml_webcam_min_fixation_ms:-50}
+            ml_webcam_max_fixation_ms=${ml_webcam_max_fixation_ms:-1500}
+            ml_webcam_idt_dispersion_threshold=${ml_webcam_idt_dispersion_threshold:-0.04}
+            ml_webcam_idt_min_window_ms=${ml_webcam_idt_min_window_ms:-150}
+            ml_webcam_line_transition_threshold=${ml_webcam_line_transition_threshold:-0.04}
+            ml_webcam_one_euro_mincutoff=${ml_webcam_one_euro_mincutoff:-1.0}
+            ml_webcam_one_euro_beta=${ml_webcam_one_euro_beta:-0.007}
+            ml_webcam_one_euro_dcutoff=${ml_webcam_one_euro_dcutoff:-1.0}
+            ml_webcam_max_sequences=${ml_webcam_max_sequences:-82}
+            ml_webcam_min_sequences=${ml_webcam_min_sequences:-10}
+
+            ml_env_vars=(
+              "DEBUG=$ml_debug"
+              "HOST=$ml_host"
+              "PORT=$ml_port"
+              "ALLOWED_ORIGINS=$ml_allowed_origins"
+              "LOW_RISK_THRESHOLD=$ml_low_risk_threshold"
+              "HIGH_RISK_THRESHOLD=$ml_high_risk_threshold"
+              "EYE_TRACKER_SEQUENCE_LENGTH=$ml_eye_tracker_sequence_length"
+              "EYE_TRACKER_SEQUENCE_STEP=$ml_eye_tracker_sequence_step"
+              "EYE_TRACKER_MAX_SEQUENCES=$ml_eye_tracker_max_sequences"
+              "EYE_TRACKER_MIN_FIXATION_MS=$ml_eye_tracker_min_fixation_ms"
+              "EYE_TRACKER_MAX_FIXATION_MS=$ml_eye_tracker_max_fixation_ms"
+              "WEBCAM_MIN_FIXATION_MS=$ml_webcam_min_fixation_ms"
+              "WEBCAM_MAX_FIXATION_MS=$ml_webcam_max_fixation_ms"
+              "WEBCAM_IDT_DISPERSION_THRESHOLD=$ml_webcam_idt_dispersion_threshold"
+              "WEBCAM_IDT_MIN_WINDOW_MS=$ml_webcam_idt_min_window_ms"
+              "WEBCAM_LINE_TRANSITION_THRESHOLD=$ml_webcam_line_transition_threshold"
+              "WEBCAM_ONE_EURO_MINCUTOFF=$ml_webcam_one_euro_mincutoff"
+              "WEBCAM_ONE_EURO_BETA=$ml_webcam_one_euro_beta"
+              "WEBCAM_ONE_EURO_DCUTOFF=$ml_webcam_one_euro_dcutoff"
+              "WEBCAM_MAX_SEQUENCES=$ml_webcam_max_sequences"
+              "WEBCAM_MIN_SEQUENCES=$ml_webcam_min_sequences"
+            )
+
             az containerapp update \
               --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
               --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
@@ -235,7 +304,8 @@ jobs:
               --cpu "$cpu" \
               --memory "$memory" \
               --min-replicas "$min_replicas" \
-              --max-replicas "$max_replicas"
+              --max-replicas "$max_replicas" \
+              --set-env-vars "${ml_env_vars[@]}"
 
       - name: Verify deployed health endpoint
         uses: azure/CLI@v2
@@ -259,3 +329,4 @@ jobs:
 
             echo "Health check did not pass in time."
             exit 1
+
