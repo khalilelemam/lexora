@@ -6,7 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "lexora-ml-service"
 version = "1.2.0"
 description = "ML service for dyslexia risk prediction from eye-tracking and webcam gaze data"
+readme = "README.md"
 requires-python = ">=3.12"
+license = { text = "Proprietary" }
 dependencies = [
     "fastapi==0.109.0",
     "uvicorn[standard]==0.27.0",

@@ -1,0 +1,118 @@
+name: ML Service Azure Bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      imageTag:
+        description: "Initial image tag to deploy"
+        required: false
+        default: "latest"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/lexora-ml
+
+jobs:
+  bootstrap:
+    name: Bootstrap Azure Container Apps
+    runs-on: ubuntu-latest
+    if: secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_TENANT_ID != '' && secrets.AZURE_SUBSCRIPTION_ID != '' && secrets.GHCR_USERNAME != '' && secrets.GHCR_PASSWORD != '' && vars.AZURE_RESOURCE_GROUP != '' && vars.AZURE_LOCATION != '' && vars.AZURE_CONTAINERAPP_ENV != '' && vars.AZURE_CONTAINERAPP_NAME != ''
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Log in to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Ensure resource group
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az group create \
+              --name "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --location "${{ vars.AZURE_LOCATION }}"
+
+      - name: Ensure Log Analytics workspace
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            if ! az monitor log-analytics workspace show --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" --workspace-name "${{ vars.AZURE_CONTAINERAPP_ENV }}-logs" >/dev/null 2>&1; then
+              az monitor log-analytics workspace create \
+                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                --workspace-name "${{ vars.AZURE_CONTAINERAPP_ENV }}-logs" \
+                --location "${{ vars.AZURE_LOCATION }}"
+            fi
+
+      - name: Ensure Container Apps environment
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            workspace_id=$(az monitor log-analytics workspace show \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --workspace-name "${{ vars.AZURE_CONTAINERAPP_ENV }}-logs" \
+              --query customerId -o tsv)
+            workspace_key=$(az monitor log-analytics workspace get-shared-keys \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --workspace-name "${{ vars.AZURE_CONTAINERAPP_ENV }}-logs" \
+              --query primarySharedKey -o tsv)
+
+            if ! az containerapp env show --name "${{ vars.AZURE_CONTAINERAPP_ENV }}" --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" >/dev/null 2>&1; then
+              az containerapp env create \
+                --name "${{ vars.AZURE_CONTAINERAPP_ENV }}" \
+                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                --location "${{ vars.AZURE_LOCATION }}" \
+                --logs-workspace-id "$workspace_id" \
+                --logs-workspace-key "$workspace_key"
+            fi
+
+      - name: Create or update Container App
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.imageTag || 'latest' }}"
+            target_port="${{ vars.AZURE_CONTAINERAPP_TARGET_PORT }}"
+            if [ -z "$target_port" ]; then
+              target_port="8001"
+            fi
+
+            if az containerapp show --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" >/dev/null 2>&1; then
+              az containerapp registry set \
+                --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                --server ghcr.io \
+                --username "${{ secrets.GHCR_USERNAME }}" \
+                --password "${{ secrets.GHCR_PASSWORD }}"
+
+              az containerapp update \
+                --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                --image "$image"
+            else
+              az containerapp create \
+                --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                --environment "${{ vars.AZURE_CONTAINERAPP_ENV }}" \
+                --image "$image" \
+                --ingress external \
+                --target-port "$target_port" \
+                --min-replicas 0 \
+                --max-replicas 1 \
+                --registry-server ghcr.io \
+                --registry-username "${{ secrets.GHCR_USERNAME }}" \
+                --registry-password "${{ secrets.GHCR_PASSWORD }}"
+            fi
+
+      - name: Show deployed URL
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            fqdn=$(az containerapp show \
+              --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --query properties.configuration.ingress.fqdn -o tsv)
+            echo "Container App URL: https://$fqdn"

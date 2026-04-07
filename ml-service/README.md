@@ -170,6 +170,9 @@ Required repository secrets:
 Required repository variables:
 - `AZURE_CONTAINERAPP_NAME`
 - `AZURE_RESOURCE_GROUP`
+- `AZURE_LOCATION`
+- `AZURE_CONTAINERAPP_ENV`
+- `AZURE_CONTAINERAPP_TARGET_PORT` (optional, default: `8001`)
 
 Deploy behavior:
 - On `lexora-ml-v*` tags, deploys the matching image tag.
@@ -177,4 +180,14 @@ Deploy behavior:
 
 Prerequisite:
 - Create the Azure Container App and its environment once (initial provisioning). The workflow then updates the image on each deployment.
+
+### First-Time Azure Bootstrap
+
+Use `.github/workflows/ml-service-azure-bootstrap.yml` (manual dispatch) to provision first-time resources:
+- Resource Group
+- Log Analytics workspace
+- Container Apps Environment
+- Container App (or update if it already exists)
+
+After this one-time bootstrap, the regular `deploy-azure` job in `ml-service.yml` is enough for image updates.
 

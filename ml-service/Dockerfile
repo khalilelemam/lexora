@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY pyproject.toml ./pyproject.toml
+COPY README.md ./README.md
 COPY app/ ./app/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
