@@ -1,17 +1,36 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Crosshair, RefreshCw, Sparkles, Star, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Palette,
+  RefreshCw,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  WandSparkles,
+  XCircle,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { CalibrationQuality, CalibrationResult } from '../types';
-import { useCalibration } from '../hooks';
+import type { CalibrationPoint, CalibrationQuality, CalibrationResult } from '../types';
+import { CALIBRATION_POINTS } from '../lib/constants';
+import { GridModeView, StickmanCanvas, StarCanvas } from './calibration-modes';
+import { getCalibrationAudio } from '../lib/calibration-audio';
+import {
+  type CalibrationVisualMode,
+  type WebcamCalibrationSample,
+  useCalibrationEngine,
+} from '../hooks/use-calibration-engine';
 
 interface CalibrationScreenProps {
-  mode: 'tobii' | 'webcam';
+  tracker: 'tobii' | 'webcam';
+  mode?: CalibrationVisualMode;
+  participantAge?: number;
   onGetGazeSample?: () => { x: number; y: number } | null;
-  onGetIrisSample?: () => { x: number; y: number } | null;
+  onGetIrisSample?: () => WebcamCalibrationSample | null;
   onGetHeadPoseSample?: () => { yaw: number; pitch: number } | null;
   onComplete: (
     result: CalibrationResult,
@@ -22,12 +41,51 @@ interface CalibrationScreenProps {
   blockOnPoor?: boolean;
 }
 
-const DOT_TRAVEL_MS = 700;
-const SAMPLE_INTERVAL_MS = 40;
+const MOTION_DURATION_MS = 460;
+const HOLD_DURATION_MS = 900;
+const SAMPLE_INTERVAL_MS = 33;
+const GRID_MIN_SAMPLES_WEBCAM = 14;
+const GRID_MIN_SAMPLES_TOBII = 6;
+const GRID_MIN_DWELL_MS = 900;
+const GRID_MAX_DWELL_MS = 4200;
+const GRID_TIMEOUT_MIN_SAMPLES_WEBCAM = 4;
+const POINT_SAMPLES_GOAL_WEBCAM = 3;
+const POINT_SAMPLES_GOAL_TOBII = 3;
 
-function seededNoise(seed: number): number {
-  const raw = Math.sin(seed * 12.9898) * 43758.5453;
-  return raw - Math.floor(raw);
+function speakInstruction(text: string, enabled: boolean) {
+  if (!enabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.95;
+  utterance.pitch = 1;
+  utterance.volume = 0.65;
+  window.speechSynthesis.speak(utterance);
+}
+
+function playSoftSound(frequency: number, durationMs = 95, volume = 0.04) {
+  if (typeof window === 'undefined') return;
+  const AudioContextCtor =
+    window.AudioContext ||
+    (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextCtor) return;
+
+  const ctx = new AudioContextCtor();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = 'sine';
+  osc.frequency.value = frequency;
+  gain.gain.value = volume;
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + durationMs / 1000);
+
+  osc.onended = () => {
+    ctx.close().catch(() => undefined);
+  };
 }
 
 const QUALITY_CONFIG: Record<
@@ -39,311 +97,558 @@ const QUALITY_CONFIG: Record<
   poor: { color: 'text-destructive', icon: XCircle, label: 'Poor' },
 };
 
-function easeInOutQuad(t: number): number {
-  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-}
+const MODE_OPTIONS: Array<{ key: CalibrationVisualMode; label: string }> = [
+  { key: 'grid', label: 'Default Grid' },
+  { key: 'stickman', label: 'Action Stickman' },
+  { key: 'star', label: 'Gentle Star' },
+];
 
 export function CalibrationScreen({
+  tracker,
   mode,
+  participantAge,
   onGetGazeSample,
   onGetIrisSample,
   onGetHeadPoseSample,
   onComplete,
   blockOnPoor = false,
 }: CalibrationScreenProps) {
+  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(mode);
+  const [hasStartedCalibration, setHasStartedCalibration] = useState(false);
+
+  const {
+    resolvedMode,
+    calibration,
+    showCountdown,
+    countdown,
+    fixationProgress,
+    isStableFixation,
+    captureCount,
+    gazeCursor,
+    finalResult,
+    quickValidation,
+    canFinalize,
+    mapping,
+    beginCalibration,
+    resetEngine,
+    ingestSampleForTarget,
+    resetFixationState,
+    skipCalibration,
+  } = useCalibrationEngine({
+    tracker,
+    mode: selectedMode,
+    participantAge,
+    onGetGazeSample,
+    onGetIrisSample,
+    onGetHeadPoseSample,
+  });
+
   const {
     phase,
     currentPoint,
     currentPointIndex,
     collectionStep,
     collectionTotal,
-    result,
-    dotDuration,
-    startCalibration,
-    addSample,
     advancePoint,
-    computeTobiiCalibration,
-    computeWebcamCalibration,
-    resetCalibration,
-  } = useCalibration();
+    pointSampleCounts,
+    recalibrationRound,
+  } = calibration;
 
-  const [countdown, setCountdown] = useState(3);
-  const [showCountdown, setShowCountdown] = useState(true);
-  const [dotVisible, setDotVisible] = useState(false);
-  const [isSampling, setIsSampling] = useState(false);
-  const [dotPos, setDotPos] = useState<{ x: number; y: number }>({ x: 0.5, y: 0.5 });
-  const [captures, setCaptures] = useState(0);
-  const [capturePulse, setCapturePulse] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [collectionIssue, setCollectionIssue] = useState<'no-signal' | 'low-samples' | null>(null);
+  const calibrationAudio = useMemo(() => getCalibrationAudio(), []);
 
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const capturePulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const previousTargetRef = useRef<{ x: number; y: number }>({ x: 0.5, y: 0.5 });
-  const currentTargetRef = useRef<{ x: number; y: number }>({ x: 0.5, y: 0.5 });
-  const mappingRef = useRef<{
-    predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
-  } | null>(null);
-
-  const stars = useMemo(
-    () =>
-      Array.from({ length: 26 }, (_, i) => ({
-        id: i,
-        top: `${seededNoise(i + 1) * 100}%`,
-        left: `${seededNoise(i + 101) * 100}%`,
-        size: 2 + seededNoise(i + 201) * 4,
-        delay: seededNoise(i + 301) * 2,
-      })),
-    [],
-  );
-
-  const collectSample = useCallback(
-    (target: { x: number; y: number }) => {
-      if (mode === 'tobii' && onGetGazeSample) {
-        const sample = onGetGazeSample();
-        if (sample) addSample(sample.x, sample.y, target.x, target.y);
-        return;
-      }
-
-      if (mode === 'webcam' && onGetIrisSample) {
-        const sample = onGetIrisSample();
-        if (!sample) return;
-        const pose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
-        addSample(sample.x, sample.y, target.x, target.y, pose.yaw, pose.pitch);
-      }
-    },
-    [mode, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample, addSample],
-  );
+  const previousPointRef = useRef<CalibrationPoint>(CALIBRATION_POINTS[0]);
+  const [previousPoint, setPreviousPoint] = useState<CalibrationPoint>(CALIBRATION_POINTS[0]);
+  const spokenKeyRef = useRef('');
+  const captureCountRef = useRef(0);
+  const stableFixationRef = useRef(false);
 
   useEffect(() => {
-    if (!showCountdown) return;
-    const timer = setTimeout(() => {
-      setCountdown((current) => {
-        if (current <= 1) {
-          setShowCountdown(false);
-          startCalibration();
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [showCountdown, startCalibration]);
+    captureCountRef.current = captureCount;
+  }, [captureCount]);
 
   useEffect(() => {
-    if (phase !== 'collecting') return;
-
-    const from = previousTargetRef.current;
-    const to = currentPoint;
-
-    requestAnimationFrame(() => {
-      setDotVisible(true);
-      setIsSampling(true);
-      setDotPos(from);
-      requestAnimationFrame(() => {
-        setDotPos(to);
-      });
-    });
-
-    const startedAt = performance.now();
-    intervalRef.current = setInterval(() => {
-      const elapsed = performance.now() - startedAt;
-      const moveProgress = Math.min(1, elapsed / DOT_TRAVEL_MS);
-      const eased = easeInOutQuad(moveProgress);
-
-      const target = {
-        x: from.x + (to.x - from.x) * eased,
-        y: from.y + (to.y - from.y) * eased,
-      };
-
-      currentTargetRef.current = target;
-      collectSample(target);
-    }, SAMPLE_INTERVAL_MS);
-
-    const totalDuration = DOT_TRAVEL_MS + dotDuration;
-    const advanceTimer = setTimeout(() => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setIsSampling(false);
-      previousTargetRef.current = to;
-      currentTargetRef.current = to;
-      advancePoint();
-    }, totalDuration);
-
-    return () => {
-      clearTimeout(advanceTimer);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [phase, currentPointIndex, currentPoint, collectSample, dotDuration, advancePoint]);
-
-  useEffect(() => {
-    if (phase !== 'validating') return;
-
-    if (mode === 'tobii') {
-      computeTobiiCalibration();
-      return;
-    }
-
-    const { mapping } = computeWebcamCalibration(window.screen.width, window.screen.height);
-    mappingRef.current = mapping;
-  }, [phase, mode, computeTobiiCalibration, computeWebcamCalibration]);
-
-  const handleCapture = useCallback(() => {
-    if (phase !== 'collecting') return;
-    collectSample(currentTargetRef.current);
-    setCaptures((prev) => prev + 1);
-    setCapturePulse(true);
-    if (capturePulseTimerRef.current) clearTimeout(capturePulseTimerRef.current);
-    capturePulseTimerRef.current = setTimeout(() => setCapturePulse(false), 260);
-  }, [phase, collectSample]);
+    stableFixationRef.current = isStableFixation;
+  }, [isStableFixation]);
 
   useEffect(() => {
     return () => {
-      if (capturePulseTimerRef.current) clearTimeout(capturePulseTimerRef.current);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 
+  useEffect(() => {
+    calibrationAudio.setMuted(!voiceEnabled);
+  }, [voiceEnabled, calibrationAudio]);
+
+  useEffect(() => {
+    if (captureCount <= 0) return;
+    if (captureCount % 8 !== 0) return;
+    playSoftSound(isStableFixation ? 760 : 520, 70, 0.015);
+  }, [captureCount, isStableFixation]);
+
+  const capturePulse = captureCount % 2 === 1;
+
+  // Handle sample collected callback from Canvas modes
+  const handleCanvasSampleCollected = useCallback(() => {
+    // Canvas modes drive progression; sample collection remains engine-driven
+    // via the regular interval + stability gating.
+    advancePoint();
+  }, [advancePoint]);
+
+  useEffect(() => {
+    if (phase !== 'collecting' && phase !== 'recalibrating') return;
+
+    setPreviousPoint(previousPointRef.current);
+    previousPointRef.current = currentPoint;
+    resetFixationState();
+
+    // For Canvas modes (stickman, star), don't use auto-advance timer
+    // They signal completion via onSampleCollected callback
+    const isCanvasMode = resolvedMode === 'stickman' || resolvedMode === 'star';
+
+    // Sample collection interval - runs for all modes to collect iris data
+    const sampleInterval = setInterval(() => {
+      ingestSampleForTarget(currentPoint);
+    }, SAMPLE_INTERVAL_MS);
+
+    // Grid mode: advance when we have enough captured stable samples,
+    // with a timeout fallback to avoid deadlocks.
+    let advanceMonitor: ReturnType<typeof setInterval> | null = null;
+    if (!isCanvasMode) {
+      const pointStartedAt = performance.now();
+      const startCaptureCount = captureCountRef.current;
+      const minSamples = tracker === 'webcam' ? GRID_MIN_SAMPLES_WEBCAM : GRID_MIN_SAMPLES_TOBII;
+      const minSamplesForTimeoutAdvance =
+        tracker === 'webcam' ? Math.min(minSamples, GRID_TIMEOUT_MIN_SAMPLES_WEBCAM) : minSamples;
+      let advanced = false;
+      let currentIssue: 'no-signal' | 'low-samples' | null = null;
+
+      const pushIssue = (nextIssue: 'no-signal' | 'low-samples' | null) => {
+        if (currentIssue === nextIssue) return;
+        currentIssue = nextIssue;
+        setCollectionIssue(nextIssue);
+      };
+
+      advanceMonitor = setInterval(() => {
+        if (advanced) return;
+
+        const elapsedMs = performance.now() - pointStartedAt;
+        const capturedThisPoint = captureCountRef.current - startCaptureCount;
+        const canAdvanceByQuality =
+          capturedThisPoint >= minSamples &&
+          (stableFixationRef.current || elapsedMs >= GRID_MIN_DWELL_MS);
+        const mustAdvanceByTimeout =
+          tracker === 'webcam'
+            ? elapsedMs >= GRID_MAX_DWELL_MS && capturedThisPoint >= minSamplesForTimeoutAdvance
+            : elapsedMs >= GRID_MAX_DWELL_MS;
+
+        if (canAdvanceByQuality || mustAdvanceByTimeout) {
+          pushIssue(null);
+          advanced = true;
+          advancePoint();
+          return;
+        }
+
+        if (tracker === 'webcam' && elapsedMs >= GRID_MAX_DWELL_MS) {
+          if (capturedThisPoint === 0) {
+            pushIssue('no-signal');
+          } else if (capturedThisPoint < minSamplesForTimeoutAdvance) {
+            pushIssue('low-samples');
+          } else {
+            pushIssue(null);
+          }
+        } else if (capturedThisPoint > 0) {
+          pushIssue(null);
+        }
+      }, 80);
+    }
+
+    return () => {
+      clearInterval(sampleInterval);
+      if (advanceMonitor) clearInterval(advanceMonitor);
+    };
+  }, [
+    phase,
+    currentPointIndex,
+    currentPoint,
+    tracker,
+    advancePoint,
+    ingestSampleForTarget,
+    resetFixationState,
+    resolvedMode,
+  ]);
+
+  useEffect(() => {
+    if (!voiceEnabled) return;
+    if (!hasStartedCalibration) return;
+
+    let key = '';
+    let text = '';
+
+    if (showCountdown) {
+      key = `countdown-${countdown}`;
+      text = 'Calibration is about to start. Follow the target and keep your head steady.';
+    } else if (phase === 'collecting' || phase === 'recalibrating') {
+      key = `collecting-${resolvedMode}-${collectionStep}`;
+      text = 'Keep your eyes on the target until the ring fills.';
+    } else if (quickValidation.phase === 'running') {
+      key = `quick-validation-${quickValidation.currentStep}`;
+      text = 'Great. Now look at five quick check points to verify accuracy.';
+    } else if (canFinalize && finalResult) {
+      key = `complete-${finalResult.quality}-${quickValidation.accuracyPercent ?? -1}`;
+      text = 'Calibration finished. Review your score and continue when ready.';
+    }
+
+    if (!key || spokenKeyRef.current === key) return;
+    spokenKeyRef.current = key;
+    speakInstruction(text, voiceEnabled);
+  }, [
+    voiceEnabled,
+    hasStartedCalibration,
+    showCountdown,
+    countdown,
+    phase,
+    collectionStep,
+    resolvedMode,
+    quickValidation.phase,
+    quickValidation.currentStep,
+    quickValidation.accuracyPercent,
+    canFinalize,
+    finalResult,
+  ]);
+
   const handleRetry = useCallback(() => {
-    resetCalibration();
-    setCountdown(3);
-    setShowCountdown(true);
-    setDotVisible(false);
-    setIsSampling(false);
-    setDotPos({ x: 0.5, y: 0.5 });
-    setCaptures(0);
-    setCapturePulse(false);
-    previousTargetRef.current = { x: 0.5, y: 0.5 };
-    currentTargetRef.current = { x: 0.5, y: 0.5 };
-    mappingRef.current = null;
-  }, [resetCalibration]);
+    resetEngine();
+    setHasStartedCalibration(false);
+    setCollectionIssue(null);
+  }, [resetEngine]);
+
+  const handleStartCalibration = useCallback(() => {
+    beginCalibration();
+    setHasStartedCalibration(true);
+    setCollectionIssue(null);
+  }, [beginCalibration]);
+
+  const handleSkip = useCallback(() => {
+    skipCalibration();
+  }, [skipCalibration]);
 
   const handleContinue = useCallback(() => {
-    if (!result) return;
-    if (mode === 'webcam' && mappingRef.current) {
-      onComplete(result, mappingRef.current);
+    if (!finalResult) return;
+    if (tracker === 'webcam' && mapping) {
+      onComplete(finalResult, mapping);
       return;
     }
-    onComplete(result);
-  }, [result, mode, onComplete]);
+    onComplete(finalResult);
+  }, [finalResult, tracker, mapping, onComplete]);
 
-  if (showCountdown) {
+  const modeViewProps = useMemo(
+    () => ({
+      points: CALIBRATION_POINTS,
+      currentPoint,
+      previousPoint,
+      collectionStep,
+      collectionTotal,
+      isBossPoint: collectionStep === collectionTotal,
+      fixationProgress,
+      isStableFixation,
+      capturePulse,
+      motionDurationMs: MOTION_DURATION_MS,
+      holdDurationMs: HOLD_DURATION_MS,
+      gazeX: gazeCursor?.x ?? 0,
+      gazeY: gazeCursor?.y ?? 0,
+    }),
+    [
+      currentPoint,
+      collectionStep,
+      collectionTotal,
+      previousPoint,
+      fixationProgress,
+      isStableFixation,
+      capturePulse,
+      gazeCursor,
+    ],
+  );
+
+  const quickValidationPassed =
+    quickValidation.accuracyPercent == null || quickValidation.accuracyPercent >= 70;
+
+  if (!hasStartedCalibration) {
     return (
-      <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[radial-gradient(circle_at_20%_15%,hsl(var(--primary)/0.25),transparent_45%),radial-gradient(circle_at_80%_85%,hsl(var(--primary)/0.18),transparent_45%),hsl(var(--background))]">
-        <div className="flex flex-col items-center gap-4 rounded-2xl border bg-background/80 px-8 py-7 backdrop-blur-sm">
-          <Sparkles className="h-12 w-12 text-primary" />
-          <h2 className="text-2xl font-semibold">Orb Hunt Calibration</h2>
-          <p className="max-w-md text-center text-muted-foreground">
-            Follow the moving orb with your eyes and click it whenever you can.
-            We calibrate continuously while it moves.
+      <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[radial-gradient(circle_at_20%_15%,hsl(var(--primary)/0.25),transparent_45%),radial-gradient(circle_at_80%_85%,hsl(var(--primary)/0.18),transparent_45%),hsl(var(--background))]">
+        <div className="flex flex-col items-center gap-4 bg-background/80 backdrop-blur-sm px-8 py-7 border rounded-2xl w-[min(720px,92vw)]">
+          <Sparkles className="w-12 h-12 text-primary" />
+          <h2 className="font-semibold text-2xl">Calibration Setup</h2>
+          <p className="max-w-lg text-muted-foreground text-center">
+            Choose your preferred style, then start calibration when you are ready.
           </p>
-          <div className="mt-2 flex h-20 w-20 items-center justify-center rounded-full bg-primary text-4xl font-bold text-primary-foreground">
-            {countdown}
+
+          <div className="bg-muted/50 p-3 rounded-lg w-full text-sm">
+            <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+              <Palette className="w-4 h-4" />
+              <span>Calibration style</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {MODE_OPTIONS.map((option) => (
+                <Button
+                  key={option.key}
+                  type="button"
+                  variant={resolvedMode === option.key ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedMode(option.key)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+            <div className="mt-2 text-muted-foreground text-xs">
+              Active style: <span className="font-medium text-foreground">{resolvedMode}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setVoiceEnabled((prev) => !prev)}>
+              {voiceEnabled ? (
+                <>
+                  <Volume2 className="mr-2 w-4 h-4" /> Voice On
+                </>
+              ) : (
+                <>
+                  <VolumeX className="mr-2 w-4 h-4" /> Voice Off
+                </>
+              )}
+            </Button>
+            <Button onClick={handleStartCalibration}>Start Calibration</Button>
           </div>
         </div>
       </div>
     );
   }
 
-  if (phase === 'collecting') {
-    const starsCompleted = Math.max(0, collectionStep - 1);
+  if (showCountdown) {
+    return (
+      <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[radial-gradient(circle_at_20%_15%,hsl(var(--primary)/0.25),transparent_45%),radial-gradient(circle_at_80%_85%,hsl(var(--primary)/0.18),transparent_45%),hsl(var(--background))] cursor-none">
+        <div className="flex flex-col items-center gap-4 bg-background/80 backdrop-blur-sm px-8 py-7 border rounded-2xl">
+          <Sparkles className="w-12 h-12 text-primary" />
+          <h2 className="font-semibold text-2xl">Calibration Quest</h2>
+          <p className="max-w-md text-muted-foreground text-center">
+            Follow the target with your eyes and hold steady. We only collect samples during stable
+            fixation for better accuracy.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Mode: <span className="font-medium text-foreground">{resolvedMode}</span>
+          </p>
+
+          <div className="flex justify-center items-center bg-primary mt-2 rounded-full w-20 h-20 font-bold text-primary-foreground text-4xl">
+            {countdown}
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setVoiceEnabled((prev) => !prev)}>
+            {voiceEnabled ? (
+              <>
+                <Volume2 className="mr-2 w-4 h-4" /> Voice On
+              </>
+            ) : (
+              <>
+                <VolumeX className="mr-2 w-4 h-4" /> Voice Off
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'collecting' || phase === 'recalibrating') {
+    const isRecalibrating = phase === 'recalibrating';
+    const pointSamplesGoal =
+      tracker === 'webcam' ? POINT_SAMPLES_GOAL_WEBCAM : POINT_SAMPLES_GOAL_TOBII;
+    const currentPointSamples = pointSampleCounts[currentPointIndex] ?? 0;
+    const coveredPoints = pointSampleCounts.filter((count) => count >= pointSamplesGoal).length;
+
+    const modeSurface =
+      resolvedMode === 'stickman' ? (
+        <StickmanCanvas {...modeViewProps} onSampleCollected={handleCanvasSampleCollected} />
+      ) : resolvedMode === 'star' ? (
+        <StarCanvas {...modeViewProps} onSampleCollected={handleCanvasSampleCollected} />
+      ) : (
+        <GridModeView {...modeViewProps} />
+      );
 
     return (
-      <div className="fixed inset-0 z-50 cursor-none overflow-hidden bg-[radial-gradient(circle_at_30%_15%,hsl(var(--primary)/0.20),transparent_35%),radial-gradient(circle_at_75%_75%,hsl(var(--primary)/0.15),transparent_40%),hsl(var(--background))]">
-        {stars.map((s) => (
-          <div
-            key={s.id}
-            className="absolute animate-pulse rounded-full bg-white/70"
-            style={{
-              top: s.top,
-              left: s.left,
-              width: `${s.size}px`,
-              height: `${s.size}px`,
-              animationDelay: `${s.delay}s`,
-            }}
-          />
-        ))}
+      <div className="z-50 fixed inset-0 overflow-hidden cursor-none">
+        {modeSurface}
 
-        <div className="absolute left-4 top-4 rounded-md border bg-background/75 px-3 py-2 text-sm text-muted-foreground backdrop-blur-sm">
-          Orb {collectionStep} / {collectionTotal}
+        <div className="top-4 left-1/2 absolute bg-background/75 backdrop-blur-sm px-4 py-3 border rounded-lg w-[min(640px,90vw)] text-muted-foreground text-sm text-center -translate-x-1/2 pointer-events-none">
+          Hold your gaze until the ring fills. Samples are recorded only during stable fixation.
         </div>
 
-        <div className="absolute right-4 top-4 rounded-md border bg-background/75 px-3 py-2 text-sm backdrop-blur-sm">
-          <span className="text-muted-foreground">Captures: </span>
-          <span className="font-semibold text-foreground">{captures}</span>
+        {isRecalibrating && (
+          <div className="top-4 left-4 absolute bg-amber-50/90 backdrop-blur-sm px-3 py-2 border border-amber-300/70 rounded-lg text-amber-700 text-xs pointer-events-none">
+            Targeted recalibration pass {recalibrationRound}
+          </div>
+        )}
+
+        <div className="top-16 right-4 absolute flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setVoiceEnabled((prev) => !prev)}>
+            {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleSkip}>
+            Skip
+          </Button>
         </div>
 
-        <div className="absolute left-1/2 top-4 flex -translate-x-1/2 items-center gap-1 rounded-md border bg-background/75 px-3 py-2 backdrop-blur-sm">
-          {Array.from({ length: collectionTotal }).map((_, i) => (
-            <Star
-              key={i}
-              className={cn(
-                'h-3.5 w-3.5',
-                i < starsCompleted ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/40',
-              )}
-            />
-          ))}
-        </div>
-
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-md border bg-background/75 px-3 py-2 text-xs text-muted-foreground backdrop-blur-sm">
-          Keep your head steady, follow the orb, click to lock focus
-        </div>
-
-        {dotVisible && (
-          <button
-            type="button"
-            aria-label="Capture orb"
-            onClick={handleCapture}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
-            style={{
-              left: `${dotPos.x * 100}%`,
-              top: `${dotPos.y * 100}%`,
-              transition: `left ${DOT_TRAVEL_MS}ms linear, top ${DOT_TRAVEL_MS}ms linear`,
-            }}
-          >
+        <div className="bottom-4 left-1/2 absolute bg-background/75 backdrop-blur-sm px-4 py-3 border rounded-lg w-[min(640px,90vw)] text-sm -translate-x-1/2 pointer-events-none">
+          <div className="flex justify-between items-center mb-2 text-muted-foreground">
+            <span>Fixation lock</span>
+            <span>{Math.round(fixationProgress * 100)}%</span>
+          </div>
+          <div className="bg-muted rounded-full h-2 overflow-hidden">
             <div
               className={cn(
-                'relative flex h-14 w-14 items-center justify-center rounded-full',
-                isSampling ? 'scale-100' : 'scale-90',
-                capturePulse && 'scale-110',
-                'transition-transform duration-200',
+                'rounded-full h-full transition-all duration-150',
+                isStableFixation ? 'bg-emerald-500' : 'bg-primary',
               )}
-            >
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 opacity-80 blur-sm" />
-              <div className="absolute inset-[6px] rounded-full bg-gradient-to-br from-white to-yellow-100" />
-              <div className="relative z-10 rounded-full bg-amber-500/20 p-2">
-                <Crosshair className="h-4 w-4 text-amber-700" />
-              </div>
+              style={{ width: `${Math.round(fixationProgress * 100)}%` }}
+            />
+          </div>
+          <div className="flex justify-between items-center mt-2 text-muted-foreground text-xs">
+            <span>Samples captured: {captureCount}</span>
+            <span>
+              {isStableFixation ? 'Stable fixation detected' : 'Keep your eyes still for 0.5s'}
+            </span>
+          </div>
+          {tracker === 'webcam' && resolvedMode === 'grid' && (
+            <div className="mt-2 text-[11px] text-muted-foreground/90">
+              Live cursor preview is hidden during initial webcam capture to avoid misleading drift.
             </div>
-          </button>
+          )}
+          {tracker === 'webcam' && collectionIssue === 'no-signal' && (
+            <div className="mt-2 text-[11px] text-amber-600">
+              No face detected. Keep your face visible, centered, and well-lit before calibration
+              can continue.
+            </div>
+          )}
+          {tracker === 'webcam' && collectionIssue === 'low-samples' && (
+            <div className="mt-2 text-[11px] text-amber-600">
+              Signal is unstable. Hold your eyes on target and keep your head still to collect
+              enough real samples.
+            </div>
+          )}
+        </div>
+
+        <div className="right-4 bottom-4 absolute bg-background/75 backdrop-blur-sm px-3 py-3 border rounded-lg w-[min(300px,45vw)] text-xs pointer-events-none">
+          <div className="flex justify-between items-center text-muted-foreground">
+            <span>Current point samples</span>
+            <span>
+              {currentPointSamples}/{pointSamplesGoal}
+            </span>
+          </div>
+          <div className="bg-muted mt-2 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-primary rounded-full h-full transition-all duration-150"
+              style={{
+                width: `${Math.min(100, Math.round((currentPointSamples / Math.max(1, pointSamplesGoal)) * 100))}%`,
+              }}
+            />
+          </div>
+
+          <div className="flex justify-between items-center mt-3 text-muted-foreground">
+            <span>Grid coverage</span>
+            <span>
+              {coveredPoints}/{CALIBRATION_POINTS.length} points ready
+            </span>
+          </div>
+          <div className="bg-muted mt-2 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-emerald-500 rounded-full h-full transition-all duration-150"
+              style={{ width: `${Math.round((coveredPoints / CALIBRATION_POINTS.length) * 100)}%` }}
+            />
+          </div>
+        </div>
+
+        {tracker === 'tobii' && gazeCursor && (
+          <div
+            className="absolute bg-cyan-300/70 shadow-[0_0_12px_rgba(34,211,238,0.8)] border border-white/80 rounded-full w-4 h-4 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            style={{
+              left: gazeCursor.x,
+              top: gazeCursor.y,
+            }}
+          />
         )}
       </div>
     );
   }
 
-  if (phase === 'validating') {
+  if (quickValidation.phase === 'running') {
+    const target = quickValidation.target;
+
     return (
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-muted-foreground">Building your personalized eye map...</p>
+      <div className="z-50 fixed inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.2),transparent_45%),hsl(var(--background))] cursor-none">
+        <div className="top-8 left-1/2 absolute bg-background/80 backdrop-blur-sm px-4 py-3 border rounded-lg w-[min(640px,90vw)] text-muted-foreground text-sm text-center -translate-x-1/2">
+          <div className="font-medium text-foreground text-sm">
+            Quick validation {quickValidation.currentStep} / {quickValidation.totalSteps}
+          </div>
+          <div className="mt-1 text-xs">Look at each target and hold until its ring fills.</div>
+          <div className="mt-2">
+            <div className="bg-muted rounded-full h-1.5 overflow-hidden">
+              <div
+                className="bg-primary rounded-full h-full transition-all duration-150"
+                style={{
+                  width: `${Math.round((quickValidation.holdProgress ?? 0) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {target && (
+          <div
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${target.x * 100}%`, top: `${target.y * 100}%` }}
+          >
+            <div
+              className="relative rounded-full w-20 h-20"
+              style={{
+                background: `conic-gradient(hsl(var(--primary)) ${(quickValidation.holdProgress ?? 0) * 360}deg, rgba(148,163,184,0.35) 0deg)`,
+              }}
+            >
+              <div className="absolute inset-1.75 bg-primary/15 shadow-[0_0_36px_rgba(59,130,246,0.45)] border-2 border-primary/80 rounded-full" />
+            </div>
+          </div>
+        )}
+
+        {gazeCursor && (
+          <div
+            className="absolute bg-cyan-300/70 shadow-[0_0_12px_rgba(34,211,238,0.8)] border border-white/80 rounded-full w-4 h-4 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ left: gazeCursor.x, top: gazeCursor.y }}
+          />
+        )}
       </div>
     );
   }
 
-  if (phase === 'complete' && result) {
-    const config = QUALITY_CONFIG[result.quality];
+  if (canFinalize && finalResult) {
+    const config = QUALITY_CONFIG[finalResult.quality];
     const Icon = config.icon;
-    const canProceed = result.quality !== 'poor' || !blockOnPoor;
+    const canProceed = finalResult.quality !== 'poor' || !blockOnPoor;
 
     return (
       <div className="flex flex-col items-center gap-6">
-        <Icon className={cn('h-12 w-12', config.color)} />
+        <Icon className={cn('w-12 h-12', config.color)} />
 
         <div className="text-center">
-          <h2 className="text-2xl font-semibold">Calibration Complete</h2>
-          <div className="mt-2 flex items-center justify-center gap-2">
+          <h2 className="font-semibold text-2xl">Calibration Complete</h2>
+          <div className="flex justify-center items-center gap-2 mt-2">
             <span className="text-muted-foreground">Quality:</span>
             <Badge
               variant={
-                result.quality === 'good'
+                finalResult.quality === 'good'
                   ? 'default'
-                  : result.quality === 'acceptable'
+                  : finalResult.quality === 'acceptable'
                     ? 'secondary'
                     : 'destructive'
               }
@@ -351,34 +656,47 @@ export function CalibrationScreen({
               {config.label}
             </Badge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Average error: {(result.averageError * 100).toFixed(1)}% of screen
+          <p className="mt-1 text-muted-foreground text-sm">
+            Average error: {(finalResult.averageError * 100).toFixed(1)}% of screen
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Orb captures: {captures}</p>
+          <p className="mt-1 text-muted-foreground text-xs">Fixation captures: {captureCount}</p>
+          <p className="mt-1 text-muted-foreground text-xs">
+            Quick validation score:{' '}
+            {quickValidation.accuracyPercent == null
+              ? 'N/A (insufficient signal)'
+              : `${quickValidation.accuracyPercent}%`}
+          </p>
         </div>
 
-        {result.quality === 'poor' && (
-          <div className="max-w-md rounded-md bg-muted p-3 text-sm text-muted-foreground">
+        {quickValidation.accuracyPercent != null && !quickValidationPassed && (
+          <div className="bg-amber-50 p-3 rounded-md max-w-md text-amber-700 text-sm">
+            Quick validation score is below 70%. Calibration can still proceed, but retry is
+            recommended for better reliability.
+          </div>
+        )}
+
+        {finalResult.quality === 'poor' && (
+          <div className="bg-muted p-3 rounded-md max-w-md text-muted-foreground text-sm">
             <p className="font-medium text-foreground">Try again for better precision:</p>
-            <ul className="mt-1 list-inside list-disc space-y-1">
+            <ul className="space-y-1 mt-1 list-disc list-inside">
               <li>Keep your face centered and stable</li>
               <li>Use even front lighting</li>
-              <li>Follow the orb continuously, not with head movement</li>
-              <li>Click the orb to reinforce focus</li>
+              <li>Use only your eyes to track targets</li>
+              <li>Avoid sudden head movement during fixation</li>
             </ul>
           </div>
         )}
 
         <div className="flex gap-3">
           <Button variant="outline" onClick={handleRetry}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className="mr-2 w-4 h-4" />
             Retry Calibration
           </Button>
           {canProceed && <Button onClick={handleContinue}>Continue to Test</Button>}
         </div>
 
-        {result.quality === 'poor' && blockOnPoor && (
-          <p className="text-sm text-destructive">
+        {finalResult.quality === 'poor' && blockOnPoor && (
+          <p className="text-destructive text-sm">
             Calibration quality is too low to proceed. Please retry.
           </p>
         )}
@@ -387,8 +705,9 @@ export function CalibrationScreen({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex cursor-none items-center justify-center bg-background">
-      <div className="h-3 w-3 animate-pulse rounded-full bg-muted-foreground/40" />
+    <div className="z-50 fixed inset-0 flex flex-col justify-center items-center gap-4 bg-background cursor-none">
+      <WandSparkles className="w-8 h-8 text-primary" />
+      <p className="text-muted-foreground text-sm">Building calibration mapping...</p>
     </div>
   );
 }

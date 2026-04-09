@@ -30,6 +30,17 @@ interface IrisPosition {
   rightY: number;
 }
 
+interface RawIrisLandmark {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface GlobalIrisPosition {
+  x: number;
+  y: number;
+}
+
 interface HeadPose {
   /** Left-right head turn — positive = turned right (normalized by face width) */
   yaw: number;
@@ -105,6 +116,8 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   const onGazePointRef = useRef(onGazePoint);
   // Track last iris positions for calibration
   const lastIrisRef = useRef<IrisPosition | null>(null);
+  const lastRawIrisLandmarksRef = useRef<RawIrisLandmark[] | null>(null);
+  const lastGlobalIrisRef = useRef<GlobalIrisPosition | null>(null);
   // Track last head pose for diagnostics
   const lastHeadPoseRef = useRef<HeadPose | null>(null);
   // Track previous smoothed gaze position for EMA
@@ -218,6 +231,33 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     [],
   );
 
+  const extractRawIrisLandmarks = useCallback(
+    (landmarks: Array<{ x: number; y: number; z: number }>): RawIrisLandmark[] | null => {
+      if (landmarks.length < 478) return null;
+
+      const indices = [468, 469, 470, 471, 472, 473, 474, 475, 476, 477];
+      return indices.map((index) => ({
+        x: landmarks[index].x,
+        y: landmarks[index].y,
+        z: landmarks[index].z,
+      }));
+    },
+    [],
+  );
+
+  const extractGlobalIrisPosition = useCallback(
+    (landmarks: Array<{ x: number; y: number; z: number }>): GlobalIrisPosition | null => {
+      if (landmarks.length < 478) return null;
+      const left = landmarks[468];
+      const right = landmarks[473];
+      return {
+        x: (left.x + right.x) / 2,
+        y: (left.y + right.y) / 2,
+      };
+    },
+    [],
+  );
+
   // ─── Extract Head Pose from Landmarks ────────────────────
 
   const extractHeadPose = useCallback(
@@ -292,12 +332,24 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
         const results = faceLandmarker.detectForVideo(video, performance.now());
 
         if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-          const iris = extractIrisPosition(results.faceLandmarks[0]);
+          const landmarks = results.faceLandmarks[0];
+
+          const rawIrisLandmarks = extractRawIrisLandmarks(landmarks);
+          if (rawIrisLandmarks) {
+            lastRawIrisLandmarksRef.current = rawIrisLandmarks;
+          }
+
+          const globalIris = extractGlobalIrisPosition(landmarks);
+          if (globalIris) {
+            lastGlobalIrisRef.current = globalIris;
+          }
+
+          const iris = extractIrisPosition(landmarks);
           if (iris) {
             lastIrisRef.current = iris;
 
             // Extract head pose for diagnostics
-            const headPose = extractHeadPose(results.faceLandmarks[0]);
+            const headPose = extractHeadPose(landmarks);
             if (headPose) {
               lastHeadPoseRef.current = headPose;
             }
@@ -340,7 +392,16 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [enabled, cameraReady, modelReady, extractIrisPosition, extractHeadPose, mapToScreen]);
+  }, [
+    enabled,
+    cameraReady,
+    modelReady,
+    extractIrisPosition,
+    extractRawIrisLandmarks,
+    extractGlobalIrisPosition,
+    extractHeadPose,
+    mapToScreen,
+  ]);
 
   // ─── Public API ─────────────────────────────────────────
 
@@ -359,6 +420,10 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   }, []);
 
   const getLastIrisPosition = useCallback(() => lastIrisRef.current, []);
+
+  const getLastRawIrisLandmarks = useCallback(() => lastRawIrisLandmarksRef.current, []);
+
+  const getLastGlobalIrisPosition = useCallback(() => lastGlobalIrisRef.current, []);
 
   const getLastHeadPose = useCallback(() => lastHeadPoseRef.current, []);
 
@@ -385,6 +450,10 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     setCollecting(false);
     calibrationRef.current = null;
     prevSmoothedRef.current = null;
+    lastIrisRef.current = null;
+    lastRawIrisLandmarksRef.current = null;
+    lastGlobalIrisRef.current = null;
+    lastHeadPoseRef.current = null;
   }, []);
 
   // Cleanup on unmount
@@ -403,6 +472,8 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     // Calibration
     setCalibrationData,
     getLastIrisPosition,
+    getLastRawIrisLandmarks,
+    getLastGlobalIrisPosition,
     getLastHeadPose,
     // Collection
     startCollecting,

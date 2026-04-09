@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { DEBUG_GAZE_OVERLAY } from '../lib/debug-config';
 
 /**
@@ -14,63 +14,68 @@ import { DEBUG_GAZE_OVERLAY } from '../lib/debug-config';
  */
 
 interface GazeDebugDotProps {
-    /** Function that returns the latest predicted gaze position (screen pixels) */
-    getPosition: () => { x: number; y: number } | null;
-    /** Whether the dot should be actively tracking */
-    active: boolean;
+  /** Function that returns the latest predicted gaze position (screen pixels) */
+  getPosition: () => { x: number; y: number } | null;
+  /** Whether the dot should be actively tracking */
+  active: boolean;
 }
 
 export function GazeDebugDot({ getPosition, active }: GazeDebugDotProps) {
-    const dotRef = useRef<HTMLDivElement>(null);
-    const rafRef = useRef<number>(0);
-    const getPosRef = useRef(getPosition);
+  const dotRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
+  const getPosRef = useRef(getPosition);
+
+  useEffect(() => {
     getPosRef.current = getPosition;
+  }, [getPosition]);
 
-    const updatePosition = useCallback(() => {
-        const dot = dotRef.current;
-        if (!dot) return;
+  useEffect(() => {
+    if (!DEBUG_GAZE_OVERLAY || !active) {
+      if (dotRef.current) dotRef.current.style.display = 'none';
+      return;
+    }
 
-        const pos = getPosRef.current();
-        if (pos) {
-            dot.style.left = `${pos.x}px`;
-            dot.style.top = `${pos.y}px`;
-            dot.style.display = 'block';
-        }
+    const updatePosition = () => {
+      const dot = dotRef.current;
+      if (!dot) return;
 
-        rafRef.current = requestAnimationFrame(updatePosition);
-    }, []);
+      const pos = getPosRef.current();
+      if (pos) {
+        dot.style.left = `${pos.x}px`;
+        dot.style.top = `${pos.y}px`;
+        dot.style.display = 'block';
+      } else {
+        dot.style.display = 'none';
+      }
 
-    useEffect(() => {
-        if (!DEBUG_GAZE_OVERLAY || !active) {
-            if (dotRef.current) dotRef.current.style.display = 'none';
-            return;
-        }
+      rafRef.current = requestAnimationFrame(updatePosition);
+    };
 
-        rafRef.current = requestAnimationFrame(updatePosition);
+    rafRef.current = requestAnimationFrame(updatePosition);
 
-        return () => {
-            cancelAnimationFrame(rafRef.current);
-        };
-    }, [active, updatePosition]);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [active]);
 
-    if (!DEBUG_GAZE_OVERLAY) return null;
+  if (!DEBUG_GAZE_OVERLAY) return null;
 
-    return (
-        <div
-            ref={dotRef}
-            id="gaze-debug-dot"
-            style={{
-                position: 'fixed',
-                width: 14,
-                height: 14,
-                borderRadius: '50%',
-                background: '#ff0000',
-                transform: 'translate(-50%, -50%)',
-                pointerEvents: 'none',
-                zIndex: 9999,
-                boxShadow: '0 0 6px rgba(255,0,0,0.5)',
-                display: 'none',
-            }}
-        />
-    );
+  return (
+    <div
+      ref={dotRef}
+      id="gaze-debug-dot"
+      style={{
+        position: 'fixed',
+        width: 14,
+        height: 14,
+        borderRadius: '50%',
+        background: '#ff0000',
+        transform: 'translate(-50%, -50%)',
+        pointerEvents: 'none',
+        zIndex: 9999,
+        boxShadow: '0 0 6px rgba(255,0,0,0.5)',
+        display: 'none',
+      }}
+    />
+  );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FullscreenShell } from '@/components/shared';
 import { StepIndicator } from '@/components/shared';
@@ -20,11 +20,42 @@ import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { TOBII_STEPS, getStepKeyForState } from '@/features/test/lib/constants';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import type { TobiiGazePoint, TobiiTestFlowState, CalibrationResult } from '@/features/test/types';
+import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
+
+type TobiiTaskKey = 'syllables' | 'pseudo-words' | 'meaningful-text';
+
+function parseCalibrationMode(rawMode: string | null): CalibrationVisualMode | undefined {
+  if (rawMode === 'grid' || rawMode === 'stickman' || rawMode === 'star') {
+    return rawMode;
+  }
+  return undefined;
+}
 
 export default function TobiiTestPage() {
   const router = useRouter();
   const { state, dispatch } = useTestFlow({ mode: 'tobii' });
   const tobiiState = state as TobiiTestFlowState;
+
+  const calibrationParams = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return {
+        mode: undefined as CalibrationVisualMode | undefined,
+        age: undefined as number | undefined,
+      };
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const parsedMode = parseCalibrationMode(params.get('calibrationMode'));
+    const parsedAge = Number(params.get('age'));
+
+    return {
+      mode: parsedMode,
+      age: Number.isFinite(parsedAge) ? parsedAge : undefined,
+    };
+  }, []);
+
+  const requestedCalibrationMode = calibrationParams.mode;
+  const participantAge = calibrationParams.age;
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 
@@ -34,10 +65,19 @@ export default function TobiiTestPage() {
   const meaningfulTextRef = useRef<TobiiGazePoint[]>([]);
 
   // Track which buffer is currently active
-  const activeBufferRef = useRef<TobiiGazePoint[]>(syllablesRef.current);
+  const activeBufferRef = useRef<TobiiGazePoint[] | null>(null);
+  const activeTaskKeyRef = useRef<TobiiTaskKey | null>(null);
 
   // Gaze point count for UI (updated via callback)
   const [gazePointCount, setGazePointCount] = useState(0);
+  const [taskPointCounts, setTaskPointCounts] = useState<Record<TobiiTaskKey, number>>({
+    syllables: 0,
+    'pseudo-words': 0,
+    'meaningful-text': 0,
+  });
+  const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   // Last gaze point ref for calibration sampling
   const lastGazeRef = useRef<{ x: number; y: number } | null>(null);
@@ -57,19 +97,30 @@ export default function TobiiTestPage() {
   );
 
   // Stream gaze data from Tobii WebSocket
-  const { connected, pointCount: _wsPointCount } = useTobiiGazeStream({
+  const { connected } = useTobiiGazeStream({
     enabled: isTaskActive || tobiiState.currentState === 'calibrating',
     onGazeData: useCallback((points: TobiiGazePoint[]) => {
       // Store last point for calibration
       if (points.length > 0) {
         const last = points[points.length - 1];
         lastGazeRef.current = { x: last.fixationX, y: last.fixationY };
+        setLastTaskGazePosition({
+          x: last.fixationX * window.screen.width,
+          y: last.fixationY * window.screen.height,
+        });
       }
 
       // Only buffer during task states
-      if (activeBufferRef.current) {
-        activeBufferRef.current.push(...points);
-        setGazePointCount(activeBufferRef.current.length);
+      const activeBuffer = activeBufferRef.current;
+      if (activeBuffer) {
+        activeBuffer.push(...points);
+        const nextCount = activeBuffer.length;
+        setGazePointCount(nextCount);
+
+        const activeTaskKey = activeTaskKeyRef.current;
+        if (activeTaskKey) {
+          setTaskPointCounts((prev) => ({ ...prev, [activeTaskKey]: nextCount }));
+        }
       }
     }, []),
   });
@@ -87,14 +138,17 @@ export default function TobiiTestPage() {
       const content = getTobiiTaskContent('syllables');
       setTaskContent((prev) => ({ ...prev, syllables: content }));
       activeBufferRef.current = syllablesRef.current;
+      activeTaskKeyRef.current = 'syllables';
       setGazePointCount(0);
+      setTaskPointCounts({
+        syllables: 0,
+        'pseudo-words': 0,
+        'meaningful-text': 0,
+      });
+      setLastTaskGazePosition(null);
     },
     [dispatch],
   );
-
-  const handleCalibrationRetry = useCallback(() => {
-    dispatch({ type: 'CALIBRATION_RETRY' });
-  }, [dispatch]);
 
   const handleLineCentersReady = useCallback((taskKey: string, centers: number[]) => {
     lineCentersRef.current[taskKey] = centers;
@@ -106,8 +160,15 @@ export default function TobiiTestPage() {
 
   const handleRetake = useCallback(() => {
     // Clear the current buffer
-    activeBufferRef.current.length = 0;
+    if (activeBufferRef.current) {
+      activeBufferRef.current.length = 0;
+    }
+    const activeTaskKey = activeTaskKeyRef.current;
+    if (activeTaskKey) {
+      setTaskPointCounts((prev) => ({ ...prev, [activeTaskKey]: 0 }));
+    }
     setGazePointCount(0);
+    setLastTaskGazePosition(null);
     dispatch({ type: 'RETAKE' });
   }, [dispatch]);
 
@@ -119,12 +180,16 @@ export default function TobiiTestPage() {
       const content = getTobiiTaskContent('pseudo-words');
       setTaskContent((prev) => ({ ...prev, 'pseudo-words': content }));
       activeBufferRef.current = pseudoWordsRef.current;
+      activeTaskKeyRef.current = 'pseudo-words';
       setGazePointCount(0);
+      setLastTaskGazePosition(null);
     } else if (currentState === 'review-pseudo-words') {
       const content = getTobiiTaskContent('meaningful-text');
       setTaskContent((prev) => ({ ...prev, 'meaningful-text': content }));
       activeBufferRef.current = meaningfulTextRef.current;
+      activeTaskKeyRef.current = 'meaningful-text';
       setGazePointCount(0);
+      setLastTaskGazePosition(null);
     }
 
     dispatch({ type: 'CONTINUE' });
@@ -162,7 +227,16 @@ export default function TobiiTestPage() {
     syllablesRef.current = [];
     pseudoWordsRef.current = [];
     meaningfulTextRef.current = [];
+    activeBufferRef.current = null;
+    activeTaskKeyRef.current = null;
+    lastGazeRef.current = null;
     setGazePointCount(0);
+    setTaskPointCounts({
+      syllables: 0,
+      'pseudo-words': 0,
+      'meaningful-text': 0,
+    });
+    setLastTaskGazePosition(null);
     setTaskContent({});
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
@@ -187,14 +261,14 @@ export default function TobiiTestPage() {
       case 'idle':
         return (
           <div className="flex flex-col items-center gap-6">
-            <h1 className="text-3xl font-bold">Eye Tracker Test</h1>
+            <h1 className="font-bold text-3xl">Eye Tracker Test</h1>
             <p className="text-muted-foreground">
-              This test uses a Tobii eye tracker to screen for dyslexia indicators.
-              It consists of 3 reading tasks: syllables, pseudo-words, and meaningful text.
+              This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of 3
+              reading tasks: syllables, pseudo-words, and meaningful text.
             </p>
             <button
               onClick={() => dispatch({ type: 'START' })}
-              className="rounded-md bg-primary px-6 py-3 text-lg font-medium text-primary-foreground hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 px-6 py-3 rounded-md font-medium text-primary-foreground text-lg"
             >
               Start Test
             </button>
@@ -207,7 +281,9 @@ export default function TobiiTestPage() {
       case 'calibrating':
         return (
           <CalibrationScreen
-            mode="tobii"
+            tracker="tobii"
+            mode={requestedCalibrationMode}
+            participantAge={participantAge}
             onGetGazeSample={() => lastGazeRef.current}
             onComplete={handleCalibrationComplete}
             blockOnPoor={true}
@@ -223,13 +299,7 @@ export default function TobiiTestPage() {
             isCollecting={connected}
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => handleLineCentersReady('syllables', centers)}
-            getLastGazePosition={() => {
-              if (!lastGazeRef.current) return null;
-              return {
-                x: lastGazeRef.current.x * window.screen.width,
-                y: lastGazeRef.current.y * window.screen.height,
-              };
-            }}
+            getLastGazePosition={() => lastTaskGazePosition}
           />
         );
 
@@ -237,7 +307,7 @@ export default function TobiiTestPage() {
         return (
           <ReviewPanel
             taskType="syllables"
-            pointCount={syllablesRef.current.length}
+            pointCount={taskPointCounts.syllables}
             isLastTask={false}
             onRetake={handleRetake}
             onContinue={handleContinue}
@@ -253,13 +323,7 @@ export default function TobiiTestPage() {
             isCollecting={connected}
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => handleLineCentersReady('pseudo-words', centers)}
-            getLastGazePosition={() => {
-              if (!lastGazeRef.current) return null;
-              return {
-                x: lastGazeRef.current.x * window.screen.width,
-                y: lastGazeRef.current.y * window.screen.height,
-              };
-            }}
+            getLastGazePosition={() => lastTaskGazePosition}
           />
         );
 
@@ -267,7 +331,7 @@ export default function TobiiTestPage() {
         return (
           <ReviewPanel
             taskType="pseudo-words"
-            pointCount={pseudoWordsRef.current.length}
+            pointCount={taskPointCounts['pseudo-words']}
             isLastTask={false}
             onRetake={handleRetake}
             onContinue={handleContinue}
@@ -278,21 +342,12 @@ export default function TobiiTestPage() {
         return (
           <TaskDisplay
             taskType="meaningful-text"
-            content={
-              taskContent['meaningful-text'] ??
-              getTobiiTaskContent('meaningful-text')
-            }
+            content={taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')}
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => handleLineCentersReady('meaningful-text', centers)}
-            getLastGazePosition={() => {
-              if (!lastGazeRef.current) return null;
-              return {
-                x: lastGazeRef.current.x * window.screen.width,
-                y: lastGazeRef.current.y * window.screen.height,
-              };
-            }}
+            getLastGazePosition={() => lastTaskGazePosition}
           />
         );
 
@@ -300,7 +355,7 @@ export default function TobiiTestPage() {
         return (
           <ReviewPanel
             taskType="meaningful-text"
-            pointCount={meaningfulTextRef.current.length}
+            pointCount={taskPointCounts['meaningful-text']}
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
@@ -313,11 +368,7 @@ export default function TobiiTestPage() {
       case 'results':
         if (!tobiiState.results) return null;
         return (
-          <ResultsDisplay
-            result={tobiiState.results}
-            mode="tobii"
-            onNewTest={handleNewTest}
-          />
+          <ResultsDisplay result={tobiiState.results} mode="tobii" onNewTest={handleNewTest} />
         );
 
       case 'error':
@@ -326,9 +377,9 @@ export default function TobiiTestPage() {
             error={tobiiState.error ?? 'An unexpected error occurred'}
             // Tobii data quality is reliable — always allow retrying submission
             onRetry={
-              syllablesRef.current.length > 0 ||
-                pseudoWordsRef.current.length > 0 ||
-                meaningfulTextRef.current.length > 0
+              taskPointCounts.syllables > 0 ||
+              taskPointCounts['pseudo-words'] > 0 ||
+              taskPointCounts['meaningful-text'] > 0
                 ? () => dispatch({ type: 'RETRY_SUBMIT' })
                 : undefined
             }

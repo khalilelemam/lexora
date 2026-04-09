@@ -141,7 +141,7 @@ export function TaskDisplay({
     const lineCenters: number[] = [];
     const sortedLineKeys = Array.from(lineMap.keys()).sort((a, b) => a - b);
 
-    sortedLineKeys.forEach((lineKey, lineIndex) => {
+    sortedLineKeys.forEach((lineKey) => {
       const rects = lineMap.get(lineKey)!;
 
       // Calculate the absolute vertical center of this line
@@ -155,7 +155,6 @@ export function TaskDisplay({
         const normalizedCenter = (lineCenterAbsolute - textTop) / textHeight;
         const clamped = Math.max(0, Math.min(1, normalizedCenter));
         lineCenters.push(clamped);
-
       }
     });
 
@@ -193,7 +192,7 @@ export function TaskDisplay({
       <div ref={paragraphContainerRef}>
         <p
           className={cn(
-            'whitespace-pre-line text-xl leading-loose tracking-wide sm:text-2xl sm:leading-loose md:text-3xl md:leading-loose',
+            'text-xl sm:text-2xl md:text-3xl leading-loose sm:leading-loose md:leading-loose tracking-wide whitespace-pre-line',
             'font-normal select-none',
           )}
         >
@@ -324,11 +323,11 @@ export function TaskDisplay({
   // ─── Render ─────────────────────────────────────────
 
   return (
-    <div className="bg-background fixed inset-0 z-40 cursor-none">
+    <div className="z-40 fixed inset-0 bg-background cursor-none">
       {/* Rigid AOI-bounded reading surface (10%-65% Y, 20%-80% X) */}
       <div
         ref={paragraphContainerRef}
-        className="absolute flex flex-col items-center justify-center overflow-hidden"
+        className="absolute flex flex-col justify-center items-center overflow-hidden"
         style={{
           top: '10%',
           bottom: '35%', // Height = 55% (100% - 10% - 35%)
@@ -340,16 +339,16 @@ export function TaskDisplay({
         {/* Content with optimised reading typography */}
         <div
           className={cn(
-            'h-full w-full overflow-hidden',
+            'w-full h-full overflow-hidden',
             isShortContent && 'flex items-center justify-center',
           )}
         >
           {isShortContent ? (
             // Syllables & pseudo-words: monospaced, large, evenly spaced
-            <div className="flex flex-col items-center justify-center gap-6">
+            <div className="flex flex-col justify-center items-center gap-6">
               <pre
                 className={cn(
-                  'text-center font-mono whitespace-pre-wrap',
+                  'font-mono text-center whitespace-pre-wrap',
                   'text-3xl leading-loose tracking-[0.25em] sm:text-4xl md:text-5xl',
                   'select-none',
                 )}
@@ -357,10 +356,10 @@ export function TaskDisplay({
                 {content}
               </pre>
               {/* Fixation cross — end marker */}
-              <div className="mt-4 flex items-center justify-center" aria-hidden="true">
+              <div className="flex justify-center items-center mt-4" aria-hidden="true">
                 <span
                   ref={crossRef}
-                  className="text-muted-foreground/60 text-4xl font-light select-none"
+                  className="font-light text-muted-foreground/60 text-4xl select-none"
                 >
                   +
                 </span>
@@ -371,13 +370,10 @@ export function TaskDisplay({
             <div>
               {renderParagraphWithWords()}
               {/* Fixation cross — placed at the text's natural end */}
-              <div
-                className="mt-6 flex justify-end"
-                aria-hidden="true"
-              >
+              <div className="flex justify-end mt-6" aria-hidden="true">
                 <span
                   ref={crossRef}
-                  className="text-muted-foreground/60 text-4xl font-light select-none"
+                  className="font-light text-muted-foreground/60 text-4xl select-none"
                 >
                   +
                 </span>
@@ -388,9 +384,9 @@ export function TaskDisplay({
 
         {/* Subtle live indicator */}
         {isCollecting && (
-          <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2">
-            <div className="bg-muted/60 text-muted-foreground flex items-center gap-1.5 rounded-full px-3 py-1 text-xs backdrop-blur-sm">
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+          <div className="bottom-4 left-1/2 absolute -translate-x-1/2 pointer-events-none">
+            <div className="flex items-center gap-1.5 bg-muted/60 backdrop-blur-sm px-3 py-1 rounded-full text-muted-foreground text-xs">
+              <div className="bg-green-500 rounded-full w-1.5 h-1.5 animate-pulse" />
               <span>Tracking</span>
             </div>
           </div>
@@ -401,17 +397,17 @@ export function TaskDisplay({
       <Dialog open={showDialog} onOpenChange={(open) => !open && handleContinueReading()}>
         <DialogContent showCloseButton={false} className="sm:max-w-md">
           <DialogHeader>
-            <div className="bg-primary/10 mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
-              <BookOpen className="text-primary h-6 w-6" />
+            <div className="flex justify-center items-center bg-primary/10 mx-auto mb-2 rounded-full w-12 h-12">
+              <BookOpen className="w-6 h-6 text-primary" />
             </div>
             <DialogTitle className="text-center">Has the reader finished?</DialogTitle>
             <DialogDescription className="text-center">
               It looks like enough time has passed for this passage. Is the child done reading?
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-row justify-center gap-3 sm:justify-center">
+          <DialogFooter className="flex-row justify-center sm:justify-center gap-3">
             <Button variant="outline" onClick={handleContinueReading}>
-              <Clock className="mr-2 h-4 w-4" />
+              <Clock className="mr-2 w-4 h-4" />
               Need more time
             </Button>
             <Button onClick={handleConfirmDone}>Yes, done reading</Button>

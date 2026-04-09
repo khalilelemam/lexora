@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MonitorSmartphone } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -18,33 +18,36 @@ interface ScreenGuardProps {
  * (physical screen, not viewport) so resize doesn't flicker.
  */
 export function ScreenGuard({ children }: ScreenGuardProps) {
-  const [tooSmall, setTooSmall] = useState(false);
-  const [checked, setChecked] = useState(false);
+  const [screenInfo] = useState(() => {
+    if (typeof window === 'undefined') return null;
 
-  useEffect(() => {
     const w = window.screen.width;
     const h = window.screen.height;
-    setTooSmall(w < MIN_WIDTH || h < MIN_HEIGHT);
-    setChecked(true);
-  }, []);
 
-  if (!checked) return null;
+    return {
+      width: w,
+      height: h,
+      tooSmall: w < MIN_WIDTH || h < MIN_HEIGHT,
+    };
+  });
 
-  if (tooSmall) {
+  if (!screenInfo) return null;
+
+  if (screenInfo.tooSmall) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-8">
-        <div className="flex max-w-md flex-col items-center gap-6 text-center">
-          <MonitorSmartphone className="h-16 w-16 text-muted-foreground" />
+      <div className="flex justify-center items-center p-8 min-h-screen">
+        <div className="flex flex-col items-center gap-6 max-w-md text-center">
+          <MonitorSmartphone className="w-16 h-16 text-muted-foreground" />
           <div>
-            <h2 className="text-2xl font-semibold">Screen Too Small</h2>
+            <h2 className="font-semibold text-2xl">Screen Too Small</h2>
             <p className="mt-2 text-muted-foreground">
-              Eye-tracking tests require a screen of at least {MIN_WIDTH}×{MIN_HEIGHT} pixels
-              for accurate results. Please use a laptop or desktop monitor.
+              Eye-tracking tests require a screen of at least {MIN_WIDTH}×{MIN_HEIGHT} pixels for
+              accurate results. Please use a laptop or desktop monitor.
             </p>
           </div>
           <Alert>
             <AlertDescription>
-              Your screen: {typeof window !== 'undefined' ? `${window.screen.width}×${window.screen.height}` : 'unknown'}
+              Your screen: {`${screenInfo.width}×${screenInfo.height}`}
             </AlertDescription>
           </Alert>
         </div>

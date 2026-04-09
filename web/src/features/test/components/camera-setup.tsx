@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Camera, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,23 +29,27 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
 
   const { cameraReady, modelReady, error, initCamera, initModel } = webcamGaze;
 
+  const runInitialization = useCallback(async () => {
+    setInitializing(true);
+    if (videoRef.current) {
+      await initCamera(videoRef.current);
+    }
+    await initModel();
+    setInitializing(false);
+  }, [videoRef, initCamera, initModel]);
+
   // Initialize camera and model when component mounts
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
-      setInitializing(true);
-      if (videoRef.current) {
-        await initCamera(videoRef.current);
-      }
-      await initModel();
-      if (!cancelled) setInitializing(false);
+      await runInitialization();
+      if (cancelled) return;
     };
     init();
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [runInitialization]);
 
   // Mirror the camera stream to the visible preview element
   useEffect(() => {
@@ -54,17 +58,32 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
     }
   }, [cameraReady, videoRef]);
 
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.addEventListener) return;
+
+    const handleDeviceChange = () => {
+      if (!cameraReady && !initializing) {
+        void runInitialization();
+      }
+    };
+
+    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+    };
+  }, [cameraReady, initializing, runInitialization]);
+
   const allReady = cameraReady && modelReady;
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className="bg-muted flex h-16 w-16 items-center justify-center rounded-full">
-        <Camera className="text-muted-foreground h-8 w-8" />
+      <div className="flex justify-center items-center bg-muted rounded-full w-16 h-16">
+        <Camera className="w-8 h-8 text-muted-foreground" />
       </div>
 
       <div className="text-center">
-        <h2 className="text-2xl font-semibold">Camera Setup</h2>
-        <p className="text-muted-foreground mt-1">
+        <h2 className="font-semibold text-2xl">Camera Setup</h2>
+        <p className="mt-1 text-muted-foreground">
           We need access to your camera to track eye movement.
         </p>
       </div>
@@ -72,20 +91,20 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
       {/* Camera preview (separate element — the real video lives at page level) */}
       <Card className="w-full max-w-md overflow-hidden">
         <CardContent className="p-0">
-          <div className="bg-muted relative aspect-4/3">
+          <div className="relative bg-muted aspect-4/3">
             <video
               ref={previewRef}
-              className="h-full w-full object-cover"
+              className="w-full h-full object-cover"
               autoPlay
               playsInline
               muted
             />
             {!cameraReady && (
-              <div className="bg-muted absolute inset-0 flex items-center justify-center">
+              <div className="absolute inset-0 flex justify-center items-center bg-muted">
                 {initializing ? (
-                  <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                  <Loader2 className="w-8 h-8 text-muted-foreground animate-spin" />
                 ) : (
-                  <Camera className="text-muted-foreground h-8 w-8" />
+                  <Camera className="w-8 h-8 text-muted-foreground" />
                 )}
               </div>
             )}
@@ -97,26 +116,26 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
       <div className="flex flex-col gap-2 text-sm">
         <div className="flex items-center gap-2">
           {cameraReady ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
           ) : (
-            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+            <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
           )}
           <span>Camera {cameraReady ? 'ready' : 'initializing...'}</span>
         </div>
         <div className="flex items-center gap-2">
           {modelReady ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
           ) : (
-            <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+            <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
           )}
           <span>Face tracking model {modelReady ? 'loaded' : 'loading...'}</span>
         </div>
       </div>
 
       {/* Environment tips */}
-      <div className="bg-muted text-muted-foreground w-full max-w-md rounded-md p-3 text-sm">
-        <p className="text-foreground font-medium">Tips for best results:</p>
-        <ul className="mt-1 list-inside list-disc space-y-1">
+      <div className="bg-muted p-3 rounded-md w-full max-w-md text-muted-foreground text-sm">
+        <p className="font-medium text-foreground">Tips for best results:</p>
+        <ul className="space-y-1 mt-1 list-disc list-inside">
           <li>Sit about arm&apos;s length from the screen</li>
           <li>Make sure your face is well-lit (no backlighting)</li>
           <li>Remove glasses if possible (reflections can interfere)</li>
@@ -126,14 +145,20 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
 
       {error && (
         <Alert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="w-4 h-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Button onClick={onReady} disabled={!allReady}>
-        {allReady ? 'Continue to Calibration' : 'Waiting for setup...'}
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => void runInitialization()} disabled={initializing}>
+          {initializing ? 'Retrying...' : 'Retry Camera Setup'}
+        </Button>
+
+        <Button onClick={onReady} disabled={!allReady}>
+          {allReady ? 'Continue to Calibration' : 'Waiting for setup...'}
+        </Button>
+      </div>
     </div>
   );
 }

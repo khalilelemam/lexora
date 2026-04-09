@@ -64,12 +64,13 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
 
   // Normalised timeline: cumulative duration offsets (ms) for each fixation
   const timeline = useMemo(() => {
-    let acc = 0;
-    return features.map((f) => {
-      const t = acc;
-      acc += f.durationMs;
-      return t;
-    });
+    return features.reduce(
+      (state, feature) => ({
+        elapsed: state.elapsed + feature.durationMs,
+        points: [...state.points, state.elapsed],
+      }),
+      { elapsed: 0, points: [] as number[] },
+    ).points;
   }, [features]);
 
   const totalDuration = useMemo(
@@ -80,43 +81,42 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     [timeline, features],
   );
 
-  // ─── Playback loop ─────────────────────────────────
-
-  const tick = useCallback(() => {
-    const elapsed = (performance.now() - startTimeRef.current) * speed;
-    if (elapsed >= totalDuration) {
-      setIsPlaying(false);
-      setCurrentIndex(features.length - 1);
-      setTrail(features.map((_, i) => i));
-      return;
-    }
-
-    // Find the fixation index at this timestamp
-    let idx = 0;
-    for (let i = timeline.length - 1; i >= 0; i--) {
-      if (elapsed >= timeline[i]) {
-        idx = i;
-        break;
-      }
-    }
-
-    setCurrentIndex(idx);
-    setTrail((prev) => {
-      if (prev.length === 0 || prev[prev.length - 1] !== idx) {
-        return [...prev, idx];
-      }
-      return prev;
-    });
-
-    rafRef.current = requestAnimationFrame(tick);
-  }, [speed, totalDuration, features, timeline]);
-
   useEffect(() => {
     if (!isPlaying) return;
+
+    const tick = () => {
+      const elapsed = (performance.now() - startTimeRef.current) * speed;
+      if (elapsed >= totalDuration) {
+        setIsPlaying(false);
+        setCurrentIndex(features.length - 1);
+        setTrail(features.map((_, i) => i));
+        return;
+      }
+
+      // Find the fixation index at this timestamp
+      let idx = 0;
+      for (let i = timeline.length - 1; i >= 0; i--) {
+        if (elapsed >= timeline[i]) {
+          idx = i;
+          break;
+        }
+      }
+
+      setCurrentIndex(idx);
+      setTrail((prev) => {
+        if (prev.length === 0 || prev[prev.length - 1] !== idx) {
+          return [...prev, idx];
+        }
+        return prev;
+      });
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
     startTimeRef.current = performance.now();
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying, tick]);
+  }, [isPlaying, speed, totalDuration, features, timeline]);
 
   // ─── Controls ──────────────────────────────────────
 
@@ -180,7 +180,6 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     if (allWords.length === 0) {
       // No words found; use container dimensions as fallback
       const contentRect = contentRef.current.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
       setContentDimensions({ width: contentRect.width, height: contentRect.height });
       setTextOffset({ x: 0, y: 0 });
       setScaleRatio(1);
@@ -217,14 +216,13 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     setContentDimensions({ width: textWidth, height: textHeight });
     setTextOffset({ x: offsetX, y: offsetY });
     setScaleRatio(calculatedScale);
-
   }, [content]);
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full">
       {/* Header */}
-      <div className="text-muted-foreground flex items-center gap-2 text-sm">
-        <Eye className="h-4 w-4" />
+      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+        <Eye className="w-4 h-4" />
         <span>Gaze Replay</span>
         {currentIndex >= 0 && (
           <span className="ml-auto">
@@ -236,12 +234,12 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       {/* Replay canvas — text with overlaid bubbles */}
       <div
         ref={containerRef}
-        className="bg-background relative overflow-hidden rounded-lg border p-6 sm:p-8"
+        className="relative bg-background p-6 sm:p-8 border rounded-lg overflow-hidden"
         dir={direction}
       >
         {/* Exact replica wrapper with scaling for alignment */}
         <div
-          className="relative inline-block"
+          className="inline-block relative"
           style={{
             transformOrigin: 'top left',
             transform: `scale(${scaleRatio})`,
@@ -251,7 +249,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
           <p
             ref={contentRef}
             className={cn(
-              'text-base tracking-wide whitespace-pre-line sm:text-lg',
+              'text-base sm:text-lg tracking-wide whitespace-pre-line',
               'text-muted-foreground/60 font-normal select-none',
               direction === 'rtl' && 'text-right',
             )}
@@ -278,7 +276,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
               <div
                 key={idx}
                 className={cn(
-                  'pointer-events-none absolute rounded-full',
+                  'absolute rounded-full pointer-events-none',
                   f.isRegression ? 'bg-red-500' : 'bg-blue-400',
                   isCurrent ? 'opacity-70' : 'opacity-20',
                 )}
@@ -298,7 +296,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
 
         {/* Saccade lines connecting consecutive fixations */}
         {contentDimensions && (
-          <svg className="pointer-events-none absolute inset-0 h-full w-full">
+          <svg className="absolute inset-0 w-full h-full pointer-events-none">
             {trail.length > 1 &&
               trail.slice(1).map((idx, i) => {
                 const prev = features[trail[i]];
@@ -345,41 +343,41 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       </div>
 
       {/* Progress bar */}
-      <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+      <div className="bg-muted rounded-full w-full h-1.5 overflow-hidden">
         <div
-          className="bg-primary h-full rounded-full transition-all duration-150"
+          className="bg-primary rounded-full h-full transition-all duration-150"
           style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           {isPlaying ? (
             <Button size="sm" variant="outline" onClick={handlePause}>
-              <Pause className="mr-1 h-4 w-4" />
+              <Pause className="mr-1 w-4 h-4" />
               Pause
             </Button>
           ) : (
             <Button size="sm" onClick={handlePlay}>
-              <Play className="mr-1 h-4 w-4" />
+              <Play className="mr-1 w-4 h-4" />
               {currentIndex >= features.length - 1 ? 'Replay' : 'Play'}
             </Button>
           )}
           <Button size="sm" variant="ghost" onClick={handleReset}>
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Speed selector */}
         <div className="flex items-center gap-1">
-          <span className="text-muted-foreground mr-1 text-xs">Speed:</span>
+          <span className="mr-1 text-muted-foreground text-xs">Speed:</span>
           {SPEED_OPTIONS.map((s) => (
             <Button
               key={s}
               size="sm"
               variant={speed === s ? 'default' : 'ghost'}
-              className="h-7 px-2 text-xs"
+              className="px-2 h-7 text-xs"
               onClick={() => setSpeed(s)}
             >
               {s}x
@@ -389,13 +387,13 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       </div>
 
       {/* Legend */}
-      <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-xs">
+      <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-blue-400 opacity-50" />
+          <div className="bg-blue-400 opacity-50 rounded-full w-3 h-3" />
           <span>Forward fixation</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded-full bg-red-500 opacity-50" />
+          <div className="bg-red-500 opacity-50 rounded-full w-3 h-3" />
           <span>Regression (backward)</span>
         </div>
         <div className="flex items-center gap-1.5">

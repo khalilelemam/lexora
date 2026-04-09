@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FullscreenShell } from '@/components/shared';
 import { StepIndicator } from '@/components/shared';
@@ -20,12 +20,45 @@ import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import { submitWebcamTest } from '@/features/test/actions/submit-test';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
 import { WEBCAM_STEPS, getStepKeyForState, MIN_GAZE_POINTS } from '@/features/test/lib/constants';
-import type { WebcamGazePoint, WebcamTestFlowState, CalibrationResult } from '@/features/test/types';
+import type {
+  WebcamGazePoint,
+  WebcamTestFlowState,
+  CalibrationResult,
+} from '@/features/test/types';
+import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
+
+function parseCalibrationMode(rawMode: string | null): CalibrationVisualMode | undefined {
+  if (rawMode === 'grid' || rawMode === 'stickman' || rawMode === 'star') {
+    return rawMode;
+  }
+  return undefined;
+}
 
 export default function WebcamTestPage() {
   const router = useRouter();
   const { state, dispatch } = useTestFlow({ mode: 'webcam' });
   const webcamState = state as WebcamTestFlowState;
+
+  const calibrationParams = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return {
+        mode: undefined as CalibrationVisualMode | undefined,
+        age: undefined as number | undefined,
+      };
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const parsedMode = parseCalibrationMode(params.get('calibrationMode'));
+    const parsedAge = Number(params.get('age'));
+
+    return {
+      mode: parsedMode,
+      age: Number.isFinite(parsedAge) ? parsedAge : undefined,
+    };
+  }, []);
+
+  const requestedCalibrationMode = calibrationParams.mode;
+  const participantAge = calibrationParams.age;
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 
@@ -35,6 +68,9 @@ export default function WebcamTestPage() {
   // Gaze data buffer
   const gazeDataRef = useRef<WebcamGazePoint[]>([]);
   const [gazePointCount, setGazePointCount] = useState(0);
+  const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   // Task content
   const [taskContent, setTaskContent] = useState<string>('');
@@ -48,6 +84,7 @@ export default function WebcamTestPage() {
     onGazePoint: useCallback((point: WebcamGazePoint) => {
       gazeDataRef.current.push(point);
       setGazePointCount((prev) => prev + 1);
+      setLastTaskGazePosition({ x: point.x, y: point.y });
     }, []),
   });
 
@@ -58,7 +95,12 @@ export default function WebcamTestPage() {
   }, [dispatch, enterFullscreen]);
 
   const handleCalibrationComplete = useCallback(
-    (result: CalibrationResult, mapping?: { predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number } }) => {
+    (
+      result: CalibrationResult,
+      mapping?: {
+        predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
+      },
+    ) => {
       if (mapping) {
         webcamGaze.setCalibrationData(mapping);
       }
@@ -68,6 +110,7 @@ export default function WebcamTestPage() {
       setTaskContent(content);
       gazeDataRef.current = [];
       setGazePointCount(0);
+      setLastTaskGazePosition(null);
     },
     [dispatch, webcamGaze],
   );
@@ -84,6 +127,7 @@ export default function WebcamTestPage() {
   const handleRetake = useCallback(() => {
     gazeDataRef.current = [];
     setGazePointCount(0);
+    setLastTaskGazePosition(null);
     dispatch({ type: 'RETAKE' });
   }, [dispatch]);
 
@@ -106,7 +150,12 @@ export default function WebcamTestPage() {
       height: window.screen.height,
     };
 
-    const result = await submitWebcamTest(gazeDataRef.current, screen.width, screen.height, lineCentersRef.current);
+    const result = await submitWebcamTest(
+      gazeDataRef.current,
+      screen.width,
+      screen.height,
+      lineCentersRef.current,
+    );
 
     if (result.success) {
       dispatch({ type: 'SUBMIT_SUCCESS', result: result.data });
@@ -124,6 +173,7 @@ export default function WebcamTestPage() {
   const handleNewTest = useCallback(() => {
     gazeDataRef.current = [];
     setGazePointCount(0);
+    setLastTaskGazePosition(null);
     setTaskContent('');
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
@@ -162,15 +212,15 @@ export default function WebcamTestPage() {
       case 'idle':
         return (
           <div className="flex flex-col items-center gap-6">
-            <h1 className="text-3xl font-bold">Webcam Eye Test</h1>
-            <p className="max-w-lg text-center text-muted-foreground">
-              This test uses your webcam to track eye movement while reading a paragraph.
-              It&apos;s less accurate than a professional eye tracker but doesn&apos;t require
-              special hardware.
+            <h1 className="font-bold text-3xl">Webcam Eye Test</h1>
+            <p className="max-w-lg text-muted-foreground text-center">
+              This test uses your webcam to track eye movement while reading a paragraph. It&apos;s
+              less accurate than a professional eye tracker but doesn&apos;t require special
+              hardware.
             </p>
             <button
               onClick={() => dispatch({ type: 'START' })}
-              className="rounded-md bg-primary px-6 py-3 text-lg font-medium text-primary-foreground hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 px-6 py-3 rounded-md font-medium text-primary-foreground text-lg"
             >
               Start Test
             </button>
@@ -179,28 +229,37 @@ export default function WebcamTestPage() {
 
       case 'camera-setup':
         return (
-          <CameraSetup
-            webcamGaze={webcamGaze}
-            videoRef={videoRef}
-            onReady={handleCameraReady}
-          />
+          <CameraSetup webcamGaze={webcamGaze} videoRef={videoRef} onReady={handleCameraReady} />
         );
 
       case 'calibrating':
         return (
           <CalibrationScreen
-            mode="webcam"
+            tracker="webcam"
+            mode={requestedCalibrationMode}
+            participantAge={participantAge}
             onGetIrisSample={() => {
               const iris = webcamGaze.getLastIrisPosition();
               if (!iris) return null;
+
+              const rawIrisLandmarks = webcamGaze.getLastRawIrisLandmarks();
+              const globalIris = webcamGaze.getLastGlobalIrisPosition();
+
               return {
                 x: (iris.leftX + iris.rightX) / 2,
                 y: (iris.leftY + iris.rightY) / 2,
+                rawIrisLandmarks: rawIrisLandmarks ?? [],
+                screenHint: globalIris
+                  ? {
+                      x: globalIris.x * window.screen.width,
+                      y: globalIris.y * window.screen.height,
+                    }
+                  : null,
               };
             }}
             onGetHeadPoseSample={() => webcamGaze.getLastHeadPose()}
             onComplete={handleCalibrationComplete}
-            blockOnPoor={false}
+            blockOnPoor={true}
           />
         );
 
@@ -213,10 +272,7 @@ export default function WebcamTestPage() {
             isCollecting={webcamGaze.collecting}
             onDone={handleTaskDone}
             onLineCentersReady={handleLineCentersReady}
-            getLastGazePosition={() => {
-              const last = gazeDataRef.current[gazeDataRef.current.length - 1];
-              return last ? { x: last.x, y: last.y } : null;
-            }}
+            getLastGazePosition={() => lastTaskGazePosition}
           />
         );
 
@@ -224,7 +280,7 @@ export default function WebcamTestPage() {
         return (
           <ReviewPanel
             taskType="paragraph"
-            pointCount={gazeDataRef.current.length}
+            pointCount={gazePointCount}
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
@@ -252,7 +308,7 @@ export default function WebcamTestPage() {
             // Only offer "Retry Submission" when we have enough data —
             // otherwise re-submitting the same insufficient data just loops.
             onRetry={
-              gazeDataRef.current.length >= MIN_GAZE_POINTS
+              gazePointCount >= MIN_GAZE_POINTS
                 ? () => dispatch({ type: 'RETRY_SUBMIT' })
                 : undefined
             }
@@ -272,7 +328,7 @@ export default function WebcamTestPage() {
         {/* Hidden video element for MediaPipe — always in DOM */}
         <video
           ref={videoRef}
-          className="pointer-events-none fixed top-0 left-0 h-px w-px opacity-[0.01]"
+          className="top-0 left-0 fixed opacity-[0.01] w-px h-px pointer-events-none"
           autoPlay
           playsInline
           muted
@@ -288,10 +344,7 @@ export default function WebcamTestPage() {
         {renderState()}
         <GazeDebugDot
           active={webcamState.currentState === 'task-paragraph' && webcamGaze.collecting}
-          getPosition={() => {
-            const last = gazeDataRef.current[gazeDataRef.current.length - 1];
-            return last ? { x: last.x, y: last.y } : null;
-          }}
+          getPosition={() => lastTaskGazePosition}
         />
       </FullscreenShell>
     </ScreenGuard>
