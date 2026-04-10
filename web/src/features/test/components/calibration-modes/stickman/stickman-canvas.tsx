@@ -52,7 +52,7 @@ interface Waypoint {
 }
 
 // Timing constants
-const SCAN_DURATION_MS = 2200;
+const SCAN_DURATION_MS = 2000;
 const HIT_COOLDOWN_MS = 350;
 const SHATTER_DISPLAY_MS = 2000;
 const STICKMAN_SPEED_FACTOR = 1.85;

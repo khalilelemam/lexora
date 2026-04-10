@@ -3,11 +3,11 @@ import type { CalibrationQuality } from '../../types';
 import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
 
 export const MOTION_DURATION_MS = 460;
-export const HOLD_DURATION_MS = 900;
+export const HOLD_DURATION_MS = 1000;
 export const SAMPLE_INTERVAL_MS = 33;
 export const GRID_MIN_SAMPLES_WEBCAM = 8;
 export const GRID_MIN_SAMPLES_TOBII = 6;
-export const GRID_MIN_DWELL_MS = 800;
+export const GRID_MIN_DWELL_MS = 1200;
 export const GRID_MAX_DWELL_MS = 3500;
 export const GRID_FORCE_ADVANCE_MS = 5500;
 export const GRID_TIMEOUT_MIN_SAMPLES_WEBCAM = 2;

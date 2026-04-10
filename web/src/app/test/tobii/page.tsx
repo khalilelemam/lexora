@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FullscreenShell } from '@/components/shared';
 import { StepIndicator } from '@/components/shared';
@@ -16,15 +16,14 @@ import {
   TestErrorBoundary,
 } from '@/features/test/components';
 import { useTestFlow, useTobiiGazeStream } from '@/features/test/hooks';
+import { useTobiiTaskBuffers } from '@/features/test/hooks/use-tobii-task-buffers';
 import { submitTobiiTest } from '@/features/test/actions/submit-test';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { TOBII_STEPS, getStepKeyForState } from '@/features/test/lib/constants';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
-import type { TobiiGazePoint, TobiiTestFlowState, CalibrationResult } from '@/features/test/types';
+import type { TobiiTestFlowState, CalibrationResult } from '@/features/test/types';
 import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
 import { parseCalibrationMode } from '@/features/test/lib/parse-calibration-mode';
-
-type TobiiTaskKey = 'syllables' | 'pseudo-words' | 'meaningful-text';
 
 export default function TobiiTestPage() {
   const router = useRouter();
@@ -54,38 +53,22 @@ export default function TobiiTestPage() {
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 
-  // Gaze data buffers (refs to avoid re-renders on every gaze point)
-  const syllablesRef = useRef<TobiiGazePoint[]>([]);
-  const pseudoWordsRef = useRef<TobiiGazePoint[]>([]);
-  const meaningfulTextRef = useRef<TobiiGazePoint[]>([]);
-
-  // Track which buffer is currently active
-  const activeBufferRef = useRef<TobiiGazePoint[] | null>(null);
-  const activeTaskKeyRef = useRef<TobiiTaskKey | null>(null);
-
-  // Gaze point count for UI (updated via callback)
-  const [gazePointCount, setGazePointCount] = useState(0);
-  const [taskPointCounts, setTaskPointCounts] = useState<Record<TobiiTaskKey, number>>({
-    syllables: 0,
-    'pseudo-words': 0,
-    'meaningful-text': 0,
-  });
-  const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
-    null,
-  );
-
-  // Last gaze point ref for calibration sampling
-  const lastGazeRef = useRef<{ x: number; y: number } | null>(null);
-
-  // Content refs (generated once per task entry)
-  const [taskContent, setTaskContent] = useState<Record<string, string>>({});
-
-  // Y-Axis Line Snapping: store normalized line centers for each task
-  const lineCentersRef = useRef<Record<string, number[]>>({
-    syllables: [],
-    'pseudo-words': [],
-    'meaningful-text': [],
-  });
+  const {
+    syllablesRef,
+    pseudoWordsRef,
+    meaningfulTextRef,
+    lastGazeRef,
+    lineCentersRef,
+    gazePointCount,
+    taskPointCounts,
+    lastTaskGazePosition,
+    taskContent,
+    pushGazeData,
+    activateTask,
+    clearActiveBuffer,
+    setLineCenters,
+    resetAll,
+  } = useTobiiTaskBuffers();
 
   const isTaskActive = ['task-syllables', 'task-pseudo-words', 'task-meaningful-text'].includes(
     tobiiState.currentState,
@@ -94,101 +77,42 @@ export default function TobiiTestPage() {
   // Stream gaze data from Tobii WebSocket
   const { connected } = useTobiiGazeStream({
     enabled: isTaskActive || tobiiState.currentState === 'calibrating',
-    onGazeData: useCallback((points: TobiiGazePoint[]) => {
-      // Store last point for calibration
-      if (points.length > 0) {
-        const last = points[points.length - 1];
-        lastGazeRef.current = { x: last.fixationX, y: last.fixationY };
-        setLastTaskGazePosition({
-          x: last.fixationX * window.screen.width,
-          y: last.fixationY * window.screen.height,
-        });
-      }
-
-      // Only buffer during task states
-      const activeBuffer = activeBufferRef.current;
-      if (activeBuffer) {
-        activeBuffer.push(...points);
-        const nextCount = activeBuffer.length;
-        setGazePointCount(nextCount);
-
-        const activeTaskKey = activeTaskKeyRef.current;
-        if (activeTaskKey) {
-          setTaskPointCounts((prev) => ({ ...prev, [activeTaskKey]: nextCount }));
-        }
-      }
-    }, []),
+    onGazeData: pushGazeData,
   });
 
   const handleDeviceReady = useCallback(() => {
     dispatch({ type: 'DEVICE_READY' });
-    // Enter fullscreen right before calibration
     enterFullscreen();
   }, [dispatch, enterFullscreen]);
 
   const handleCalibrationComplete = useCallback(
     (result: CalibrationResult) => {
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
-      // Set up first task content
-      const content = getTobiiTaskContent('syllables');
-      setTaskContent((prev) => ({ ...prev, syllables: content }));
-      activeBufferRef.current = syllablesRef.current;
-      activeTaskKeyRef.current = 'syllables';
-      setGazePointCount(0);
-      setTaskPointCounts({
-        syllables: 0,
-        'pseudo-words': 0,
-        'meaningful-text': 0,
-      });
-      setLastTaskGazePosition(null);
+      activateTask('syllables', getTobiiTaskContent('syllables'));
     },
-    [dispatch],
+    [dispatch, activateTask],
   );
-
-  const handleLineCentersReady = useCallback((taskKey: string, centers: number[]) => {
-    lineCentersRef.current[taskKey] = centers;
-  }, []);
 
   const handleTaskDone = useCallback(() => {
     dispatch({ type: 'TASK_COMPLETE' });
   }, [dispatch]);
 
   const handleRetake = useCallback(() => {
-    // Clear the current buffer
-    if (activeBufferRef.current) {
-      activeBufferRef.current.length = 0;
-    }
-    const activeTaskKey = activeTaskKeyRef.current;
-    if (activeTaskKey) {
-      setTaskPointCounts((prev) => ({ ...prev, [activeTaskKey]: 0 }));
-    }
-    setGazePointCount(0);
-    setLastTaskGazePosition(null);
+    clearActiveBuffer();
     dispatch({ type: 'RETAKE' });
-  }, [dispatch]);
+  }, [dispatch, clearActiveBuffer]);
 
   const handleContinue = useCallback(() => {
     const currentState = tobiiState.currentState;
 
-    // Set up next task content and buffer
     if (currentState === 'review-syllables') {
-      const content = getTobiiTaskContent('pseudo-words');
-      setTaskContent((prev) => ({ ...prev, 'pseudo-words': content }));
-      activeBufferRef.current = pseudoWordsRef.current;
-      activeTaskKeyRef.current = 'pseudo-words';
-      setGazePointCount(0);
-      setLastTaskGazePosition(null);
+      activateTask('pseudo-words', getTobiiTaskContent('pseudo-words'));
     } else if (currentState === 'review-pseudo-words') {
-      const content = getTobiiTaskContent('meaningful-text');
-      setTaskContent((prev) => ({ ...prev, 'meaningful-text': content }));
-      activeBufferRef.current = meaningfulTextRef.current;
-      activeTaskKeyRef.current = 'meaningful-text';
-      setGazePointCount(0);
-      setLastTaskGazePosition(null);
+      activateTask('meaningful-text', getTobiiTaskContent('meaningful-text'));
     }
 
     dispatch({ type: 'CONTINUE' });
-  }, [dispatch, tobiiState.currentState]);
+  }, [dispatch, tobiiState.currentState, activateTask]);
 
   const handleSubmit = useCallback(async () => {
     const screen = {
@@ -210,7 +134,7 @@ export default function TobiiTestPage() {
     } else {
       dispatch({ type: 'SUBMIT_ERROR', error: result.error });
     }
-  }, [dispatch]);
+  }, [dispatch, syllablesRef, pseudoWordsRef, meaningfulTextRef, lineCentersRef]);
 
   useEffect(() => {
     if (tobiiState.currentState === 'submitting') {
@@ -219,23 +143,10 @@ export default function TobiiTestPage() {
   }, [tobiiState.currentState, handleSubmit]);
 
   const handleNewTest = useCallback(() => {
-    syllablesRef.current = [];
-    pseudoWordsRef.current = [];
-    meaningfulTextRef.current = [];
-    activeBufferRef.current = null;
-    activeTaskKeyRef.current = null;
-    lastGazeRef.current = null;
-    setGazePointCount(0);
-    setTaskPointCounts({
-      syllables: 0,
-      'pseudo-words': 0,
-      'meaningful-text': 0,
-    });
-    setLastTaskGazePosition(null);
-    setTaskContent({});
+    resetAll();
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
-  }, [dispatch]);
+  }, [dispatch, resetAll]);
 
   const handleExit = useCallback(() => {
     exitFullscreen();
@@ -293,7 +204,7 @@ export default function TobiiTestPage() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => handleLineCentersReady('syllables', centers)}
+            onLineCentersReady={(centers) => setLineCenters('syllables', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
           />
         );
@@ -317,7 +228,7 @@ export default function TobiiTestPage() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => handleLineCentersReady('pseudo-words', centers)}
+            onLineCentersReady={(centers) => setLineCenters('pseudo-words', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
           />
         );
@@ -341,7 +252,7 @@ export default function TobiiTestPage() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => handleLineCentersReady('meaningful-text', centers)}
+            onLineCentersReady={(centers) => setLineCenters('meaningful-text', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
           />
         );
@@ -370,7 +281,6 @@ export default function TobiiTestPage() {
         return (
           <ErrorScreen
             error={tobiiState.error ?? 'An unexpected error occurred'}
-            // Tobii data quality is reliable — always allow retrying submission
             onRetry={
               taskPointCounts.syllables > 0 ||
               taskPointCounts['pseudo-words'] > 0 ||

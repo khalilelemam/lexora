@@ -1,16 +1,22 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 
-const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'About', href: '#about' },
-] as const;
+type NavLink =
+  | { label: string; type: 'scroll'; href: string }
+  | { label: string; type: 'page'; href: string };
+
+const NAV_LINKS: NavLink[] = [
+  { label: 'Features', type: 'scroll', href: '#features' },
+  { label: 'How It Works', type: 'scroll', href: '#how-it-works' },
+  { label: 'About', type: 'page', href: '/about' },
+  { label: 'Privacy', type: 'page', href: '/privacy' },
+];
 
 /**
  * Sticky navigation bar with scroll-blur effect and responsive mobile menu.
@@ -59,15 +65,25 @@ export function Navbar() {
 
           {/* Desktop links */}
           <div className="hidden sm:flex items-center gap-6 text-sm font-medium">
-            {NAV_LINKS.map((link) => (
-              <button
-                key={link.href}
-                onClick={() => scrollTo(link.href)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {link.label}
-              </button>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.type === 'scroll' ? (
+                <button
+                  key={link.href}
+                  onClick={() => scrollTo(link.href)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </button>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -113,15 +129,26 @@ export function Navbar() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
               <div className="flex flex-col gap-2 p-6">
-                {NAV_LINKS.map((link) => (
-                  <button
-                    key={link.href}
-                    onClick={() => scrollTo(link.href)}
-                    className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
-                  >
-                    {link.label}
-                  </button>
-                ))}
+                {NAV_LINKS.map((link) =>
+                  link.type === 'scroll' ? (
+                    <button
+                      key={link.href}
+                      onClick={() => scrollTo(link.href)}
+                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  ),
+                )}
                 <div className="border-t my-2" />
                 <Button onClick={() => scrollTo('#get-started')} className="w-full">
                   Start Screening

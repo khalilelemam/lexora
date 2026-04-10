@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 
@@ -6,18 +7,23 @@ import { LexoraLogo } from '@/components/shared/lexora-logo';
  * Static content renders at build time for optimal SEO.
  */
 export function Footer() {
-  // Use a build-time constant to avoid hydration mismatch near midnight
   const year = new Date().getFullYear();
 
   return (
     <footer className="py-8 px-6 border-t">
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <LexoraLogo size="sm" />
-        <div className="flex items-center gap-6 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
           <span>© {year} Lexora</span>
-          <span>•</span>
+          <span className="hidden sm:inline">•</span>
+          <Link href="/about" className="hover:text-foreground transition-colors">
+            About
+          </Link>
+          <Link href="/privacy" className="hover:text-foreground transition-colors">
+            Privacy
+          </Link>
+          <span className="hidden sm:inline">•</span>
           <span>Research Use Only</span>
-          <span>•</span>
           <a
             href="https://github.com/khalilelemam/eglex"
             target="_blank"

@@ -41,7 +41,7 @@ interface FlyingStar {
 }
 
 // Scan duration in milliseconds (time to fill the ring)
-const SCAN_DURATION_MS = 2200;
+const SCAN_DURATION_MS = 2000;
 // Float duration in milliseconds
 const FLOAT_DURATION_MS = 1200;
 // Collect animation duration
