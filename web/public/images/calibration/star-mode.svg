@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300">
+  <rect width="480" height="300" fill="#f0f9ff" rx="8"/>
+  <!-- star -->
+  <polygon points="240,60 254,110 306,110 264,140 278,190 240,160 202,190 216,140 174,110 226,110" fill="#fbbf24" opacity="0.8" stroke="#f59e0b" stroke-width="1.5"/>
+  <!-- sparkle dots -->
+  <circle cx="120" cy="80" r="3" fill="#38bdf8" opacity="0.4"/>
+  <circle cx="360" cy="100" r="3" fill="#38bdf8" opacity="0.4"/>
+  <circle cx="150" cy="220" r="3" fill="#38bdf8" opacity="0.4"/>
+  <circle cx="330" cy="240" r="3" fill="#38bdf8" opacity="0.4"/>
+  <!-- trail -->
+  <path d="M120 80 Q180 130 240 110 Q300 90 360 100" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.3"/>
+  <!-- calibration dots -->
+  <circle cx="120" cy="80" r="8" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.3"/>
+  <circle cx="360" cy="100" r="8" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.3"/>
+</svg>

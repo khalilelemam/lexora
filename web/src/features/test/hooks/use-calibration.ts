@@ -28,9 +28,9 @@ type CalibrationPhase = 'idle' | 'collecting' | 'recalibrating' | 'validating' |
 
 const GRID_COLUMNS = 5;
 const HOLDOUT_STRIDE = 5;
-const MIN_WEBCAM_SAMPLES = 96;
-const MIN_WEBCAM_POINTS_WITH_SAMPLES = 12;
-const MIN_WEBCAM_SAMPLES_PER_POINT = 3;
+const MIN_WEBCAM_SAMPLES = 30;
+const MIN_WEBCAM_POINTS_WITH_SAMPLES = 8;
+const MIN_WEBCAM_SAMPLES_PER_POINT = 2;
 const OUTLIER_Z_THRESHOLD = 3;
 const TARGETED_RECALIBRATION_MAX_ROUNDS = 1;
 const TARGETED_RECALIBRATION_MAX_POINTS = 6;

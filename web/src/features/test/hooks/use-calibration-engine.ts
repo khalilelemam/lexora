@@ -4,6 +4,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CalibrationPoint, CalibrationResult } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
 import { useCalibration } from './use-calibration';
+import {
+  COUNTDOWN_SECONDS,
+  STABLE_FIXATION_MS,
+  STABLE_VELOCITY_NORM_PER_SEC,
+  CAPTURE_COOLDOWN_MS,
+  VALIDATION_SETTLE_MS,
+  VALIDATION_HOLD_MS,
+  VALIDATION_THRESHOLD_SCREEN_DIAGONAL,
+  VALIDATION_MIN_SAMPLES_PER_POINT,
+  VALIDATION_POINT_INDICES,
+  clamp01,
+  mean,
+  nextAnimationFrame,
+  getScreenInfo,
+} from '../lib/calibration-engine-constants';
 
 export type CalibrationVisualMode = 'grid' | 'stickman' | 'star';
 
@@ -17,7 +32,7 @@ export interface WebcamCalibrationSample {
   x: number;
   y: number;
   rawIrisLandmarks?: RawIrisLandmark[] | null;
-  // Screen-space hint used for live feedback and stability velocity.
+  /** Screen-space hint used for live feedback and stability velocity. */
   screenHint?: { x: number; y: number } | null;
 }
 
@@ -45,31 +60,6 @@ interface UseCalibrationEngineOptions {
   onGetGazeSample?: () => { x: number; y: number } | null;
   onGetIrisSample?: () => WebcamCalibrationSample | null;
   onGetHeadPoseSample?: () => { yaw: number; pitch: number } | null;
-}
-
-const COUNTDOWN_SECONDS = 3;
-const STABLE_FIXATION_MS = 500;
-const STABLE_VELOCITY_NORM_PER_SEC = 0.35;
-const CAPTURE_COOLDOWN_MS = 65;
-const VALIDATION_SETTLE_MS = 450;
-const VALIDATION_HOLD_MS = 1200;
-const VALIDATION_THRESHOLD_SCREEN_DIAGONAL = 0.12;
-const VALIDATION_MIN_SAMPLES_PER_POINT = 10;
-const VALIDATION_POINT_INDICES = [0, 4, 7, 10, 14];
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
-
-function mean(values: number[]): number {
-  if (values.length === 0) return 0;
-  return values.reduce((total, value) => total + value, 0) / values.length;
-}
-
-function nextAnimationFrame(): Promise<number> {
-  return new Promise((resolve) => {
-    requestAnimationFrame(resolve);
-  });
 }
 
 export function resolveCalibrationMode(
@@ -108,9 +98,9 @@ export function useCalibrationEngine({
     () => resolveCalibrationMode(mode, participantAge),
     [mode, participantAge],
   );
-  const requiredStableFixationMs = resolvedMode === 'grid' ? STABLE_FIXATION_MS : 240;
+  const requiredStableFixationMs = resolvedMode === 'grid' ? STABLE_FIXATION_MS : 120;
   const stableVelocityThreshold =
-    resolvedMode === 'grid' ? STABLE_VELOCITY_NORM_PER_SEC : STABLE_VELOCITY_NORM_PER_SEC * 1.8;
+    resolvedMode === 'grid' ? STABLE_VELOCITY_NORM_PER_SEC : STABLE_VELOCITY_NORM_PER_SEC * 1.5;
 
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const [showCountdown, setShowCountdown] = useState(false);
@@ -216,15 +206,6 @@ export function useCalibrationEngine({
     return () => clearTimeout(timer);
   }, [showCountdown, countdown, startCalibration]);
 
-  const getScreenInfo = useCallback(() => {
-    if (typeof window === 'undefined') {
-      return { width: 1920, height: 1080, diagonal: Math.hypot(1920, 1080) };
-    }
-
-    const width = window.screen.width;
-    const height = window.screen.height;
-    return { width, height, diagonal: Math.hypot(width, height) };
-  }, []);
 
   const readCurrentPrediction = useCallback(
     (
@@ -245,7 +226,7 @@ export function useCalibrationEngine({
       const headPose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
       return mapping.predict(sample.x, sample.y, headPose.yaw, headPose.pitch);
     },
-    [tracker, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample, getScreenInfo],
+    [tracker, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample],
   );
 
   const runQuickValidation = useCallback(
@@ -360,7 +341,7 @@ export function useCalibrationEngine({
 
       return accuracy;
     },
-    [getScreenInfo, readCurrentPrediction],
+    [readCurrentPrediction],
   );
 
   useEffect(() => {
@@ -415,7 +396,6 @@ export function useCalibrationEngine({
     calibrationPhase,
     computeTobiiCalibration,
     computeWebcamCalibration,
-    getScreenInfo,
     tracker,
     runQuickValidation,
   ]);
@@ -544,7 +524,6 @@ export function useCalibrationEngine({
       onGetGazeSample,
       onGetIrisSample,
       onGetHeadPoseSample,
-      getScreenInfo,
       resolvedMode,
       requiredStableFixationMs,
       stableVelocityThreshold,
@@ -565,7 +544,7 @@ export function useCalibrationEngine({
         predict: () => ({ x: width * 0.5, y: height * 0.5 }),
       };
     }
-  }, [getScreenInfo, tracker]);
+  }, [tracker]);
 
   const canFinalize =
     calibrationPhase === 'complete' ||

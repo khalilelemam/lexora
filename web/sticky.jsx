@@ -10,7 +10,7 @@ const playTone = (freq, type, duration, vol, slideFreq = null) => {
   osc.type = type;
   osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
   if (slideFreq) osc.frequency.exponentialRampToValueAtTime(slideFreq, audioCtx.currentTime + duration);
-  
+
   gain.gain.setValueAtTime(0, audioCtx.currentTime);
   gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
@@ -47,22 +47,19 @@ const playNoise = (duration, vol, type = 'explosion', freq = 1000) => {
 
 const sounds = {
   spawn: () => playTone(800, 'square', 0.1, 0.03, 1400),
-  bossSpawn: () => playTone(150, 'sawtooth', 0.8, 0.2, 80),
+  bossSpawn: () => playNoise(0.5, 0.2, 'explosion', 300), // Sky drop sound
+  laser: () => playTone(1500, 'sawtooth', 0.15, 0.05, 300), // Pew pew!
   hit: () => playTone(1200, 'square', 0.05, 0.05, 200),
   dash: () => playNoise(0.1, 0.05, 'skid', 4000), // Fast whoosh
   skid: () => playNoise(0.2, 0.1, 'skid', 2000), // Brake sound
-  jump: () => playTone(300, 'sine', 0.2, 0.05, 600),
-  obstacleBreak: () => { 
-    playNoise(0.2, 0.15, 'explosion', 2000); 
-    playTone(200, 'square', 0.1, 0.1, 50); 
-  },
+  teleport: () => playNoise(0.15, 0.1, 'lowpass', 600), // Smoke bomb poof
   land: () => playNoise(0.1, 0.05, 'explosion', 400),
   step: () => playNoise(0.05, 0.02, 'highpass', 5000), // Soft footstep
   bossLand: () => playNoise(0.6, 0.3, 'explosion', 300),
   scanTick: (progress) => playTone(400 + progress * 600, 'sine', 0.05, 0.02),
   shatter: () => {
     playNoise(0.5, 0.4, 'explosion', 800);
-    playTone(100, 'sawtooth', 0.4, 0.2, 20); 
+    playTone(100, 'sawtooth', 0.4, 0.2, 20);
   }
 };
 
@@ -86,12 +83,13 @@ const shuffleArray = (array) => {
 const CanvasGame = ({ pointData, onPointComplete }) => {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: -1000, y: -1000 });
+  const clickRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     let animationFrameId;
-    
+
     let width = window.innerWidth;
     let height = window.innerHeight;
     canvas.width = width;
@@ -104,13 +102,15 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
     };
     window.addEventListener('resize', handleResize);
 
+    const handleMouseClick = () => { clickRef.current = true; };
+    window.addEventListener('mousedown', handleMouseClick);
+
     const isBoss = pointData.isBoss;
-    
+
     // Engine State
-    let phase = 'sequence'; // sequence, collecting, shattered, waiting
-    let lastHitTime = 0;
+    let phase = 'init'; // exploring, bossDrop, bossWait, sequence, collecting, shattered, waiting
     let screenShake = 0;
-    
+
     // Core Logic
     let waypoints = [];
     let currentWpIndex = 0;
@@ -118,89 +118,99 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
     let startX = 0, startY = 0;
     let stickX = 0, stickY = 0;
     let stickAngle = 0;
-    let pose = 'idle'; // sprint, jump, fall, walk, idle, proud
+    let pose = 'idle';
     let facingRight = true;
-    
+
+    // Exploration State
+    let exploreTarget = { x: 0, y: 0, wait: 0 };
+    let laserBeam = { life: 0, x1: 0, y1: 0, x2: 0, y2: 0, maxLife: 300 };
+
     // Visuals
     let scanProgress = 0;
     let particles = [];
-    let bones = []; 
+    let bones = [];
     let speedLines = [];
-    
+
     const scale = isBoss ? 0.9 : 0.4;
     const hitRadius = isBoss ? 70 : 35;
 
-    // --- PROCEDURAL PATH & OBSTACLE GENERATOR ---
-    const generatePath = () => {
+    // --- INITIALIZATION ---
+    const initLevel = () => {
+      if (isBoss) {
+        startX = width / 2; startY = -200;
+        stickX = startX; stickY = startY;
+        waypoints = [{ x: width/2, y: height/2, duration: 400 }]; // Initial sky drop
+        phase = 'bossDrop';
+        wpStartTime = performance.now();
+        sounds.bossSpawn();
+      } else {
+        // Spawn randomly for exploration
+        const edge = Math.floor(Math.random() * 4);
+        stickX = edge === 0 ? Math.random()*width : edge === 1 ? width+50 : edge === 2 ? Math.random()*width : -50;
+        stickY = edge === 0 ? -50 : edge === 1 ? Math.random()*height : edge === 2 ? height+50 : Math.random()*height;
+        phase = 'exploring';
+        exploreTarget = { x: width/2, y: height/2, wait: performance.now() }; // Walk to middle initially
+        sounds.spawn();
+      }
+    };
+
+    // --- TELEPORT & SPRINT GENERATOR (Triggered by Laser) ---
+    const triggerNinjaSequence = () => {
       const finalX = width * pointData.x;
       const finalY = height * pointData.y;
 
+      waypoints = [];
+
       if (isBoss) {
-        startX = width / 2; startY = -200;
-        waypoints = [
-          { x: width/2, y: height/2, duration: 400, type: 'fall', impact: true },
-          { x: width*0.2, y: height*0.8, duration: 250, pause: 200, type: 'dash' },
-          { x: width*0.8, y: height*0.2, duration: 250, pause: 200, type: 'dash' },
-          { x: finalX, y: finalY, duration: 450, type: 'jump', arc: 200, pose: 'proud', impact: true }
-        ];
-        return;
+        // Boss gets shot -> teleports to edge -> dashes around -> crashes center
+        startX = width * 0.2; startY = height * 0.2; // New location after teleport
+        waypoints.push({ x: width*0.8, y: height*0.2, duration: 250, pause: 200, type: 'dash', pose: 'skid' });
+        waypoints.push({ x: width*0.2, y: height*0.8, duration: 250, pause: 200, type: 'dash', pose: 'skid' });
+        waypoints.push({ x: finalX, y: finalY, duration: 400, pause: 0, type: 'dash', pose: 'proud', impact: true });
+      } else {
+        // Minion gets shot -> teleports far away -> sprints to target
+        startX = width * 0.1 + Math.random() * 0.8 * width;
+        startY = height * 0.1 + Math.random() * 0.8 * height;
+
+        // 1 random intermediate dash
+        waypoints.push({
+          x: width * 0.2 + Math.random() * 0.6 * width,
+          y: height * 0.2 + Math.random() * 0.6 * height,
+          duration: 200, pause: 150, type: 'dash', pose: 'skid'
+        });
+
+        // Pre-Final approach
+        const approachDir = finalX > waypoints[0].x ? -1 : 1;
+        waypoints.push({ x: finalX + approachDir * 100, y: finalY, duration: 250, pause: 0, type: 'dash', pose: 'skid' });
+
+        // Final walk
+        waypoints.push({ x: finalX, y: finalY, duration: 800, type: 'walk', pose: 'idle' });
       }
 
-      // Minion Spawning
-      const edge = Math.floor(Math.random() * 4);
-      startX = edge === 0 ? Math.random()*width : edge === 1 ? width+50 : edge === 2 ? Math.random()*width : -50;
-      startY = edge === 0 ? -50 : edge === 1 ? Math.random()*height : edge === 2 ? height+50 : Math.random()*height;
-      
-      const pts = [{x: startX, y: startY}];
-      // Generate 2 random intermediate path nodes
-      for(let i=0; i<2; i++) {
-        pts.push({ x: width * 0.15 + Math.random() * 0.7 * width, y: height * 0.15 + Math.random() * 0.7 * height });
-      }
-      // Pre-Final approach point (so he lands and walks the rest)
-      const approachDir = finalX > pts[pts.length-1].x ? -1 : 1;
-      pts.push({ x: finalX + approachDir * 100, y: finalY });
-      // Final destination
-      pts.push({ x: finalX, y: finalY });
+      // Drop smoke at old location
+      for(let i=0; i<15; i++) particles.push({ type:'smoke', x:stickX, y:stickY, vx:(Math.random()-0.5)*15, vy:(Math.random()-0.5)*15, life:300, maxLife:300 });
 
-      // Build waypoints with Obstacles
-      for(let i=1; i<pts.length; i++) {
-        const prev = pts[i-1];
-        const curr = pts[i];
-        
-        if (i === pts.length - 1) {
-            // The final stretch is always a realistic walk
-            waypoints.push({ x: curr.x, y: curr.y, duration: 800, type: 'walk', pose: 'idle' });
-        } else {
-            // Randomly spawn an obstacle to jump over, or just do a ninja dash
-            const isObstacleJump = Math.random() > 0.4; 
-            if (isObstacleJump) {
-                // Place the obstacle halfway through this segment
-                const obsX = (prev.x + curr.x) / 2;
-                const obsY = (prev.y + curr.y) / 2;
-                waypoints.push({
-                    x: curr.x, y: curr.y, duration: 400, pause: 100, type: 'jump', arc: 120,
-                    obstacle: { x: obsX, y: obsY, active: true }, impact: true
-                });
-            } else {
-                waypoints.push({
-                    x: curr.x, y: curr.y, duration: 250, pause: 150, type: 'dash', impact: false
-                });
-            }
-        }
-      }
+      // Instantly move to new teleport location
       stickX = startX; stickY = startY;
-    };
-    
-    generatePath();
-    if (isBoss) sounds.bossSpawn(); else sounds.spawn();
 
-    // --- DRAWING: STICKMAN POSES (Ninja + Realistic) ---
+      // Drop smoke at new location
+      for(let i=0; i<15; i++) particles.push({ type:'smoke', x:stickX, y:stickY, vx:(Math.random()-0.5)*15, vy:(Math.random()-0.5)*15, life:300, maxLife:300 });
+
+      phase = 'sequence';
+      currentWpIndex = 0;
+      wpStartTime = performance.now();
+      sounds.teleport();
+    };
+
+    initLevel();
+
+    // --- DRAWING: STICKMAN POSES ---
     const drawStickman = (x, y, time) => {
       ctx.save();
       ctx.translate(x, y);
       if (!facingRight) ctx.scale(-1, 1);
       ctx.scale(scale, scale);
-      
+
       ctx.strokeStyle = isBoss ? '#dc2626' : '#0f172a';
       ctx.fillStyle = ctx.strokeStyle;
       ctx.lineWidth = 8;
@@ -212,57 +222,37 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
       let hipY = 0, spineAngle = 0, headY = -35;
       let arm1 = [], arm2 = [], leg1 = [], leg2 = [];
 
-      // 1. NINJA SPRINT (Deep lean, arms trailing back)
       if (pose === 'sprint') {
-        spineAngle = 0.6; 
-        hipY = Math.sin(t * 2) * 4; 
-        // Arms flying back (Naruto run style)
-        arm1 = [0, -25, 3.4, 3.5];
-        arm2 = [0, -25, 3.7, 3.8];
-        // Fast pumping legs
+        spineAngle = 0.6; hipY = Math.sin(t * 2) * 4;
+        arm1 = [0, -25, 3.4, 3.5]; arm2 = [0, -25, 3.7, 3.8];
         const legSwing = Math.cos(t * 1.5);
         leg1 = [0, hipY, Math.PI/2 + legSwing*1.2, Math.PI/2 + legSwing*1.2 + 0.5];
         leg2 = [0, hipY, Math.PI/2 - legSwing*1.2, Math.PI/2 - legSwing*1.2 + 0.5];
-      } 
-      // 2. OBSTACLE JUMP (Tucked ninja leap)
-      else if (pose === 'jump') {
-        spineAngle = 0.4; hipY = -15;
-        // Arms pulled tight back
-        arm1 = [0, -25, 3.0, 3.2]; 
-        arm2 = [0, -25, 3.4, 3.6];
-        // Knees tucked tight to clear obstacle
-        leg1 = [0, hipY, 2.8, 3.2]; 
-        leg2 = [0, hipY, 2.2, 2.6];
       }
-      // 3. FALL (Flailing)
-      else if (pose === 'fall') {
-        spineAngle = -0.1; hipY = -5;
-        const flail = Math.sin(t);
-        arm1 = [0, -25, -0.5 + flail*0.5, -1.0];
-        arm2 = [0, -25, 3.5 - flail*0.5, 4.0];
-        leg1 = [0, hipY, 2.0, 1.5];
-        leg2 = [0, hipY, 1.0, 1.5];
+      else if (pose === 'skid') {
+        spineAngle = -0.3; hipY = 5;
+        arm1 = [0, -25, 3.5, 3.0]; arm2 = [0, -25, -0.5, 0.0];
+        leg1 = [0, hipY, 2.0, 1.5]; leg2 = [0, hipY, 0.5, 0.5];
       }
-      // 4. REALISTIC WALK (Upright, calm)
       else if (pose === 'walk') {
-        spineAngle = 0.05; 
-        hipY = Math.sin(t * 0.5) * 3;
+        spineAngle = 0.05; hipY = Math.sin(t * 0.5) * 3;
         const swing = Math.sin(t * 0.4);
         arm1 = [0, -25, Math.PI/2 + swing*0.5, Math.PI/2 + swing*0.5];
         arm2 = [0, -25, Math.PI/2 - swing*0.5, Math.PI/2 - swing*0.5];
         leg1 = [0, hipY, Math.PI/2 + swing*0.6, Math.PI/2 + swing*0.6 + 0.2];
         leg2 = [0, hipY, Math.PI/2 - swing*0.6, Math.PI/2 - swing*0.6 + 0.2];
       }
-      // 5. IDLE (Standing perfectly still)
-      else if (pose === 'idle') {
-        spineAngle = 0;
-        hipY = Math.sin(time * 0.005) * 2; 
-        arm1 = [0, -25, 1.4, 1.5]; 
-        arm2 = [0, -25, 1.7, 1.6];
-        leg1 = [0, hipY, 1.5, 1.5]; 
-        leg2 = [0, hipY, 1.6, 1.5];
+      else if (pose === 'fall') {
+        spineAngle = -0.1; hipY = -5;
+        const flail = Math.sin(t);
+        arm1 = [0, -25, -0.5 + flail*0.5, -1.0]; arm2 = [0, -25, 3.5 - flail*0.5, 4.0];
+        leg1 = [0, hipY, 2.0, 1.5]; leg2 = [0, hipY, 1.0, 1.5];
       }
-      // 6. PROUD (Boss)
+      else if (pose === 'idle') {
+        spineAngle = 0; hipY = Math.sin(time * 0.005) * 2;
+        arm1 = [0, -25, 1.4, 1.5]; arm2 = [0, -25, 1.7, 1.6];
+        leg1 = [0, hipY, 1.5, 1.5]; leg2 = [0, hipY, 1.6, 1.5];
+      }
       else if (pose === 'proud') {
         spineAngle = 0; hipY = 0;
         arm1 = [0, -25, 0.5, 2.5]; arm2 = [0, -25, 2.6, 0.6];
@@ -309,89 +299,105 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
         screenShake *= 0.85; if (screenShake < 0.5) screenShake = 0;
       }
 
-      // Draw Obstacles (Spikes) before stickman
-      if (phase === 'sequence') {
-        const currentWp = waypoints[currentWpIndex];
-        if (currentWp && currentWp.obstacle && currentWp.obstacle.active) {
-            ctx.save();
-            ctx.translate(currentWp.obstacle.x, currentWp.obstacle.y);
-            // Black rocky base
-            ctx.fillStyle = '#0f172a';
-            ctx.beginPath(); ctx.moveTo(-15, 10); ctx.lineTo(0, -30); ctx.lineTo(15, 10); ctx.fill();
-            // Red glowing tip
-            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(-5, -10); ctx.lineTo(0, -30); ctx.lineTo(5, -10); ctx.stroke();
-            ctx.restore();
+      const mouseDist = Math.hypot(stickX - mouseRef.current.x, stickY - mouseRef.current.y);
+      let isVisible = true;
+
+      // --- LASER HIT DETECTION ---
+      if (clickRef.current) {
+        clickRef.current = false;
+        if ((phase === 'exploring' || phase === 'bossWait') && mouseDist < hitRadius * 2.5) {
+          sounds.laser();
+          laserBeam = { life: 200, maxLife: 200, x1: mouseRef.current.x, y1: mouseRef.current.y, x2: stickX, y2: stickY };
+          triggerNinjaSequence();
         }
       }
 
-      const mouseDist = Math.hypot(stickX - mouseRef.current.x, stickY - mouseRef.current.y);
+      // --- PHASE LOGIC ---
 
-      // --- PHASE 1: HIGH-SPEED PATHING ---
-      if (phase === 'sequence') {
+      // 1. BOSS SKY DROP
+      if (phase === 'bossDrop') {
+        const wp = waypoints[0];
+        const elapsed = time - wpStartTime;
+        let t = Math.min(elapsed / wp.duration, 1);
+        pose = 'fall';
+        stickY = startY + (wp.y - startY) * (t * t);
+        if (t >= 1) {
+          screenShake = 40; sounds.bossLand();
+          for(let i=0; i<15; i++) particles.push({ type:'dust', x:stickX, y:stickY+20, vx:(Math.random()-0.5)*20, vy:-Math.random()*10, life:400, maxLife:400 });
+          phase = 'bossWait';
+          pose = 'proud';
+        }
+      }
+      // 2. BOSS WAITING TO BE SHOT
+      else if (phase === 'bossWait') {
+        pose = 'proud'; // Stands waiting for laser
+      }
+      // 3. MINION EXPLORING
+      else if (phase === 'exploring') {
+        const dx = exploreTarget.x - stickX;
+        const dy = exploreTarget.y - stickY;
+        const dist = Math.hypot(dx, dy);
+
+        if (time < exploreTarget.wait) {
+          pose = 'idle'; // Looking around
+        } else if (dist > 5) {
+          pose = 'walk';
+          stickAngle = Math.atan2(dy, dx);
+          if (exploreTarget.x > stickX) facingRight = true; else facingRight = false;
+          stickX += Math.cos(stickAngle) * 2; // Casual walk speed
+          stickY += Math.sin(stickAngle) * 2;
+          if (Math.floor(time) % 400 < 16) sounds.step();
+        } else {
+          // Reached spot, pick new one
+          exploreTarget.x = Math.max(50, Math.min(width-50, stickX + (Math.random()-0.5)*400));
+          exploreTarget.y = Math.max(50, Math.min(height-50, stickY + (Math.random()-0.5)*400));
+          exploreTarget.wait = time + 500 + Math.random() * 1500;
+        }
+      }
+      // 4. HIGH-SPEED SPRINT SEQUENCE
+      else if (phase === 'sequence') {
         const wp = waypoints[currentWpIndex];
         const elapsed = time - wpStartTime;
 
+        if (!wp.startTriggered) {
+          wp.startTriggered = true;
+          if (wp.type === 'dash') sounds.dash();
+        }
+
         if (elapsed < wp.duration) {
           let t = elapsed / wp.duration;
-          
+
           if (wp.x > startX) facingRight = true; else if (wp.x < startX) facingRight = false;
           stickAngle = Math.atan2(wp.y - startY, wp.x - startX);
-          
-          if (wp.type === 'jump') {
-            pose = 'jump';
-            if (t === 0) sounds.jump();
-            const easeT = t; 
-            const arcY = Math.sin(t * Math.PI) * (wp.arc || 120);
-            stickX = startX + (wp.x - startX) * easeT;
-            stickY = startY + (wp.y - startY) * easeT - arcY;
 
-            // Trigger Smash when passing over active obstacle
-            if (wp.obstacle && wp.obstacle.active && t >= 0.5) {
-                wp.obstacle.active = false;
-                sounds.obstacleBreak();
-                screenShake = 10;
-                for(let i=0; i<15; i++) {
-                   particles.push({ type:'slash', x:wp.obstacle.x, y:wp.obstacle.y-10, angle:Math.random()*Math.PI*2, length:Math.random()*40+10, life:200, maxLife:200 });
-                   particles.push({ type:'dust', x:wp.obstacle.x, y:wp.obstacle.y, vx:(Math.random()-0.5)*15, vy:(Math.random()-0.5)*15, life:200, maxLife:200 });
-                }
-            }
-          } 
-          else if (wp.type === 'fall') {
-            pose = 'fall';
-            stickX = startX + (wp.x - startX) * t;
-            stickY = startY + (wp.y - startY) * (t * t); 
-          }
-          else if (wp.type === 'walk') {
+          if (wp.type === 'walk') {
             pose = 'walk';
             stickX = startX + (wp.x - startX) * t;
             stickY = startY + (wp.y - startY) * t;
-            if (Math.floor(elapsed) % 300 === 0) sounds.step();
+            if (!wp.lastStep) wp.lastStep = 0;
+            if (elapsed - wp.lastStep > 300) { sounds.step(); wp.lastStep = elapsed; }
           }
           else {
             // NINJA DASH
             pose = 'sprint';
-            if (t === 0) sounds.dash();
             const easeT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
             stickX = startX + (wp.x - startX) * easeT;
             stickY = startY + (wp.y - startY) * easeT;
 
-            // Generate Speed Lines
             if (Math.random() > 0.4) {
-                speedLines.push({
-                    x: stickX + (Math.random()-0.5)*60,
-                    y: stickY + (Math.random()-0.5)*60,
-                    angle: stickAngle, length: 30 + Math.random()*50, life: 100
-                });
+              speedLines.push({
+                x: stickX + (Math.random()-0.5)*60, y: stickY + (Math.random()-0.5)*60,
+                angle: stickAngle, length: 30 + Math.random()*50, life: 100
+              });
             }
           }
-
         } else {
-          // WAYPOINT REACHED (Wait out the pause)
+          // WAYPOINT REACHED
           stickX = wp.x; stickY = wp.y;
-          pose = wp.pose || 'idle'; 
-          
-          if (elapsed === wp.duration || elapsed - wp.duration < 16) {
+          pose = wp.pose || 'skid';
+
+          if (!wp.endTriggered) {
+            wp.endTriggered = true;
             if (wp.type === 'dash') sounds.skid();
             if (wp.impact) {
               screenShake = isBoss ? 30 : 8;
@@ -410,14 +416,8 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
             }
           }
         }
-
-        // Fun Hit Sparks (Tracking feedback - No calibration)
-        if (mouseDist < hitRadius * 2 && time - lastHitTime > 150) {
-          sounds.hit(); lastHitTime = time;
-          for(let i=0; i<2; i++) particles.push({ type:'spark', x:stickX+(Math.random()-0.5)*30, y:stickY+(Math.random()-0.5)*30, vx:(Math.random()-0.5)*15, vy:(Math.random()-0.5)*15, life:200, maxLife:200 });
-        }
-      } 
-      // --- PHASE 2: FIXATION ---
+      }
+      // 5. FIXATION
       else if (phase === 'collecting') {
         if (mouseDist < hitRadius) {
           scanProgress += 16 / 1500;
@@ -428,11 +428,24 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
         } else { scanProgress = 0; }
       }
       else if (phase === 'shattered') {
-         if (time - wpStartTime > 1500) { phase = 'waiting'; onPointComplete(); }
+        if (time - wpStartTime > 1500) { phase = 'waiting'; onPointComplete(); }
       }
 
+
       // --- RENDER CALLS ---
-      // Speed Lines layer
+
+      // Render Laser Beam
+      if (laserBeam.life > 0) {
+        laserBeam.life -= 16;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, laserBeam.life / laserBeam.maxLife);
+        ctx.beginPath(); ctx.moveTo(laserBeam.x1, laserBeam.y1); ctx.lineTo(laserBeam.x2, laserBeam.y2);
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 8; ctx.stroke();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.restore();
+      }
+
+      // Render Speed Lines
       ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2;
       for (let i = speedLines.length - 1; i >= 0; i--) {
         let sl = speedLines[i]; sl.life -= 16;
@@ -444,9 +457,18 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
       }
       ctx.globalAlpha = 1.0;
 
-      if (phase !== 'shattered' && phase !== 'waiting') {
+      // Render Stickman & Scan Rings
+      if (phase !== 'shattered' && phase !== 'waiting' && isVisible) {
         drawStickman(stickX, stickY, time);
-        
+
+        // Help text above stickman during exploration
+        if (phase === 'exploring' || phase === 'bossWait') {
+          ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#ef4444';
+          ctx.globalAlpha = 0.5 + Math.sin(time*0.01)*0.5;
+          ctx.fillText('CLICK TO SHOOT!', stickX, stickY - 60);
+          ctx.globalAlpha = 1.0;
+        }
+
         if (phase === 'collecting') {
           ctx.save(); ctx.translate(stickX, stickY);
           if (isBoss) {
@@ -466,14 +488,24 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
         }
       }
 
-      // Particles & Bones Loop
+      // Render Particles & Bones
       for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i]; p.life -= 16; ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
-        if (p.type === 'spark') { p.x+=p.vx; p.y+=p.vy; ctx.fillStyle='#eab308'; ctx.fillRect(p.x,p.y,4,4); }
+
+        if (p.type === 'smoke') {
+          p.x += p.vx; p.y += p.vy;
+          p.vx *= 0.9; p.vy *= 0.9;
+          const size = (1 - p.life / p.maxLife) * 30 + 10;
+          ctx.fillStyle = `rgba(148, 163, 184, ${(p.life / p.maxLife) * 0.6})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0, size), 0, Math.PI*2); ctx.fill();
+        }
+        else if (p.type === 'spark') { p.x+=p.vx; p.y+=p.vy; ctx.fillStyle='#eab308'; ctx.fillRect(p.x,p.y,4,4); }
         else if (p.type === 'dust') { p.x+=p.vx; p.y+=p.vy; p.vx*=0.9; ctx.fillStyle='#cbd5e1'; ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0, p.life/60), 0, Math.PI*2); ctx.fill(); }
         else if (p.type === 'slash') { ctx.strokeStyle='#ef4444'; ctx.lineWidth=2; const prog=1-(p.life/p.maxLife); ctx.beginPath(); ctx.moveTo(p.x+Math.cos(p.angle)*p.length*prog, p.y+Math.sin(p.angle)*p.length*prog); ctx.lineTo(p.x+Math.cos(p.angle)*p.length, p.y+Math.sin(p.angle)*p.length); ctx.stroke(); }
+
         ctx.globalAlpha = 1.0; if (p.life <= 0) particles.splice(i,1);
       }
+
       ctx.strokeStyle = isBoss ? '#dc2626' : '#000000'; ctx.lineWidth = 8 * scale; ctx.lineCap = 'round';
       for (let i = bones.length - 1; i >= 0; i--) {
         let b = bones[i]; b.x+=b.vx; b.y+=b.vy; b.vy+=0.8; b.angle+=b.angVel; b.life-=16;
@@ -484,83 +516,91 @@ const CanvasGame = ({ pointData, onPointComplete }) => {
         ctx.restore(); if (b.life <= 0) bones.splice(i,1);
       }
 
-      ctx.restore(); 
+      ctx.restore();
 
-      // Reticle
+      // Laser Reticle cursor
       ctx.beginPath(); ctx.arc(mouseRef.current.x, mouseRef.current.y, 3, 0, Math.PI*2); ctx.fillStyle = 'rgba(239, 68, 68, 0.8)'; ctx.fill();
       ctx.beginPath(); ctx.arc(mouseRef.current.x, mouseRef.current.y, 10, 0, Math.PI*2); ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mouseRef.current.x - 15, mouseRef.current.y); ctx.lineTo(mouseRef.current.x + 15, mouseRef.current.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mouseRef.current.x, mouseRef.current.y - 15); ctx.lineTo(mouseRef.current.x, mouseRef.current.y + 15); ctx.stroke();
 
       animationFrameId = requestAnimationFrame(render);
     };
 
     animationFrameId = requestAnimationFrame(render);
-    return () => { cancelAnimationFrame(animationFrameId); window.removeEventListener('resize', handleResize); };
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousedown', handleMouseClick);
+    };
   }, [pointData, onPointComplete]);
 
-  return <canvas ref={canvasRef} className="z-0 absolute inset-0 bg-[#f8fafc] cursor-none" onMouseMove={(e) => mouseRef.current = {x: e.clientX, y: e.clientY}} />;
+  return <canvas ref={canvasRef} className="absolute inset-0 z-0 bg-[#f8fafc] cursor-none" onMouseMove={(e) => mouseRef.current = {x: e.clientX, y: e.clientY}} />;
 };
 
 export default function App() {
-  const [gameState, setGameState] = useState('intro'); 
+  const [gameState, setGameState] = useState('intro');
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
   const [shuffledPoints, setShuffledPoints] = useState([]);
 
   const startGame = () => {
     if (audioCtx?.state === 'suspended') audioCtx.resume();
-    
+
     // Shuffle points 0-7, keep 8 (Boss) at the end
     const minions = POINTS.slice(0, 8);
     const randomized = shuffleArray(minions);
-    randomized.push(POINTS[8]); 
-    
+    randomized.push(POINTS[8]);
+
     setShuffledPoints(randomized);
     setGameState('playing');
     setCurrentPointIndex(0);
   };
 
   return (
-    <div className="relative bg-[#f8fafc] w-full h-screen overflow-hidden font-sans text-slate-800 select-none">
-      {gameState === 'intro' && (
-        <div className="z-50 absolute inset-0 flex justify-center items-center">
-          <div className="bg-white shadow-2xl p-10 border-4 border-slate-900 rounded-xl max-w-lg text-center">
-            <h1 className="mb-2 font-black text-slate-900 text-4xl uppercase tracking-tight">Animator Lock-On</h1>
-            <p className="mb-6 font-medium text-slate-600 text-lg">
-              Track the stickmen as they parkour through the maze. When they stop, <strong className="text-red-600">stare them down</strong> to calibrate.
-            </p>
-            <button onClick={startGame} className="bg-slate-900 hover:bg-slate-800 px-8 py-4 rounded-lg w-full font-bold text-white text-xl uppercase tracking-widest active:scale-95 transition-transform">
-              Initiate
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="w-full h-screen relative font-sans text-slate-800 overflow-hidden bg-[#f8fafc] select-none">
+        {gameState === 'intro' && (
+            <div className="absolute inset-0 flex items-center justify-center z-50">
+              <div className="text-center max-w-lg p-10 bg-white rounded-xl shadow-2xl border-4 border-slate-900">
+                <h1 className="text-4xl font-black mb-2 uppercase tracking-tight text-slate-900">Animator Lock-On</h1>
+                <p className="text-lg text-slate-600 mb-6 font-medium">
+                  1. <strong>Click</strong> the exploring stickmen to shoot them with your laser.<br/><br/>
+                  2. They will teleport and dash. When they stop, <strong className="text-red-600">stare them down</strong> to calibrate your eye-tracker.
+                </p>
+                <button onClick={startGame} className="px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xl w-full uppercase tracking-widest transition-transform active:scale-95">
+                  Initiate Tracker
+                </button>
+              </div>
+            </div>
+        )}
 
-      {gameState === 'playing' && shuffledPoints.length > 0 && (
-        <>
-          <div className="top-6 left-1/2 z-10 absolute flex gap-3 -translate-x-1/2 pointer-events-none">
-            {shuffledPoints.map((_, idx) => (
-              <div key={idx} className={`w-3 h-3 transform rotate-45 border-2 border-slate-900 transition-colors ${
-                idx < currentPointIndex ? 'bg-slate-900' : idx === currentPointIndex ? 'bg-red-500 scale-150' : 'bg-white'
-              }`} />
-            ))}
-          </div>
-          <CanvasGame 
-            pointData={shuffledPoints[currentPointIndex]} 
-            onPointComplete={() => currentPointIndex < shuffledPoints.length - 1 ? setCurrentPointIndex(p => p + 1) : setGameState('complete')} 
-          />
-        </>
-      )}
+        {gameState === 'playing' && shuffledPoints.length > 0 && (
+            <>
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 flex gap-3 z-10 pointer-events-none">
+                {shuffledPoints.map((_, idx) => (
+                    <div key={idx} className={`w-3 h-3 transform rotate-45 border-2 border-slate-900 transition-colors ${
+                        idx < currentPointIndex ? 'bg-slate-900' : idx === currentPointIndex ? 'bg-red-500 scale-150' : 'bg-white'
+                    }`} />
+                ))}
+              </div>
+              <CanvasGame
+                  pointData={shuffledPoints[currentPointIndex]}
+                  onPointComplete={() => currentPointIndex < shuffledPoints.length - 1 ? setCurrentPointIndex(p => p + 1) : setGameState('complete')}
+              />
+            </>
+        )}
 
-      {gameState === 'complete' && (
-        <div className="z-50 absolute inset-0 flex justify-center items-center">
-          <div className="bg-white shadow-2xl p-10 border-4 border-slate-900 rounded-xl max-w-lg text-center">
-            <h1 className="mb-4 font-black text-slate-900 text-4xl uppercase">System Calibrated</h1>
-            <p className="mb-8 font-medium text-slate-600 text-xl">Eye tracking matrices locked. Ready for reading analysis.</p>
-            <button onClick={() => setGameState('intro')} className="bg-slate-200 hover:bg-slate-300 px-8 py-3 rounded-lg font-bold text-slate-900 uppercase tracking-widest transition-colors">
-              Recalibrate
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+        {gameState === 'complete' && (
+            <div className="absolute inset-0 flex items-center justify-center z-50">
+              <div className="text-center max-w-lg p-10 bg-white rounded-xl shadow-2xl border-4 border-slate-900">
+                <h1 className="text-4xl font-black mb-4 text-slate-900 uppercase">System Calibrated</h1>
+                <p className="text-xl text-slate-600 mb-8 font-medium">Eye tracking matrices locked. Ready for reading analysis.</p>
+                <button onClick={() => setGameState('intro')} className="px-8 py-3 bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold rounded-lg uppercase tracking-widest transition-colors">
+                  Recalibrate
+                </button>
+              </div>
+            </div>
+        )}
+      </div>
   );
 }

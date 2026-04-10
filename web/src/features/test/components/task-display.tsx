@@ -169,9 +169,8 @@ export function TaskDisplay({
     const container = paragraphContainerRef.current;
     const hasOverflow = container.scrollHeight > container.clientHeight;
 
-    if (hasOverflow) {
-      const message = `[OVERFLOW] Text exceeds AOI bounds - Container: ${container.clientHeight}px, Content: ${container.scrollHeight}px`;
-      console.error(message);
+    if (hasOverflow && process.env.NODE_ENV === 'development') {
+      console.warn(`[TaskDisplay] Text exceeds AOI bounds — Container: ${container.clientHeight}px, Content: ${container.scrollHeight}px`);
     }
   }, [isShortContent, content]);
 

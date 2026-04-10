@@ -13,6 +13,7 @@ import {
   ResultsDisplay,
   ErrorScreen,
   ScreenGuard,
+  TestErrorBoundary,
 } from '@/features/test/components';
 import { useTestFlow, useTobiiGazeStream } from '@/features/test/hooks';
 import { submitTobiiTest } from '@/features/test/actions/submit-test';
@@ -21,15 +22,9 @@ import { TOBII_STEPS, getStepKeyForState } from '@/features/test/lib/constants';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import type { TobiiGazePoint, TobiiTestFlowState, CalibrationResult } from '@/features/test/types';
 import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
+import { parseCalibrationMode } from '@/features/test/lib/parse-calibration-mode';
 
 type TobiiTaskKey = 'syllables' | 'pseudo-words' | 'meaningful-text';
-
-function parseCalibrationMode(rawMode: string | null): CalibrationVisualMode | undefined {
-  if (rawMode === 'grid' || rawMode === 'stickman' || rawMode === 'star') {
-    return rawMode;
-  }
-  return undefined;
-}
 
 export default function TobiiTestPage() {
   const router = useRouter();
@@ -394,19 +389,21 @@ export default function TobiiTestPage() {
   };
 
   return (
-    <ScreenGuard>
-      <FullscreenShell onExit={handleExit} showExit={tobiiState.currentState !== 'results'}>
-        {tobiiState.currentState !== 'idle' &&
-          tobiiState.currentState !== 'calibrating' &&
-          !['task-syllables', 'task-pseudo-words', 'task-meaningful-text'].includes(
-            tobiiState.currentState,
-          ) && (
-            <div className="mb-8">
-              <StepIndicator steps={steps} currentStepKey={currentStepKey} />
-            </div>
-          )}
-        {renderState()}
-      </FullscreenShell>
-    </ScreenGuard>
+    <TestErrorBoundary>
+      <ScreenGuard>
+        <FullscreenShell onExit={handleExit} showExit={tobiiState.currentState !== 'results'}>
+          {tobiiState.currentState !== 'idle' &&
+            tobiiState.currentState !== 'calibrating' &&
+            !['task-syllables', 'task-pseudo-words', 'task-meaningful-text'].includes(
+              tobiiState.currentState,
+            ) && (
+              <div className="mb-8">
+                <StepIndicator steps={steps} currentStepKey={currentStepKey} />
+              </div>
+            )}
+          {renderState()}
+        </FullscreenShell>
+      </ScreenGuard>
+    </TestErrorBoundary>
   );
 }

@@ -250,8 +250,10 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
       if (landmarks.length < 478) return null;
       const left = landmarks[468];
       const right = landmarks[473];
+      // Mirror x-axis: MediaPipe uses camera-space coordinates where
+      // looking left moves the iris right in the image (selfie camera).
       return {
-        x: (left.x + right.x) / 2,
+        x: 1 - (left.x + right.x) / 2,
         y: (left.y + right.y) / 2,
       };
     },

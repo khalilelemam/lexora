@@ -14,6 +14,7 @@ import {
   ErrorScreen,
   ScreenGuard,
   GazeDebugDot,
+  TestErrorBoundary,
 } from '@/features/test/components';
 import { useTestFlow, useWebcamGaze } from '@/features/test/hooks';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
@@ -26,13 +27,7 @@ import type {
   CalibrationResult,
 } from '@/features/test/types';
 import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
-
-function parseCalibrationMode(rawMode: string | null): CalibrationVisualMode | undefined {
-  if (rawMode === 'grid' || rawMode === 'stickman' || rawMode === 'star') {
-    return rawMode;
-  }
-  return undefined;
-}
+import { parseCalibrationMode } from '@/features/test/lib/parse-calibration-mode';
 
 export default function WebcamTestPage() {
   const router = useRouter();
@@ -323,7 +318,8 @@ export default function WebcamTestPage() {
   };
 
   return (
-    <ScreenGuard>
+    <TestErrorBoundary>
+      <ScreenGuard>
       <FullscreenShell onExit={handleExit} showExit={webcamState.currentState !== 'results'}>
         {/* Hidden video element for MediaPipe — always in DOM */}
         <video
@@ -348,5 +344,6 @@ export default function WebcamTestPage() {
         />
       </FullscreenShell>
     </ScreenGuard>
+    </TestErrorBoundary>
   );
 }

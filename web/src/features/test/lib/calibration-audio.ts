@@ -33,11 +33,15 @@ interface CalibrationAudioEngine {
 
 // Debounce configuration per sound type (ms)
 const DEBOUNCE_MS: Partial<Record<SoundType, number>> = {
-  step: 200,       // Footsteps shouldn't spam
-  hit: 150,        // Hit sparks limited
-  scanTick: 100,   // Progress ticks limited
-  dash: 200,       // Dash whoosh limited
-  magicSparkle: 150,
+  step: 350,          // Footsteps — generous gap to avoid machine-gun effect
+  hit: 250,           // Hit sparks limited
+  scanTick: 180,      // Progress ticks limited
+  dash: 300,          // Dash whoosh limited
+  magicSparkle: 250,
+  jump: 200,
+  land: 200,
+  obstacleBreak: 200,
+  skid: 250,
 };
 
 // Track last play time for debouncing
@@ -243,78 +247,81 @@ function playChord(
 
 const soundHandlers: Record<SoundType, (options?: { progress?: number }) => void> = {
   spawn: () => {
-    playTone(600, 'sine', 0.12, 0.03, 900);
+    playTone(330, 'sine', 0.25, 0.04, 660);
+    playTone(440, 'triangle', 0.2, 0.02, 550);
   },
 
   bossSpawn: () => {
-    playTone(120, 'sawtooth', 0.6, 0.08, 60);
-    playNoise(0.3, 0.05, 'lowpass', 200, 50);
+    playTone(130, 'triangle', 0.4, 0.05, 260);
+    playChord([130, 195, 260], 'sine', 0.35, 0.025);
   },
 
   dash: () => {
-    playNoise(0.08, 0.03, 'highpass', 3000, 1500);
+    playNoise(0.12, 0.025, 'highpass', 2500, 600);
+    playTone(500, 'sine', 0.08, 0.015, 800);
   },
 
   jump: () => {
-    playTone(350, 'sine', 0.15, 0.03, 550);
+    playTone(400, 'sine', 0.18, 0.03, 800);
   },
 
   land: () => {
-    playNoise(0.08, 0.03, 'lowpass', 300, 80);
+    playTone(150, 'sine', 0.1, 0.025, 80);
   },
 
   bossLand: () => {
-    playNoise(0.35, 0.12, 'lowpass', 250, 40);
-    playTone(70, 'sawtooth', 0.25, 0.06, 35);
+    playTone(90, 'triangle', 0.18, 0.04, 50);
+    playNoise(0.12, 0.025, 'lowpass', 350, 80);
   },
 
   step: () => {
-    playNoise(0.04, 0.01, 'highpass', 4000, 2500);
+    // Very subtle soft tap — barely audible to avoid annoyance
+    playTone(120, 'sine', 0.04, 0.008, 70);
   },
 
   skid: () => {
-    playNoise(0.15, 0.05, 'highpass', 1800, 600);
+    playNoise(0.1, 0.02, 'bandpass', 1800, 600);
   },
 
   obstacleBreak: () => {
-    playNoise(0.15, 0.08, 'lowpass', 1500, 150);
-    playTone(180, 'square', 0.08, 0.05, 40);
+    playNoise(0.15, 0.04, 'lowpass', 1200, 150);
+    playTone(220, 'triangle', 0.1, 0.03, 60);
   },
 
   hit: () => {
-    playTone(900, 'square', 0.04, 0.025, 200);
+    playTone(600, 'sine', 0.06, 0.02, 300);
   },
 
   scanTick: (options) => {
     const progress = options?.progress ?? 0;
-    // Higher pitch as progress increases
-    playTone(350 + progress * 400, 'sine', 0.04, 0.012);
+    // Gentle ascending tone that gets brighter with progress
+    playTone(440 + progress * 300, 'sine', 0.05, 0.01);
   },
 
   shatter: () => {
-    playNoise(0.3, 0.18, 'lowpass', 600, 80);
-    playTone(90, 'sawtooth', 0.25, 0.1, 25);
+    playNoise(0.25, 0.08, 'lowpass', 500, 80);
+    playTone(110, 'triangle', 0.2, 0.05, 30);
   },
 
   collect: () => {
-    // Gentle ascending chime
-    playChord([523, 659, 784], 'sine', 0.2, 0.03);
+    // Gentle ascending chime — pleasant bell-like tones
+    playChord([523, 659, 784], 'sine', 0.25, 0.02);
   },
 
   magicSparkle: () => {
-    playTone(1000, 'sine', 0.12, 0.015, 1500);
-    setTimeout(() => playTone(1300, 'sine', 0.1, 0.012, 1800), 40);
+    playTone(880, 'sine', 0.15, 0.012, 1320);
+    setTimeout(() => playTone(1100, 'sine', 0.12, 0.01, 1650), 60);
   },
 
   chestOpen: () => {
-    playChord([392, 494, 587], 'triangle', 0.25, 0.04);
+    playChord([392, 494, 587], 'sine', 0.3, 0.025);
   },
 
   success: () => {
-    // Rising triumphant arpeggio
+    // Gentle rising arpeggio
     const notes = [523, 659, 784, 1047];
     notes.forEach((freq, i) => {
-      setTimeout(() => playTone(freq, 'sine', 0.18, 0.025), i * 70);
+      setTimeout(() => playTone(freq, 'sine', 0.22, 0.02), i * 90);
     });
   },
 };

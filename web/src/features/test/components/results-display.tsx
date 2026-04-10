@@ -60,7 +60,6 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
   const Icon = config.icon;
   const probabilityPercent = Math.round(result.dyslexiaProbability * 100);
   const confidencePercent = Math.round(result.confidence * 100);
-  console.log('Prediction Result:', result); // Debug log for prediction result
   return (
     <div className="flex w-full max-w-2xl flex-col items-center gap-6">
       {/* Risk Level Header */}

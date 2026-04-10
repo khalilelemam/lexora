@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300">
+  <rect width="480" height="300" fill="#fef3f0" rx="8"/>
+  <!-- stickman -->
+  <circle cx="240" cy="80" r="20" fill="none" stroke="#e11d48" stroke-width="3"/>
+  <line x1="240" y1="100" x2="240" y2="180" stroke="#e11d48" stroke-width="3"/>
+  <line x1="240" y1="130" x2="210" y2="155" stroke="#e11d48" stroke-width="3"/>
+  <line x1="240" y1="130" x2="270" y2="155" stroke="#e11d48" stroke-width="3"/>
+  <line x1="240" y1="180" x2="215" y2="220" stroke="#e11d48" stroke-width="3"/>
+  <line x1="240" y1="180" x2="265" y2="220" stroke="#e11d48" stroke-width="3"/>
+  <!-- gaze beam -->
+  <line x1="160" y1="80" x2="220" y2="80" stroke="#f97316" stroke-width="2" stroke-dasharray="4 3" opacity="0.5"/>
+  <circle cx="150" cy="80" r="8" fill="#f97316" opacity="0.3"/>
+  <!-- health bar -->
+  <rect x="180" y="240" width="120" height="10" rx="5" fill="#fecdd3"/>
+  <rect x="180" y="240" width="75" height="10" rx="5" fill="#e11d48" opacity="0.7"/>
+</svg>

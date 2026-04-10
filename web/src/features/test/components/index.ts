@@ -8,3 +8,4 @@ export { ErrorScreen } from './error-screen';
 export { ScreenGuard } from './screen-guard';
 export { GazeReplayViewer } from './gaze-replay-viewer';
 export { GazeDebugDot } from './gaze-debug-dot';
+export { TestErrorBoundary } from './test-error-boundary';

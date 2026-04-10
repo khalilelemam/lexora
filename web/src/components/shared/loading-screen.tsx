@@ -1,25 +1,30 @@
-import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LexoraLogo } from './lexora-logo';
 
 interface LoadingScreenProps {
   message?: string;
   className?: string;
 }
 
-/**
- * Child-friendly loading screen with animated spinner and positive messaging.
- */
 export function LoadingScreen({
   message = 'Getting things ready...',
   className,
 }: LoadingScreenProps) {
   return (
     <div
-      className={cn('flex flex-col items-center justify-center gap-4', className)}
+      className={cn('flex flex-col items-center justify-center gap-6', className)}
       style={{ minHeight: 400 }}
     >
-      <Loader2 className="text-primary h-10 w-10 animate-spin" />
-      <p className="text-muted-foreground text-lg font-medium">{message}</p>
+      <LexoraLogo size="lg" animate showText={false} />
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-foreground text-lg font-medium">{message}</p>
+        <div className="mt-2 h-1 w-48 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full w-1/3 rounded-full bg-linear-to-r from-primary to-accent"
+            style={{ animation: 'shimmer 1.5s ease-in-out infinite' }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
