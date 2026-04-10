@@ -15,6 +15,7 @@ const NAV_LINKS: NavLink[] = [
   { label: 'Features', type: 'scroll', href: '#features' },
   { label: 'How It Works', type: 'scroll', href: '#how-it-works' },
   { label: 'About', type: 'page', href: '/about' },
+  { label: 'FAQ', type: 'page', href: '/faq' },
   { label: 'Privacy', type: 'page', href: '/privacy' },
 ];
 

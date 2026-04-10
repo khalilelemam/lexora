@@ -13,6 +13,10 @@ interface CameraSetupProps {
   onReady: () => void;
 }
 
+/**
+ * Camera setup with live preview, face positioning guide overlay,
+ * status checklist, and positioning tips.
+ */
 export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps) {
   const previewRef = useRef<HTMLVideoElement>(null);
   const [initializing, setInitializing] = useState(false);
@@ -73,7 +77,7 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
         </p>
       </div>
 
-      {/* Camera preview */}
+      {/* Camera preview with face positioning guide */}
       <div className="relative w-full max-w-md overflow-hidden rounded-2xl border shadow-sm bg-muted">
         <div className="relative aspect-4/3">
           <video
@@ -98,6 +102,12 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
               )}
             </div>
           )}
+
+          {/* Face positioning overlay */}
+          {cameraReady && (
+            <FacePositionGuide />
+          )}
+
           {cameraReady && (
             <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-emerald-600/90 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
               <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
@@ -133,6 +143,7 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
           <li>Make sure your face is well-lit (avoid backlighting)</li>
           <li>Remove glasses if possible (reflections can interfere)</li>
           <li>Keep your head relatively still during the test</li>
+          <li>Center your face within the oval guide above</li>
         </ul>
       </div>
 
@@ -152,6 +163,66 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
           {allReady ? 'Continue to Calibration' : 'Waiting for setup...'}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * SVG overlay showing the optimal face position zone.
+ *
+ * Renders a semi-transparent oval in the center of the camera preview
+ * with corner bracket indicators. Users should align their face within
+ * the oval for optimal iris tracking.
+ */
+function FacePositionGuide() {
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      <svg className="w-full h-full" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+        {/* Semi-transparent mask outside the oval */}
+        <defs>
+          <mask id="face-mask">
+            <rect width="400" height="300" fill="white" />
+            <ellipse cx="200" cy="140" rx="80" ry="100" fill="black" />
+          </mask>
+        </defs>
+        <rect width="400" height="300" fill="black" opacity="0.15" mask="url(#face-mask)" />
+
+        {/* Oval guide border */}
+        <ellipse
+          cx="200"
+          cy="140"
+          rx="80"
+          ry="100"
+          fill="none"
+          stroke="oklch(0.70 0.10 115)"
+          strokeWidth="1.5"
+          strokeDasharray="8 4"
+          opacity="0.6"
+        />
+
+        {/* Corner brackets */}
+        {/* Top-left */}
+        <path d="M140 60 L120 60 L120 80" fill="none" stroke="oklch(0.70 0.10 115)" strokeWidth="2" opacity="0.7" />
+        {/* Top-right */}
+        <path d="M260 60 L280 60 L280 80" fill="none" stroke="oklch(0.70 0.10 115)" strokeWidth="2" opacity="0.7" />
+        {/* Bottom-left */}
+        <path d="M120 220 L120 240 L140 240" fill="none" stroke="oklch(0.70 0.10 115)" strokeWidth="2" opacity="0.7" />
+        {/* Bottom-right */}
+        <path d="M260 240 L280 240 L280 220" fill="none" stroke="oklch(0.70 0.10 115)" strokeWidth="2" opacity="0.7" />
+
+        {/* Label */}
+        <text
+          x="200"
+          y="270"
+          textAnchor="middle"
+          fill="oklch(0.70 0.10 115)"
+          fontSize="11"
+          fontFamily="sans-serif"
+          opacity="0.7"
+        >
+          Align your face within the oval
+        </text>
+      </svg>
     </div>
   );
 }

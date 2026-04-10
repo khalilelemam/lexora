@@ -1,6 +1,12 @@
 /**
- * Calibration Audio System with debouncing and optional external audio files.
- * 
+ * Calibration Audio System — Map-based synthesis registry with debouncing.
+ *
+ * Architecture:
+ * - AudioContext + master gain + per-sound gain chain
+ * - Map-based sound registry (replaces object literal for O(1) lookup + extensibility)
+ * - Optional external audio file loading with synthesis fallback
+ * - Per-sound debouncing to prevent audio spam
+ *
  * For production, audio files should be placed in /public/audio/calibration/
  * Sound synthesis is used as fallback when files aren't available.
  */
@@ -31,42 +37,23 @@ interface CalibrationAudioEngine {
   setVolume: (volume: number) => void;
 }
 
-// Debounce configuration per sound type (ms)
-const DEBOUNCE_MS: Partial<Record<SoundType, number>> = {
-  step: 350,          // Footsteps — generous gap to avoid machine-gun effect
-  hit: 250,           // Hit sparks limited
-  scanTick: 180,      // Progress ticks limited
-  dash: 300,          // Dash whoosh limited
-  magicSparkle: 250,
-  jump: 200,
-  land: 200,
-  obstacleBreak: 200,
-  skid: 250,
-};
-
-// Track last play time for debouncing
-const lastPlayTime: Map<SoundType, number> = new Map();
+/* ── Audio context singleton ─────────────────────────── */
 
 let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let muted = false;
 let masterVolume = 0.5;
 
-// Audio file cache
-const audioBuffers: Map<string, AudioBuffer> = new Map();
-const loadingPromises: Map<string, Promise<AudioBuffer | null>> = new Map();
-
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
 
   if (!audioCtx) {
-    const AudioContextCtor =
+    const Ctor =
       window.AudioContext ||
       (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextCtor) return null;
-    audioCtx = new AudioContextCtor();
-    
-    // Create master gain node
+    if (!Ctor) return null;
+    audioCtx = new Ctor();
+
     masterGain = audioCtx.createGain();
     masterGain.gain.value = masterVolume;
     masterGain.connect(audioCtx.destination);
@@ -76,26 +63,56 @@ function getAudioContext(): AudioContext | null {
 }
 
 function getMasterGain(): GainNode | null {
-  getAudioContext(); // Ensure context and gain are created
+  getAudioContext();
   return masterGain;
 }
 
-/**
- * Load an audio file and cache it.
- */
+/* ── Debounce ────────────────────────────────────────── */
+
+const DEBOUNCE_MS = new Map<SoundType, number>([
+  ['step', 350],
+  ['hit', 250],
+  ['scanTick', 180],
+  ['dash', 300],
+  ['magicSparkle', 250],
+  ['jump', 200],
+  ['land', 200],
+  ['obstacleBreak', 200],
+  ['skid', 250],
+]);
+
+const lastPlayTime = new Map<SoundType, number>();
+
+function shouldPlay(sound: SoundType): boolean {
+  if (muted) return false;
+
+  const debounceMs = DEBOUNCE_MS.get(sound);
+  if (!debounceMs) return true;
+
+  const now = performance.now();
+  const last = lastPlayTime.get(sound) ?? 0;
+
+  if (now - last < debounceMs) return false;
+
+  lastPlayTime.set(sound, now);
+  return true;
+}
+
+/* ── Audio file cache ────────────────────────────────── */
+
+const audioBuffers = new Map<string, AudioBuffer>();
+const loadingPromises = new Map<string, Promise<AudioBuffer | null>>();
+
 async function loadAudioFile(path: string): Promise<AudioBuffer | null> {
   const ctx = getAudioContext();
   if (!ctx) return null;
 
-  // Check cache
   const cached = audioBuffers.get(path);
   if (cached) return cached;
 
-  // Check if already loading
   const existing = loadingPromises.get(path);
   if (existing) return existing;
 
-  // Start loading
   const promise = (async () => {
     try {
       const response = await fetch(path);
@@ -115,10 +132,7 @@ async function loadAudioFile(path: string): Promise<AudioBuffer | null> {
   return promise;
 }
 
-/**
- * Play a cached audio buffer.
- */
-function playBuffer(buffer: AudioBuffer, volume: number = 1): void {
+function playBuffer(buffer: AudioBuffer, volume = 1): void {
   const ctx = getAudioContext();
   const master = getMasterGain();
   if (!ctx || !master || muted) return;
@@ -134,27 +148,7 @@ function playBuffer(buffer: AudioBuffer, volume: number = 1): void {
   source.start();
 }
 
-/**
- * Check debounce and return true if sound should be played.
- */
-function shouldPlay(sound: SoundType): boolean {
-  if (muted) return false;
-
-  const debounceMs = DEBOUNCE_MS[sound];
-  if (!debounceMs) return true;
-
-  const now = performance.now();
-  const last = lastPlayTime.get(sound) ?? 0;
-  
-  if (now - last < debounceMs) {
-    return false;
-  }
-
-  lastPlayTime.set(sound, now);
-  return true;
-}
-
-// ============== SYNTHESIS FUNCTIONS ==============
+/* ── Synthesis primitives ────────────────────────────── */
 
 function playTone(
   freq: number,
@@ -179,7 +173,6 @@ function playTone(
     );
   }
 
-  // Smooth envelope to avoid clicks
   gain.gain.setValueAtTime(0, ctx.currentTime);
   gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.01);
   gain.gain.setValueAtTime(volume, ctx.currentTime + duration * 0.7);
@@ -242,123 +235,128 @@ function playChord(
   }
 }
 
-// ============== SOUND HANDLERS ==============
-// These provide synthesis fallbacks. External audio files take priority.
+/* ── Sound registry (Map-based) ──────────────────────── */
 
-const soundHandlers: Record<SoundType, (options?: { progress?: number }) => void> = {
-  spawn: () => {
+type SoundHandler = (options?: { progress?: number }) => void;
+
+/**
+ * Map-based registry of synthesis handlers.
+ *
+ * Advantages over the previous object literal:
+ * - O(1) lookup with type-safe keys
+ * - Easy to extend at runtime (e.g., register custom sounds)
+ * - Consistent with the debounce/cache Maps above
+ */
+const soundRegistry = new Map<SoundType, SoundHandler>([
+  ['spawn', () => {
     playTone(330, 'sine', 0.25, 0.04, 660);
     playTone(440, 'triangle', 0.2, 0.02, 550);
-  },
+  }],
 
-  bossSpawn: () => {
+  ['bossSpawn', () => {
     playTone(130, 'triangle', 0.4, 0.05, 260);
     playChord([130, 195, 260], 'sine', 0.35, 0.025);
-  },
+  }],
 
-  dash: () => {
+  ['dash', () => {
     playNoise(0.12, 0.025, 'highpass', 2500, 600);
     playTone(500, 'sine', 0.08, 0.015, 800);
-  },
+  }],
 
-  jump: () => {
+  ['jump', () => {
     playTone(400, 'sine', 0.18, 0.03, 800);
-  },
+  }],
 
-  land: () => {
+  ['land', () => {
     playTone(150, 'sine', 0.1, 0.025, 80);
-  },
+  }],
 
-  bossLand: () => {
+  ['bossLand', () => {
     playTone(90, 'triangle', 0.18, 0.04, 50);
     playNoise(0.12, 0.025, 'lowpass', 350, 80);
-  },
+  }],
 
-  step: () => {
+  ['step', () => {
     // Very subtle soft tap — barely audible to avoid annoyance
     playTone(120, 'sine', 0.04, 0.008, 70);
-  },
+  }],
 
-  skid: () => {
+  ['skid', () => {
     playNoise(0.1, 0.02, 'bandpass', 1800, 600);
-  },
+  }],
 
-  obstacleBreak: () => {
+  ['obstacleBreak', () => {
     playNoise(0.15, 0.04, 'lowpass', 1200, 150);
     playTone(220, 'triangle', 0.1, 0.03, 60);
-  },
+  }],
 
-  hit: () => {
+  ['hit', () => {
     playTone(600, 'sine', 0.06, 0.02, 300);
-  },
+  }],
 
-  scanTick: (options) => {
+  ['scanTick', (options) => {
     const progress = options?.progress ?? 0;
-    // Gentle ascending tone that gets brighter with progress
     playTone(440 + progress * 300, 'sine', 0.05, 0.01);
-  },
+  }],
 
-  shatter: () => {
+  ['shatter', () => {
     playNoise(0.25, 0.08, 'lowpass', 500, 80);
     playTone(110, 'triangle', 0.2, 0.05, 30);
-  },
+  }],
 
-  collect: () => {
-    // Gentle ascending chime — pleasant bell-like tones
+  ['collect', () => {
     playChord([523, 659, 784], 'sine', 0.25, 0.02);
-  },
+  }],
 
-  magicSparkle: () => {
+  ['magicSparkle', () => {
     playTone(880, 'sine', 0.15, 0.012, 1320);
     setTimeout(() => playTone(1100, 'sine', 0.12, 0.01, 1650), 60);
-  },
+  }],
 
-  chestOpen: () => {
+  ['chestOpen', () => {
     playChord([392, 494, 587], 'sine', 0.3, 0.025);
-  },
+  }],
 
-  success: () => {
-    // Gentle rising arpeggio
+  ['success', () => {
     const notes = [523, 659, 784, 1047];
     notes.forEach((freq, i) => {
       setTimeout(() => playTone(freq, 'sine', 0.22, 0.02), i * 90);
     });
-  },
-};
+  }],
+]);
 
-// Audio file paths (when available)
-const AUDIO_FILE_PATHS: Partial<Record<SoundType, string>> = {
-  // These paths are for when external audio files are added
-  // spawn: '/audio/calibration/spawn.mp3',
-  // collect: '/audio/calibration/collect.mp3',
-  // etc.
-};
+/* ── Audio file paths (when available) ───────────────── */
+
+const audioFilePaths = new Map<SoundType, string>([
+  // These entries are for when external audio files are added:
+  // ['spawn', '/audio/calibration/spawn.mp3'],
+  // ['collect', '/audio/calibration/collect.mp3'],
+]);
+
+/* ── Engine factory ──────────────────────────────────── */
 
 export function createCalibrationAudioEngine(): CalibrationAudioEngine {
   return {
-    play(sound: SoundType, options?: { progress?: number }) {
+    play(sound, options) {
       if (!shouldPlay(sound)) return;
 
       // Try external audio file first
-      const filePath = AUDIO_FILE_PATHS[sound];
+      const filePath = audioFilePaths.get(sound);
       if (filePath) {
         const buffer = audioBuffers.get(filePath);
         if (buffer) {
           playBuffer(buffer, 1);
           return;
         }
-        // Async load for next time
         loadAudioFile(filePath);
       }
 
       // Fall back to synthesis
-      const handler = soundHandlers[sound];
-      if (handler) {
-        handler(options);
-      }
+      const handler = soundRegistry.get(sound);
+      handler?.(options);
     },
 
-    setMuted(newMuted: boolean) {
+    setMuted(newMuted) {
       muted = newMuted;
     },
 
@@ -366,7 +364,7 @@ export function createCalibrationAudioEngine(): CalibrationAudioEngine {
       return muted;
     },
 
-    setVolume(volume: number) {
+    setVolume(volume) {
       masterVolume = Math.max(0, Math.min(1, volume));
       const gain = getMasterGain();
       if (gain) {
@@ -383,7 +381,8 @@ export function createCalibrationAudioEngine(): CalibrationAudioEngine {
   };
 }
 
-// Singleton instance for convenience
+/* ── Singleton ───────────────────────────────────────── */
+
 let engineInstance: CalibrationAudioEngine | null = null;
 
 export function getCalibrationAudio(): CalibrationAudioEngine {
@@ -398,6 +397,6 @@ export function getCalibrationAudio(): CalibrationAudioEngine {
  * Call this early in the calibration flow.
  */
 export async function preloadCalibrationAudio(): Promise<void> {
-  const paths = Object.values(AUDIO_FILE_PATHS);
-  await Promise.all(paths.map(path => loadAudioFile(path)));
+  const paths = Array.from(audioFilePaths.values());
+  await Promise.all(paths.map((path) => loadAudioFile(path)));
 }
