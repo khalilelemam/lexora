@@ -39,14 +39,11 @@ export function LexoraLogo({
   return (
     <div className={cn('flex items-center', s.gap, className)}>
       <Image
-        src="/images/lexora-icon.svg"
+        src="/images/lexora-logo.svg"
         alt="Lexora"
         width={iconW}
         height={s.iconH}
-        className={cn(
-          animate && 'animate-[lexora-pulse_2.4s_ease-in-out_infinite]',
-          color,
-        )}
+        className={cn(animate && 'animate-[lexora-pulse_2.4s_ease-in-out_infinite]', color)}
         priority
       />
       {showText && (
