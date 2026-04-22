@@ -92,10 +92,18 @@ export function CalibrationScreen({
     onGetHeadPoseSample,
   });
 
-  const { phase, currentPoint, currentPointIndex, collectionStep, collectionTotal, advancePoint } =
-    calibration;
+  const {
+    phase,
+    currentPoint,
+    currentPointIndex,
+    collectionStep,
+    collectionTotal,
+    recalibrationRound,
+    advancePoint,
+  } = calibration;
 
-  const [preValidationDismissed, setPreValidationDismissed] = useState(false);
+  const [dismissedValidationRound, setDismissedValidationRound] = useState<number | null>(null);
+  const preValidationDismissed = dismissedValidationRound === recalibrationRound;
 
   const calibrationAudio = useMemo(() => getCalibrationAudio(), []);
 
@@ -104,17 +112,6 @@ export function CalibrationScreen({
   const [previousPoint, setPreviousPoint] = useState<CalibrationPoint>(CALIBRATION_POINTS[0]);
   const captureCountRef = useRef(0);
   const stableFixationRef = useRef(false);
-  // Reset pre-validation dismissed when re-entering collecting after a recalibration round
-  const prevPhaseRef = useRef(phase);
-  useEffect(() => {
-    if (
-      (phase === 'collecting' || phase === 'recalibrating') &&
-      prevPhaseRef.current === 'validating'
-    ) {
-      setPreValidationDismissed(false);
-    }
-    prevPhaseRef.current = phase;
-  }, [phase]);
 
   useEffect(() => {
     captureCountRef.current = captureCount;
@@ -223,7 +220,7 @@ export function CalibrationScreen({
     resetEngine();
     setHasStartedCalibration(false);
     setCollectionIssue(null);
-    setPreValidationDismissed(false);
+    setDismissedValidationRound(null);
   }, [resetEngine]);
 
   const handleStartCalibration = useCallback(() => {
@@ -321,7 +318,7 @@ export function CalibrationScreen({
       <CalibrationPreValidation
         resolvedMode={resolvedMode}
         onReady={() => {
-          setPreValidationDismissed(true);
+          setDismissedValidationRound(recalibrationRound);
           startValidation();
         }}
       />
@@ -332,10 +329,10 @@ export function CalibrationScreen({
    *     Shows a spinner so the UI never flashes the wrong panel. */
   if (phase === 'validating' && quickValidation.phase === 'idle') {
     return (
-      <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[#FDF8F0] cursor-none">
+      <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#FDF8F0]">
         <div className="flex flex-col items-center gap-3">
-          <div className="border-[#4A7C59] border-3 border-t-transparent rounded-full w-8 h-8 animate-spin" />
-          <p className="text-[#8B857E] text-sm">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#4A7C59] border-t-transparent" />
+          <p className="text-sm text-[#8B857E]">
             {preValidationDismissed ? 'Preparing validation…' : 'Computing calibration…'}
           </p>
         </div>
@@ -360,7 +357,7 @@ export function CalibrationScreen({
   /* 6. Result */
   if (canFinalize && finalResult) {
     return (
-      <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[#FDF8F0] py-8 overflow-auto">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-[#FDF8F0] py-8">
         <CalibrationResultView
           result={finalResult}
           quickValidationAccuracy={quickValidation.accuracyPercent}
