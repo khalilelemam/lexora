@@ -63,6 +63,7 @@ export default function WebcamTestPage() {
   // Gaze data buffer
   const gazeDataRef = useRef<WebcamGazePoint[]>([]);
   const [gazePointCount, setGazePointCount] = useState(0);
+  const [reviewGazeData, setReviewGazeData] = useState<WebcamGazePoint[]>([]);
   const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
     null,
   );
@@ -105,6 +106,7 @@ export default function WebcamTestPage() {
       setTaskContent(content);
       gazeDataRef.current = [];
       setGazePointCount(0);
+      setReviewGazeData([]);
       setLastTaskGazePosition(null);
     },
     [dispatch, webcamGaze],
@@ -113,6 +115,7 @@ export default function WebcamTestPage() {
   const handleTaskDone = useCallback(() => {
     // Stop collecting — review panel shows raw gaze trail replay, not live feed
     webcamGaze.stopCollecting();
+    setReviewGazeData([...gazeDataRef.current]);
     dispatch({ type: 'TASK_COMPLETE' });
   }, [dispatch, webcamGaze]);
 
@@ -123,6 +126,7 @@ export default function WebcamTestPage() {
   const handleRetake = useCallback(() => {
     gazeDataRef.current = [];
     setGazePointCount(0);
+    setReviewGazeData([]);
     setLastTaskGazePosition(null);
     dispatch({ type: 'RETAKE' });
   }, [dispatch]);
@@ -169,6 +173,7 @@ export default function WebcamTestPage() {
   const handleNewTest = useCallback(() => {
     gazeDataRef.current = [];
     setGazePointCount(0);
+    setReviewGazeData([]);
     setLastTaskGazePosition(null);
     setTaskContent('');
     dispatch({ type: 'RESET' });
@@ -208,15 +213,15 @@ export default function WebcamTestPage() {
       case 'idle':
         return (
           <div className="flex flex-col items-center gap-6">
-            <h1 className="font-bold text-3xl">Webcam Eye Test</h1>
-            <p className="max-w-lg text-muted-foreground text-center">
+            <h1 className="text-3xl font-bold">Webcam Eye Test</h1>
+            <p className="text-muted-foreground max-w-lg text-center">
               This test uses your webcam to track eye movement while reading a paragraph. It&apos;s
               less accurate than a professional eye tracker but doesn&apos;t require special
               hardware.
             </p>
             <button
               onClick={() => dispatch({ type: 'START' })}
-              className="bg-primary hover:bg-primary/90 px-6 py-3 rounded-md font-medium text-primary-foreground text-lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-6 py-3 text-lg font-medium"
             >
               Start Test
             </button>
@@ -281,7 +286,7 @@ export default function WebcamTestPage() {
             onRetake={handleRetake}
             onContinue={handleContinue}
             readingContent={taskContent || getWebcamTaskContent()}
-            rawGazeData={gazeDataRef.current}
+            rawGazeData={reviewGazeData}
           />
         );
 
@@ -327,7 +332,7 @@ export default function WebcamTestPage() {
           {/* Hidden video element for MediaPipe — always in DOM */}
           <video
             ref={videoRef}
-            className="top-0 left-0 fixed opacity-[0.01] w-px h-px pointer-events-none"
+            className="pointer-events-none fixed top-0 left-0 h-px w-px opacity-[0.01]"
             autoPlay
             playsInline
             muted
