@@ -6,7 +6,6 @@ export interface CalibrationModeViewProps {
   previousPoint: CalibrationPoint;
   collectionStep: number;
   collectionTotal: number;
-  isBossPoint: boolean;
   fixationProgress: number;
   isStableFixation: boolean;
   capturePulse: boolean;

@@ -34,7 +34,6 @@ function NinjaFigure() {
  * Design changes:
  * - Warm cream background matching test environment
  * - Ninja theme (masked stickman, dark charcoal figure)
- * - No boss point — uniform size for all points
  * - Red "laser" lines when fixation is stable (gaze damage)
  * - HUD moved to bottom strip to keep calibration area unobstructed
  */
@@ -49,10 +48,10 @@ export function StickmanModeView({
   motionDurationMs,
 }: CalibrationModeViewProps) {
   return (
-    <div className="z-50 fixed inset-0 bg-[#FDF8F0] overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#FDF8F0]">
       {/* Subtle dark accent for ninja theme */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
             'repeating-linear-gradient(0deg, rgba(45,42,38,0.02) 0px, rgba(45,42,38,0.02) 1px, transparent 1px, transparent 28px),' +
@@ -78,11 +77,11 @@ export function StickmanModeView({
           scale: 1,
         }}
         transition={{ duration: motionDurationMs / 1000, ease: [0.4, 0, 0.2, 1] }}
-        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
       >
         <div
           className={cn(
-            'relative flex justify-center items-center rounded-full transition-all duration-200',
+            'relative flex items-center justify-center rounded-full transition-all duration-200',
             'h-22 w-22 border-2 border-[#2D2A26]/30 bg-[#2D2A26]/5',
             isStableFixation && 'shadow-[0_0_30px_rgba(220,38,38,0.25)]',
             capturePulse && 'scale-110',
@@ -107,18 +106,27 @@ export function StickmanModeView({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 pointer-events-none"
+              className="pointer-events-none absolute inset-0"
             >
-              <div className="top-[34%] left-[38%] absolute bg-red-500/60 w-[24%] h-0.5 rounded-full" />
-              <div className="top-[40%] left-[40%] absolute bg-red-400/50 w-[20%] h-0.5 rounded-full" />
+              <div className="absolute top-[34%] left-[38%] h-0.5 w-[24%] rounded-full bg-red-500/60" />
+              <div className="absolute top-[40%] left-[40%] h-0.5 w-[20%] rounded-full bg-red-400/50" />
             </motion.div>
           )}
 
           {/* Progress ring */}
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(220,38,38,0.1)" strokeWidth="3" />
+          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="rgba(220,38,38,0.1)"
+              strokeWidth="3"
+            />
             <motion.circle
-              cx="50" cy="50" r="42"
+              cx="50"
+              cy="50"
+              r="42"
               fill="none"
               stroke={isStableFixation ? '#10b981' : '#DC2626'}
               strokeWidth="3"
@@ -135,7 +143,7 @@ export function StickmanModeView({
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: -16 }}
               exit={{ opacity: 0 }}
-              className="-top-7 absolute bg-[#2D2A26] px-2.5 py-1 rounded-md font-semibold text-white text-[11px] pointer-events-none shadow-sm"
+              className="pointer-events-none absolute -top-7 rounded-md bg-[#2D2A26] px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm"
             >
               💥 Hit!
             </motion.div>
@@ -144,32 +152,32 @@ export function StickmanModeView({
       </motion.div>
 
       {/* Bottom HUD strip — outside calibration area */}
-      <div className="bottom-0 left-0 right-0 absolute flex justify-between items-center px-5 h-14 pointer-events-none">
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
         {/* Mode label */}
-        <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[#8B857E] text-[11px]">
-          <div className="bg-red-500 rounded-full w-1.5 h-1.5" />
+        <div className="flex items-center gap-2 rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
           Ninja Mode
         </div>
 
         {/* Progress dots */}
-        <div className="flex gap-1.5 items-center">
+        <div className="flex items-center gap-1.5">
           {Array.from({ length: collectionTotal }).map((_, idx) => (
             <div
               key={idx}
               className={cn(
                 'rounded-full transition-all duration-300',
                 idx < collectionStep - 1
-                  ? 'w-2 h-2 bg-red-500 shadow-[0_0_5px_rgba(220,38,38,0.4)]'
+                  ? 'h-2 w-2 bg-red-500 shadow-[0_0_5px_rgba(220,38,38,0.4)]'
                   : idx === collectionStep - 1
-                    ? 'w-2.5 h-2.5 bg-red-500 shadow-[0_0_6px_rgba(220,38,38,0.5)] animate-pulse'
-                    : 'w-1.5 h-1.5 bg-[#D4CBBD]/60',
+                    ? 'h-2.5 w-2.5 animate-pulse bg-red-500 shadow-[0_0_6px_rgba(220,38,38,0.5)]'
+                    : 'h-1.5 w-1.5 bg-[#D4CBBD]/60',
               )}
             />
           ))}
         </div>
 
         {/* Counter */}
-        <div className="bg-white/60 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[11px]">
+        <div className="rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] backdrop-blur-sm">
           <span className="font-semibold text-red-600">{collectionStep}</span>
           <span className="text-[#C4BDB4]"> / </span>
           <span className="text-[#6B6560]">{collectionTotal}</span>

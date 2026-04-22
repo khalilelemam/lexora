@@ -31,7 +31,7 @@ import { cn } from '@/lib/utils';
  * 5. NO "Look here!" text overlay — text near target creates a competing
  *    fixation stimulus at an unexpected eccentric location.
  *
- * 6. Uniform star size — no boss point differentiation.
+ * 6. Uniform star size across all calibration points.
  *
  * Flow per point:
  *   'appearing'  → star scales from 0→1 at target (300ms)
@@ -48,15 +48,17 @@ export interface StarCanvasProps extends CalibrationModeViewProps {
 
 type Phase = 'appearing' | 'collecting' | 'done' | 'waiting';
 
-const APPEAR_MS = 350;        // Scale-up duration
+const APPEAR_MS = 350; // Scale-up duration
 const COLLECT_HOLD_MS = 1800; // Time to hold gaze to complete point
-const DONE_MS = 400;          // Sparkle-fade duration
+const DONE_MS = 400; // Sparkle-fade duration
 
 // 5-point star path helper
 function drawStar5(
   ctx: CanvasRenderingContext2D,
-  cx: number, cy: number,
-  outer: number, inner: number,
+  cx: number,
+  cy: number,
+  outer: number,
+  inner: number,
   rotation = 0,
 ) {
   ctx.beginPath();
@@ -74,7 +76,7 @@ interface StarState {
   targetX: number;
   targetY: number;
   phaseStart: number;
-  progressHeld: number;   // 0 → 1
+  progressHeld: number; // 0 → 1
   collected: boolean;
   width: number;
   height: number;
@@ -98,7 +100,9 @@ export function StarCanvas({
   const pointKeyRef = useRef('');
   const lastTimeRef = useRef(0);
 
-  useEffect(() => { gazeRef.current = { x: gazeX, y: gazeY }; }, [gazeX, gazeY]);
+  useEffect(() => {
+    gazeRef.current = { x: gazeX, y: gazeY };
+  }, [gazeX, gazeY]);
 
   const audio = useMemo(() => getCalibrationAudio(), []);
 
@@ -118,7 +122,7 @@ export function StarCanvas({
       phase: 'appearing',
       targetX: currentPoint.x * w,
       targetY: currentPoint.y * h,
-      phaseStart: 0,                // set on first render frame
+      phaseStart: 0, // set on first render frame
       progressHeld: 0,
       collected: false,
       width: w,
@@ -130,144 +134,160 @@ export function StarCanvas({
   }, [currentPoint, audio]);
 
   /* ─── render loop ────────────────────────────────────────────────── */
-  const render = useCallback((time: number) => {
-    const canvas = canvasRef.current;
-    const s = stateRef.current;
-    if (!canvas || !s) {
-      animRef.current = requestAnimationFrame(t => renderRef.current?.(t));
-      return;
-    }
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const delta = lastTimeRef.current ? Math.min(time - lastTimeRef.current, 50) : 16;
-    lastTimeRef.current = time;
-
-    // First frame — stamp phaseStart
-    if (s.phaseStart === 0) s.phaseStart = time;
-
-    const { width: w, height: h, dpr, targetX: tx, targetY: ty } = s;
-    const elapsed = time - s.phaseStart;
-
-    /* Clear */
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, w, h);
-
-    /* Background — warm cream */
-    ctx.fillStyle = '#FDF8F0';
-    ctx.fillRect(0, 0, w, h);
-
-    /* Very faint warm grid — same as grid mode, for visual consistency */
-    ctx.strokeStyle = 'rgba(45,42,38,0.025)';
-    ctx.lineWidth = 1;
-    const gs = 40;
-    for (let x = 0; x < w; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-    for (let y = 0; y < h; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-
-    /* ── APPEARING: scale up at target ── */
-    if (s.phase === 'appearing') {
-      const t = Math.min(1, elapsed / APPEAR_MS);
-      // spring: overshoot then settle
-      const spring = t < 0.6
-        ? (t / 0.6) * 1.15
-        : 1.15 - (t - 0.6) / 0.4 * 0.15;
-      drawStarAt(ctx, tx, ty, spring, 0, time, 0.4 + t * 0.5);
-      if (t >= 1) { s.phase = 'collecting'; s.phaseStart = time; }
-    }
-
-    /* ── COLLECTING: hold gaze to fill ring ── */
-    if (s.phase === 'collecting') {
-      const bob = Math.sin(time * 0.003) * 4;
-      const rot = Math.sin(time * 0.0008) * 0.08;
-      const gaze = gazeRef.current;
-      const hitR = 50; // generous hit radius
-      const dist = Math.hypot(gaze.x - tx, gaze.y - (ty + bob));
-      const gazeOnTarget = isStableFixation || dist < hitR;
-
-      if (gazeOnTarget) {
-        s.progressHeld += delta / COLLECT_HOLD_MS;
-        if (s.progressHeld >= 1 && !s.collected) {
-          s.progressHeld = 1;
-          s.collected = true;
-          s.phase = 'done';
-          s.phaseStart = time;
-          audio.play('collect');
-          onSampleCollected?.();
-        }
-      } else {
-        // Gentle fade-back (not instant reset — reduces frustration)
-        s.progressHeld = Math.max(0, s.progressHeld - delta / 1200);
+  const render = useCallback(
+    (time: number) => {
+      const canvas = canvasRef.current;
+      const s = stateRef.current;
+      if (!canvas || !s) {
+        animRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
+        return;
       }
 
-      const prog = s.progressHeld;
-      const glow = 0.55 + prog * 0.45;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-      drawStarAt(ctx, tx, ty + bob, 1.0, rot, time, glow);
+      const delta = lastTimeRef.current ? Math.min(time - lastTimeRef.current, 50) : 16;
+      lastTimeRef.current = time;
 
-      // Progress ring
-      const ringR = 40;
-      // Track background
-      ctx.beginPath();
-      ctx.arc(tx, ty + bob, ringR, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(212,160,23,0.18)';
-      ctx.lineWidth = 5;
-      ctx.stroke();
-      // Filled arc
-      if (prog > 0) {
+      // First frame — stamp phaseStart
+      if (s.phaseStart === 0) s.phaseStart = time;
+
+      const { width: w, height: h, dpr, targetX: tx, targetY: ty } = s;
+      const elapsed = time - s.phaseStart;
+
+      /* Clear */
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      /* Background — warm cream */
+      ctx.fillStyle = '#FDF8F0';
+      ctx.fillRect(0, 0, w, h);
+
+      /* Very faint warm grid — same as grid mode, for visual consistency */
+      ctx.strokeStyle = 'rgba(45,42,38,0.025)';
+      ctx.lineWidth = 1;
+      const gs = 40;
+      for (let x = 0; x < w; x += gs) {
         ctx.beginPath();
-        ctx.arc(tx, ty + bob, ringR, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
-        ctx.strokeStyle = `rgba(212,160,23,${0.7 + prog * 0.3})`;
-        ctx.lineCap = 'round';
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gs) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      /* ── APPEARING: scale up at target ── */
+      if (s.phase === 'appearing') {
+        const t = Math.min(1, elapsed / APPEAR_MS);
+        // spring: overshoot then settle
+        const spring = t < 0.6 ? (t / 0.6) * 1.15 : 1.15 - ((t - 0.6) / 0.4) * 0.15;
+        drawStarAt(ctx, tx, ty, spring, 0, time, 0.4 + t * 0.5);
+        if (t >= 1) {
+          s.phase = 'collecting';
+          s.phaseStart = time;
+        }
+      }
+
+      /* ── COLLECTING: hold gaze to fill ring ── */
+      if (s.phase === 'collecting') {
+        const bob = Math.sin(time * 0.003) * 4;
+        const rot = Math.sin(time * 0.0008) * 0.08;
+        const gaze = gazeRef.current;
+        const hitR = 50; // generous hit radius
+        const dist = Math.hypot(gaze.x - tx, gaze.y - (ty + bob));
+        const gazeOnTarget = isStableFixation || dist < hitR;
+
+        if (gazeOnTarget) {
+          s.progressHeld += delta / COLLECT_HOLD_MS;
+          if (s.progressHeld >= 1 && !s.collected) {
+            s.progressHeld = 1;
+            s.collected = true;
+            s.phase = 'done';
+            s.phaseStart = time;
+            audio.play('collect');
+            onSampleCollected?.();
+          }
+        } else {
+          // Gentle fade-back (not instant reset — reduces frustration)
+          s.progressHeld = Math.max(0, s.progressHeld - delta / 1200);
+        }
+
+        const prog = s.progressHeld;
+        const glow = 0.55 + prog * 0.45;
+
+        drawStarAt(ctx, tx, ty + bob, 1.0, rot, time, glow);
+
+        // Progress ring
+        const ringR = 40;
+        // Track background
+        ctx.beginPath();
+        ctx.arc(tx, ty + bob, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(212,160,23,0.18)';
         ctx.lineWidth = 5;
         ctx.stroke();
+        // Filled arc
+        if (prog > 0) {
+          ctx.beginPath();
+          ctx.arc(tx, ty + bob, ringR, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
+          ctx.strokeStyle = `rgba(212,160,23,${0.7 + prog * 0.3})`;
+          ctx.lineCap = 'round';
+          ctx.lineWidth = 5;
+          ctx.stroke();
+        }
+
+        // Gaze-on indicator: subtle amber pulse around ring when gaze on target
+        if (gazeOnTarget) {
+          ctx.beginPath();
+          ctx.arc(tx, ty + bob, ringR + 2, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(212,160,23,${0.15 + Math.sin(time * 0.008) * 0.08})`;
+          ctx.lineWidth = 8;
+          ctx.stroke();
+        }
       }
 
-      // Gaze-on indicator: subtle amber pulse around ring when gaze on target
-      if (gazeOnTarget) {
-        ctx.beginPath();
-        ctx.arc(tx, ty + bob, ringR + 2, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(212,160,23,${0.15 + Math.sin(time * 0.008) * 0.08})`;
-        ctx.lineWidth = 8;
-        ctx.stroke();
-      }
-    }
+      /* ── DONE: sparkle fade ── */
+      if (s.phase === 'done') {
+        const t = Math.min(1, elapsed / DONE_MS);
+        const scale = 1 + t * 0.4;
+        const opacity = 1 - t;
 
-    /* ── DONE: sparkle fade ── */
-    if (s.phase === 'done') {
-      const t = Math.min(1, elapsed / DONE_MS);
-      const scale = 1 + t * 0.4;
-      const opacity = 1 - t;
-
-      ctx.globalAlpha = opacity;
-      drawStarAt(ctx, tx, ty, scale, t * Math.PI * 0.5, time, 1.0);
-      ctx.globalAlpha = 1;
-
-      // Sparkle burst — 8 rays
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2 + t;
-        const dist2 = t * 60;
-        const sx = tx + Math.cos(angle) * dist2;
-        const sy = ty + Math.sin(angle) * dist2;
-        ctx.globalAlpha = (1 - t) * 0.8;
-        ctx.fillStyle = '#D4A017';
-        ctx.beginPath();
-        ctx.arc(sx, sy, 3 * (1 - t), 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = opacity;
+        drawStarAt(ctx, tx, ty, scale, t * Math.PI * 0.5, time, 1.0);
         ctx.globalAlpha = 1;
+
+        // Sparkle burst — 8 rays
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2 + t;
+          const dist2 = t * 60;
+          const sx = tx + Math.cos(angle) * dist2;
+          const sy = ty + Math.sin(angle) * dist2;
+          ctx.globalAlpha = (1 - t) * 0.8;
+          ctx.fillStyle = '#D4A017';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 3 * (1 - t), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        if (t >= 1) s.phase = 'waiting';
       }
 
-      if (t >= 1) s.phase = 'waiting';
-    }
+      /* ── WAITING ── (blank, engine will trigger next point) */
 
-    /* ── WAITING ── (blank, engine will trigger next point) */
-
-    animRef.current = requestAnimationFrame(t => renderRef.current?.(t));
-  }, [isStableFixation, audio, onSampleCollected]);
+      animRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
+    },
+    [isStableFixation, audio, onSampleCollected],
+  );
 
   /* ─── keep render ref fresh ─────────────────────────────────────── */
-  useEffect(() => { renderRef.current = render; }, [render]);
+  useEffect(() => {
+    renderRef.current = render;
+  }, [render]);
 
   /* ─── react to point changes ────────────────────────────────────── */
   useEffect(() => {
@@ -283,7 +303,7 @@ export function StarCanvas({
     initPoint();
     const onResize = () => initPoint();
     window.addEventListener('resize', onResize);
-    animRef.current = requestAnimationFrame(t => renderRef.current?.(t));
+    animRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
     return () => {
       window.removeEventListener('resize', onResize);
       cancelAnimationFrame(animRef.current);
@@ -291,18 +311,18 @@ export function StarCanvas({
   }, [initPoint]);
 
   return (
-    <div className="z-50 fixed inset-0 overflow-hidden cursor-none">
+    <div className="fixed inset-0 z-50 cursor-none overflow-hidden">
       <canvas ref={canvasRef} className="absolute inset-0" />
 
       {/* Bottom HUD strip */}
-      <div className="bottom-0 left-0 right-0 absolute flex justify-between items-center px-5 h-14 pointer-events-none">
-        <div className="flex items-center gap-1.5 bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[#8B857E] text-[11px]">
-          <div className="bg-amber-400 rounded-full w-1.5 h-1.5" />
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
+        <div className="flex items-center gap-1.5 rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
           Star Mode
         </div>
 
         {/* Star collection tally — each point is a star icon */}
-        <div className="flex gap-0.5 items-center bg-white/55 backdrop-blur-sm px-2.5 py-1 border border-[#E8E0D4] rounded-lg">
+        <div className="flex items-center gap-0.5 rounded-lg border border-[#E8E0D4] bg-white/55 px-2.5 py-1 backdrop-blur-sm">
           {Array.from({ length: collectionTotal }).map((_, idx) => {
             const active = idx === collectionStep - 1;
             const done = idx < collectionStep - 1;
@@ -311,7 +331,7 @@ export function StarCanvas({
                 key={idx}
                 className={cn(
                   'transition-all duration-300',
-                  done ? 'w-3.5 h-3.5' : active ? 'w-4 h-4' : 'w-3 h-3',
+                  done ? 'h-3.5 w-3.5' : active ? 'h-4 w-4' : 'h-3 w-3',
                   active && 'animate-pulse',
                 )}
                 viewBox="0 0 24 24"
@@ -325,7 +345,7 @@ export function StarCanvas({
           })}
         </div>
 
-        <div className="bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[11px]">
+        <div className="rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] backdrop-blur-sm">
           <span className="font-semibold text-amber-600">{collectionStep}</span>
           <span className="text-[#C4BDB4]"> / </span>
           <span className="text-[#6B6560]">{collectionTotal}</span>
@@ -338,7 +358,8 @@ export function StarCanvas({
 /* ─── Drawing helper — draws a 5-pointed star at (cx, cy) ────────── */
 function drawStarAt(
   ctx: CanvasRenderingContext2D,
-  cx: number, cy: number,
+  cx: number,
+  cy: number,
   scale: number,
   rotation: number,
   time: number,

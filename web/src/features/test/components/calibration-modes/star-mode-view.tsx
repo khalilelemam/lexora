@@ -16,7 +16,10 @@ function StarShape() {
       <defs>
         <linearGradient
           id="star-gradient"
-          x1="18" y1="15" x2="101" y2="98"
+          x1="18"
+          y1="15"
+          x2="101"
+          y2="98"
           gradientUnits="userSpaceOnUse"
         >
           <stop stopColor="#FEF3C7" />
@@ -35,7 +38,6 @@ function StarShape() {
  * - Warm cream background matching test environment (PSA prevention)
  * - Stars appear in-place with twinkle animation (not flying)
  * - Golden/amber tones — warm and engaging for younger children
- * - No boss point — uniform star size for all points
  * - Sparkle decorations REMOVED — research shows moving peripheral elements
  *   attract involuntary saccades in children, degrading calibration accuracy
  *   (Holmqvist & Andersson 2017: "minimize peripheral visual transients")
@@ -51,10 +53,10 @@ export function StarModeView({
   motionDurationMs,
 }: CalibrationModeViewProps) {
   return (
-    <div className="z-50 fixed inset-0 bg-[#FDF8F0] overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#FDF8F0]">
       {/* Subtle warm radial accents — static, no motion to avoid saccades */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
             'radial-gradient(circle at 20% 20%, rgba(251,191,36,0.06), transparent 38%),' +
@@ -85,12 +87,12 @@ export function StarModeView({
           scale: { duration: motionDurationMs / 1000, times: [0, 0.6, 1] },
           rotate: { duration: motionDurationMs / 1000, times: [0, 0.6, 1] },
         }}
-        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
       >
         <div
           className={cn(
-            'relative flex justify-center items-center rounded-full transition-all duration-200',
-            'h-24 w-24 bg-amber-50/40 border-2 border-amber-200/60',
+            'relative flex items-center justify-center rounded-full transition-all duration-200',
+            'h-24 w-24 border-2 border-amber-200/60 bg-amber-50/40',
             capturePulse && 'scale-110',
           )}
         >
@@ -110,10 +112,19 @@ export function StarModeView({
           </motion.div>
 
           {/* Progress ring */}
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(245,158,11,0.12)" strokeWidth="3" />
+          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="rgba(245,158,11,0.12)"
+              strokeWidth="3"
+            />
             <motion.circle
-              cx="50" cy="50" r="42"
+              cx="50"
+              cy="50"
+              r="42"
               fill="none"
               stroke={isStableFixation ? '#10b981' : '#D97706'}
               strokeWidth="3"
@@ -129,7 +140,7 @@ export function StarModeView({
             <motion.div
               initial={{ opacity: 0, y: -2 }}
               animate={{ opacity: 1, y: -14 }}
-              className="-top-7 absolute bg-amber-500 px-2.5 py-1 rounded-md font-semibold text-white text-[11px] pointer-events-none shadow-sm"
+              className="pointer-events-none absolute -top-7 rounded-md bg-amber-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm"
             >
               ✨ Got it!
             </motion.div>
@@ -138,32 +149,32 @@ export function StarModeView({
       </motion.div>
 
       {/* Bottom HUD strip — outside calibration area */}
-      <div className="bottom-0 left-0 right-0 absolute flex justify-between items-center px-5 h-14 pointer-events-none">
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
         {/* Mode label */}
-        <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[#8B857E] text-[11px]">
-          <div className="bg-amber-400 rounded-full w-1.5 h-1.5" />
+        <div className="flex items-center gap-2 rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
           Star Mode
         </div>
 
         {/* Progress dots */}
-        <div className="flex gap-1.5 items-center">
+        <div className="flex items-center gap-1.5">
           {Array.from({ length: collectionTotal }).map((_, idx) => (
             <div
               key={idx}
               className={cn(
                 'rounded-full transition-all duration-300',
                 idx < collectionStep - 1
-                  ? 'w-2 h-2 bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.4)]'
+                  ? 'h-2 w-2 bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.4)]'
                   : idx === collectionStep - 1
-                    ? 'w-2.5 h-2.5 bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)] animate-pulse'
-                    : 'w-1.5 h-1.5 bg-[#D4CBBD]/60',
+                    ? 'h-2.5 w-2.5 animate-pulse bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]'
+                    : 'h-1.5 w-1.5 bg-[#D4CBBD]/60',
               )}
             />
           ))}
         </div>
 
         {/* Counter */}
-        <div className="bg-white/60 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[11px]">
+        <div className="rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] backdrop-blur-sm">
           <span className="font-semibold text-amber-600">{collectionStep}</span>
           <span className="text-[#C4BDB4]"> / </span>
           <span className="text-[#6B6560]">{collectionTotal}</span>

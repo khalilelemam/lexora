@@ -10,7 +10,6 @@ import type { CalibrationModeViewProps } from './types';
  * Research decisions:
  * - Warm cream background (#FDF8F0) matching test environment (PSA prevention)
  * - Sequential point order — builds better regression models than random
- * - No boss point — uniform treatment for all points
  * - Charcoal dot target with sage-green progress ring — clear contrast on cream
  * - Completed points shown as small sage dots (no checkmarks — per UX spec)
  * - NO rendering of past/future dots at the same position as the active target
@@ -31,10 +30,10 @@ export function GridModeView({
   const activeIndex = collectionStep - 1;
 
   return (
-    <div className="z-50 fixed inset-0 bg-[#FDF8F0] overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#FDF8F0]">
       {/* Subtle grid pattern for depth — very faint, no distraction */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-[0.025]"
+        className="pointer-events-none absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage:
             'repeating-linear-gradient(0deg, #2D2A26 0px, #2D2A26 1px, transparent 1px, transparent 40px),' +
@@ -43,32 +42,34 @@ export function GridModeView({
       />
 
       {/* Completed point markers — only for full calibration runs */}
-      {collectionTotal === points.length && points.map((point, index) => {
-        if (index >= activeIndex) return null;
-        return (
-          <div
-            key={`grid-done-${index}`}
-            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
-          >
-            <div className="w-2 h-2 rounded-full bg-[#4A7C59]/50" />
-          </div>
-        );
-      })}
+      {collectionTotal === points.length &&
+        points.map((point, index) => {
+          if (index >= activeIndex) return null;
+          return (
+            <div
+              key={`grid-done-${index}`}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
+            >
+              <div className="h-2 w-2 rounded-full bg-[#4A7C59]/50" />
+            </div>
+          );
+        })}
 
       {/* Upcoming point hints — only for full calibration runs */}
-      {collectionTotal === points.length && points.map((point, index) => {
-        if (index <= activeIndex) return null;
-        return (
-          <div
-            key={`grid-future-${index}`}
-            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-            style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-[#C4BDB4]/50" />
-          </div>
-        );
-      })}
+      {collectionTotal === points.length &&
+        points.map((point, index) => {
+          if (index <= activeIndex) return null;
+          return (
+            <div
+              key={`grid-future-${index}`}
+              className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
+            >
+              <div className="h-1.5 w-1.5 rounded-full bg-[#C4BDB4]/50" />
+            </div>
+          );
+        })}
 
       {/* Active target — animates from previousPoint to currentPoint */}
       <motion.div
@@ -86,9 +87,9 @@ export function GridModeView({
           scale: 1,
         }}
         transition={{ duration: motionDurationMs / 1000, ease: [0.4, 0, 0.2, 1] }}
-        className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+        className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
       >
-        <div className="relative flex justify-center items-center rounded-full h-20 w-20">
+        <div className="relative flex h-20 w-20 items-center justify-center rounded-full">
           {/* Breathing glow */}
           <motion.div
             className={cn(
@@ -107,7 +108,7 @@ export function GridModeView({
           {/* Center dot — charcoal on cream */}
           <div
             className={cn(
-              'relative z-10 rounded-full w-4 h-4 transition-all duration-200',
+              'relative z-10 h-4 w-4 rounded-full transition-all duration-200',
               isStableFixation
                 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.5)]'
                 : 'bg-[#2D2A26] shadow-sm',
@@ -115,15 +116,19 @@ export function GridModeView({
           />
 
           {/* Progress arc ring */}
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
             <circle
-              cx="50" cy="50" r="44"
+              cx="50"
+              cy="50"
+              r="44"
               fill="none"
               stroke="rgba(74,124,89,0.10)"
               strokeWidth="3"
             />
             <motion.circle
-              cx="50" cy="50" r="44"
+              cx="50"
+              cy="50"
+              r="44"
               fill="none"
               stroke={isStableFixation ? '#10b981' : '#4A7C59'}
               strokeWidth="3"
@@ -142,7 +147,7 @@ export function GridModeView({
                 animate={{ scale: 2.2, opacity: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.45, ease: 'easeOut' }}
-                className="absolute inset-0 bg-emerald-400/15 rounded-full"
+                className="absolute inset-0 rounded-full bg-emerald-400/15"
               />
             )}
           </AnimatePresence>
@@ -150,32 +155,32 @@ export function GridModeView({
       </motion.div>
 
       {/* Bottom HUD strip — outside calibration area */}
-      <div className="bottom-0 left-0 right-0 absolute flex justify-between items-center px-5 h-14 pointer-events-none">
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
         {/* Mode label */}
-        <div className="flex items-center gap-1.5 bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[#8B857E] text-[11px]">
-          <div className="bg-[#4A7C59] rounded-full w-1.5 h-1.5" />
+        <div className="flex items-center gap-1.5 rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-[#4A7C59]" />
           Grid Mode
         </div>
 
         {/* Progress dots — compact, no distraction */}
-        <div className="flex gap-1 items-center">
+        <div className="flex items-center gap-1">
           {Array.from({ length: collectionTotal }).map((_, idx) => (
             <div
               key={idx}
               className={cn(
                 'rounded-full transition-all duration-300',
                 idx < activeIndex
-                  ? 'w-2 h-2 bg-[#4A7C59]/70'
+                  ? 'h-2 w-2 bg-[#4A7C59]/70'
                   : idx === activeIndex
-                    ? 'w-2.5 h-2.5 bg-[#4A7C59] shadow-[0_0_5px_rgba(74,124,89,0.5)]'
-                    : 'w-1.5 h-1.5 bg-[#D4CBBD]/50',
+                    ? 'h-2.5 w-2.5 bg-[#4A7C59] shadow-[0_0_5px_rgba(74,124,89,0.5)]'
+                    : 'h-1.5 w-1.5 bg-[#D4CBBD]/50',
               )}
             />
           ))}
         </div>
 
         {/* Step counter */}
-        <div className="bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[11px]">
+        <div className="rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] backdrop-blur-sm">
           <span className="font-semibold text-[#4A7C59]">{collectionStep}</span>
           <span className="text-[#C4BDB4]"> / </span>
           <span className="text-[#6B6560]">{collectionTotal}</span>
