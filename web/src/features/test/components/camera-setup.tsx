@@ -54,8 +54,13 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
   // Auto-initialize on mount
   useEffect(() => {
     let cancelled = false;
-    void (async () => { await runInitialization(); if (cancelled) return; })();
-    return () => { cancelled = true; };
+    void (async () => {
+      await runInitialization();
+      if (cancelled) return;
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [runInitialization]);
 
   // Mirror the hidden tracking video to the visible preview
@@ -102,63 +107,74 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
       const offsetY = (centerY - 0.5) * 2;
       setFaceOffset({ x: offsetX, y: offsetY });
     }, 200);
-    return () => { if (faceCheckRef.current) clearInterval(faceCheckRef.current); };
+    return () => {
+      if (faceCheckRef.current) clearInterval(faceCheckRef.current);
+    };
   }, [cameraReady, modelReady, webcamGaze]);
 
   // Device change detection
   useEffect(() => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.addEventListener) return;
-    const handleDeviceChange = () => { if (!cameraReady && !initializing) void runInitialization(); };
+    const handleDeviceChange = () => {
+      if (!cameraReady && !initializing) void runInitialization();
+    };
     navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange);
-    return () => { navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange); };
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange);
+    };
   }, [cameraReady, initializing, runInitialization]);
 
   const allReady = cameraReady && modelReady;
   const canProceed = allReady && faceDetected;
   const resolutionQuality: 'excellent' | 'good' | 'poor' | null = cameraInfo
-    ? cameraInfo.width >= 1280 ? 'excellent' : cameraInfo.width >= 640 ? 'good' : 'poor'
+    ? cameraInfo.width >= 1280
+      ? 'excellent'
+      : cameraInfo.width >= 640
+        ? 'good'
+        : 'poor'
     : null;
 
   return (
-    <div className="z-50 fixed inset-0 bg-[#FDF8F0] flex overflow-hidden">
-
+    <div className="fixed inset-0 z-50 flex overflow-hidden bg-[#FDF8F0]">
       {/* ── Left: Camera preview ── */}
-      <div className="relative flex-1 bg-[#1C1A18] overflow-hidden">
+      <div className="relative flex-1 overflow-hidden bg-[#1C1A18]">
         {/* Video */}
         <video
           ref={previewRef}
-          className="w-full h-full object-cover"
-          autoPlay playsInline muted
+          className="h-full w-full object-cover"
+          autoPlay
+          playsInline
+          muted
           style={{ transform: 'scaleX(-1)' /* mirror */ }}
         />
 
         {/* Loading state overlay */}
         {!cameraReady && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#1C1A18]">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-full border-2 border-[#4A7C59]/30 animate-ping" />
-              <div className="absolute inset-2 rounded-full border-2 border-[#4A7C59] animate-spin border-t-transparent" />
+            <div className="relative h-16 w-16">
+              <div className="absolute inset-0 animate-ping rounded-full border-2 border-[#4A7C59]/30" />
+              <div className="absolute inset-2 animate-spin rounded-full border-2 border-[#4A7C59] border-t-transparent" />
             </div>
-            <p className="text-white/60 text-sm font-medium tracking-wide">
+            <p className="text-sm font-medium tracking-wide text-white/60">
               {initializing ? 'Connecting camera…' : 'Camera not found'}
             </p>
           </div>
         )}
 
         {/* Face position guide overlay */}
-        {cameraReady && (
-          <FaceGuideOverlay detected={faceDetected} offset={faceOffset} />
-        )}
+        {cameraReady && <FaceGuideOverlay detected={faceDetected} offset={faceOffset} />}
 
         {/* Live badge + camera name */}
         {cameraReady && (
           <div className="absolute top-4 left-4 flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1.5">
-              <div className={cn(
-                'w-1.5 h-1.5 rounded-full',
-                faceDetected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse',
-              )} />
-              <span className="text-white/90 text-xs font-medium">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-sm">
+              <div
+                className={cn(
+                  'h-1.5 w-1.5 rounded-full',
+                  faceDetected ? 'animate-pulse bg-emerald-400' : 'animate-pulse bg-amber-400',
+                )}
+              />
+              <span className="text-xs font-medium text-white/90">
                 {faceDetected ? 'Face detected' : 'Looking for face…'}
               </span>
             </div>
@@ -167,20 +183,22 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
       </div>
 
       {/* ── Right: Setup panel ── */}
-      <div className="w-[380px] shrink-0 flex flex-col bg-[#FDF8F0] border-l border-[#E8E0D4] overflow-y-auto">
-
+      <div className="flex w-95 shrink-0 flex-col overflow-y-auto border-l border-[#E8E0D4] bg-[#FDF8F0]">
         {/* Header */}
-        <div className="px-8 pt-8 pb-6 border-b border-[#E8E0D4]">
+        <div className="border-b border-[#E8E0D4] px-8 pt-8 pb-6">
           <LexoraLogo size="sm" className="mb-5" />
-          <h2 className="font-bold text-xl tracking-tight text-[#2D2A26]">Camera Setup</h2>
-          <p className="mt-1.5 text-[#6B6560] text-sm leading-relaxed">
-            Position your face in the oval guide. The blue brackets will turn green when you&apos;re ready.
+          <h2 className="text-xl font-bold tracking-tight text-[#2D2A26]">Camera Setup</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-[#6B6560]">
+            Position your face in the oval guide. The blue brackets will turn green when you&apos;re
+            ready.
           </p>
         </div>
 
         {/* Status checklist */}
-        <div className="px-8 py-5 space-y-3 border-b border-[#E8E0D4]">
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-[#A09890] mb-4">Device Check</p>
+        <div className="space-y-3 border-b border-[#E8E0D4] px-8 py-5">
+          <p className="mb-4 text-[10px] font-semibold tracking-widest text-[#A09890] uppercase">
+            Device Check
+          </p>
 
           <StatusItem
             done={cameraReady}
@@ -195,15 +213,23 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
           {cameraInfo && (
             <div className="flex items-center justify-between pl-7 text-xs">
               <span className="text-[#A09890]">Resolution</span>
-              <span className={cn(
-                'font-medium tabular-nums',
-                resolutionQuality === 'excellent' ? 'text-emerald-600' :
-                resolutionQuality === 'good' ? 'text-[#4A7C59]' : 'text-amber-600',
-              )}>
+              <span
+                className={cn(
+                  'font-medium tabular-nums',
+                  resolutionQuality === 'excellent'
+                    ? 'text-emerald-600'
+                    : resolutionQuality === 'good'
+                      ? 'text-[#4A7C59]'
+                      : 'text-amber-600',
+                )}
+              >
                 {cameraInfo.width}×{cameraInfo.height}
                 <span className="ml-1.5 font-normal text-[#A09890]">
-                  {resolutionQuality === 'poor' ? '(low — may affect accuracy)' :
-                   resolutionQuality === 'excellent' ? '(HD ✓)' : '(OK)'}
+                  {resolutionQuality === 'poor'
+                    ? '(low — may affect accuracy)'
+                    : resolutionQuality === 'excellent'
+                      ? '(HD ✓)'
+                      : '(OK)'}
                 </span>
               </span>
             </div>
@@ -229,44 +255,58 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
         </div>
 
         {/* Positioning tips — context-aware */}
-        <div className="px-8 py-5 flex-1">
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-[#A09890] mb-3">Position tips</p>
+        <div className="flex-1 px-8 py-5">
+          <p className="mb-3 text-[10px] font-semibold tracking-widest text-[#A09890] uppercase">
+            Position tips
+          </p>
           <ul className="space-y-2.5 text-[13px] text-[#6B6560]">
-            <TipItem>Sit about <strong className="text-[#2D2A26]">arm&apos;s length</strong> from the screen</TipItem>
-            <TipItem>Make sure your face is <strong className="text-[#2D2A26]">evenly lit</strong> — avoid bright light behind you</TipItem>
-            <TipItem>Keep your <strong className="text-[#2D2A26]">head still</strong> — only move your eyes during calibration</TipItem>
+            <TipItem>
+              Sit about <strong className="text-[#2D2A26]">arm&apos;s length</strong> from the
+              screen
+            </TipItem>
+            <TipItem>
+              Make sure your face is <strong className="text-[#2D2A26]">evenly lit</strong> — avoid
+              bright light behind you
+            </TipItem>
+            <TipItem>
+              Keep your <strong className="text-[#2D2A26]">head still</strong> — only move your eyes
+              during calibration
+            </TipItem>
             <TipItem>Remove glasses if possible to reduce reflections</TipItem>
           </ul>
 
           {/* Low-resolution warning */}
           {resolutionQuality === 'poor' && (
-            <div className="mt-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-800 text-xs leading-relaxed">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>Your camera resolution is below 640×480. Eye tracking accuracy may be reduced. Consider using a higher-quality camera.</span>
+            <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Your camera resolution is below 640×480. Eye tracking accuracy may be reduced.
+                Consider using a higher-quality camera.
+              </span>
             </div>
           )}
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mx-8 mb-4 flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-xs leading-relaxed">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="mx-8 mb-4 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-700">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Actions */}
-        <div className="px-8 pb-8 pt-2 flex flex-col gap-3">
+        <div className="flex flex-col gap-3 px-8 pt-2 pb-8">
           <Button
             onClick={onReady}
             disabled={!canProceed}
             size="lg"
-            className="w-full bg-[#4A7C59] hover:bg-[#3D6A4B] text-white disabled:opacity-40"
+            className="w-full bg-[#4A7C59] text-white hover:bg-[#3D6A4B] disabled:opacity-40"
           >
             {canProceed ? (
               <>
                 Continue to Calibration
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </>
             ) : !allReady ? (
               'Setting up…'
@@ -279,9 +319,9 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
             type="button"
             onClick={() => void runInitialization()}
             disabled={initializing}
-            className="flex items-center justify-center gap-1.5 text-[#8B857E] text-xs hover:text-[#2D2A26] transition-colors disabled:opacity-40"
+            className="flex items-center justify-center gap-1.5 text-xs text-[#8B857E] transition-colors hover:text-[#2D2A26] disabled:opacity-40"
           >
-            <RefreshCw className={cn('w-3 h-3', initializing && 'animate-spin')} />
+            <RefreshCw className={cn('h-3 w-3', initializing && 'animate-spin')} />
             {initializing ? 'Retrying…' : 'Retry camera setup'}
           </button>
         </div>
@@ -313,17 +353,13 @@ function FaceGuideOverlay({
   const ry = 115;
 
   // Should we show a directional arrow?
-  const needsArrow = !detected && offset !== null &&
-    (Math.abs(offset.x) > 0.25 || Math.abs(offset.y) > 0.25);
+  const needsArrow =
+    !detected && offset !== null && (Math.abs(offset.x) > 0.25 || Math.abs(offset.y) > 0.25);
   const arrowAngle = offset ? Math.atan2(offset.y, offset.x) * (180 / Math.PI) : 0;
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
-      <svg
-        className="w-full h-full"
-        viewBox="0 0 400 310"
-        preserveAspectRatio="xMidYMid slice"
-      >
+    <div className="pointer-events-none absolute inset-0">
+      <svg className="h-full w-full" viewBox="0 0 400 310" preserveAspectRatio="xMidYMid slice">
         <defs>
           <mask id="oval-mask">
             <rect width="400" height="310" fill="white" />
@@ -332,15 +368,14 @@ function FaceGuideOverlay({
         </defs>
 
         {/* Dark vignette outside oval */}
-        <rect
-          width="400" height="310"
-          fill="black" opacity="0.35"
-          mask="url(#oval-mask)"
-        />
+        <rect width="400" height="310" fill="black" opacity="0.35" mask="url(#oval-mask)" />
 
         {/* Oval guide */}
         <ellipse
-          cx={cx} cy={cy} rx={rx} ry={ry}
+          cx={cx}
+          cy={cy}
+          rx={rx}
+          ry={ry}
           fill="none"
           stroke={stroke}
           strokeWidth="2.5"
@@ -355,12 +390,21 @@ function FaceGuideOverlay({
           `M${cx - rx - 20} ${cy + ry - 20} L${cx - rx - 20} ${cy + ry + 10} L${cx - rx + 10} ${cy + ry + 10}`,
           `M${cx + rx + 20} ${cy + ry - 20} L${cx + rx + 20} ${cy + ry + 10} L${cx + rx - 10} ${cy + ry + 10}`,
         ].map((d, i) => (
-          <path key={i} d={d} fill="none" stroke={stroke} strokeWidth="2.5" strokeLinecap="round" opacity="0.85" />
+          <path
+            key={i}
+            d={d}
+            fill="none"
+            stroke={stroke}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            opacity="0.85"
+          />
         ))}
 
         {/* Status text below oval */}
         <text
-          x={cx} y={cy + ry + 28}
+          x={cx}
+          y={cy + ry + 28}
           textAnchor="middle"
           fill={stroke}
           fontSize="12"
@@ -406,16 +450,20 @@ function StatusItem({
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <div className={cn(
-          'w-2 h-2 rounded-full shrink-0 transition-colors duration-500',
-          done ? 'bg-emerald-500' : loading ? 'bg-amber-400 animate-pulse' : 'bg-[#D4CBBD]',
-        )} />
-        <span className="text-sm text-[#2D2A26] font-medium">{label}</span>
+        <div
+          className={cn(
+            'h-2 w-2 shrink-0 rounded-full transition-colors duration-500',
+            done ? 'bg-emerald-500' : loading ? 'animate-pulse bg-amber-400' : 'bg-[#D4CBBD]',
+          )}
+        />
+        <span className="text-sm font-medium text-[#2D2A26]">{label}</span>
       </div>
-      <span className={cn(
-        'text-xs transition-colors duration-300',
-        done ? 'text-emerald-600 font-medium' : loading ? 'text-amber-600' : 'text-[#A09890]',
-      )}>
+      <span
+        className={cn(
+          'text-xs transition-colors duration-300',
+          done ? 'font-medium text-emerald-600' : loading ? 'text-amber-600' : 'text-[#A09890]',
+        )}
+      >
         {done ? doneText : loading ? loadingText : pendingText}
       </span>
     </div>
@@ -425,7 +473,7 @@ function StatusItem({
 function TipItem({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2.5 leading-snug">
-      <span className="text-[#4A7C59] mt-0.5 shrink-0">·</span>
+      <span className="mt-0.5 shrink-0 text-[#4A7C59]">·</span>
       <span>{children}</span>
     </li>
   );
