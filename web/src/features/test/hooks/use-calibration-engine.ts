@@ -109,6 +109,7 @@ export function useCalibrationEngine({
   const [captureCount, setCaptureCount] = useState(0);
   const [gazeCursor, setGazeCursor] = useState<{ x: number; y: number } | null>(null);
   const [finalResult, setFinalResult] = useState<CalibrationResult | null>(null);
+  const [activeMapping, setActiveMapping] = useState<MappingFn>(null);
   // Prevents the pre-validation card from flashing before recalibration.
   // Only becomes true once the post-calibration computation finishes
   // WITHOUT triggering a recalibration round.
@@ -168,6 +169,7 @@ export function useCalibrationEngine({
     setCaptureCount(0);
     setGazeCursor(null);
     setFinalResult(null);
+    setActiveMapping(null);
     setReadyForPreValidation(false);
     resetQuickValidation();
     resetFixationState();
@@ -223,7 +225,7 @@ export function useCalibrationEngine({
     if (tracker === 'tobii') {
       const result = computeTobiiCalibration();
       pendingResultRef.current = result;
-      setReadyForPreValidation(true);
+      queueMicrotask(() => setReadyForPreValidation(true));
       // Don't run validation yet — UI will call startValidation()
       return;
     }
@@ -232,8 +234,9 @@ export function useCalibrationEngine({
 
     if (needsRecalibration) {
       mappingRef.current = null;
-      setGazeCursor(null);
-      setReadyForPreValidation(false);
+      queueMicrotask(() => setActiveMapping(null));
+      queueMicrotask(() => setGazeCursor(null));
+      queueMicrotask(() => setReadyForPreValidation(false));
       resetQuickValidation();
       finalizationStartedRef.current = false;
       pendingResultRef.current = null;
@@ -241,19 +244,22 @@ export function useCalibrationEngine({
     }
 
     mappingRef.current = mapping;
+    queueMicrotask(() => setActiveMapping(mapping));
 
     if (!result) {
-      setFinalResult({
-        quality: 'poor',
-        pointAccuracies: CALIBRATION_POINTS.map(() => 1),
-        averageError: 1,
-      });
-      setReadyForPreValidation(true);
+      queueMicrotask(() =>
+        setFinalResult({
+          quality: 'poor',
+          pointAccuracies: CALIBRATION_POINTS.map(() => 1),
+          averageError: 1,
+        }),
+      );
+      queueMicrotask(() => setReadyForPreValidation(true));
       return;
     }
 
     pendingResultRef.current = result;
-    setReadyForPreValidation(true);
+    queueMicrotask(() => setReadyForPreValidation(true));
     // Don't run validation yet — UI will call startValidation()
   }, [
     calibrationPhase,
@@ -421,6 +427,7 @@ export function useCalibrationEngine({
       mappingRef.current = {
         predict: () => ({ x: width * 0.5, y: height * 0.5 }),
       };
+      setActiveMapping(mappingRef.current);
     }
   }, [tracker]);
 
@@ -441,8 +448,7 @@ export function useCalibrationEngine({
     quickValidation,
     canFinalize,
     readyForPreValidation,
-    mapping: mappingRef.current,
-    storedSamples: storedSamplesRef.current,
+    mapping: activeMapping,
     beginCalibration,
     resetEngine,
     ingestSampleForTarget,
