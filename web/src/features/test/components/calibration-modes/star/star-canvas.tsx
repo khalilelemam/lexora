@@ -3,14 +3,41 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import type { CalibrationModeViewProps } from '../types';
 import { getCalibrationAudio } from '../../../lib/calibration-audio';
+import { cn } from '@/lib/utils';
 
 /**
- * Star Canvas - Gentle magical star collector mode for younger children
+ * Star Canvas — calibration star mode
  *
- * Key mechanics:
- * - Phase 1 (floating): Star floats gently toward target position
- * - Phase 2 (collecting): Star hovers, gaze fills progress ring over 1.5s
- * - Phase 3 (collected): Star shrinks and flies to treasure chest
+ * Research-based design decisions:
+ * ─────────────────────────────────────────────────────────────────────────
+ * 1. Stars appear IN-PLACE at the target position (scale up from 0).
+ *    Flying-in stars require tracking motion → child looks at the trail,
+ *    not the final target. Appearing in-place ensures fixation is on
+ *    the actual calibration point from the start.
+ *    (Holmqvist & Andersson 2017: "target onset should coincide with fixation location")
+ *
+ * 2. NO background orbs / floating sparkles.
+ *    Moving peripheral elements trigger involuntary saccades in children,
+ *    which contaminate calibration samples.
+ *    (Rayner 2009: peripheral motion draws gaze involuntarily)
+ *
+ * 3. Warm cream background (#FDF8F0) — must match test screen to prevent
+ *    pupil size artifacts (PSA) that introduce systematic spatial bias.
+ *    (Mathôt et al. 2013)
+ *
+ * 4. Amber/gold color palette — warm and engaging for children, stays
+ *    within the cream-tone visual context.
+ *
+ * 5. NO "Look here!" text overlay — text near target creates a competing
+ *    fixation stimulus at an unexpected eccentric location.
+ *
+ * 6. Uniform star size — no boss point differentiation.
+ *
+ * Flow per point:
+ *   'appearing'  → star scales from 0→1 at target (300ms)
+ *   'collecting' → star bobs gently; progress ring fills as gaze holds
+ *   'done'       → star sparkles outward and fades (300ms)
+ *   'waiting'    → blank until parent triggers next point
  */
 
 export interface StarCanvasProps extends CalibrationModeViewProps {
@@ -19,637 +46,328 @@ export interface StarCanvasProps extends CalibrationModeViewProps {
   onSampleCollected?: () => void;
 }
 
-type GamePhase = 'floating' | 'collecting' | 'collected' | 'waiting';
+type Phase = 'appearing' | 'collecting' | 'done' | 'waiting';
 
-interface FloatingOrb {
-  x: number;
-  y: number;
-  size: number;
-  speed: number;
-  phase: number;
-  hue: number;
-  opacity: number;
+const APPEAR_MS = 350;        // Scale-up duration
+const COLLECT_HOLD_MS = 1800; // Time to hold gaze to complete point
+const DONE_MS = 400;          // Sparkle-fade duration
+
+// 5-point star path helper
+function drawStar5(
+  ctx: CanvasRenderingContext2D,
+  cx: number, cy: number,
+  outer: number, inner: number,
+  rotation = 0,
+) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? outer : inner;
+    const angle = (i * Math.PI) / 5 - Math.PI / 2 + rotation;
+    if (i === 0) ctx.moveTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+    else ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+  }
+  ctx.closePath();
 }
 
-interface FlyingStar {
-  x: number;
-  y: number;
+interface StarState {
+  phase: Phase;
   targetX: number;
   targetY: number;
-  progress: number;
-  scale: number;
-}
-
-// Scan duration in milliseconds (time to fill the ring)
-const SCAN_DURATION_MS = 2000;
-// Float duration in milliseconds
-const FLOAT_DURATION_MS = 1200;
-// Collect animation duration
-const COLLECT_ANIMATION_MS = 800;
-
-function generateFloatingOrbs(count: number, width: number, height: number): FloatingOrb[] {
-  const orbs: FloatingOrb[] = [];
-  for (let i = 0; i < count; i++) {
-    orbs.push({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      size: 3 + Math.random() * 6,
-      speed: 0.2 + Math.random() * 0.5,
-      phase: Math.random() * Math.PI * 2,
-      hue: 280 + Math.random() * 80, // Purple to pink range
-      opacity: 0.2 + Math.random() * 0.4,
-    });
-  }
-  return orbs;
-}
-
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
+  phaseStart: number;
+  progressHeld: number;   // 0 → 1
+  collected: boolean;
+  width: number;
+  height: number;
+  dpr: number;
 }
 
 export function StarCanvas({
   currentPoint,
   collectionStep,
   collectionTotal,
-  isBossPoint,
   isStableFixation,
   gazeX,
   gazeY,
   onSampleCollected,
 }: StarCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>(0);
+  const animRef = useRef(0);
   const gazeRef = useRef({ x: gazeX, y: gazeY });
-  const lastRenderTimeRef = useRef(0);
-  const pointKeyRef = useRef(`${currentPoint.x}-${currentPoint.y}-${collectionStep}`);
-  const renderRef = useRef<((time: number) => void) | null>(null);
+  const stateRef = useRef<StarState | null>(null);
+  const renderRef = useRef<((t: number) => void) | null>(null);
+  const pointKeyRef = useRef('');
+  const lastTimeRef = useRef(0);
 
-  // Game state refs
-  const gameRef = useRef<{
-    phase: GamePhase;
-    starX: number;
-    starY: number;
-    targetX: number;
-    targetY: number;
-    floatStartTime: number;
-    floatStartX: number;
-    floatStartY: number;
-    scanProgress: number;
-    glowIntensity: number;
-    collectScale: number;
-    phaseStartTime: number;
-    sampleCollectedForThisPoint: boolean;
-    width: number;
-    height: number;
-    dpr: number;
-    orbs: FloatingOrb[];
-    flyingStars: FlyingStar[];
-    chestFillPercent: number;
-  } | null>(null);
-
-  useEffect(() => {
-    gazeRef.current = { x: gazeX, y: gazeY };
-  }, [gazeX, gazeY]);
+  useEffect(() => { gazeRef.current = { x: gazeX, y: gazeY }; }, [gazeX, gazeY]);
 
   const audio = useMemo(() => getCalibrationAudio(), []);
 
-  const initGame = useCallback(() => {
+  /* ─── init state for a new target point ─────────────────────────── */
+  const initPoint = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
 
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.scale(dpr, dpr);
-
-    const targetX = currentPoint.x * width;
-    const targetY = currentPoint.y * height;
-
-    // Random spawn position
-    const startX = Math.random() * width;
-    const startY = -80;
-
-    // Preserve orbs if they exist, otherwise generate new ones
-    const existingOrbs = gameRef.current?.orbs || [];
-    const orbs = existingOrbs.length > 0 ? existingOrbs : generateFloatingOrbs(15, width, height);
-
-    // Preserve flying stars
-    const flyingStars = gameRef.current?.flyingStars || [];
-
-    // Preserve chest fill
-    const prevFill = gameRef.current?.chestFillPercent || 0;
-
-    gameRef.current = {
-      phase: 'floating',
-      starX: startX,
-      starY: startY,
-      targetX,
-      targetY,
-      floatStartTime: 0,
-      floatStartX: startX,
-      floatStartY: startY,
-      scanProgress: 0,
-      glowIntensity: 0.3,
-      collectScale: 1,
-      phaseStartTime: performance.now(),
-      sampleCollectedForThisPoint: false,
-      width,
-      height,
+    stateRef.current = {
+      phase: 'appearing',
+      targetX: currentPoint.x * w,
+      targetY: currentPoint.y * h,
+      phaseStart: 0,                // set on first render frame
+      progressHeld: 0,
+      collected: false,
+      width: w,
+      height: h,
       dpr,
-      orbs,
-      flyingStars,
-      chestFillPercent: Math.max(prevFill, ((collectionStep - 1) / collectionTotal) * 100),
     };
 
     audio.play('magicSparkle');
-  }, [currentPoint, collectionStep, collectionTotal, audio]);
+  }, [currentPoint, audio]);
 
-  // Draw magical pastel background
-  const drawBackground = useCallback(
-    (ctx: CanvasRenderingContext2D, width: number, height: number, time: number) => {
-      // Base gradient (soft pastel sky)
-      const gradient = ctx.createLinearGradient(0, 0, 0, height);
-      gradient.addColorStop(0, '#fdf4ff'); // Soft pink/white
-      gradient.addColorStop(0.5, '#fce7f3'); // Soft pink
-      gradient.addColorStop(1, '#f5d0fe'); // Soft purple
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
+  /* ─── render loop ────────────────────────────────────────────────── */
+  const render = useCallback((time: number) => {
+    const canvas = canvasRef.current;
+    const s = stateRef.current;
+    if (!canvas || !s) {
+      animRef.current = requestAnimationFrame(t => renderRef.current?.(t));
+      return;
+    }
 
-      // Subtle sparkle overlay
-      const shimmer = 0.02 + Math.sin(time * 0.001) * 0.01;
-      ctx.fillStyle = `rgba(255, 255, 255, ${shimmer})`;
-      ctx.fillRect(0, 0, width, height);
-    },
-    [],
-  );
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  // Draw floating orbs
-  const drawOrbs = useCallback(
-    (
-      ctx: CanvasRenderingContext2D,
-      orbs: FloatingOrb[],
-      time: number,
-      width: number,
-      height: number,
-    ) => {
-      for (const orb of orbs) {
-        // Update position
-        orb.y -= orb.speed;
-        orb.x += Math.sin(time * 0.002 + orb.phase) * 0.3;
+    const delta = lastTimeRef.current ? Math.min(time - lastTimeRef.current, 50) : 16;
+    lastTimeRef.current = time;
 
-        // Wrap around
-        if (orb.y < -orb.size) {
-          orb.y = height + orb.size;
-          orb.x = Math.random() * width;
+    // First frame — stamp phaseStart
+    if (s.phaseStart === 0) s.phaseStart = time;
+
+    const { width: w, height: h, dpr, targetX: tx, targetY: ty } = s;
+    const elapsed = time - s.phaseStart;
+
+    /* Clear */
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    /* Background — warm cream */
+    ctx.fillStyle = '#FDF8F0';
+    ctx.fillRect(0, 0, w, h);
+
+    /* Very faint warm grid — same as grid mode, for visual consistency */
+    ctx.strokeStyle = 'rgba(45,42,38,0.025)';
+    ctx.lineWidth = 1;
+    const gs = 40;
+    for (let x = 0; x < w; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y < h; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+    /* ── APPEARING: scale up at target ── */
+    if (s.phase === 'appearing') {
+      const t = Math.min(1, elapsed / APPEAR_MS);
+      // spring: overshoot then settle
+      const spring = t < 0.6
+        ? (t / 0.6) * 1.15
+        : 1.15 - (t - 0.6) / 0.4 * 0.15;
+      drawStarAt(ctx, tx, ty, spring, 0, time, 0.4 + t * 0.5);
+      if (t >= 1) { s.phase = 'collecting'; s.phaseStart = time; }
+    }
+
+    /* ── COLLECTING: hold gaze to fill ring ── */
+    if (s.phase === 'collecting') {
+      const bob = Math.sin(time * 0.003) * 4;
+      const rot = Math.sin(time * 0.0008) * 0.08;
+      const gaze = gazeRef.current;
+      const hitR = 50; // generous hit radius
+      const dist = Math.hypot(gaze.x - tx, gaze.y - (ty + bob));
+      const gazeOnTarget = isStableFixation || dist < hitR;
+
+      if (gazeOnTarget) {
+        s.progressHeld += delta / COLLECT_HOLD_MS;
+        if (s.progressHeld >= 1 && !s.collected) {
+          s.progressHeld = 1;
+          s.collected = true;
+          s.phase = 'done';
+          s.phaseStart = time;
+          audio.play('collect');
+          onSampleCollected?.();
         }
-
-        // Draw orb
-        const gradient = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.size);
-        gradient.addColorStop(0, `hsla(${orb.hue}, 80%, 80%, ${orb.opacity})`);
-        gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(orb.x, orb.y, orb.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    },
-    [],
-  );
-
-  // Draw star
-  const drawStar = useCallback(
-    (
-      ctx: CanvasRenderingContext2D,
-      x: number,
-      y: number,
-      scale: number,
-      rotation: number,
-      glowIntensity: number,
-      isBoss: boolean,
-      time: number,
-    ) => {
-      const baseSize = isBoss ? 50 : 30;
-      const size = baseSize * scale;
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
-
-      // Outer glow
-      const glowSize = size * 2;
-      const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowSize);
-      const glowColor = isBoss ? '253, 224, 71' : '244, 114, 182'; // Yellow for boss, pink for regular
-      glow.addColorStop(0, `rgba(${glowColor}, ${glowIntensity * 0.6})`);
-      glow.addColorStop(0.5, `rgba(${glowColor}, ${glowIntensity * 0.2})`);
-      glow.addColorStop(1, 'transparent');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Star shape
-      const points = isBoss ? 6 : 5;
-      const innerRadius = size * 0.4;
-      const outerRadius = size;
-
-      ctx.beginPath();
-      for (let i = 0; i < points * 2; i++) {
-        const radius = i % 2 === 0 ? outerRadius : innerRadius;
-        const angle = (i * Math.PI) / points - Math.PI / 2;
-        if (i === 0) {
-          ctx.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
-        } else {
-          ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
-        }
-      }
-      ctx.closePath();
-
-      // Fill with gradient
-      const starGradient = ctx.createRadialGradient(0, -size / 3, 0, 0, 0, size);
-      if (isBoss) {
-        starGradient.addColorStop(0, '#fef08a');
-        starGradient.addColorStop(0.5, '#facc15');
-        starGradient.addColorStop(1, '#eab308');
       } else {
-        starGradient.addColorStop(0, '#fdf4ff');
-        starGradient.addColorStop(0.5, '#f9a8d4');
-        starGradient.addColorStop(1, '#ec4899');
-      }
-      ctx.fillStyle = starGradient;
-      ctx.fill();
-
-      // Sparkle effect on edges
-      ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + Math.sin(time * 0.01) * 0.3})`;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      ctx.restore();
-    },
-    [],
-  );
-
-  // Draw treasure chest
-  const drawChest = useCallback(
-    (ctx: CanvasRenderingContext2D, x: number, y: number, fillPercent: number, time: number) => {
-      ctx.save();
-      ctx.translate(x, y);
-
-      // Chest body
-      ctx.fillStyle = '#92400e';
-      ctx.fillRect(-40, -20, 80, 50);
-
-      // Chest lid
-      ctx.fillStyle = '#78350f';
-      ctx.beginPath();
-      ctx.arc(0, -20, 40, Math.PI, 0, false);
-      ctx.fill();
-
-      // Metal bands
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(-42, -10, 84, 6);
-      ctx.fillRect(-42, 10, 84, 6);
-
-      // Lock
-      ctx.beginPath();
-      ctx.arc(0, 0, 8, 0, Math.PI * 2);
-      ctx.fillStyle = '#fef08a';
-      ctx.fill();
-
-      // Fill glow based on progress
-      if (fillPercent > 0) {
-        const glowRadius = 30 + fillPercent / 2;
-        const fillGlow = ctx.createRadialGradient(0, -10, 0, 0, -10, glowRadius);
-        fillGlow.addColorStop(0, `rgba(253, 224, 71, ${0.3 + fillPercent / 200})`);
-        fillGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = fillGlow;
-        ctx.beginPath();
-        ctx.arc(0, -10, glowRadius, 0, Math.PI * 2);
-        ctx.fill();
+        // Gentle fade-back (not instant reset — reduces frustration)
+        s.progressHeld = Math.max(0, s.progressHeld - delta / 1200);
       }
 
-      // Sparkles around chest
-      const sparkleCount = Math.floor(fillPercent / 20);
-      for (let i = 0; i < sparkleCount; i++) {
-        const angle = (i / sparkleCount) * Math.PI * 2 + time * 0.002;
-        const distance = 50 + Math.sin(time * 0.005 + i) * 10;
-        const sx = Math.cos(angle) * distance;
-        const sy = Math.sin(angle) * distance * 0.5 - 10;
+      const prog = s.progressHeld;
+      const glow = 0.55 + prog * 0.45;
 
-        ctx.fillStyle = `rgba(253, 224, 71, ${0.5 + Math.sin(time * 0.01 + i) * 0.3})`;
-        ctx.beginPath();
-        ctx.arc(sx, sy, 3, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      drawStarAt(ctx, tx, ty + bob, 1.0, rot, time, glow);
 
-      ctx.restore();
-    },
-    [],
-  );
-
-  // Draw progress ring
-  const drawProgressRing = useCallback(
-    (ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, progress: number) => {
-      // Background ring
+      // Progress ring
+      const ringR = 40;
+      // Track background
       ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.arc(tx, ty + bob, ringR, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(212,160,23,0.18)';
       ctx.lineWidth = 5;
       ctx.stroke();
-
-      // Progress arc
-      if (progress > 0) {
+      // Filled arc
+      if (prog > 0) {
         ctx.beginPath();
-        ctx.arc(x, y, radius, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
-        ctx.strokeStyle = '#10b981'; // Emerald green
+        ctx.arc(tx, ty + bob, ringR, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2);
+        ctx.strokeStyle = `rgba(212,160,23,${0.7 + prog * 0.3})`;
         ctx.lineCap = 'round';
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 5;
         ctx.stroke();
       }
-    },
-    [],
-  );
 
-  const render = useCallback(
-    (time: number) => {
-      const canvas = canvasRef.current;
-      const game = gameRef.current;
-      if (!canvas || !game) {
-        animationRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
-        return;
+      // Gaze-on indicator: subtle amber pulse around ring when gaze on target
+      if (gazeOnTarget) {
+        ctx.beginPath();
+        ctx.arc(tx, ty + bob, ringR + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(212,160,23,${0.15 + Math.sin(time * 0.008) * 0.08})`;
+        ctx.lineWidth = 8;
+        ctx.stroke();
       }
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        animationRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
-        return;
-      }
-
-      const deltaMs = lastRenderTimeRef.current ? time - lastRenderTimeRef.current : 16;
-      lastRenderTimeRef.current = time;
-
-      const { width, height, dpr } = game;
-      const gaze = gazeRef.current;
-      const hitRadius = isBossPoint ? 50 : 30;
-
-      // Clear and reset transform
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, width, height);
-
-      // Draw background
-      drawBackground(ctx, width, height, time);
-
-      // Draw floating orbs
-      drawOrbs(ctx, game.orbs, time, width, height);
-
-      // Calculate bob offset for star
-      const bobOffset = Math.sin(time * 0.003) * 8;
-      const rotation =
-        time * 0.0005 + (game.phase === 'collecting' ? Math.sin(time * 0.005) * 0.1 : 0);
-
-      // === PHASE: FLOATING ===
-      if (game.phase === 'floating') {
-        if (game.floatStartTime === 0) {
-          game.floatStartTime = time;
-        }
-
-        const elapsed = time - game.floatStartTime;
-        const progress = Math.min(1, elapsed / FLOAT_DURATION_MS);
-        const eased = easeOutCubic(progress);
-
-        game.starX = game.floatStartX + (game.targetX - game.floatStartX) * eased;
-        game.starY = game.floatStartY + (game.targetY - game.floatStartY) * eased;
-
-        // Add horizontal drift
-        game.starX += Math.sin(time * 0.003) * 20 * (1 - progress);
-
-        if (progress >= 1) {
-          game.phase = 'collecting';
-          game.starX = game.targetX;
-          game.starY = game.targetY;
-          game.phaseStartTime = time;
-        }
-      }
-
-      // === PHASE: COLLECTING ===
-      if (game.phase === 'collecting') {
-        game.starX = game.targetX;
-        game.starY = game.targetY + bobOffset;
-
-        const mouseDist = Math.hypot(game.starX - gaze.x, game.starY - gaze.y);
-        const isGazeOnTarget = isStableFixation || mouseDist < hitRadius * 1.3;
-
-        if (isGazeOnTarget) {
-          game.scanProgress += deltaMs / SCAN_DURATION_MS;
-          game.glowIntensity = 0.5 + game.scanProgress * 0.5;
-
-          // Play tick sound at intervals
-          const tickStep = Math.floor(game.scanProgress * 10);
-          const prevTickStep = Math.floor((game.scanProgress - deltaMs / SCAN_DURATION_MS) * 10);
-          if (tickStep !== prevTickStep && game.scanProgress < 1) {
-            audio.play('scanTick', { progress: game.scanProgress });
-          }
-
-          if (game.scanProgress >= 1 && !game.sampleCollectedForThisPoint) {
-            game.phase = 'collected';
-            game.phaseStartTime = time;
-            game.sampleCollectedForThisPoint = true;
-
-            audio.play('collect');
-
-            // Add flying star to chest
-            const chestX = width / 2;
-            const chestY = height - 60;
-            game.flyingStars.push({
-              x: game.starX,
-              y: game.starY,
-              targetX: chestX,
-              targetY: chestY,
-              progress: 0,
-              scale: 1,
-            });
-
-            game.chestFillPercent = (collectionStep / collectionTotal) * 100;
-
-            onSampleCollected?.();
-          }
-        } else {
-          // Reset progress if gaze leaves (gentle fade)
-          game.scanProgress = Math.max(0, game.scanProgress - deltaMs / 700);
-          game.glowIntensity = 0.3 + Math.sin(time * 0.003) * 0.1;
-        }
-      }
-
-      // === PHASE: COLLECTED ===
-      if (game.phase === 'collected') {
-        const elapsed = time - game.phaseStartTime;
-        const progress = Math.min(1, elapsed / COLLECT_ANIMATION_MS);
-
-        game.collectScale = 1 - progress;
-        game.glowIntensity = 1 - progress;
-
-        if (progress >= 1) {
-          game.phase = 'waiting';
-        }
-      }
-
-      // Update flying stars
-      for (let i = game.flyingStars.length - 1; i >= 0; i--) {
-        const star = game.flyingStars[i];
-        star.progress += deltaMs / 500;
-
-        if (star.progress >= 1) {
-          game.flyingStars.splice(i, 1);
-          audio.play('chestOpen');
-          continue;
-        }
-
-        const eased = easeOutCubic(star.progress);
-        const arcHeight = 100;
-        const arcOffset = Math.sin(star.progress * Math.PI) * arcHeight;
-
-        const flyX = star.x + (star.targetX - star.x) * eased;
-        const flyY = star.y + (star.targetY - star.y) * eased - arcOffset;
-        star.scale = 1 - star.progress * 0.5;
-
-        // Draw flying star
-        drawStar(ctx, flyX, flyY, star.scale * 0.5, time * 0.01, 0.8, false, time);
-      }
-
-      // Draw main star (unless waiting)
-      if (game.phase !== 'waiting') {
-        drawStar(
-          ctx,
-          game.starX,
-          game.starY,
-          game.collectScale,
-          rotation,
-          game.glowIntensity,
-          isBossPoint,
-          time,
-        );
-
-        // Progress ring during collecting
-        if (game.phase === 'collecting') {
-          drawProgressRing(ctx, game.starX, game.starY, hitRadius + 15, game.scanProgress);
-
-          // "Look here" hint
-          ctx.font = 'bold 14px system-ui, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillStyle = 'rgba(236, 72, 153, 0.8)';
-          ctx.globalAlpha = 0.6 + Math.sin(time * 0.005) * 0.4;
-          ctx.fillText('✨ Look here! ✨', game.starX, game.starY + hitRadius + 35);
-          ctx.globalAlpha = 1;
-        }
-      }
-
-      // Draw treasure chest
-      drawChest(ctx, width / 2, height - 60, game.chestFillPercent, time);
-
-      animationRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
-    },
-    [
-      isBossPoint,
-      isStableFixation,
-      collectionStep,
-      collectionTotal,
-      audio,
-      drawBackground,
-      drawOrbs,
-      drawStar,
-      drawChest,
-      drawProgressRing,
-      onSampleCollected,
-    ],
-  );
-
-  // Keep render ref up to date
-  useEffect(() => {
-    renderRef.current = render;
-  }, [render]);
-
-  // Handle point change
-  useEffect(() => {
-    const newKey = `${currentPoint.x}-${currentPoint.y}-${collectionStep}`;
-    if (newKey !== pointKeyRef.current) {
-      pointKeyRef.current = newKey;
-      initGame();
     }
-  }, [currentPoint, collectionStep, initGame]);
 
-  // Setup canvas and animation
+    /* ── DONE: sparkle fade ── */
+    if (s.phase === 'done') {
+      const t = Math.min(1, elapsed / DONE_MS);
+      const scale = 1 + t * 0.4;
+      const opacity = 1 - t;
+
+      ctx.globalAlpha = opacity;
+      drawStarAt(ctx, tx, ty, scale, t * Math.PI * 0.5, time, 1.0);
+      ctx.globalAlpha = 1;
+
+      // Sparkle burst — 8 rays
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + t;
+        const dist2 = t * 60;
+        const sx = tx + Math.cos(angle) * dist2;
+        const sy = ty + Math.sin(angle) * dist2;
+        ctx.globalAlpha = (1 - t) * 0.8;
+        ctx.fillStyle = '#D4A017';
+        ctx.beginPath();
+        ctx.arc(sx, sy, 3 * (1 - t), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      if (t >= 1) s.phase = 'waiting';
+    }
+
+    /* ── WAITING ── (blank, engine will trigger next point) */
+
+    animRef.current = requestAnimationFrame(t => renderRef.current?.(t));
+  }, [isStableFixation, audio, onSampleCollected]);
+
+  /* ─── keep render ref fresh ─────────────────────────────────────── */
+  useEffect(() => { renderRef.current = render; }, [render]);
+
+  /* ─── react to point changes ────────────────────────────────────── */
   useEffect(() => {
-    initGame();
+    const key = `${currentPoint.x}:${currentPoint.y}:${collectionStep}`;
+    if (key === pointKeyRef.current) return;
+    pointKeyRef.current = key;
+    lastTimeRef.current = 0;
+    initPoint();
+  }, [currentPoint, collectionStep, initPoint]);
 
-    const handleResize = () => {
-      initGame();
-    };
-
-    window.addEventListener('resize', handleResize);
-    animationRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationRef.current);
-    };
-  }, [initGame]);
-
-  // Resume audio
+  /* ─── start loop ────────────────────────────────────────────────── */
   useEffect(() => {
-    const handleInteraction = () => {
-      audio.resume();
-    };
-
-    window.addEventListener('click', handleInteraction, { once: true });
-    window.addEventListener('keydown', handleInteraction, { once: true });
-
+    initPoint();
+    const onResize = () => initPoint();
+    window.addEventListener('resize', onResize);
+    animRef.current = requestAnimationFrame(t => renderRef.current?.(t));
     return () => {
-      window.removeEventListener('click', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('resize', onResize);
+      cancelAnimationFrame(animRef.current);
     };
-  }, [audio]);
+  }, [initPoint]);
 
   return (
     <div className="z-50 fixed inset-0 overflow-hidden cursor-none">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+      <canvas ref={canvasRef} className="absolute inset-0" />
 
-      {/* HUD Overlay */}
-      <div className="top-4 left-4 absolute bg-white/75 backdrop-blur-sm px-3 py-2 border border-pink-200/50 rounded-lg text-slate-700 text-sm pointer-events-none">
-        ✨ Star Collector Mode
-      </div>
+      {/* Bottom HUD strip */}
+      <div className="bottom-0 left-0 right-0 absolute flex justify-between items-center px-5 h-14 pointer-events-none">
+        <div className="flex items-center gap-1.5 bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[#8B857E] text-[11px]">
+          <div className="bg-amber-400 rounded-full w-1.5 h-1.5" />
+          Star Mode
+        </div>
 
-      <div className="top-4 right-4 absolute bg-white/75 backdrop-blur-sm px-3 py-2 border border-pink-200/50 rounded-lg text-slate-700 text-sm pointer-events-none">
-        Stars collected: {Math.max(0, collectionStep - 1)} / {collectionTotal}
-      </div>
+        {/* Star collection tally — each point is a star icon */}
+        <div className="flex gap-0.5 items-center bg-white/55 backdrop-blur-sm px-2.5 py-1 border border-[#E8E0D4] rounded-lg">
+          {Array.from({ length: collectionTotal }).map((_, idx) => {
+            const active = idx === collectionStep - 1;
+            const done = idx < collectionStep - 1;
+            return (
+              <svg
+                key={idx}
+                className={cn(
+                  'transition-all duration-300',
+                  done ? 'w-3.5 h-3.5' : active ? 'w-4 h-4' : 'w-3 h-3',
+                  active && 'animate-pulse',
+                )}
+                viewBox="0 0 24 24"
+                fill={done ? '#F59E0B' : active ? '#D97706' : 'none'}
+                stroke={done ? '#D97706' : active ? '#B45309' : '#D4CBBD'}
+                strokeWidth={done ? 0 : active ? 1.5 : 1.5}
+              >
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            );
+          })}
+        </div>
 
-      {/* Progress stars */}
-      <div className="top-14 left-1/2 absolute flex gap-3 -translate-x-1/2 pointer-events-none">
-        {Array.from({ length: collectionTotal }).map((_, idx) => (
-          <div
-            key={idx}
-            className={`transition-all duration-300 ${
-              idx < collectionStep - 1
-                ? 'scale-100 text-amber-400'
-                : idx === collectionStep - 1
-                  ? 'scale-125 animate-pulse text-pink-400'
-                  : 'scale-90 text-slate-300'
-            }`}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-            </svg>
-          </div>
-        ))}
+        <div className="bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[11px]">
+          <span className="font-semibold text-amber-600">{collectionStep}</span>
+          <span className="text-[#C4BDB4]"> / </span>
+          <span className="text-[#6B6560]">{collectionTotal}</span>
+        </div>
       </div>
     </div>
   );
+}
+
+/* ─── Drawing helper — draws a 5-pointed star at (cx, cy) ────────── */
+function drawStarAt(
+  ctx: CanvasRenderingContext2D,
+  cx: number, cy: number,
+  scale: number,
+  rotation: number,
+  time: number,
+  glowAlpha: number,
+) {
+  const outer = 28 * scale;
+  const inner = 11 * scale;
+
+  // Outer glow
+  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, outer * 2.2);
+  grd.addColorStop(0, `rgba(212,160,23,${glowAlpha * 0.35})`);
+  grd.addColorStop(0.5, `rgba(212,160,23,${glowAlpha * 0.12})`);
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, outer * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Star body gradient
+  const bodyGrd = ctx.createRadialGradient(cx, cy - outer * 0.3, 0, cx, cy, outer);
+  bodyGrd.addColorStop(0, '#FEF3C7');
+  bodyGrd.addColorStop(0.45, '#F59E0B');
+  bodyGrd.addColorStop(1, '#B45309');
+  ctx.fillStyle = bodyGrd;
+  drawStar5(ctx, cx, cy, outer, inner, rotation);
+  ctx.fill();
+
+  // Shimmer highlight
+  ctx.strokeStyle = `rgba(255,255,255,${0.4 + Math.sin(time * 0.006) * 0.2})`;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 }

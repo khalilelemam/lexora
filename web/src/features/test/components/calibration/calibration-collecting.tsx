@@ -1,151 +1,95 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { CALIBRATION_POINTS } from '../../lib/constants';
-import { POINT_SAMPLES_GOAL_WEBCAM, POINT_SAMPLES_GOAL_TOBII } from './calibration-constants';
 
 interface CalibrationCollectingProps {
   tracker: 'tobii' | 'webcam';
-  isRecalibrating: boolean;
-  recalibrationRound: number;
-  fixationProgress: number;
-  isStableFixation: boolean;
-  captureCount: number;
-  currentPointIndex: number;
-  pointSampleCounts: number[];
   collectionIssue: 'no-signal' | 'low-samples' | null;
-  resolvedMode: string;
   gazeCursor: { x: number; y: number } | null;
-  voiceEnabled: boolean;
-  onToggleVoice: () => void;
   onSkip: () => void;
   modeSurface: ReactNode;
 }
 
+/**
+ * Calibration collection wrapper.
+ *
+ * Renders the mode surface (canvas or DOM mode view) behind:
+ * 1. A "face lost" overlay — shown whenever webcam gaze signal is absent
+ *    (canvasRef gaze = null means face is not detected OR iris not visible)
+ * 2. Collection issue toasts for grid-mode quality warnings
+ * 3. Tobii gaze dot (green) for operator visibility
+ * 4. Skip button for emergency advance
+ *
+ * The face-lost overlay pauses the visual experience for the child by
+ * dimming the display slightly and showing a clear "face not detected" UI.
+ * The underlying animation still runs so there's no jarring reset needed.
+ */
 export function CalibrationCollecting({
   tracker,
-  isRecalibrating,
-  recalibrationRound,
-  fixationProgress,
-  isStableFixation,
-  captureCount,
-  currentPointIndex,
-  pointSampleCounts,
   collectionIssue,
-  resolvedMode,
   gazeCursor,
-  voiceEnabled,
-  onToggleVoice,
   onSkip,
   modeSurface,
 }: CalibrationCollectingProps) {
-  const pointSamplesGoal =
-    tracker === 'webcam' ? POINT_SAMPLES_GOAL_WEBCAM : POINT_SAMPLES_GOAL_TOBII;
-  const currentPointSamples = pointSampleCounts[currentPointIndex] ?? 0;
-  const coveredPoints = pointSampleCounts.filter((count) => count >= pointSamplesGoal).length;
+  // Show face-lost overlay when webcam has no gaze signal
+  const showFaceLost = tracker === 'webcam' && !gazeCursor;
 
   return (
     <div className="z-50 fixed inset-0 overflow-hidden cursor-none">
       {modeSurface}
 
-      {/* Top instruction bar */}
-      <div className="top-4 left-1/2 absolute bg-card/80 backdrop-blur-md px-5 py-3 border rounded-xl w-[min(640px,90vw)] text-muted-foreground text-sm text-center -translate-x-1/2 pointer-events-none shadow-sm">
-        Hold your gaze until the ring fills. Samples are recorded only during stable fixation.
-      </div>
-
-      {isRecalibrating && (
-        <div className="top-4 left-4 absolute bg-amber-50/90 backdrop-blur-sm px-3 py-2 border border-amber-300/70 rounded-lg text-amber-700 text-xs pointer-events-none">
-          Targeted recalibration pass {recalibrationRound}
+      {/* Face-lost overlay — pauses the feeling of progress clearly */}
+      {showFaceLost && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#FDF8F0]/80 backdrop-blur-[2px]"
+          style={{ animation: 'float-up 0.25s ease-out' }}
+        >
+          <div className="flex flex-col items-center gap-3 bg-white/90 px-7 py-6 border border-[#E8E0D4] rounded-2xl shadow-lg max-w-xs text-center">
+            {/* Animated eye icon */}
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+              <path d="M4 24C4 24 12 10 24 10C36 10 44 24 44 24C44 24 36 38 24 38C12 38 4 24 4 24Z"
+                stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="24" cy="24" r="6" stroke="#D97706" strokeWidth="2.5" />
+              <line x1="20" y1="20" x2="28" y2="28" stroke="#D97706" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <p className="font-semibold text-[#2D2A26] text-sm">Face not detected</p>
+            <p className="text-[#8B857E] text-xs leading-relaxed">
+              Make sure your face is visible and well-lit.<br />
+              Keep your head inside the camera frame.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Controls */}
-      <div className="top-16 right-4 absolute flex gap-2">
-        <Button variant="outline" size="sm" onClick={onToggleVoice}>
-          {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-        </Button>
-        <Button variant="outline" size="sm" onClick={onSkip}>
+      {/* Skip button — bottom-right, above HUD strip */}
+      <div className="bottom-16 right-4 absolute z-30">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSkip}
+          className="bg-white/70 backdrop-blur-sm border-[#E8E0D4] text-[#8B857E] hover:text-[#2D2A26] text-xs"
+        >
           Skip
         </Button>
       </div>
 
-      {/* Bottom fixation HUD */}
-      <div className="bottom-4 left-1/2 absolute bg-card/80 backdrop-blur-md px-5 py-3.5 border rounded-xl w-[min(640px,90vw)] text-sm -translate-x-1/2 pointer-events-none shadow-sm">
-        <div className="flex justify-between items-center mb-2 text-muted-foreground">
-          <span>Fixation lock</span>
-          <span>{Math.round(fixationProgress * 100)}%</span>
+      {/* Webcam collection-quality warnings — subtle top-center toast */}
+      {tracker === 'webcam' && collectionIssue && !showFaceLost && (
+        <div
+          className="top-4 left-1/2 absolute -translate-x-1/2 bg-amber-50/90 backdrop-blur-sm px-4 py-2 border border-amber-300/70 rounded-lg text-amber-700 text-xs pointer-events-none z-20"
+          style={{ animation: 'float-up 0.3s ease-out' }}
+        >
+          {collectionIssue === 'no-signal'
+            ? '😶 No face detected — keep your face visible and well-lit'
+            : '👀 Signal unstable — hold your eyes steady on the target'}
         </div>
-        <div className="bg-muted rounded-full h-2.5 overflow-hidden">
-          <div
-            className={cn(
-              'rounded-full h-full transition-all duration-150',
-              isStableFixation ? 'bg-emerald-500' : 'bg-primary',
-            )}
-            style={{ width: `${Math.round(fixationProgress * 100)}%` }}
-          />
-        </div>
-        <div className="flex justify-between items-center mt-2 text-muted-foreground text-xs">
-          <span>Samples captured: {captureCount}</span>
-          <span>
-            {isStableFixation ? '✅ Stable fixation detected' : 'Keep your eyes still for 0.5s'}
-          </span>
-        </div>
-        {tracker === 'webcam' && resolvedMode === 'grid' && (
-          <div className="mt-2 text-[11px] text-muted-foreground/90">
-            Live cursor preview is hidden during initial webcam capture to avoid misleading drift.
-          </div>
-        )}
-        {tracker === 'webcam' && collectionIssue === 'no-signal' && (
-          <div className="mt-2 text-[11px] text-amber-600">
-            No face detected. Keep your face visible, centered, and well-lit before calibration
-            can continue.
-          </div>
-        )}
-        {tracker === 'webcam' && collectionIssue === 'low-samples' && (
-          <div className="mt-2 text-[11px] text-amber-600">
-            Signal is unstable. Hold your eyes on target and keep your head still to collect
-            enough real samples.
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Bottom-right point stats */}
-      <div className="right-4 bottom-4 absolute bg-card/80 backdrop-blur-md px-3 py-3 border rounded-xl w-[min(300px,45vw)] text-xs pointer-events-none shadow-sm">
-        <div className="flex justify-between items-center text-muted-foreground">
-          <span>Current point samples</span>
-          <span>
-            {currentPointSamples}/{pointSamplesGoal}
-          </span>
-        </div>
-        <div className="bg-muted mt-2 rounded-full h-1.5 overflow-hidden">
-          <div
-            className="bg-primary rounded-full h-full transition-all duration-150"
-            style={{
-              width: `${Math.min(100, Math.round((currentPointSamples / Math.max(1, pointSamplesGoal)) * 100))}%`,
-            }}
-          />
-        </div>
-        <div className="flex justify-between items-center mt-3 text-muted-foreground">
-          <span>Grid coverage</span>
-          <span>
-            {coveredPoints}/{CALIBRATION_POINTS.length} points ready
-          </span>
-        </div>
-        <div className="bg-muted mt-2 rounded-full h-1.5 overflow-hidden">
-          <div
-            className="bg-emerald-500 rounded-full h-full transition-all duration-150"
-            style={{ width: `${Math.round((coveredPoints / CALIBRATION_POINTS.length) * 100)}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Gaze cursor for tobii */}
+      {/* Gaze dot for Tobii — shows operator where gaze is landing */}
       {tracker === 'tobii' && gazeCursor && (
         <div
-          className="absolute bg-cyan-300/70 shadow-[0_0_12px_rgba(34,211,238,0.8)] border border-white/80 rounded-full w-4 h-4 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          className="absolute bg-[#4A7C59]/60 shadow-[0_0_12px_rgba(74,124,89,0.6)] border border-white/80 rounded-full w-4 h-4 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10"
           style={{ left: gazeCursor.x, top: gazeCursor.y }}
         />
       )}

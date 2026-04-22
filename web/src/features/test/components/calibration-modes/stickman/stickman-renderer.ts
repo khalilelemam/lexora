@@ -1,14 +1,21 @@
 /**
- * Stickman drawing primitives — canvas-only, no React dependency.
+ * Stickman (Ninja) drawing primitives — canvas-only, no React dependency.
  *
- * Extracted from stickman-canvas.tsx to keep rendering logic
- * separate from game-loop state management.
+ * Visual design:
+ * - Charcoal body (#1e293b) on warm cream (#FDF8F0)
+ * - Ninja headband (red bandana trailing behind)
+ * - Mask line across face
+ * - Slightly thicker limbs for better visibility at small scale
+ * - 7 poses: idle, sprint, walk, skid, jump, fall, proud
+ *
+ * The `skid` pose is used when the ninja brakes after a dash —
+ * leaning back with one leg forward (from sticky.jsx reference).
  */
 
-export type StickmanPose = 'idle' | 'sprint' | 'jump' | 'fall' | 'walk' | 'proud';
+export type StickmanPose = 'idle' | 'sprint' | 'jump' | 'fall' | 'walk' | 'proud' | 'skid';
 
 /**
- * Draw a stickman figure at the given position with the specified pose.
+ * Draw a ninja stickman figure at the given position with the specified pose.
  * All coordinates are in canvas-local space (already scaled/translated).
  */
 export function drawStickman(
@@ -18,25 +25,20 @@ export function drawStickman(
   time: number,
   pose: StickmanPose,
   facingRight: boolean,
-  isBoss: boolean,
 ): void {
-  const scale = isBoss ? 0.9 : 0.4;
+  const scale = 0.5;
 
   ctx.save();
   ctx.translate(x, y);
   if (!facingRight) ctx.scale(-1, 1);
   ctx.scale(scale, scale);
 
-  ctx.strokeStyle = isBoss ? '#dc2626' : '#0f172a';
-  ctx.fillStyle = ctx.strokeStyle;
-  ctx.lineWidth = 8;
+  const bodyColor = '#1e293b';
+  ctx.strokeStyle = bodyColor;
+  ctx.fillStyle = bodyColor;
+  ctx.lineWidth = 7;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-
-  if (isBoss) {
-    ctx.shadowColor = 'rgba(220, 38, 38, 0.8)';
-    ctx.shadowBlur = 15;
-  }
 
   const t = time * 0.05;
   let hipY = 0;
@@ -47,14 +49,23 @@ export function drawStickman(
   let leg1: number[] = [];
   let leg2: number[] = [];
 
+  // ─── Pose definitions ───────────────────────────────────
   if (pose === 'sprint') {
-    spineAngle = 0.6;
+    spineAngle = 0.55;
     hipY = Math.sin(t * 2) * 4;
     arm1 = [0, -25, 3.4, 3.5];
     arm2 = [0, -25, 3.7, 3.8];
     const legSwing = Math.cos(t * 1.5);
     leg1 = [0, hipY, Math.PI / 2 + legSwing * 1.2, Math.PI / 2 + legSwing * 1.2 + 0.5];
     leg2 = [0, hipY, Math.PI / 2 - legSwing * 1.2, Math.PI / 2 - legSwing * 1.2 + 0.5];
+  } else if (pose === 'skid') {
+    // Braking pose — leaning back, one leg forward, arms out for balance
+    spineAngle = -0.3;
+    hipY = 5;
+    arm1 = [0, -25, 3.5, 3.0];
+    arm2 = [0, -25, -0.5, 0.0];
+    leg1 = [0, hipY, 2.0, 1.5];
+    leg2 = [0, hipY, 0.5, 0.5];
   } else if (pose === 'jump') {
     spineAngle = 0.4;
     hipY = -15;
@@ -96,24 +107,73 @@ export function drawStickman(
 
   ctx.rotate(spineAngle);
 
-  // Spine
+  // ─── Spine ──────────────────────────────────────────────
   ctx.beginPath();
   ctx.moveTo(0, hipY);
   ctx.lineTo(0, hipY - 30);
   ctx.stroke();
 
-  // Head
+  // ─── Head (white fill + dark stroke) ────────────────────
+  const headCenterY = hipY + headY;
   ctx.beginPath();
-  ctx.arc(0, hipY + headY, 12, 0, Math.PI * 2);
-  if (isBoss) {
-    ctx.fill();
-  } else {
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-    ctx.stroke();
-  }
+  ctx.arc(0, headCenterY, 12, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.strokeStyle = bodyColor;
+  ctx.stroke();
 
-  // Limbs
+  // ─── Ninja mask line (horizontal stripe across eyes) ────
+  ctx.save();
+  ctx.strokeStyle = bodyColor;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-13, headCenterY + 1);
+  ctx.lineTo(13, headCenterY + 1);
+  ctx.stroke();
+  // Small eye dots
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-5, headCenterY, 1.5, 0, Math.PI * 2);
+  ctx.arc(5, headCenterY, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // ─── Headband tails (red bandana trailing behind) ───────
+  ctx.save();
+  ctx.strokeStyle = '#dc2626';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  // Two trailing ribbons flowing backward
+  const windPhase = time * 0.008;
+  const ribbonBaseX = -10; // Back of head
+  const ribbonBaseY = headCenterY - 3;
+
+  // Ribbon 1
+  ctx.beginPath();
+  ctx.moveTo(ribbonBaseX, ribbonBaseY);
+  ctx.quadraticCurveTo(
+    ribbonBaseX - 12 + Math.sin(windPhase) * 4,
+    ribbonBaseY + 4 + Math.cos(windPhase * 1.3) * 3,
+    ribbonBaseX - 22 + Math.sin(windPhase * 0.8) * 6,
+    ribbonBaseY + 2 + Math.sin(windPhase * 1.5) * 5,
+  );
+  ctx.stroke();
+
+  // Ribbon 2 (slightly offset)
+  ctx.beginPath();
+  ctx.moveTo(ribbonBaseX, ribbonBaseY + 3);
+  ctx.quadraticCurveTo(
+    ribbonBaseX - 10 + Math.cos(windPhase * 1.2) * 3,
+    ribbonBaseY + 8 + Math.sin(windPhase * 0.9) * 4,
+    ribbonBaseX - 18 + Math.cos(windPhase * 0.7) * 5,
+    ribbonBaseY + 10 + Math.cos(windPhase * 1.1) * 4,
+  );
+  ctx.stroke();
+  ctx.restore();
+
+  // ─── Limbs ──────────────────────────────────────────────
+  ctx.strokeStyle = bodyColor;
+  ctx.lineWidth = 7;
   const drawLimb = (arr: number[]) => {
     if (!arr.length) return;
     const [sx, sy, a1, a2] = arr;
@@ -129,51 +189,10 @@ export function drawStickman(
     ctx.stroke();
   };
 
-  ctx.strokeStyle = isBoss ? '#dc2626' : '#0f172a';
   drawLimb(arm1);
   drawLimb(arm2);
   drawLimb(leg1);
   drawLimb(leg2);
-
-  ctx.restore();
-}
-
-/**
- * Draw a single bone fragment (used during shatter animation).
- */
-export function drawBone(
-  ctx: CanvasRenderingContext2D,
-  bone: { type: 'head' | 'spine' | 'limb'; x: number; y: number; angle: number; life: number },
-  scale: number,
-  isBoss: boolean,
-): void {
-  ctx.save();
-  ctx.translate(bone.x, bone.y);
-  ctx.rotate(bone.angle);
-  ctx.globalAlpha = Math.max(0, bone.life / 1000);
-
-  if (bone.type === 'head') {
-    ctx.beginPath();
-    ctx.arc(0, 0, 12 * scale, 0, Math.PI * 2);
-    if (isBoss) {
-      ctx.fill();
-    } else {
-      ctx.fillStyle = '#fff';
-      ctx.fill();
-      ctx.stroke();
-    }
-  } else if (bone.type === 'spine') {
-    ctx.beginPath();
-    ctx.moveTo(0, -15 * scale);
-    ctx.lineTo(0, 15 * scale);
-    ctx.stroke();
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(-12 * scale, -12 * scale);
-    ctx.lineTo(0, 0);
-    ctx.lineTo(12 * scale, -6 * scale);
-    ctx.stroke();
-  }
 
   ctx.restore();
 }

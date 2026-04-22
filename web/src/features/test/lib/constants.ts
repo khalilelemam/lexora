@@ -1,6 +1,24 @@
 /**
  * Constants for the test system — calibration, gaze, and thresholds.
+ *
+ * Tunable values read from NEXT_PUBLIC_ env vars with sensible defaults.
  */
+
+function envNumber(key: string, fallback: number): number {
+  if (typeof process === 'undefined') return fallback;
+  const raw = process.env[key];
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function envFloat(key: string, fallback: number): number {
+  if (typeof process === 'undefined') return fallback;
+  const raw = process.env[key];
+  if (!raw) return fallback;
+  const parsed = parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
 
 /**
  * 15-point calibration pattern focused on the top-anchored reading container (3x5 grid).
@@ -38,71 +56,42 @@ export const CALIBRATION_POINTS = [
   { x: 0.8, y: 0.65 },
 ] as const;
 
-/** How long to show each calibration dot (ms) */
-export const CALIBRATION_DOT_DURATION = 1600;
-
-/** Gaze points to collect per calibration dot */
-export const CALIBRATION_SAMPLES_PER_POINT = 60;
+/** Gaze AOI Y bounds (screen-normalized). Reading content lives in top: 10% → bottom: 65%. */
+export const AOI_Y_BOUNDS = { min: 0.10, max: 0.65 } as const;
 
 /**
  * Calibration quality thresholds (normalized error).
  * Webcam iris tracking is noisier than dedicated hardware, so thresholds
  * are appropriate for that level of precision.
+ *
+ * Env: NEXT_PUBLIC_CALIBRATION_THRESHOLD_GOOD (default: 0.04)
+ * Env: NEXT_PUBLIC_CALIBRATION_THRESHOLD_ACCEPTABLE (default: 0.08)
  */
 export const CALIBRATION_THRESHOLDS = {
-  good: 0.04,       // < 4% screen size
-  acceptable: 0.08, // 4-8% screen size
-  // > 8% = poor
+  good: envFloat('NEXT_PUBLIC_CALIBRATION_THRESHOLD_GOOD', 0.04),
+  acceptable: envFloat('NEXT_PUBLIC_CALIBRATION_THRESHOLD_ACCEPTABLE', 0.08),
 } as const;
 
-/** Minimum gaze points required per task (ML service minimum) */
-export const MIN_GAZE_POINTS = 20;
+/**
+ * Minimum gaze points required per task (ML service minimum).
+ *
+ * Env: NEXT_PUBLIC_MIN_GAZE_POINTS (default: 20)
+ */
+export const MIN_GAZE_POINTS = envNumber('NEXT_PUBLIC_MIN_GAZE_POINTS', 20);
 
 /**
  * EMA smoothing factor for webcam gaze coordinates.
- * Lower α = heavier smoothing. The ML service velocity-threshold fixation
- * detector (0.5 norm-units/s) is very sensitive to jitter — at 60 fps any
- * frame-to-frame noise > ~16 px on a 1920-wide screen counts as a saccade.
- * Pre-smoothing with α ≈ 0.3 reduces jitter to ~30 % of raw, so combined
- * with the ML service's own EMA (α = 0.5) the effective noise drops to ~15 %.
+ * Lower α = heavier smoothing.
+ *
+ * Env: NEXT_PUBLIC_WEBCAM_EMA_ALPHA (default: 0.3)
  */
-export const WEBCAM_GAZE_EMA_ALPHA = 0.3;
-
-/** Recommended minimum webcam gaze points */
-export const RECOMMENDED_WEBCAM_POINTS = 2000;
+export const WEBCAM_GAZE_EMA_ALPHA = envFloat('NEXT_PUBLIC_WEBCAM_EMA_ALPHA', 0.3);
 
 /** Estimated reading speed for children / dyslexia screening (words per minute) */
 export const ESTIMATED_READING_WPM = 60;
 
 /** Minimum seconds before auto-detect dialog can appear */
 export const MIN_AUTO_DETECT_SECONDS = 8;
-
-/**
- * Cross-proximity detection: max distance (in px) from the fixation cross
- * center for the gaze to count as "looking at the cross". ~13% of a 1920 screen.
- * Generously sized because webcam iris tracking is noisy.
- */
-export const CROSS_PROXIMITY_PX = 250;
-
-/** How long gaze must stay near the fixation cross to trigger dialog (ms) */
-export const CROSS_DWELL_MS = 1000;
-
-/**
- * Number of consecutive out-of-zone checks allowed before resetting the dwell
- * timer. Absorbs brief gaze jitter without losing progress.
- * At 200ms check interval, 3 misses = 600ms tolerance.
- */
-export const CROSS_JITTER_TOLERANCE = 3;
-
-/** ML service timeout (ms) */
-export const ML_PREDICTION_TIMEOUT = 15_000;
-
-/** ML service retry config */
-export const ML_RETRY_CONFIG = {
-  maxRetries: 3,
-  baseDelay: 1000,
-  maxDelay: 5000,
-} as const;
 
 /** Tobii steps for the StepIndicator */
 export const TOBII_STEPS = [

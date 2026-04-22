@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Monitor,
   RefreshCw,
@@ -39,14 +39,15 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
 
   const isConnected = status?.connected === true;
 
-  // Detect platform for download link context
-  const platform = useMemo(() => {
-    if (typeof navigator === 'undefined') return 'unknown';
+  // Detect platform for download link context (client-only to avoid hydration mismatch)
+  const [platform, setPlatform] = useState<'windows' | 'macos' | 'linux' | 'unknown'>('unknown');
+  useEffect(() => {
     const ua = navigator.userAgent.toLowerCase();
-    if (ua.includes('win')) return 'windows';
-    if (ua.includes('mac')) return 'macos';
-    if (ua.includes('linux')) return 'linux';
-    return 'unknown';
+    queueMicrotask(() => {
+      if (ua.includes('win')) setPlatform('windows');
+      else if (ua.includes('mac')) setPlatform('macos');
+      else if (ua.includes('linux')) setPlatform('linux');
+    });
   }, []);
 
   // Auto-check on mount
@@ -56,7 +57,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
 
   // Auto-advance to verify step when connected
   useEffect(() => {
-    if (isConnected) setStep('verify');
+    if (isConnected) queueMicrotask(() => setStep('verify'));
   }, [isConnected]);
 
   return (

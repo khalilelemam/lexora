@@ -86,7 +86,7 @@ export default function HomePage() {
             <FeatureCard
               icon={<Shield className="w-6 h-6" />}
               title="Privacy First"
-              description="All processing happens locally. No video recordings are stored. Gaze coordinates are abstract and anonymised."
+              description="All processing happens locally. No video recordings are stored. Gaze coordinates are abstract and anonymized."
               delay={0.4}
             />
             <FeatureCard
@@ -127,14 +127,14 @@ export default function HomePage() {
               step={2}
               icon={<BookOpen className="w-7 h-7" />}
               title="Read the Passages"
-              description="Three reading tasks — syllables, pseudo-words, and meaningful text — optimised for gaze feature extraction."
+              description="Three reading tasks — syllables, pseudo-words, and meaningful text — optimized for gaze feature extraction."
               delay={0.3}
             />
             <StepCard
               step={3}
               icon={<BarChart3 className="w-7 h-7" />}
               title="Get Results"
-              description="Our ML model analyses gaze patterns and provides a risk assessment with detailed fixation visualisation."
+              description="Our ML model analyses gaze patterns and provides a risk assessment with detailed fixation visualization."
               delay={0.5}
             />
           </div>

@@ -217,6 +217,7 @@ export default function TobiiTestPage() {
             isLastTask={false}
             onRetake={handleRetake}
             onContinue={handleContinue}
+            readingContent={taskContent['syllables'] ?? getTobiiTaskContent('syllables')}
           />
         );
 
@@ -241,6 +242,7 @@ export default function TobiiTestPage() {
             isLastTask={false}
             onRetake={handleRetake}
             onContinue={handleContinue}
+            readingContent={taskContent['pseudo-words'] ?? getTobiiTaskContent('pseudo-words')}
           />
         );
 
@@ -265,6 +267,7 @@ export default function TobiiTestPage() {
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
+            readingContent={taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')}
           />
         );
 
@@ -274,7 +277,15 @@ export default function TobiiTestPage() {
       case 'results':
         if (!tobiiState.results) return null;
         return (
-          <ResultsDisplay result={tobiiState.results} mode="tobii" onNewTest={handleNewTest} />
+          <ResultsDisplay
+            result={tobiiState.results}
+            mode="tobii"
+            onNewTest={handleNewTest}
+            readingContent={
+              taskContent['meaningful-text'] ||
+              getTobiiTaskContent('meaningful-text')
+            }
+          />
         );
 
       case 'error':

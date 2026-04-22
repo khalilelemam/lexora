@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { CALIBRATION_POINTS } from '../lib/constants';
+import { CALIBRATION_POINTS, AOI_Y_BOUNDS } from '../lib/constants';
 import type { GazeFeature } from '../types';
 
 interface GazeReplayViewerProps {
@@ -19,32 +19,32 @@ interface GazeReplayViewerProps {
 const SPEED_OPTIONS = [0.5, 1, 2, 4] as const;
 
 /**
- * Extract AOI X bounds from calibration points.
- * AOI X spans from min X value to max X value in calibration grid.
+ * AOI X bounds from calibration grid.
  */
 function getAOIXBounds() {
   const xs = CALIBRATION_POINTS.map((p) => p.x);
-  return {
-    min: Math.min(...xs),
-    max: Math.max(...xs),
-  };
+  return { min: Math.min(...xs), max: Math.max(...xs) };
 }
 
 /**
- * Map raw gaze coordinates from AOI space to normalized element space.
- * Raw coordinates are calibrated within AOI [0.2, 0.8] for X-axis.
- * This remaps them to [0, 1] so they span the full paragraph width.
+ * Map a raw gaze coordinate from AOI screen-space to [0, 1] element space.
  *
- * Formula: mappedX = (rawX - aoiMin) / (aoiMax - aoiMin)
+ * Formula: mapped = clamp((raw - min) / (max - min), 0, 1)
  */
-function mapAOICoordinateToElement(rawCoord: number, aoiMin: number, aoiMax: number): number {
-  return Math.max(0, Math.min(1, (rawCoord - aoiMin) / (aoiMax - aoiMin)));
+function mapToElement(raw: number, min: number, max: number): number {
+  return Math.max(0, Math.min(1, (raw - min) / (max - min)));
 }
 
 /**
- * Replays gaze fixations as animated bubbles overlaid on the reading content.
- * Similar to Lexplore's visualization — each bubble represents a fixation,
- * sized proportionally to its duration, coloured red for regressions.
+ * Replays gaze fixations as animated Lexplore-style bubbles overlaid on
+ * text content.
+ *
+ * Coordinate remapping:
+ *   - fixationX: screen [AOI_X_MIN, AOI_X_MAX] → element [0, 1]
+ *   - fixationY: screen [AOI_Y_MIN, AOI_Y_MAX] → element [0, 1]
+ *
+ * Both axes must be remapped from the calibration/task AOI down to the
+ * compact replay container, otherwise bubbles are misaligned.
  */
 export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeReplayViewerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -54,15 +54,8 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
   const rafRef = useRef<number>(0);
   const startTimeRef = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLParagraphElement>(null);
-  const [scaleRatio, setScaleRatio] = useState(1);
-  const [contentDimensions, setContentDimensions] = useState<{
-    width: number;
-    height: number;
-  } | null>(null);
-  const [textOffset, setTextOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Normalised timeline: cumulative duration offsets (ms) for each fixation
+  // Normalized timeline: cumulative duration offsets (ms) for each fixation
   const timeline = useMemo(() => {
     return features.reduce(
       (state, feature) => ({
@@ -93,23 +86,16 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
         return;
       }
 
-      // Find the fixation index at this timestamp
       let idx = 0;
       for (let i = timeline.length - 1; i >= 0; i--) {
-        if (elapsed >= timeline[i]) {
-          idx = i;
-          break;
-        }
+        if (elapsed >= timeline[i]) { idx = i; break; }
       }
 
       setCurrentIndex(idx);
       setTrail((prev) => {
-        if (prev.length === 0 || prev[prev.length - 1] !== idx) {
-          return [...prev, idx];
-        }
+        if (prev.length === 0 || prev[prev.length - 1] !== idx) return [...prev, idx];
         return prev;
       });
-
       rafRef.current = requestAnimationFrame(tick);
     };
 
@@ -118,14 +104,8 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     return () => cancelAnimationFrame(rafRef.current);
   }, [isPlaying, speed, totalDuration, features, timeline]);
 
-  // ─── Controls ──────────────────────────────────────
-
   const handlePlay = useCallback(() => {
-    if (currentIndex >= features.length - 1) {
-      // Restart from beginning
-      setCurrentIndex(-1);
-      setTrail([]);
-    }
+    if (currentIndex >= features.length - 1) { setCurrentIndex(-1); setTrail([]); }
     startTimeRef.current = performance.now();
     setIsPlaying(true);
   }, [currentIndex, features.length]);
@@ -142,210 +122,152 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     setTrail([]);
   }, []);
 
-  // ─── Compute bubble size from duration ─────────────
-
   const maxDuration = useMemo(() => Math.max(...features.map((f) => f.durationMs), 1), [features]);
-
   const getBubbleSize = useCallback(
-    (durationMs: number) => {
-      const minR = 8;
-      const maxR = 28;
-      return minR + (durationMs / maxDuration) * (maxR - minR);
-    },
+    (durationMs: number) => 8 + (durationMs / maxDuration) * 22,
     [maxDuration],
   );
 
-  // ─── AOI coordinate mapping ────────────────────────
+  // AOI bounds for both axes
+  const aoiX = useMemo(() => getAOIXBounds(), []);
+  const aoiY = AOI_Y_BOUNDS;
 
-  const aoiBounds = useMemo(() => getAOIXBounds(), []);
-
-  const mapGazeX = useCallback(
-    (rawX: number) => mapAOICoordinateToElement(rawX, aoiBounds.min, aoiBounds.max),
-    [aoiBounds],
-  );
-
-  // ─── Progress ──────────────────────────────────────
+  const mapX = useCallback((raw: number) => mapToElement(raw, aoiX.min, aoiX.max), [aoiX]);
+  const mapY = useCallback((raw: number) => mapToElement(raw, aoiY.min, aoiY.max), [aoiY]);
 
   const progress = currentIndex >= 0 ? Math.round(((currentIndex + 1) / features.length) * 100) : 0;
-
-  // ─── Measure content dimensions for exact replica ──
-
-  useEffect(() => {
-    if (!contentRef.current || !containerRef.current) return;
-
-    // CRITICAL FIX: Measure actual TEXT content bounds (not container)
-    // This must match the measurement in task-display.tsx for alignment
-    const allWords = contentRef.current.querySelectorAll('[data-word]');
-
-    if (allWords.length === 0) {
-      // No words found; use container dimensions as fallback
-      const contentRect = contentRef.current.getBoundingClientRect();
-      setContentDimensions({ width: contentRect.width, height: contentRect.height });
-      setTextOffset({ x: 0, y: 0 });
-      setScaleRatio(1);
-      return;
-    }
-
-    // Get text content bounds (same as task-display)
-    let textTop = Infinity;
-    let textBottom = -Infinity;
-    let textLeft = Infinity;
-    let textRight = -Infinity;
-
-    allWords.forEach((word) => {
-      const rect = (word as HTMLElement).getBoundingClientRect();
-      textTop = Math.min(textTop, rect.top);
-      textBottom = Math.max(textBottom, rect.bottom);
-      textLeft = Math.min(textLeft, rect.left);
-      textRight = Math.max(textRight, rect.right);
-    });
-
-    const textHeight = Math.max(0, textBottom - textTop);
-    const textWidth = Math.max(0, textRight - textLeft);
-
-    // For horizontal scaling, also consider container width
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const availableWidth = containerRect.width - 32; // accounting for padding
-    const calculatedScale = Math.min(1, availableWidth / textWidth);
-
-    // CRITICAL: Calculate text offset within the scaled container
-    // This is the position of text relative to container top-left
-    const offsetY = textTop - containerRect.top;
-    const offsetX = textLeft - containerRect.left;
-
-    setContentDimensions({ width: textWidth, height: textHeight });
-    setTextOffset({ x: offsetX, y: offsetY });
-    setScaleRatio(calculatedScale);
-  }, [content]);
 
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Header */}
-      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+      <div className="flex items-center gap-2 text-[#8B857E] text-sm">
         <Eye className="w-4 h-4" />
-        <span>Gaze Replay</span>
+        <span className="font-medium text-[#2D2A26]">Gaze Replay</span>
+        <span className="text-[#C4BDB4] text-xs">— where the reader&apos;s eyes tracked</span>
         {currentIndex >= 0 && (
-          <span className="ml-auto">
-            Fixation {currentIndex + 1} / {features.length}
+          <span className="ml-auto text-[#8B857E] text-xs">
+            {currentIndex + 1} / {features.length} fixations
           </span>
         )}
       </div>
 
-      {/* Replay canvas — text with overlaid bubbles */}
+      {/* Replay canvas — aspect ratio matches the test AOI for accurate overlay.
+           TaskDisplay AOI: X = 20%-80% (60%), Y = 10%-65% (55%).
+           On a 16:9 screen: width = 16*0.6 = 9.6, height = 9*0.55 = 4.95
+           Aspect ratio = 9.6 / 4.95 ≈ 1.94 */}
       <div
         ref={containerRef}
-        className="relative bg-background p-6 sm:p-8 border rounded-lg overflow-hidden"
+        className={cn(
+          'relative bg-[#FDF8F0] border border-[#E8E0D4] rounded-xl overflow-hidden select-none',
+        )}
         dir={direction}
+        style={{
+          aspectRatio: '1.94 / 1',
+          minHeight: '200px',
+          containerType: 'inline-size',
+        }}
       >
-        {/* Exact replica wrapper with scaling for alignment */}
+        {/* Inner text wrapper — no extra padding since the container IS the AOI */}
         <div
-          className="inline-block relative"
-          style={{
-            transformOrigin: 'top left',
-            transform: `scale(${scaleRatio})`,
-          }}
+          className="absolute inset-0 flex items-start overflow-hidden"
+          style={{ padding: '2% 0%' }}
         >
-          {/* The reading content (for spatial reference) - EXACT REPLICA */}
+          {/* Text replica — uses container-query units (cqw) so line breaks
+              scale proportionally to the container width, matching the live
+              test's text wrapping at any display size. */}
           <p
-            ref={contentRef}
             className={cn(
-              'text-base sm:text-lg tracking-wide whitespace-pre-line',
-              'text-muted-foreground/60 font-normal select-none',
+              'text-[#2D2A26]/30 leading-loose whitespace-pre-line w-full',
+              'font-normal',
               direction === 'rtl' && 'text-right',
             )}
-            style={{ lineHeight: 2 }}
+            style={{
+              fontSize: 'clamp(0.55rem, 2.6cqw, 1.8rem)',
+              lineHeight: 2.0,
+              letterSpacing: '0.05em',
+              wordSpacing: '0.12em',
+              userSelect: 'none',
+            }}
           >
             {content}
           </p>
         </div>
 
-        {/* Gaze trail (faded past fixations) - positioned relative to content */}
-        {contentDimensions &&
-          trail.map((idx) => {
-            const f = features[idx];
-            const size = getBubbleSize(f.durationMs);
-            const isCurrent = idx === currentIndex;
-            const mappedX = mapGazeX(f.fixationX);
+        {/* Gaze bubbles — positioned as % of the container (which represents the AOI) */}
+        {trail.map((idx) => {
+          const f = features[idx];
+          if (!f) return null;
+          const size = getBubbleSize(f.durationMs);
+          const isCurrent = idx === currentIndex;
 
-            // Calculate bubble position relative to ACTUAL TEXT CONTENT
-            // CRITICAL FIX: Include textOffset to account for text position within container
-            const bubbleTop = textOffset.y + f.fixationY * contentDimensions.height;
-            const bubbleLeft = textOffset.x + mappedX * contentDimensions.width;
+          // Convert screen-normalized coords → AOI-relative % for the container
+          const leftPct = mapX(f.fixationX) * 100;
+          const topPct = mapY(f.fixationY) * 100;
 
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  'absolute rounded-full pointer-events-none',
-                  f.isRegression ? 'bg-red-500' : 'bg-blue-400',
-                  isCurrent ? 'opacity-70' : 'opacity-20',
-                )}
-                style={{
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  left: `${bubbleLeft}px`,
-                  top: `${bubbleTop}px`,
-                  transform: 'translate(-50%, -50%)',
-                  transition: isCurrent ? 'none' : 'opacity 0.3s',
-                  // Inverse scale to counteract parent scaling
-                  transformOrigin: 'center',
-                }}
-              />
-            );
-          })}
+          return (
+            <div
+              key={idx}
+              className={cn(
+                'absolute rounded-full pointer-events-none transition-opacity duration-200',
+                f.isRegression ? 'bg-red-400' : 'bg-[#4A7C59]',
+                isCurrent ? 'opacity-75' : 'opacity-20',
+              )}
+              style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                left: `${leftPct}%`,
+                top: `${topPct}%`,
+                transform: 'translate(-50%, -50%)',
+                boxShadow: isCurrent
+                  ? f.isRegression
+                    ? '0 0 0 4px rgba(248, 113, 113, 0.25)'
+                    : '0 0 0 4px rgba(74, 124, 89, 0.2)'
+                  : undefined,
+              }}
+            />
+          );
+        })}
 
-        {/* Saccade lines connecting consecutive fixations */}
-        {contentDimensions && (
-          <svg className="absolute inset-0 w-full h-full pointer-events-none">
-            {trail.length > 1 &&
-              trail.slice(1).map((idx, i) => {
-                const prev = features[trail[i]];
-                const curr = features[idx];
+        {/* Saccade lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" overflow="visible">
+          {trail.length > 1 &&
+            trail.slice(1).map((idx, i) => {
+              const prev = features[trail[i]];
+              const curr = features[idx];
+              if (!prev || !curr) return null;
 
-                let strokeColor = '#60a5fa'; // Standard Forward Saccades (blue-400)
-                let lineOpacity = 0.5;
-                let dashArray = 'none';
+              const stroke = curr.isReturnSweep ? '#d1d5db' : curr.isRegression ? '#f87171' : '#86efac';
+              const dashArray = curr.isReturnSweep ? '3 4' : 'none';
+              const opacity = curr.isReturnSweep ? 0.35 : 0.45;
 
-                if (curr.isReturnSweep) {
-                  strokeColor = '#9ca3af'; // gray-400
-                  lineOpacity = 0.4;
-                  dashArray = '4 4';
-                } else if (curr.isRegression) {
-                  strokeColor = '#ef4444'; // red-500
-                  lineOpacity = 0.5;
-                }
+              return (
+                <line
+                  key={`${trail[i]}-${idx}`}
+                  x1={`${mapX(prev.fixationX) * 100}%`}
+                  y1={`${mapY(prev.fixationY) * 100}%`}
+                  x2={`${mapX(curr.fixationX) * 100}%`}
+                  y2={`${mapY(curr.fixationY) * 100}%`}
+                  stroke={stroke}
+                  strokeWidth={1.5}
+                  strokeDasharray={dashArray}
+                  opacity={opacity}
+                />
+              );
+            })}
+        </svg>
 
-                const prevMappedX = mapGazeX(prev.fixationX);
-                const currMappedX = mapGazeX(curr.fixationX);
-
-                // CRITICAL FIX: Include textOffset to match bubble positioning
-                const prevTop = textOffset.y + prev.fixationY * contentDimensions.height;
-                const prevLeft = textOffset.x + prevMappedX * contentDimensions.width;
-                const currTop = textOffset.y + curr.fixationY * contentDimensions.height;
-                const currLeft = textOffset.x + currMappedX * contentDimensions.width;
-
-                return (
-                  <line
-                    key={`${trail[i]}-${idx}`}
-                    x1={prevLeft}
-                    y1={prevTop}
-                    x2={currLeft}
-                    y2={currTop}
-                    stroke={strokeColor}
-                    strokeWidth={1}
-                    strokeDasharray={dashArray}
-                    opacity={lineOpacity}
-                  />
-                );
-              })}
-          </svg>
+        {/* Empty state */}
+        {trail.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-[#C4BDB4] text-xs">Press play to see the eye movement replay</p>
+          </div>
         )}
       </div>
 
       {/* Progress bar */}
-      <div className="bg-muted rounded-full w-full h-1.5 overflow-hidden">
+      <div className="bg-[#E8E0D4]/60 rounded-full w-full h-1.5 overflow-hidden">
         <div
-          className="bg-primary rounded-full h-full transition-all duration-150"
+          className="bg-[#4A7C59] rounded-full h-full transition-all duration-150"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -354,59 +276,57 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           {isPlaying ? (
-            <Button size="sm" variant="outline" onClick={handlePause}>
-              <Pause className="mr-1 w-4 h-4" />
+            <Button size="sm" variant="outline" onClick={handlePause}
+              className="border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26] h-8">
+              <Pause className="mr-1 w-3.5 h-3.5" />
               Pause
             </Button>
           ) : (
-            <Button size="sm" onClick={handlePlay}>
-              <Play className="mr-1 w-4 h-4" />
+            <Button size="sm" onClick={handlePlay}
+              className="bg-[#4A7C59] hover:bg-[#3D6A4B] text-white h-8">
+              <Play className="mr-1 w-3.5 h-3.5" />
               {currentIndex >= features.length - 1 ? 'Replay' : 'Play'}
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={handleReset}>
-            <RotateCcw className="w-4 h-4" />
+          <Button size="sm" variant="ghost" onClick={handleReset}
+            className="text-[#8B857E] hover:text-[#2D2A26] w-8 h-8 p-0">
+            <RotateCcw className="w-3.5 h-3.5" />
           </Button>
         </div>
 
         {/* Speed selector */}
         <div className="flex items-center gap-1">
-          <span className="mr-1 text-muted-foreground text-xs">Speed:</span>
+          <span className="mr-1 text-[#8B857E] text-xs">Speed:</span>
           {SPEED_OPTIONS.map((s) => (
-            <Button
+            <button
               key={s}
-              size="sm"
-              variant={speed === s ? 'default' : 'ghost'}
-              className="px-2 h-7 text-xs"
               onClick={() => setSpeed(s)}
+              className={cn(
+                'px-2 py-0.5 rounded text-xs transition-colors',
+                speed === s
+                  ? 'bg-[#4A7C59] text-white'
+                  : 'text-[#8B857E] hover:bg-[#F0EBE3] hover:text-[#2D2A26]',
+              )}
             >
-              {s}x
-            </Button>
+              {s}×
+            </button>
           ))}
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-xs">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[#8B857E] text-[11px]">
         <div className="flex items-center gap-1.5">
-          <div className="bg-blue-400 opacity-50 rounded-full w-3 h-3" />
+          <div className="bg-[#4A7C59] opacity-60 rounded-full w-2.5 h-2.5" />
           <span>Forward fixation</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="bg-red-500 opacity-50 rounded-full w-3 h-3" />
-          <span>Regression (backward)</span>
+          <div className="bg-red-400 opacity-60 rounded-full w-2.5 h-2.5" />
+          <span>Regression</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <svg width="16" height="4" className="mr-1">
-            <line
-              x1="0"
-              y1="2"
-              x2="16"
-              y2="2"
-              stroke="#9ca3af"
-              strokeWidth="2"
-              strokeDasharray="4 4"
-            />
+          <svg width="14" height="4">
+            <line x1="0" y1="2" x2="14" y2="2" stroke="#d1d5db" strokeWidth="1.5" strokeDasharray="3 4" />
           </svg>
           <span>Return sweep</span>
         </div>

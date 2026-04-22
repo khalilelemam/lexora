@@ -4,72 +4,73 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { CalibrationModeViewProps } from './types';
 
+/**
+ * Grid (Default) calibration mode.
+ *
+ * Research decisions:
+ * - Warm cream background (#FDF8F0) matching test environment (PSA prevention)
+ * - Sequential point order — builds better regression models than random
+ * - No boss point — uniform treatment for all points
+ * - Charcoal dot target with sage-green progress ring — clear contrast on cream
+ * - Completed points shown as small sage dots (no checkmarks — per UX spec)
+ * - NO rendering of past/future dots at the same position as the active target
+ *   to avoid visual clutter and distraction (Holmqvist & Andersson 2017)
+ */
 export function GridModeView({
   points,
   currentPoint,
   previousPoint,
   collectionStep,
   collectionTotal,
-  isBossPoint,
   fixationProgress,
   isStableFixation,
   capturePulse,
   motionDurationMs,
 }: CalibrationModeViewProps) {
+  // Which index is currently active (0-based)
+  const activeIndex = collectionStep - 1;
+
   return (
-    <div className="z-50 fixed inset-0 bg-[radial-gradient(circle_at_15%_20%,hsl(var(--primary)/0.08),transparent_40%),radial-gradient(circle_at_78%_82%,hsl(var(--primary)/0.06),transparent_45%),repeating-linear-gradient(0deg,rgba(120,120,120,0.04),rgba(120,120,120,0.04)_1px,transparent_1px,transparent_28px),repeating-linear-gradient(90deg,rgba(120,120,120,0.03),rgba(120,120,120,0.03)_1px,transparent_1px,transparent_28px),linear-gradient(180deg,#faf9f7_0%,#f5f4f1_100%)] overflow-hidden">
-      {/* Mode label */}
-      <div className="top-4 left-4 absolute flex items-center gap-2 bg-white/85 backdrop-blur-sm px-3 py-2 border border-slate-200/60 rounded-lg shadow-sm text-slate-600 text-sm pointer-events-none">
-        <div className="bg-blue-500 rounded-full w-2 h-2 animate-pulse" />
-        Grid Mode
-      </div>
+    <div className="z-50 fixed inset-0 bg-[#FDF8F0] overflow-hidden">
+      {/* Subtle grid pattern for depth — very faint, no distraction */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.025]"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(0deg, #2D2A26 0px, #2D2A26 1px, transparent 1px, transparent 40px),' +
+            'repeating-linear-gradient(90deg, #2D2A26 0px, #2D2A26 1px, transparent 1px, transparent 40px)',
+        }}
+      />
 
-      {/* Progress counter */}
-      <div className="top-4 right-4 absolute bg-white/85 backdrop-blur-sm px-3 py-2 border border-slate-200/60 rounded-lg shadow-sm text-slate-700 text-sm pointer-events-none">
-        <span className="font-medium text-blue-600">{collectionStep}</span>
-        <span className="text-slate-400"> / </span>
-        <span>{collectionTotal}</span>
-      </div>
-
-      {/* Grid point markers */}
-      {points.map((point, index) => {
-        const isPast = index < collectionStep - 1;
-        const isActive = index === collectionStep - 1;
-
+      {/* Completed point markers — only for full calibration runs */}
+      {collectionTotal === points.length && points.map((point, index) => {
+        if (index >= activeIndex) return null;
         return (
-          <motion.div
-            key={`grid-point-${index}`}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: index * 0.02, duration: 0.25, ease: 'easeOut' }}
+          <div
+            key={`grid-done-${index}`}
             className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
           >
-            <div
-              className={cn(
-                'rounded-full transition-all duration-300',
-                isPast && 'h-3 w-3 bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]',
-                !isPast && !isActive && 'h-2.5 w-2.5 bg-slate-300/60 border border-slate-400/30',
-                isActive && 'h-4 w-4 bg-blue-400/50 border-2 border-blue-400 shadow-[0_0_16px_rgba(59,130,246,0.4)]',
-              )}
-            />
-            {/* Checkmark for completed points */}
-            {isPast && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="-top-0.5 -right-0.5 absolute bg-emerald-500 rounded-full w-2 h-2 flex justify-center items-center"
-              >
-                <svg width="6" height="6" viewBox="0 0 10 10" fill="none">
-                  <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </motion.div>
-            )}
-          </motion.div>
+            <div className="w-2 h-2 rounded-full bg-[#4A7C59]/50" />
+          </div>
         );
       })}
 
-      {/* Active target with animation */}
+      {/* Upcoming point hints — only for full calibration runs */}
+      {collectionTotal === points.length && points.map((point, index) => {
+        if (index <= activeIndex) return null;
+        return (
+          <div
+            key={`grid-future-${index}`}
+            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-[#C4BDB4]/50" />
+          </div>
+        );
+      })}
+
+      {/* Active target — animates from previousPoint to currentPoint */}
       <motion.div
         key={`grid-target-${collectionStep}`}
         initial={{
@@ -87,117 +88,98 @@ export function GridModeView({
         transition={{ duration: motionDurationMs / 1000, ease: [0.4, 0, 0.2, 1] }}
         className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
       >
-        <div
-          className={cn(
-            'relative flex justify-center items-center rounded-full transition-all duration-200',
-            isBossPoint ? 'h-24 w-24' : 'h-18 w-18',
-          )}
-        >
-          {/* Outer glow ring */}
+        <div className="relative flex justify-center items-center rounded-full h-20 w-20">
+          {/* Breathing glow */}
           <motion.div
             className={cn(
               'absolute inset-0 rounded-full',
               isStableFixation
-                ? 'bg-emerald-400/15 shadow-[0_0_30px_rgba(52,211,153,0.35)]'
-                : 'bg-blue-400/10 shadow-[0_0_25px_rgba(59,130,246,0.25)]',
+                ? 'bg-emerald-400/10 shadow-[0_0_28px_rgba(52,211,153,0.22)]'
+                : 'bg-[#4A7C59]/6 shadow-[0_0_18px_rgba(74,124,89,0.18)]',
             )}
-            animate={{
-              scale: [1, 1.08, 1],
-            }}
-            transition={{
-              duration: 1.8,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          {/* Target border */}
+          {/* Outer ring */}
+          <div className="absolute inset-2 rounded-full border-2 border-[#4A7C59]/40 transition-colors duration-200" />
+
+          {/* Center dot — charcoal on cream */}
           <div
             className={cn(
-              'absolute inset-2 rounded-full border-2 transition-colors duration-200',
-              isBossPoint ? 'border-amber-400/80' : 'border-blue-400/70',
+              'relative z-10 rounded-full w-4 h-4 transition-all duration-200',
+              isStableFixation
+                ? 'bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.5)]'
+                : 'bg-[#2D2A26] shadow-sm',
             )}
           />
 
-          {/* Inner rings */}
-          <div
-            className={cn(
-              'absolute inset-4 rounded-full border transition-colors duration-200',
-              isStableFixation ? 'border-emerald-400/50' : 'border-blue-300/40',
-            )}
-          />
-
-          {/* Center dot */}
-          <div
-            className={cn(
-              'relative z-10 rounded-full transition-all duration-200',
-              isBossPoint ? 'w-5 h-5' : 'w-4 h-4',
-              isStableFixation ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.6)]' : 'bg-white shadow-md',
-            )}
-          />
-
-          {/* Progress ring */}
-          <svg
-            className="absolute inset-0 w-full h-full -rotate-90"
-            viewBox="0 0 100 100"
-          >
+          {/* Progress arc ring */}
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
             <circle
-              cx="50"
-              cy="50"
-              r="42"
+              cx="50" cy="50" r="44"
               fill="none"
-              stroke="rgba(59, 130, 246, 0.15)"
-              strokeWidth="4"
+              stroke="rgba(74,124,89,0.10)"
+              strokeWidth="3"
             />
             <motion.circle
-              cx="50"
-              cy="50"
-              r="42"
+              cx="50" cy="50" r="44"
               fill="none"
-              stroke={isStableFixation ? '#10b981' : '#3b82f6'}
-              strokeWidth="4"
+              stroke={isStableFixation ? '#10b981' : '#4A7C59'}
+              strokeWidth="3"
               strokeLinecap="round"
-              strokeDasharray={264}
-              animate={{
-                strokeDashoffset: 264 * (1 - fixationProgress),
-              }}
-              transition={{ duration: 0.1 }}
+              strokeDasharray={276.5}
+              animate={{ strokeDashoffset: 276.5 * (1 - fixationProgress) }}
+              transition={{ duration: 0.09 }}
             />
           </svg>
 
-          {/* Capture pulse effect */}
+          {/* Capture ripple */}
           <AnimatePresence>
             {capturePulse && (
               <motion.div
-                initial={{ scale: 0.8, opacity: 0.8 }}
-                animate={{ scale: 2, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0.5 }}
+                animate={{ scale: 2.2, opacity: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-                className="absolute inset-0 bg-emerald-400/30 rounded-full"
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                className="absolute inset-0 bg-emerald-400/15 rounded-full"
               />
             )}
           </AnimatePresence>
         </div>
       </motion.div>
 
-      {/* Bottom progress bar */}
-      <div className="bottom-6 left-1/2 absolute flex gap-2 -translate-x-1/2 pointer-events-none">
-        {Array.from({ length: collectionTotal }).map((_, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: idx * 0.02 }}
-            className={cn(
-              'rounded-full transition-all duration-300',
-              idx < collectionStep - 1
-                ? 'w-2.5 h-2.5 bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]'
-                : idx === collectionStep - 1
-                  ? 'w-3 h-3 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse'
-                  : 'w-2 h-2 bg-slate-300/60',
-            )}
-          />
-        ))}
+      {/* Bottom HUD strip — outside calibration area */}
+      <div className="bottom-0 left-0 right-0 absolute flex justify-between items-center px-5 h-14 pointer-events-none">
+        {/* Mode label */}
+        <div className="flex items-center gap-1.5 bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[#8B857E] text-[11px]">
+          <div className="bg-[#4A7C59] rounded-full w-1.5 h-1.5" />
+          Grid Mode
+        </div>
+
+        {/* Progress dots — compact, no distraction */}
+        <div className="flex gap-1 items-center">
+          {Array.from({ length: collectionTotal }).map((_, idx) => (
+            <div
+              key={idx}
+              className={cn(
+                'rounded-full transition-all duration-300',
+                idx < activeIndex
+                  ? 'w-2 h-2 bg-[#4A7C59]/70'
+                  : idx === activeIndex
+                    ? 'w-2.5 h-2.5 bg-[#4A7C59] shadow-[0_0_5px_rgba(74,124,89,0.5)]'
+                    : 'w-1.5 h-1.5 bg-[#D4CBBD]/50',
+              )}
+            />
+          ))}
+        </div>
+
+        {/* Step counter */}
+        <div className="bg-white/55 backdrop-blur-sm px-3 py-1.5 border border-[#E8E0D4] rounded-lg text-[11px]">
+          <span className="font-semibold text-[#4A7C59]">{collectionStep}</span>
+          <span className="text-[#C4BDB4]"> / </span>
+          <span className="text-[#6B6560]">{collectionTotal}</span>
+        </div>
       </div>
     </div>
   );

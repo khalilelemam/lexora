@@ -1,24 +1,27 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef } from 'react';
-import type { CalibrationResult, CalibrationQuality } from '../types';
+import type { CalibrationResult } from '../types';
 import {
   CALIBRATION_POINTS,
-  CALIBRATION_DOT_DURATION,
-  CALIBRATION_SAMPLES_PER_POINT,
-  CALIBRATION_THRESHOLDS,
 } from '../lib/constants';
 import { fitProductionCalibrationModel, type TrainingSample } from '../lib/calibration-models';
-
-interface CollectedSample {
-  pointIndex: number;
-  observedX: number;
-  observedY: number;
-  targetX: number;
-  targetY: number;
-  yaw: number;
-  pitch: number;
-}
+import {
+  type CollectedSample,
+  buildSerpentineOrder,
+  splitDeterministic,
+  filterOutliers,
+  mean,
+  normalizedError,
+  buildCalibrationResult,
+  GRID_COLUMNS,
+  MIN_WEBCAM_SAMPLES,
+  MIN_WEBCAM_POINTS_WITH_SAMPLES,
+  MIN_WEBCAM_SAMPLES_PER_POINT,
+  TARGETED_RECALIBRATION_MAX_ROUNDS,
+  TARGETED_RECALIBRATION_MAX_POINTS,
+  TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD,
+} from '../lib/calibration-math';
 
 interface CalibrationMappingResult {
   predict: (irisX: number, irisY: number, yaw: number, pitch: number) => { x: number; y: number };
@@ -26,116 +29,11 @@ interface CalibrationMappingResult {
 
 type CalibrationPhase = 'idle' | 'collecting' | 'recalibrating' | 'validating' | 'complete';
 
-const GRID_COLUMNS = 5;
-const HOLDOUT_STRIDE = 5;
-const MIN_WEBCAM_SAMPLES = 30;
-const MIN_WEBCAM_POINTS_WITH_SAMPLES = 8;
-const MIN_WEBCAM_SAMPLES_PER_POINT = 2;
-const OUTLIER_Z_THRESHOLD = 3;
-const TARGETED_RECALIBRATION_MAX_ROUNDS = 1;
-const TARGETED_RECALIBRATION_MAX_POINTS = 6;
-const TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD = 0.09;
-
-function buildSerpentineOrder(total: number, columns: number): number[] {
-  const order: number[] = [];
-  const rows = Math.ceil(total / columns);
-
-  for (let row = 0; row < rows; row++) {
-    const start = row * columns;
-    const end = Math.min(total, start + columns);
-    const rowIndices = Array.from({ length: end - start }, (_, i) => start + i);
-    if (row % 2 === 1) rowIndices.reverse();
-    order.push(...rowIndices);
-  }
-
-  return order;
-}
-
-function findCenterPointIndex(points: readonly { x: number; y: number }[]): number {
-  let bestIndex = 0;
-  let bestDistance = Number.POSITIVE_INFINITY;
-
-  for (let i = 0; i < points.length; i++) {
-    const dx = points[i].x - 0.5;
-    const dy = points[i].y - 0.5;
-    const distance = dx * dx + dy * dy;
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestIndex = i;
-    }
-  }
-
-  return bestIndex;
-}
-
-function splitDeterministic<T>(samples: T[]) {
-  if (samples.length <= 1) return { train: [...samples], held: [...samples] };
-
-  const train: T[] = [];
-  const held: T[] = [];
-
-  samples.forEach((sample, index) => {
-    if (index % HOLDOUT_STRIDE === 0) held.push(sample);
-    else train.push(sample);
-  });
-
-  if (train.length === 0 && held.length > 0) train.push(held[held.length - 1]);
-  if (held.length === 0 && train.length > 0) held.push(train[train.length - 1]);
-
-  return { train, held };
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
-}
-
-function filterOutliers(samples: CollectedSample[]): CollectedSample[] {
-  if (samples.length < 8) return samples;
-
-  const xs = samples.map((s) => s.observedX);
-  const ys = samples.map((s) => s.observedY);
-
-  const mx = median(xs);
-  const my = median(ys);
-
-  const madX = median(xs.map((x) => Math.abs(x - mx))) * 1.4826 + 1e-6;
-  const madY = median(ys.map((y) => Math.abs(y - my))) * 1.4826 + 1e-6;
-
-  return samples.filter((s) => {
-    const zx = Math.abs(s.observedX - mx) / madX;
-    const zy = Math.abs(s.observedY - my) / madY;
-    return zx <= OUTLIER_Z_THRESHOLD && zy <= OUTLIER_Z_THRESHOLD;
-  });
-}
-
-function mean(values: number[]): number {
-  if (values.length === 0) return 0;
-  return values.reduce((a, b) => a + b, 0) / values.length;
-}
-
-function normalizedError(
-  sample: CollectedSample,
-  predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number },
-  screenWidth: number,
-  screenHeight: number,
-): number {
-  const pred = predict(sample.observedX, sample.observedY, sample.yaw, sample.pitch);
-  const targetX = sample.targetX * screenWidth;
-  const targetY = sample.targetY * screenHeight;
-  const dx = (pred.x - targetX) / screenWidth;
-  const dy = (pred.y - targetY) / screenHeight;
-  return Math.hypot(dx, dy);
-}
-
 export function useCalibration() {
   const points = CALIBRATION_POINTS;
   const defaultOrder = useMemo(() => {
-    const order = buildSerpentineOrder(points.length, GRID_COLUMNS);
-    // Keep the original 15 points and append a final center "boss" fixation.
-    order.push(findCenterPointIndex(points));
-    return order;
+    // Pure serpentine order — 15 points, no boss/duplicate
+    return buildSerpentineOrder(points.length, GRID_COLUMNS);
   }, [points]);
 
   const [phase, setPhase] = useState<CalibrationPhase>('idle');
@@ -220,14 +118,10 @@ export function useCalibration() {
       pointAccuracies.push(mean(errors));
     }
 
-    const averageError = mean(pointAccuracies);
-    let quality: CalibrationQuality = 'poor';
-    if (averageError < CALIBRATION_THRESHOLDS.good) quality = 'good';
-    else if (averageError < CALIBRATION_THRESHOLDS.acceptable) quality = 'acceptable';
-
-    const calibResult: CalibrationResult = { quality, pointAccuracies, averageError };
+    const calibResult = buildCalibrationResult(pointAccuracies);
     setResult(calibResult);
-    setPhase('complete');
+    // Phase is NOT advanced here — the engine manages the lifecycle:
+    // validating → pre-validation card → quick validation → finalResult → canFinalize
     return calibResult;
   }, [points]);
 
@@ -280,13 +174,9 @@ export function useCalibration() {
         trainingSamples.length < MIN_WEBCAM_SAMPLES ||
         coveredPoints < MIN_WEBCAM_POINTS_WITH_SAMPLES
       ) {
-        const poorResult: CalibrationResult = {
-          quality: 'poor',
-          pointAccuracies: points.map(() => 1.0),
-          averageError: 1.0,
-        };
+        const poorResult = buildCalibrationResult(points.map(() => 1.0));
         setResult(poorResult);
-        setPhase('complete');
+        // Phase stays 'validating' — engine manages lifecycle
         return {
           result: poorResult,
           mapping: {
@@ -360,15 +250,9 @@ export function useCalibration() {
         };
       }
 
-      const averageError = mean(pointAccuracies);
-
-      let quality: CalibrationQuality = 'poor';
-      if (averageError < CALIBRATION_THRESHOLDS.good) quality = 'good';
-      else if (averageError < CALIBRATION_THRESHOLDS.acceptable) quality = 'acceptable';
-
-      const calibResult: CalibrationResult = { quality, pointAccuracies, averageError };
+      const calibResult = buildCalibrationResult(pointAccuracies);
       setResult(calibResult);
-      setPhase('complete');
+      // Phase stays 'validating' — engine manages: pre-validation → quick validation → canFinalize
 
       return {
         result: calibResult,
@@ -401,8 +285,6 @@ export function useCalibration() {
     pointSampleCounts,
     activePointIndices: collectionOrder,
     result,
-    samplesPerPoint: CALIBRATION_SAMPLES_PER_POINT,
-    dotDuration: CALIBRATION_DOT_DURATION,
     startCalibration,
     addSample,
     advancePoint,

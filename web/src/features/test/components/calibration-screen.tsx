@@ -5,7 +5,7 @@ import type { CalibrationPoint, CalibrationResult } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
 import { GridModeView, StickmanCanvas, StarCanvas } from './calibration-modes';
 import { getCalibrationAudio } from '../lib/calibration-audio';
-import { playSoftSound, speakInstruction } from '../lib/ui-audio';
+import { playSoftSound } from '../lib/ui-audio';
 import {
   type CalibrationVisualMode,
   type WebcamCalibrationSample,
@@ -15,17 +15,12 @@ import {
   CalibrationSetup,
   CalibrationCountdown,
   CalibrationCollecting,
+  CalibrationPreValidation,
   CalibrationValidation,
   CalibrationResult as CalibrationResultView,
-  MOTION_DURATION_MS,
-  HOLD_DURATION_MS,
   SAMPLE_INTERVAL_MS,
-  GRID_MIN_SAMPLES_WEBCAM,
-  GRID_MIN_SAMPLES_TOBII,
-  GRID_MIN_DWELL_MS,
-  GRID_MAX_DWELL_MS,
-  GRID_FORCE_ADVANCE_MS,
   GRID_TIMEOUT_MIN_SAMPLES_WEBCAM,
+  getModeTiming,
 } from './calibration';
 
 /* ------------------------------------------------------------------ */
@@ -65,7 +60,6 @@ export function CalibrationScreen({
   /* ---- local state ---- */
   const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(mode);
   const [hasStartedCalibration, setHasStartedCalibration] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [collectionIssue, setCollectionIssue] = useState<'no-signal' | 'low-samples' | null>(null);
 
   /* ---- engine ---- */
@@ -87,6 +81,8 @@ export function CalibrationScreen({
     ingestSampleForTarget,
     resetFixationState,
     skipCalibration,
+    startValidation,
+    readyForPreValidation,
   } = useCalibrationEngine({
     tracker,
     mode: selectedMode,
@@ -96,40 +92,41 @@ export function CalibrationScreen({
     onGetHeadPoseSample,
   });
 
-  const {
-    phase,
-    currentPoint,
-    currentPointIndex,
-    collectionStep,
-    collectionTotal,
-    advancePoint,
-    pointSampleCounts,
-    recalibrationRound,
-  } = calibration;
+  const { phase, currentPoint, currentPointIndex, collectionStep, collectionTotal, advancePoint } =
+    calibration;
+
+  const [preValidationDismissed, setPreValidationDismissed] = useState(false);
 
   const calibrationAudio = useMemo(() => getCalibrationAudio(), []);
 
   /* ---- refs ---- */
   const previousPointRef = useRef<CalibrationPoint>(CALIBRATION_POINTS[0]);
   const [previousPoint, setPreviousPoint] = useState<CalibrationPoint>(CALIBRATION_POINTS[0]);
-  const spokenKeyRef = useRef('');
   const captureCountRef = useRef(0);
   const stableFixationRef = useRef(false);
-
-  useEffect(() => { captureCountRef.current = captureCount; }, [captureCount]);
-  useEffect(() => { stableFixationRef.current = isStableFixation; }, [isStableFixation]);
-
-  /* ---- cleanup speech on unmount ---- */
+  // Reset pre-validation dismissed when re-entering collecting after a recalibration round
+  const prevPhaseRef = useRef(phase);
   useEffect(() => {
-    return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
+    if (
+      (phase === 'collecting' || phase === 'recalibrating') &&
+      prevPhaseRef.current === 'validating'
+    ) {
+      setPreValidationDismissed(false);
+    }
+    prevPhaseRef.current = phase;
+  }, [phase]);
 
-  /* ---- audio sync ---- */
-  useEffect(() => { calibrationAudio.setMuted(!voiceEnabled); }, [voiceEnabled, calibrationAudio]);
+  useEffect(() => {
+    captureCountRef.current = captureCount;
+  }, [captureCount]);
+  useEffect(() => {
+    stableFixationRef.current = isStableFixation;
+  }, [isStableFixation]);
+
+  /* ---- audio sync (calibration-audio engine mute is independent of voice now) ---- */
+  useEffect(() => {
+    calibrationAudio.setMuted(false);
+  }, [calibrationAudio]);
 
   /* ---- subtle capture pulse sound ---- */
   useEffect(() => {
@@ -148,11 +145,12 @@ export function CalibrationScreen({
   useEffect(() => {
     if (phase !== 'collecting' && phase !== 'recalibrating') return;
 
-    setPreviousPoint(previousPointRef.current);
+    queueMicrotask(() => setPreviousPoint(previousPointRef.current));
     previousPointRef.current = currentPoint;
     resetFixationState();
 
     const isCanvasMode = resolvedMode === 'stickman' || resolvedMode === 'star';
+    const timing = getModeTiming(resolvedMode);
 
     const sampleInterval = setInterval(() => {
       ingestSampleForTarget(currentPoint);
@@ -162,7 +160,8 @@ export function CalibrationScreen({
     if (!isCanvasMode) {
       const pointStartedAt = performance.now();
       const startCaptureCount = captureCountRef.current;
-      const minSamples = tracker === 'webcam' ? GRID_MIN_SAMPLES_WEBCAM : GRID_MIN_SAMPLES_TOBII;
+      const minSamples =
+        tracker === 'webcam' ? timing.gridMinSamplesWebcam : timing.gridMinSamplesTobii;
       const minSamplesForTimeoutAdvance =
         tracker === 'webcam' ? Math.min(minSamples, GRID_TIMEOUT_MIN_SAMPLES_WEBCAM) : minSamples;
       let advanced = false;
@@ -180,12 +179,12 @@ export function CalibrationScreen({
         const capturedThisPoint = captureCountRef.current - startCaptureCount;
         const canAdvanceByQuality =
           capturedThisPoint >= minSamples &&
-          (stableFixationRef.current || elapsedMs >= GRID_MIN_DWELL_MS);
+          (stableFixationRef.current || elapsedMs >= timing.gridMinDwellMs);
         const mustAdvanceByTimeout =
           tracker === 'webcam'
-            ? elapsedMs >= GRID_MAX_DWELL_MS && capturedThisPoint >= minSamplesForTimeoutAdvance
-            : elapsedMs >= GRID_MAX_DWELL_MS;
-        const forceAdvance = tracker === 'webcam' && elapsedMs >= GRID_FORCE_ADVANCE_MS;
+            ? elapsedMs >= timing.gridMaxDwellMs && capturedThisPoint >= minSamplesForTimeoutAdvance
+            : elapsedMs >= timing.gridMaxDwellMs;
+        const forceAdvance = tracker === 'webcam' && elapsedMs >= timing.gridForceAdvanceMs;
 
         if (canAdvanceByQuality || mustAdvanceByTimeout || forceAdvance) {
           pushIssue(null);
@@ -194,7 +193,7 @@ export function CalibrationScreen({
           return;
         }
 
-        if (tracker === 'webcam' && elapsedMs >= GRID_MAX_DWELL_MS) {
+        if (tracker === 'webcam' && elapsedMs >= timing.gridMaxDwellMs) {
           if (capturedThisPoint === 0) pushIssue('no-signal');
           else if (capturedThisPoint < minSamplesForTimeoutAdvance) pushIssue('low-samples');
           else pushIssue(null);
@@ -209,39 +208,14 @@ export function CalibrationScreen({
       if (advanceMonitor) clearInterval(advanceMonitor);
     };
   }, [
-    phase, currentPointIndex, currentPoint, tracker,
-    advancePoint, ingestSampleForTarget, resetFixationState, resolvedMode,
-  ]);
-
-  /* ---- voice narration ---- */
-  useEffect(() => {
-    if (!voiceEnabled || !hasStartedCalibration) return;
-
-    let key = '';
-    let text = '';
-
-    if (showCountdown) {
-      key = `countdown-${countdown}`;
-      text = 'Calibration is about to start. Follow the target and keep your head steady.';
-    } else if (phase === 'collecting' || phase === 'recalibrating') {
-      key = `collecting-${resolvedMode}-${collectionStep}`;
-      text = 'Keep your eyes on the target until the ring fills.';
-    } else if (quickValidation.phase === 'running') {
-      key = `quick-validation-${quickValidation.currentStep}`;
-      text = 'Great. Now look at five quick check points to verify accuracy.';
-    } else if (canFinalize && finalResult) {
-      key = `complete-${finalResult.quality}-${quickValidation.accuracyPercent ?? -1}`;
-      text = 'Calibration finished. Review your score and continue when ready.';
-    }
-
-    if (!key || spokenKeyRef.current === key) return;
-    spokenKeyRef.current = key;
-    speakInstruction(text, voiceEnabled);
-  }, [
-    voiceEnabled, hasStartedCalibration, showCountdown, countdown,
-    phase, collectionStep, resolvedMode,
-    quickValidation.phase, quickValidation.currentStep, quickValidation.accuracyPercent,
-    canFinalize, finalResult,
+    phase,
+    currentPointIndex,
+    currentPoint,
+    tracker,
+    advancePoint,
+    ingestSampleForTarget,
+    resetFixationState,
+    resolvedMode,
   ]);
 
   /* ---- callbacks ---- */
@@ -249,6 +223,7 @@ export function CalibrationScreen({
     resetEngine();
     setHasStartedCalibration(false);
     setCollectionIssue(null);
+    setPreValidationDismissed(false);
   }, [resetEngine]);
 
   const handleStartCalibration = useCallback(() => {
@@ -257,7 +232,9 @@ export function CalibrationScreen({
     setCollectionIssue(null);
   }, [beginCalibration]);
 
-  const handleSkip = useCallback(() => { skipCalibration(); }, [skipCalibration]);
+  const handleSkip = useCallback(() => {
+    skipCalibration();
+  }, [skipCalibration]);
 
   const handleContinue = useCallback(() => {
     if (!finalResult) return;
@@ -268,28 +245,21 @@ export function CalibrationScreen({
     onComplete(finalResult);
   }, [finalResult, tracker, mapping, onComplete]);
 
-  const toggleVoice = useCallback(() => setVoiceEnabled((v) => !v), []);
-
   /* ---- derived props for mode views ---- */
-  const modeViewProps = useMemo(
-    () => ({
-      points: CALIBRATION_POINTS,
-      currentPoint,
-      previousPoint,
-      collectionStep,
-      collectionTotal,
-      isBossPoint: collectionStep === collectionTotal,
-      fixationProgress,
-      isStableFixation,
-      capturePulse,
-      motionDurationMs: MOTION_DURATION_MS,
-      holdDurationMs: HOLD_DURATION_MS,
-      gazeX: gazeCursor?.x ?? 0,
-      gazeY: gazeCursor?.y ?? 0,
-    }),
-    [currentPoint, collectionStep, collectionTotal, previousPoint,
-     fixationProgress, isStableFixation, capturePulse, gazeCursor],
-  );
+  const modeViewProps = {
+    points: CALIBRATION_POINTS,
+    currentPoint,
+    previousPoint,
+    collectionStep,
+    collectionTotal,
+    fixationProgress,
+    isStableFixation,
+    capturePulse,
+    motionDurationMs: getModeTiming(resolvedMode).motionDurationMs,
+    holdDurationMs: getModeTiming(resolvedMode).holdDurationMs,
+    gazeX: gazeCursor?.x ?? 0,
+    gazeY: gazeCursor?.y ?? 0,
+  };
 
   const quickValidationPassed =
     quickValidation.accuracyPercent == null || quickValidation.accuracyPercent >= 70;
@@ -303,9 +273,7 @@ export function CalibrationScreen({
     return (
       <CalibrationSetup
         resolvedMode={resolvedMode}
-        voiceEnabled={voiceEnabled}
         onSelectMode={setSelectedMode}
-        onToggleVoice={toggleVoice}
         onStart={handleStartCalibration}
       />
     );
@@ -313,14 +281,7 @@ export function CalibrationScreen({
 
   /* 2. Countdown */
   if (showCountdown) {
-    return (
-      <CalibrationCountdown
-        countdown={countdown}
-        resolvedMode={resolvedMode}
-        voiceEnabled={voiceEnabled}
-        onToggleVoice={toggleVoice}
-      />
-    );
+    return <CalibrationCountdown countdown={countdown} resolvedMode={resolvedMode} />;
   }
 
   /* 3. Collecting / Recalibrating */
@@ -337,25 +298,52 @@ export function CalibrationScreen({
     return (
       <CalibrationCollecting
         tracker={tracker}
-        isRecalibrating={phase === 'recalibrating'}
-        recalibrationRound={recalibrationRound}
-        fixationProgress={fixationProgress}
-        isStableFixation={isStableFixation}
-        captureCount={captureCount}
-        currentPointIndex={currentPointIndex}
-        pointSampleCounts={pointSampleCounts}
         collectionIssue={collectionIssue}
-        resolvedMode={resolvedMode}
         gazeCursor={gazeCursor}
-        voiceEnabled={voiceEnabled}
-        onToggleVoice={toggleVoice}
         onSkip={handleSkip}
         modeSurface={modeSurface}
       />
     );
   }
 
-  /* 4. Quick validation */
+  /* 4. Pre-validation instructions (shown once before validation starts)
+   *    IMPORTANT: readyForPreValidation prevents flashing the card before
+   *    recalibration — it is only true after the engine computation finishes
+   *    without triggering a recalibration round.
+   */
+  if (
+    quickValidation.phase === 'idle' &&
+    phase === 'validating' &&
+    readyForPreValidation &&
+    !preValidationDismissed
+  ) {
+    return (
+      <CalibrationPreValidation
+        resolvedMode={resolvedMode}
+        onReady={() => {
+          setPreValidationDismissed(true);
+          startValidation();
+        }}
+      />
+    );
+  }
+  /* 4b. Transitional: computing calibration, waiting for recalibration decision, or
+   *     dismissed but validation hasn't started yet (brief async gap).
+   *     Shows a spinner so the UI never flashes the wrong panel. */
+  if (phase === 'validating' && quickValidation.phase === 'idle') {
+    return (
+      <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[#FDF8F0] cursor-none">
+        <div className="flex flex-col items-center gap-3">
+          <div className="border-[#4A7C59] border-3 border-t-transparent rounded-full w-8 h-8 animate-spin" />
+          <p className="text-[#8B857E] text-sm">
+            {preValidationDismissed ? 'Preparing validation…' : 'Computing calibration…'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  /* 5. Quick validation */
   if (quickValidation.phase === 'running') {
     return (
       <CalibrationValidation
@@ -364,17 +352,17 @@ export function CalibrationScreen({
         holdProgress={quickValidation.holdProgress ?? 0}
         target={quickValidation.target}
         gazeCursor={gazeCursor}
+        resolvedMode={resolvedMode}
       />
     );
   }
 
-  /* 5. Result */
+  /* 6. Result */
   if (canFinalize && finalResult) {
     return (
-      <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[radial-gradient(circle_at_20%_15%,hsl(var(--primary)/0.18),transparent_50%),radial-gradient(circle_at_80%_85%,hsl(var(--accent)/0.12),transparent_50%),hsl(var(--background))] overflow-auto py-8">
+      <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[#FDF8F0] py-8 overflow-auto">
         <CalibrationResultView
           result={finalResult}
-          captureCount={captureCount}
           quickValidationAccuracy={quickValidation.accuracyPercent}
           quickValidationPassed={quickValidationPassed}
           blockOnPoor={blockOnPoor}

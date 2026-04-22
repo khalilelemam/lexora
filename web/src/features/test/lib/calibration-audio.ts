@@ -13,20 +13,14 @@
 
 export type SoundType =
   | 'spawn'
-  | 'bossSpawn'
   | 'dash'
-  | 'jump'
-  | 'land'
-  | 'bossLand'
   | 'step'
   | 'skid'
-  | 'obstacleBreak'
   | 'hit'
   | 'scanTick'
   | 'shatter'
   | 'collect'
   | 'magicSparkle'
-  | 'chestOpen'
   | 'success';
 
 interface CalibrationAudioEngine {
@@ -75,9 +69,6 @@ const DEBOUNCE_MS = new Map<SoundType, number>([
   ['scanTick', 180],
   ['dash', 300],
   ['magicSparkle', 250],
-  ['jump', 200],
-  ['land', 200],
-  ['obstacleBreak', 200],
   ['skid', 250],
 ]);
 
@@ -253,41 +244,17 @@ const soundRegistry = new Map<SoundType, SoundHandler>([
     playTone(440, 'triangle', 0.2, 0.02, 550);
   }],
 
-  ['bossSpawn', () => {
-    playTone(130, 'triangle', 0.4, 0.05, 260);
-    playChord([130, 195, 260], 'sine', 0.35, 0.025);
-  }],
-
   ['dash', () => {
     playNoise(0.12, 0.025, 'highpass', 2500, 600);
     playTone(500, 'sine', 0.08, 0.015, 800);
   }],
 
-  ['jump', () => {
-    playTone(400, 'sine', 0.18, 0.03, 800);
-  }],
-
-  ['land', () => {
-    playTone(150, 'sine', 0.1, 0.025, 80);
-  }],
-
-  ['bossLand', () => {
-    playTone(90, 'triangle', 0.18, 0.04, 50);
-    playNoise(0.12, 0.025, 'lowpass', 350, 80);
-  }],
-
   ['step', () => {
-    // Very subtle soft tap — barely audible to avoid annoyance
     playTone(120, 'sine', 0.04, 0.008, 70);
   }],
 
   ['skid', () => {
     playNoise(0.1, 0.02, 'bandpass', 1800, 600);
-  }],
-
-  ['obstacleBreak', () => {
-    playNoise(0.15, 0.04, 'lowpass', 1200, 150);
-    playTone(220, 'triangle', 0.1, 0.03, 60);
   }],
 
   ['hit', () => {
@@ -311,10 +278,6 @@ const soundRegistry = new Map<SoundType, SoundHandler>([
   ['magicSparkle', () => {
     playTone(880, 'sine', 0.15, 0.012, 1320);
     setTimeout(() => playTone(1100, 'sine', 0.12, 0.01, 1650), 60);
-  }],
-
-  ['chestOpen', () => {
-    playChord([392, 494, 587], 'sine', 0.3, 0.025);
   }],
 
   ['success', () => {

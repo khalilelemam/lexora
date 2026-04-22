@@ -1,5 +1,9 @@
 /**
  * Lightweight UI audio helpers — shared AudioContext for soft feedback sounds.
+ *
+ * The TTS voice system (speakInstruction) has been removed.
+ * Research shows repeating interrupted voice prompts degrade UX.
+ * Replaced with: brief text overlays + subtle audio cues.
  */
 
 let _ctx: AudioContext | null = null;
@@ -40,18 +44,4 @@ export function playSoftSound(frequency: number, durationMs = 95, volume = 0.04)
   gain.connect(ctx.destination);
   osc.start();
   osc.stop(ctx.currentTime + durationMs / 1000);
-}
-
-/**
- * Speak a short instruction using Web Speech API.
- */
-export function speakInstruction(text: string, enabled: boolean): void {
-  if (!enabled || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.95;
-  utterance.pitch = 1;
-  utterance.volume = 0.65;
-  window.speechSynthesis.speak(utterance);
 }

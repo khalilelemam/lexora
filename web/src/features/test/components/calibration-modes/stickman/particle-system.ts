@@ -15,6 +15,10 @@ export interface Particle {
   length?: number;
   life: number;
   maxLife: number;
+  /** Optional override color */
+  color?: string;
+  /** Optional override size */
+  size?: number;
 }
 
 export interface Bone {
@@ -149,7 +153,44 @@ export function createLandingDust(x: number, y: number, count = 8): Particle[] {
   }));
 }
 
-/* ── Drawing ─────────────────────────────────────────────── */
+/** Create ninja teleportation poof particles. */
+export function createPoofParticles(x: number, y: number): Particle[] {
+  const particles: Particle[] = [];
+  // Smoke puffs
+  for (let i = 0; i < 18; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 20 + Math.random() * 60;
+    particles.push({
+      type: 'dust',
+      x: x + (Math.random() - 0.5) * 20,
+      y: y + (Math.random() - 0.5) * 20,
+      vx: Math.cos(angle) * speed * 0.016,
+      vy: Math.sin(angle) * speed * 0.016 - 1.5,
+      life: 600 + Math.random() * 400,
+      maxLife: 1000,
+      size: 6 + Math.random() * 12,
+      color: `hsl(${200 + Math.random() * 40},10%,${55 + Math.random() * 20}%)`,
+    });
+  }
+  // Spark flash
+  for (let i = 0; i < 10; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 4;
+    particles.push({
+      type: 'spark',
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      life: 300 + Math.random() * 200,
+      maxLife: 500,
+      color: '#c4bdb4',
+    });
+  }
+  return particles;
+}
+
+
 
 /** Render all particles onto the canvas and remove expired ones in-place. */
 export function drawAndUpdateParticles(
@@ -165,19 +206,22 @@ export function drawAndUpdateParticles(
     if (p.type === 'spark') {
       p.x += p.vx || 0;
       p.y += p.vy || 0;
-      ctx.fillStyle = '#eab308';
-      ctx.fillRect(p.x, p.y, 4, 4);
+      ctx.fillStyle = p.color ?? '#eab308';
+      const sz = p.size ?? 4;
+      ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
     } else if (p.type === 'dust') {
       p.x += p.vx || 0;
       p.y += p.vy || 0;
-      if (p.vx) p.vx *= 0.9;
-      ctx.fillStyle = '#cbd5e1';
+      if (p.vx) p.vx *= 0.92;
+      if (p.vy) p.vy *= 0.92;
+      ctx.fillStyle = p.color ?? '#cbd5e1';
+      const radius = p.size != null ? p.size * (p.life / p.maxLife) : Math.max(0, p.life / 60);
       ctx.beginPath();
-      ctx.arc(p.x, p.y, Math.max(0, p.life / 60), 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(0.1, radius), 0, Math.PI * 2);
       ctx.fill();
     } else if (p.type === 'slash') {
       const prog = 1 - p.life / p.maxLife;
-      ctx.strokeStyle = '#ef4444';
+      ctx.strokeStyle = p.color ?? '#ef4444';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(

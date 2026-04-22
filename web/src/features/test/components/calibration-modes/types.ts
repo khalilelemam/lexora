@@ -13,11 +13,3 @@ export interface CalibrationModeViewProps {
   motionDurationMs: number;
   holdDurationMs: number;
 }
-
-/** Extended props for Canvas-based modes that need gaze coordinates */
-export interface CalibrationCanvasModeProps extends CalibrationModeViewProps {
-  gazeX: number;
-  gazeY: number;
-  /** Callback when the mode internally determines fixation is complete */
-  onSampleCollected?: () => void;
-}

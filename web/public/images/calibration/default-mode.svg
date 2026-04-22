@@ -1,11 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="480" height="300" viewBox="0 0 480 300">
-  <rect width="480" height="300" fill="#f0f4ff" rx="8"/>
-  <g fill="#6366f1" opacity="0.3">
-    <circle cx="60" cy="40" r="6"/><circle cx="240" cy="40" r="6"/><circle cx="420" cy="40" r="6"/>
-    <circle cx="60" cy="150" r="6"/><circle cx="240" cy="150" r="8" opacity="0.7"/><circle cx="420" cy="150" r="6"/>
-    <circle cx="60" cy="260" r="6"/><circle cx="240" cy="260" r="6"/><circle cx="420" cy="260" r="6"/>
+  <!-- Warm cream background -->
+  <rect width="480" height="300" fill="#FDF8F0" rx="8"/>
+
+  <!-- Grid dots (calibration point pattern) -->
+  <g fill="#4A7C59" opacity="0.2">
+    <circle cx="96" cy="60" r="4"/>
+    <circle cx="240" cy="60" r="4"/>
+    <circle cx="384" cy="60" r="4"/>
+    <circle cx="96" cy="150" r="4"/>
+    <circle cx="384" cy="150" r="4"/>
+    <circle cx="96" cy="240" r="4"/>
+    <circle cx="240" cy="240" r="4"/>
+    <circle cx="384" cy="240" r="4"/>
   </g>
-  <circle cx="240" cy="150" r="18" fill="none" stroke="#6366f1" stroke-width="3" opacity="0.5"/>
-  <circle cx="240" cy="150" r="5" fill="#6366f1"/>
-  <line x1="60" y1="40" x2="240" y2="150" stroke="#6366f1" stroke-width="1" stroke-dasharray="6 4" opacity="0.2"/>
+
+  <!-- Active target with rings -->
+  <circle cx="240" cy="150" r="30" fill="none" stroke="#4A7C59" stroke-width="2" opacity="0.15"/>
+  <circle cx="240" cy="150" r="22" fill="none" stroke="#4A7C59" stroke-width="1.5" opacity="0.25"/>
+  <circle cx="240" cy="150" r="14" fill="none" stroke="#4A7C59" stroke-width="1" opacity="0.35"/>
+
+  <!-- Center dot (charcoal) -->
+  <circle cx="240" cy="150" r="7" fill="#2D2A26"/>
+
+  <!-- Progress ring -->
+  <circle cx="240" cy="150" r="30" fill="none" stroke="#4A7C59" stroke-width="3" opacity="0.6"
+    stroke-dasharray="120 70" stroke-linecap="round"
+    transform="rotate(-90 240 150)"/>
+
+  <!-- Completed dots (filled sage) -->
+  <g fill="#4A7C59" opacity="0.6">
+    <circle cx="96" cy="60" r="5"/>
+    <circle cx="240" cy="60" r="5"/>
+    <circle cx="384" cy="60" r="5"/>
+  </g>
+
+  <!-- Label -->
+  <text x="240" y="280" text-anchor="middle" fill="#2D2A26" font-size="14" font-family="system-ui, sans-serif" font-weight="600" opacity="0.7">
+    Grid Mode
+  </text>
 </svg>

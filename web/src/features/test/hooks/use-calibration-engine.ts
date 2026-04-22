@@ -5,20 +5,20 @@ import type { CalibrationPoint, CalibrationResult } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
 import { useCalibration } from './use-calibration';
 import {
+  useQuickValidation,
+  type QuickValidationState,
+  type MappingFn,
+} from './use-quick-validation';
+import {
   COUNTDOWN_SECONDS,
   STABLE_FIXATION_MS,
   STABLE_VELOCITY_NORM_PER_SEC,
   CAPTURE_COOLDOWN_MS,
-  VALIDATION_SETTLE_MS,
-  VALIDATION_HOLD_MS,
-  VALIDATION_THRESHOLD_SCREEN_DIAGONAL,
-  VALIDATION_MIN_SAMPLES_PER_POINT,
-  VALIDATION_POINT_INDICES,
   clamp01,
-  mean,
-  nextAnimationFrame,
   getScreenInfo,
 } from '../lib/calibration-engine-constants';
+
+/* ── Public types ───────────────────────────────────────── */
 
 export type CalibrationVisualMode = 'grid' | 'stickman' | 'star';
 
@@ -43,15 +43,10 @@ export interface StoredCalibrationSample {
   timestamp: number;
 }
 
-export interface QuickValidationState {
-  phase: 'idle' | 'running' | 'done';
-  currentStep: number;
-  totalSteps: number;
-  target: CalibrationPoint | null;
-  holdProgress: number;
-  accuracyPercent: number | null;
-  pointScores: number[];
-}
+// Re-export for consumers that imported from this module
+export type { QuickValidationState };
+
+/* ── Options ────────────────────────────────────────────── */
 
 interface UseCalibrationEngineOptions {
   tracker: 'tobii' | 'webcam';
@@ -61,6 +56,8 @@ interface UseCalibrationEngineOptions {
   onGetIrisSample?: () => WebcamCalibrationSample | null;
   onGetHeadPoseSample?: () => { yaw: number; pitch: number } | null;
 }
+
+/* ── Helpers ────────────────────────────────────────────── */
 
 export function resolveCalibrationMode(
   requestedMode?: CalibrationVisualMode,
@@ -75,6 +72,8 @@ export function resolveCalibrationMode(
 
   return 'grid';
 }
+
+/* ── Main hook ──────────────────────────────────────────── */
 
 export function useCalibrationEngine({
   tracker,
@@ -102,32 +101,58 @@ export function useCalibrationEngine({
   const stableVelocityThreshold =
     resolvedMode === 'grid' ? STABLE_VELOCITY_NORM_PER_SEC : STABLE_VELOCITY_NORM_PER_SEC * 1.5;
 
+  /* ---- local state ---- */
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const [showCountdown, setShowCountdown] = useState(false);
   const [fixationProgress, setFixationProgress] = useState(0);
   const [isStableFixation, setIsStableFixation] = useState(false);
   const [captureCount, setCaptureCount] = useState(0);
   const [gazeCursor, setGazeCursor] = useState<{ x: number; y: number } | null>(null);
-  const [quickValidation, setQuickValidation] = useState<QuickValidationState>({
-    phase: 'idle',
-    currentStep: 0,
-    totalSteps: VALIDATION_POINT_INDICES.length,
-    target: null,
-    holdProgress: 0,
-    accuracyPercent: null,
-    pointScores: [],
-  });
   const [finalResult, setFinalResult] = useState<CalibrationResult | null>(null);
+  // Prevents the pre-validation card from flashing before recalibration.
+  // Only becomes true once the post-calibration computation finishes
+  // WITHOUT triggering a recalibration round.
+  const [readyForPreValidation, setReadyForPreValidation] = useState(false);
 
-  const mappingRef = useRef<{
-    predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
-  } | null>(null);
+  /* ---- refs ---- */
+  const mappingRef = useRef<MappingFn>(null);
   const lastStabilityPointRef = useRef<{ x: number; y: number; timestamp: number } | null>(null);
   const stableSinceRef = useRef<number | null>(null);
   const lastCaptureAtRef = useRef(0);
   const finalizationStartedRef = useRef(false);
-  const cancelledRef = useRef(false);
   const storedSamplesRef = useRef<StoredCalibrationSample[]>([]);
+
+  /* ---- prediction reader (shared with quick validation) ---- */
+  const readCurrentPrediction = useCallback(
+    (mapping: MappingFn) => {
+      const { width, height } = getScreenInfo();
+
+      if (tracker === 'tobii') {
+        const sample = onGetGazeSample?.();
+        if (!sample) return null;
+        return { x: sample.x * width, y: sample.y * height };
+      }
+
+      const sample = onGetIrisSample?.();
+      if (!sample || !mapping) return null;
+      const headPose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
+      return mapping.predict(sample.x, sample.y, headPose.yaw, headPose.pitch);
+    },
+    [tracker, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample],
+  );
+
+  /* ---- quick validation (extracted hook) ---- */
+  const { quickValidation, runQuickValidation, resetQuickValidation, setCancelled } =
+    useQuickValidation(readCurrentPrediction, (cursor) => setGazeCursor(cursor));
+
+  /* ---- lifecycle management ---- */
+
+  useEffect(() => {
+    setCancelled(false);
+    return () => {
+      setCancelled(true);
+    };
+  }, [setCancelled]);
 
   const resetFixationState = useCallback(() => {
     setFixationProgress(0);
@@ -136,59 +161,33 @@ export function useCalibrationEngine({
     stableSinceRef.current = null;
   }, []);
 
-  const resetEngine = useCallback(() => {
+  /** Shared state reset — used by both resetEngine and beginCalibration */
+  const resetState = useCallback(() => {
     resetCalibration();
     setCountdown(COUNTDOWN_SECONDS);
-    setShowCountdown(false);
     setCaptureCount(0);
     setGazeCursor(null);
     setFinalResult(null);
-    setQuickValidation({
-      phase: 'idle',
-      currentStep: 0,
-      totalSteps: VALIDATION_POINT_INDICES.length,
-      target: null,
-      holdProgress: 0,
-      accuracyPercent: null,
-      pointScores: [],
-    });
+    setReadyForPreValidation(false);
+    resetQuickValidation();
     resetFixationState();
     mappingRef.current = null;
     finalizationStartedRef.current = false;
     lastCaptureAtRef.current = 0;
     storedSamplesRef.current = [];
-  }, [resetCalibration, resetFixationState]);
+  }, [resetCalibration, resetFixationState, resetQuickValidation]);
+
+  const resetEngine = useCallback(() => {
+    resetState();
+    setShowCountdown(false);
+  }, [resetState]);
 
   const beginCalibration = useCallback(() => {
-    resetCalibration();
-    setCountdown(COUNTDOWN_SECONDS);
+    resetState();
     setShowCountdown(true);
-    setCaptureCount(0);
-    setGazeCursor(null);
-    setFinalResult(null);
-    setQuickValidation({
-      phase: 'idle',
-      currentStep: 0,
-      totalSteps: VALIDATION_POINT_INDICES.length,
-      target: null,
-      holdProgress: 0,
-      accuracyPercent: null,
-      pointScores: [],
-    });
-    resetFixationState();
-    mappingRef.current = null;
-    finalizationStartedRef.current = false;
-    lastCaptureAtRef.current = 0;
-    storedSamplesRef.current = [];
-  }, [resetCalibration, resetFixationState]);
+  }, [resetState]);
 
-  useEffect(() => {
-    cancelledRef.current = false;
-    return () => {
-      cancelledRef.current = true;
-    };
-  }, []);
-
+  /* ---- countdown timer ---- */
   useEffect(() => {
     if (!showCountdown) return;
 
@@ -206,200 +205,79 @@ export function useCalibrationEngine({
     return () => clearTimeout(timer);
   }, [showCountdown, countdown, startCalibration]);
 
+  /* ---- pending result ref for two-step finalization ---- */
+  const pendingResultRef = useRef<CalibrationResult | null>(null);
 
-  const readCurrentPrediction = useCallback(
-    (
-      mapping: {
-        predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
-      } | null,
-    ) => {
-      const { width, height } = getScreenInfo();
-
-      if (tracker === 'tobii') {
-        const sample = onGetGazeSample?.();
-        if (!sample) return null;
-        return { x: sample.x * width, y: sample.y * height };
-      }
-
-      const sample = onGetIrisSample?.();
-      if (!sample || !mapping) return null;
-      const headPose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
-      return mapping.predict(sample.x, sample.y, headPose.yaw, headPose.pitch);
-    },
-    [tracker, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample],
-  );
-
-  const runQuickValidation = useCallback(
-    async (
-      mapping: {
-        predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
-      } | null,
-    ): Promise<number | null> => {
-      const { width, height, diagonal } = getScreenInfo();
-      const validationPoints = VALIDATION_POINT_INDICES.map((index) => CALIBRATION_POINTS[index]);
-      const scores: number[] = [];
-
-      setQuickValidation({
-        phase: 'running',
-        currentStep: 0,
-        totalSteps: validationPoints.length,
-        target: validationPoints[0] ?? null,
-        holdProgress: 0,
-        accuracyPercent: null,
-        pointScores: [],
-      });
-
-      for (let index = 0; index < validationPoints.length; index++) {
-        if (cancelledRef.current) return 0;
-
-        const target = validationPoints[index];
-        const targetX = target.x * width;
-        const targetY = target.y * height;
-        const distances: number[] = [];
-
-        setQuickValidation((prev) => ({
-          ...prev,
-          currentStep: index + 1,
-          target,
-          holdProgress: 0,
-        }));
-
-        const settleStartedAt = performance.now();
-        while (performance.now() - settleStartedAt < VALIDATION_SETTLE_MS) {
-          await nextAnimationFrame();
-          const prediction = readCurrentPrediction(mapping);
-          if (prediction) {
-            setGazeCursor({ x: prediction.x, y: prediction.y });
-          }
-        }
-
-        const startedAt = performance.now();
-        let progressBucket = -1;
-        while (performance.now() - startedAt < VALIDATION_HOLD_MS) {
-          // Keep reads synced with rendering cadence.
-          await nextAnimationFrame();
-          const elapsed = performance.now() - startedAt;
-          const holdProgress = clamp01(elapsed / VALIDATION_HOLD_MS);
-          const nextBucket = Math.floor(holdProgress * 20);
-          if (nextBucket !== progressBucket) {
-            progressBucket = nextBucket;
-            setQuickValidation((prev) => ({
-              ...prev,
-              holdProgress,
-            }));
-          }
-
-          const prediction = readCurrentPrediction(mapping);
-          if (!prediction) continue;
-
-          setGazeCursor({ x: prediction.x, y: prediction.y });
-
-          const distance = Math.hypot(prediction.x - targetX, prediction.y - targetY);
-          distances.push(distance);
-        }
-
-        // If we did not observe enough valid prediction samples, skip this
-        // point so transient camera loss does not force a false 0% verdict.
-        if (distances.length < VALIDATION_MIN_SAMPLES_PER_POINT) {
-          setQuickValidation((prev) => ({
-            ...prev,
-            holdProgress: 1,
-            pointScores: [...scores],
-          }));
-          continue;
-        }
-
-        const meanDistance = mean(distances);
-        const pointScore = Math.round(
-          Math.max(
-            0,
-            Math.min(
-              100,
-              100 - (meanDistance / (diagonal * VALIDATION_THRESHOLD_SCREEN_DIAGONAL)) * 100,
-            ),
-          ),
-        );
-
-        scores.push(pointScore);
-
-        setQuickValidation((prev) => ({
-          ...prev,
-          holdProgress: 1,
-          pointScores: [...scores],
-        }));
-      }
-
-      const accuracy = scores.length > 0 ? Math.round(mean(scores)) : null;
-      setQuickValidation((prev) => ({
-        ...prev,
-        phase: 'done',
-        target: null,
-        holdProgress: 0,
-        accuracyPercent: accuracy,
-        pointScores: [...scores],
-      }));
-
-      return accuracy;
-    },
-    [readCurrentPrediction],
-  );
-
+  /**
+   * Step 1: When calibrationPhase → 'validating', compute the mapping/result
+   *         but DO NOT start validation yet. The UI shows pre-validation instructions first.
+   */
   useEffect(() => {
     if (calibrationPhase !== 'validating') return;
     if (finalizationStartedRef.current) return;
 
     finalizationStartedRef.current = true;
 
-    (async () => {
-      const { width, height } = getScreenInfo();
+    const { width, height } = getScreenInfo();
 
-      if (tracker === 'tobii') {
-        const result = computeTobiiCalibration();
-        await runQuickValidation(null);
-        setFinalResult(result);
-        return;
-      }
+    if (tracker === 'tobii') {
+      const result = computeTobiiCalibration();
+      pendingResultRef.current = result;
+      setReadyForPreValidation(true);
+      // Don't run validation yet — UI will call startValidation()
+      return;
+    }
 
-      const { result, mapping, needsRecalibration } = computeWebcamCalibration(width, height);
+    const { result, mapping, needsRecalibration } = computeWebcamCalibration(width, height);
 
-      if (needsRecalibration) {
-        mappingRef.current = null;
-        setGazeCursor(null);
-        setQuickValidation({
-          phase: 'idle',
-          currentStep: 0,
-          totalSteps: VALIDATION_POINT_INDICES.length,
-          target: null,
-          holdProgress: 0,
-          accuracyPercent: null,
-          pointScores: [],
-        });
-        finalizationStartedRef.current = false;
-        return;
-      }
+    if (needsRecalibration) {
+      mappingRef.current = null;
+      setGazeCursor(null);
+      setReadyForPreValidation(false);
+      resetQuickValidation();
+      finalizationStartedRef.current = false;
+      pendingResultRef.current = null;
+      return;
+    }
 
-      mappingRef.current = mapping;
+    mappingRef.current = mapping;
 
-      if (!result) {
-        setFinalResult({
-          quality: 'poor',
-          pointAccuracies: CALIBRATION_POINTS.map(() => 1),
-          averageError: 1,
-        });
-        return;
-      }
+    if (!result) {
+      setFinalResult({
+        quality: 'poor',
+        pointAccuracies: CALIBRATION_POINTS.map(() => 1),
+        averageError: 1,
+      });
+      setReadyForPreValidation(true);
+      return;
+    }
 
-      await runQuickValidation(mapping);
-      setFinalResult(result);
-    })();
+    pendingResultRef.current = result;
+    setReadyForPreValidation(true);
+    // Don't run validation yet — UI will call startValidation()
   }, [
     calibrationPhase,
     computeTobiiCalibration,
     computeWebcamCalibration,
     tracker,
-    runQuickValidation,
+    resetQuickValidation,
   ]);
 
+  /**
+   * Step 2: Called by the UI after the pre-validation instructions are dismissed.
+   *         Now we actually run the quick validation loop.
+   */
+  const startValidation = useCallback(async () => {
+    if (quickValidation.phase !== 'idle') return;
+    const mapping = mappingRef.current;
+    await runQuickValidation(tracker === 'tobii' ? null : mapping);
+    if (pendingResultRef.current) {
+      setFinalResult(pendingResultRef.current);
+      pendingResultRef.current = null;
+    }
+  }, [quickValidation.phase, tracker, runQuickValidation]);
+
+  /* ---- sample ingestion ---- */
   const ingestSampleForTarget = useCallback(
     (target: CalibrationPoint) => {
       if (calibrationPhase !== 'collecting' && calibrationPhase !== 'recalibrating') return;
@@ -488,7 +366,7 @@ export function useCalibrationEngine({
       // This normalizes across different screen sizes
       const velocityNormPerSecond = motionDistance / diagonal / (dtMs / 1000);
 
-      // Stability threshold: 0.35 means movement < 35% of screen diagonal per second
+      // Velocity in normalized screen-diagonal units per second
       const stable = velocityNormPerSecond < stableVelocityThreshold;
       if (stable) {
         if (stableSinceRef.current == null) stableSinceRef.current = now;
@@ -562,6 +440,7 @@ export function useCalibrationEngine({
     finalResult,
     quickValidation,
     canFinalize,
+    readyForPreValidation,
     mapping: mappingRef.current,
     storedSamples: storedSamplesRef.current,
     beginCalibration,
@@ -569,5 +448,6 @@ export function useCalibrationEngine({
     ingestSampleForTarget,
     resetFixationState,
     skipCalibration,
+    startValidation,
   };
 }

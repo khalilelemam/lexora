@@ -8,7 +8,7 @@ const TOBII_BASE_URL =
     ? (process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980')
     : '';
 
-// ─── Status Hook ─────────────────────────────────────────
+const TOBII_STATUS_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_TOBII_STATUS_TIMEOUT_MS) || 3000;
 
 export function useTobiiStatus() {
   const [status, setStatus] = useState<TobiiStatus | null>(null);
@@ -20,7 +20,7 @@ export function useTobiiStatus() {
     setError(null);
     try {
       const response = await fetch(`${TOBII_BASE_URL}/tobii/status`, {
-        signal: AbortSignal.timeout(3000),
+        signal: AbortSignal.timeout(TOBII_STATUS_TIMEOUT_MS),
       });
       if (!response.ok) throw new Error(`Status ${response.status}`);
       const data = (await response.json()) as TobiiStatus;

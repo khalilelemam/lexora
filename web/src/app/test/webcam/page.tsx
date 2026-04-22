@@ -111,6 +111,7 @@ export default function WebcamTestPage() {
   );
 
   const handleTaskDone = useCallback(() => {
+    // Stop collecting — review panel shows raw gaze trail replay, not live feed
     webcamGaze.stopCollecting();
     dispatch({ type: 'TASK_COMPLETE' });
   }, [dispatch, webcamGaze]);
@@ -279,6 +280,8 @@ export default function WebcamTestPage() {
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
+            readingContent={taskContent || getWebcamTaskContent()}
+            rawGazeData={gazeDataRef.current}
           />
         );
 
@@ -320,30 +323,35 @@ export default function WebcamTestPage() {
   return (
     <TestErrorBoundary>
       <ScreenGuard>
-      <FullscreenShell onExit={handleExit} showExit={webcamState.currentState !== 'results'}>
-        {/* Hidden video element for MediaPipe — always in DOM */}
-        <video
-          ref={videoRef}
-          className="top-0 left-0 fixed opacity-[0.01] w-px h-px pointer-events-none"
-          autoPlay
-          playsInline
-          muted
-        />
+        <FullscreenShell onExit={handleExit} showExit={webcamState.currentState !== 'results'}>
+          {/* Hidden video element for MediaPipe — always in DOM */}
+          <video
+            ref={videoRef}
+            className="top-0 left-0 fixed opacity-[0.01] w-px h-px pointer-events-none"
+            autoPlay
+            playsInline
+            muted
+          />
 
-        {webcamState.currentState !== 'idle' &&
-          webcamState.currentState !== 'calibrating' &&
-          webcamState.currentState !== 'task-paragraph' && (
-            <div className="mb-8">
-              <StepIndicator steps={steps} currentStepKey={currentStepKey} />
-            </div>
-          )}
-        {renderState()}
-        <GazeDebugDot
-          active={webcamState.currentState === 'task-paragraph' && webcamGaze.collecting}
-          getPosition={() => lastTaskGazePosition}
-        />
-      </FullscreenShell>
-    </ScreenGuard>
+          {webcamState.currentState !== 'idle' &&
+            webcamState.currentState !== 'camera-setup' &&
+            webcamState.currentState !== 'calibrating' &&
+            webcamState.currentState !== 'task-paragraph' &&
+            webcamState.currentState !== 'review-paragraph' &&
+            webcamState.currentState !== 'results' &&
+            webcamState.currentState !== 'submitting' && (
+              <div className="mb-8">
+                <StepIndicator steps={steps} currentStepKey={currentStepKey} />
+              </div>
+            )}
+          {renderState()}
+          {/* Gaze debug dot disabled during active reading tests.
+            Research: visible gaze feedback creates tracking feedback loops
+            where the child follows the dot instead of reading naturally.
+            Can be re-enabled for review/debug screens. */}
+          <GazeDebugDot active={false} getPosition={() => lastTaskGazePosition} />
+        </FullscreenShell>
+      </ScreenGuard>
     </TestErrorBoundary>
   );
 }
