@@ -90,13 +90,10 @@ jobs:
                   done
 
             - name: Pull Vercel config
-              working-directory: web
               run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
             - name: Build
-              working-directory: web
               run: vercel build --prod --token "$VERCEL_TOKEN"
 
             - name: Deploy
-              working-directory: web
               run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
