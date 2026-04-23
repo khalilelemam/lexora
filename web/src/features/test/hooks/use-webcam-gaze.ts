@@ -160,24 +160,40 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
         `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`,
       );
 
-      const faceLandmarker = await FL.createFromOptions(filesetResolver, {
-        baseOptions: {
-          modelAssetPath: MEDIAPIPE_MODEL_URL,
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
-        numFaces: 1,
-        outputFaceBlendshapes: false,
-        outputFacialTransformationMatrixes: false,
-      });
+      // Attempt GPU first, fallback to CPU if it fails (common in some browsers/incognito)
+      let faceLandmarker;
+      try {
+        faceLandmarker = await FL.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath: MEDIAPIPE_MODEL_URL,
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numFaces: 1,
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: false,
+        });
+      } catch (gpuErr) {
+        console.warn('GPU acceleration failed for FaceLandmarker, falling back to CPU.', gpuErr);
+        faceLandmarker = await FL.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath: MEDIAPIPE_MODEL_URL,
+            delegate: 'CPU',
+          },
+          runningMode: 'VIDEO',
+          numFaces: 1,
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: false,
+        });
+      }
 
       faceLandmarkerRef.current = faceLandmarker as unknown as FaceLandmarker;
       setModelReady(true);
       setError(null);
     } catch (err) {
-      setError(
-        `Failed to load face tracking model: ${err instanceof Error ? err.message : 'Unknown error'}`,
-      );
+      console.error('MediaPipe Model Error:', err);
+      const message = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Unknown error during initialization';
+      setError(`Failed to load face tracking model: ${message}`);
       setModelReady(false);
     }
   }, []);
