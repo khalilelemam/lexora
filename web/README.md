@@ -42,11 +42,17 @@ Open [http://localhost:3000](http://localhost:3000) in a Chromium-based browser 
 
 The calibration engine supports three visual modes, selectable via URL query parameter (`?calibrationMode=`):
 
-| Mode | Description | Best For |
-|---|---|---|
-| `dot` | Static dot with shrink animation | Older children / adults |
-| `animated` | Animated character with sound effects | Young children (ages 5–8) |
-| `auto` | Chooses based on `?age=` parameter | Default — uses age to pick |
+| Mode | Status | Description | Selection Behavior |
+|---|---|---|---|
+| `grid` | Active | Follow a simple dot across 15 calibration points. Fast and precise. | Default fallback mode; also used for age 10+ |
+| `star` | Active | Follow a friendly star that appears at each calibration point. | Preferred for ages 7–9 |
+| `stickman` | Coming soon (disabled) | Ninja stickman mode is currently disabled for stability hardening. | If requested explicitly, engine falls back to `grid` |
+
+Age-based mode resolution currently behaves as follows:
+
+- `age` 7–9 resolves to `star`
+- `age` >= 10 resolves to `grid`
+- `stickman` requests are intentionally remapped to `grid`
 
 ### Gaze Data Pipeline
 
@@ -69,7 +75,7 @@ Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to
 
 | Variable | Default | Description |
 |---|---|---|
-| `ML_SERVICE_URL` | `http://localhost:8001` | ML prediction service URL (server-side only, not exposed to browser) |
+| `ML_SERVICE_URL` | Required (example: `http://localhost:8001`) | ML prediction service URL (server-side only, not exposed to browser). App throws `CONFIG_ERROR` if unset. |
 | `NEXT_PUBLIC_TOBII_SERVICE_URL` | `http://localhost:28980` | Tobii helper app WebSocket URL |
 | `NEXT_PUBLIC_TOBII_STATUS_TIMEOUT_MS` | `3000` | Timeout (ms) for Tobii connection check |
 
@@ -143,3 +149,22 @@ These live in the source code and are **not** configurable via env vars. They ra
 | `MIN_AUTO_DETECT_SECONDS` | `8` | `constants.ts` | Minimum wait before the done-reading dialog can appear |
 | `VALIDATION_POINT_INDICES` | `[0, 4, 7, 10, 14]` | `calibration-engine-constants.ts` | Which of the 15 points to use for quick validation (corners + center) |
 | `VALIDATION_MIN_SAMPLES_PER_POINT` | `10` | `calibration-engine-constants.ts` | Min gaze samples per validation point for a valid score |
+
+### Calibration Mode Timing Constants
+
+These are defined in `calibration-constants.ts` and currently hardcoded per mode:
+
+| Mode | motionDurationMs | holdDurationMs | gridMinDwellMs | gridMaxDwellMs | gridForceAdvanceMs | gridMinSamplesWebcam | gridMinSamplesTobii |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `grid` | 420 | 900 | 1000 | 3200 | 5000 | 8 | 6 |
+| `star` | 550 | 1100 | 1400 | 4000 | 6000 | 7 | 5 |
+| `stickman` | 600 | 1200 | 1500 | 4500 | 7000 | 6 | 5 |
+
+### Additional Hardcoded Sampling Constants
+
+| Constant | Value | File | Purpose |
+|---|---:|---|---|
+| `SAMPLE_INTERVAL_MS` | `33` | `calibration-constants.ts` | Target sampling cadence during calibration collection |
+| `GRID_TIMEOUT_MIN_SAMPLES_WEBCAM` | `2` | `calibration-constants.ts` | Minimum webcam samples required before timeout-based advance |
+| `POINT_SAMPLES_GOAL_WEBCAM` | `3` | `calibration-constants.ts` | Per-point sample goal for webcam mode |
+| `POINT_SAMPLES_GOAL_TOBII` | `3` | `calibration-constants.ts` | Per-point sample goal for Tobii mode |
