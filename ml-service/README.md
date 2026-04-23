@@ -160,10 +160,12 @@ docker run -p 8001:8001 lexora-ml
 
 The ML workflow includes an Azure Container Apps deploy path (best fit for your student credits).
 
-Required repository secrets:
+Required GitHub environment secrets in `ml-production`:
 - `AZURE_CLIENT_ID`
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
+
+Required repository secrets:
 - `GHCR_USERNAME`
 - `GHCR_PASSWORD`
 
