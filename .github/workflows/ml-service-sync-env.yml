@@ -1,0 +1,210 @@
+name: ML Service Sync Production Env
+
+on:
+    workflow_dispatch:
+        inputs:
+            imageTag:
+                description: Optional image tag to deploy with env sync (e.g. 1.2.3). Leave
+                    empty to keep current image.
+                required: false
+                default: ""
+            verifyHealth:
+                description: Verify /health endpoint after applying configuration
+                required: false
+                default: true
+                type: boolean
+
+env:
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository_owner }}/lexora-ml
+
+jobs:
+    sync-production-config:
+        name: Sync Production Env To Azure Container App
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        concurrency:
+            group: ml-service-azure-sync-env
+            cancel-in-progress: false
+        environment:
+            name: Production
+        permissions:
+            id-token: write
+            contents: read
+
+        steps:
+            - name: Validate required secrets and variables
+              env:
+                  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+                  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+                  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                  GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+                  GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
+                  AZURE_CONTAINERAPP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
+                  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+              run: |
+                  set -euo pipefail
+
+                  image_tag="${{ github.event.inputs.imageTag }}"
+                  required=(AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_CONTAINERAPP_NAME AZURE_RESOURCE_GROUP)
+
+                  if [ -n "$image_tag" ]; then
+                    required+=(GHCR_USERNAME GHCR_PASSWORD)
+                  fi
+
+                  missing=0
+                  for key in "${required[@]}"; do
+                    if [ -z "${!key}" ]; then
+                      echo "Missing required value: $key"
+                      missing=1
+                    fi
+                  done
+
+                  if [ "$missing" -ne 0 ]; then
+                    echo "Required secrets/variables are not configured."
+                    exit 1
+                  fi
+
+            - name: Log in to Azure (OIDC)
+              uses: azure/login@v2
+              with:
+                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+            - name: Configure Container App GHCR registry auth
+              if: ${{ github.event.inputs.imageTag != '' }}
+              uses: azure/CLI@v2
+              with:
+                  inlineScript: |
+                      az containerapp registry set \
+                        --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                        --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                        --server ghcr.io \
+                        --username "${{ secrets.GHCR_USERNAME }}" \
+                        --password "${{ secrets.GHCR_PASSWORD }}"
+
+            - name: Apply Production env variables (and optional image tag)
+              uses: azure/CLI@v2
+              with:
+                  inlineScript: |
+                      set -euo pipefail
+
+                      image_tag="${{ github.event.inputs.imageTag }}"
+
+                      ml_debug="${{ vars['ML_DEBUG'] }}"
+                      ml_host="${{ vars['ML_HOST'] }}"
+                      ml_port="${{ vars['ML_PORT'] }}"
+                      ml_allowed_origins="${{ vars['ML_ALLOWED_ORIGINS'] }}"
+                      ml_low_risk_threshold="${{ vars['ML_LOW_RISK_THRESHOLD'] }}"
+                      ml_high_risk_threshold="${{ vars['ML_HIGH_RISK_THRESHOLD'] }}"
+                      ml_eye_tracker_sequence_length="${{ vars['ML_EYE_TRACKER_SEQUENCE_LENGTH'] }}"
+                      ml_eye_tracker_sequence_step="${{ vars['ML_EYE_TRACKER_SEQUENCE_STEP'] }}"
+                      ml_eye_tracker_max_sequences="${{ vars['ML_EYE_TRACKER_MAX_SEQUENCES'] }}"
+                      ml_eye_tracker_min_fixation_ms="${{ vars['ML_EYE_TRACKER_MIN_FIXATION_MS'] }}"
+                      ml_eye_tracker_max_fixation_ms="${{ vars['ML_EYE_TRACKER_MAX_FIXATION_MS'] }}"
+                      ml_webcam_min_fixation_ms="${{ vars['ML_WEBCAM_MIN_FIXATION_MS'] }}"
+                      ml_webcam_max_fixation_ms="${{ vars['ML_WEBCAM_MAX_FIXATION_MS'] }}"
+                      ml_webcam_idt_dispersion_threshold="${{ vars['ML_WEBCAM_IDT_DISPERSION_THRESHOLD'] }}"
+                      ml_webcam_idt_min_window_ms="${{ vars['ML_WEBCAM_IDT_MIN_WINDOW_MS'] }}"
+                      ml_webcam_line_transition_threshold="${{ vars['ML_WEBCAM_LINE_TRANSITION_THRESHOLD'] }}"
+                      ml_webcam_one_euro_mincutoff="${{ vars['ML_WEBCAM_ONE_EURO_MINCUTOFF'] }}"
+                      ml_webcam_one_euro_beta="${{ vars['ML_WEBCAM_ONE_EURO_BETA'] }}"
+                      ml_webcam_one_euro_dcutoff="${{ vars['ML_WEBCAM_ONE_EURO_DCUTOFF'] }}"
+                      ml_webcam_max_sequences="${{ vars['ML_WEBCAM_MAX_SEQUENCES'] }}"
+                      ml_webcam_min_sequences="${{ vars['ML_WEBCAM_MIN_SEQUENCES'] }}"
+
+                      ml_debug=${ml_debug:-false}
+                      ml_host=${ml_host:-0.0.0.0}
+                      ml_port=${ml_port:-8001}
+                      ml_allowed_origins=${ml_allowed_origins:-http://localhost:3000,http://127.0.0.1:3000}
+                      ml_low_risk_threshold=${ml_low_risk_threshold:-0.33}
+                      ml_high_risk_threshold=${ml_high_risk_threshold:-0.66}
+                      ml_eye_tracker_sequence_length=${ml_eye_tracker_sequence_length:-20}
+                      ml_eye_tracker_sequence_step=${ml_eye_tracker_sequence_step:-5}
+                      ml_eye_tracker_max_sequences=${ml_eye_tracker_max_sequences:-100}
+                      ml_eye_tracker_min_fixation_ms=${ml_eye_tracker_min_fixation_ms:-80}
+                      ml_eye_tracker_max_fixation_ms=${ml_eye_tracker_max_fixation_ms:-1000}
+                      ml_webcam_min_fixation_ms=${ml_webcam_min_fixation_ms:-50}
+                      ml_webcam_max_fixation_ms=${ml_webcam_max_fixation_ms:-1500}
+                      ml_webcam_idt_dispersion_threshold=${ml_webcam_idt_dispersion_threshold:-0.04}
+                      ml_webcam_idt_min_window_ms=${ml_webcam_idt_min_window_ms:-150}
+                      ml_webcam_line_transition_threshold=${ml_webcam_line_transition_threshold:-0.04}
+                      ml_webcam_one_euro_mincutoff=${ml_webcam_one_euro_mincutoff:-1.0}
+                      ml_webcam_one_euro_beta=${ml_webcam_one_euro_beta:-0.007}
+                      ml_webcam_one_euro_dcutoff=${ml_webcam_one_euro_dcutoff:-1.0}
+                      ml_webcam_max_sequences=${ml_webcam_max_sequences:-82}
+                      ml_webcam_min_sequences=${ml_webcam_min_sequences:-10}
+
+                      ml_env_vars=(
+                        "DEBUG=$ml_debug"
+                        "HOST=$ml_host"
+                        "PORT=$ml_port"
+                        "ALLOWED_ORIGINS=$ml_allowed_origins"
+                        "LOW_RISK_THRESHOLD=$ml_low_risk_threshold"
+                        "HIGH_RISK_THRESHOLD=$ml_high_risk_threshold"
+                        "EYE_TRACKER_SEQUENCE_LENGTH=$ml_eye_tracker_sequence_length"
+                        "EYE_TRACKER_SEQUENCE_STEP=$ml_eye_tracker_sequence_step"
+                        "EYE_TRACKER_MAX_SEQUENCES=$ml_eye_tracker_max_sequences"
+                        "EYE_TRACKER_MIN_FIXATION_MS=$ml_eye_tracker_min_fixation_ms"
+                        "EYE_TRACKER_MAX_FIXATION_MS=$ml_eye_tracker_max_fixation_ms"
+                        "WEBCAM_MIN_FIXATION_MS=$ml_webcam_min_fixation_ms"
+                        "WEBCAM_MAX_FIXATION_MS=$ml_webcam_max_fixation_ms"
+                        "WEBCAM_IDT_DISPERSION_THRESHOLD=$ml_webcam_idt_dispersion_threshold"
+                        "WEBCAM_IDT_MIN_WINDOW_MS=$ml_webcam_idt_min_window_ms"
+                        "WEBCAM_LINE_TRANSITION_THRESHOLD=$ml_webcam_line_transition_threshold"
+                        "WEBCAM_ONE_EURO_MINCUTOFF=$ml_webcam_one_euro_mincutoff"
+                        "WEBCAM_ONE_EURO_BETA=$ml_webcam_one_euro_beta"
+                        "WEBCAM_ONE_EURO_DCUTOFF=$ml_webcam_one_euro_dcutoff"
+                        "WEBCAM_MAX_SEQUENCES=$ml_webcam_max_sequences"
+                        "WEBCAM_MIN_SEQUENCES=$ml_webcam_min_sequences"
+                      )
+
+                      if [ -n "$image_tag" ]; then
+                        echo "Updating image to tag: $image_tag and syncing env vars"
+                        az containerapp update \
+                          --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                          --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                          --image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$image_tag" \
+                          --set-env-vars "${ml_env_vars[@]}"
+                      else
+                        echo "Syncing env vars only (keeping currently deployed image)"
+                        az containerapp update \
+                          --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                          --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                          --set-env-vars "${ml_env_vars[@]}"
+                      fi
+
+            - name: Show deployed URL
+              uses: azure/CLI@v2
+              with:
+                  inlineScript: |
+                      fqdn=$(az containerapp show \
+                        --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                        --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                        --query properties.configuration.ingress.fqdn -o tsv)
+                      echo "Container App URL: https://$fqdn"
+
+            - name: Verify deployed health endpoint
+              if: ${{ inputs.verifyHealth }}
+              uses: azure/CLI@v2
+              with:
+                  inlineScript: |
+                      set -euo pipefail
+                      fqdn=$(az containerapp show \
+                        --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
+                        --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+                        --query properties.configuration.ingress.fqdn -o tsv)
+                      echo "Deployed URL: https://$fqdn"
+
+                      for i in $(seq 1 24); do
+                        if python3 -c "import urllib.request; urllib.request.urlopen('https://$fqdn/health', timeout=5).read()" >/dev/null 2>&1; then
+                          echo "Health check passed."
+                          exit 0
+                        fi
+                        echo "Waiting for service health ($i/24)..."
+                        sleep 5
+                      done
+
+                      echo "Health check did not pass in time."
+                      exit 1
