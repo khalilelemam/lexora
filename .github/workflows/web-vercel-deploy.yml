@@ -64,7 +64,6 @@ jobs:
           VARS_JSON: ${{ toJSON(vars) }}
         run: |
           set -euo pipefail
-          # Parse GitHub variables and write matching keys directly to a Vercel-compatible .env file
           echo "$VARS_JSON" | jq -r 'to_entries | map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL"))) | .[] | "\(.key)=\(.value)"' > .env.production.local
 
           if [ ! -s .env.production.local ]; then
@@ -75,13 +74,10 @@ jobs:
           echo "Variables successfully injected for Vercel build."
 
       - name: Pull Vercel config
-        working-directory: web
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Build
-        working-directory: web
         run: vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Deploy
-        working-directory: web
         run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
