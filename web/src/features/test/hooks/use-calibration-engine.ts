@@ -63,11 +63,15 @@ export function resolveCalibrationMode(
   requestedMode?: CalibrationVisualMode,
   participantAge?: number,
 ): CalibrationVisualMode {
-  if (requestedMode) return requestedMode;
+  if (requestedMode === 'grid' || requestedMode === 'star') return requestedMode;
+  if (requestedMode === 'stickman') {
+    // Stickman mode is temporarily disabled until stabilization is complete.
+    return 'grid';
+  }
 
   if (typeof participantAge === 'number' && Number.isFinite(participantAge)) {
     if (participantAge >= 7 && participantAge <= 9) return 'star';
-    if (participantAge >= 10) return 'stickman';
+    if (participantAge >= 10) return 'grid';
   }
 
   return 'grid';

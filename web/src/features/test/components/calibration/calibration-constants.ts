@@ -28,30 +28,30 @@ interface ModeTimingConfig {
 
 const MODE_TIMING: Record<CalibrationVisualMode, ModeTimingConfig> = {
   grid: {
-    motionDurationMs: 420,      // Fast transition — target is just a dot
-    holdDurationMs: 900,        // Short hold — static target, easy to fixate
-    gridMinDwellMs: 1000,       // Min time before quality-based advance
-    gridMaxDwellMs: 3200,       // Max time before timeout advance
-    gridForceAdvanceMs: 5000,   // Force advance even with poor signal
+    motionDurationMs: 420, // Fast transition — target is just a dot
+    holdDurationMs: 900, // Short hold — static target, easy to fixate
+    gridMinDwellMs: 1000, // Min time before quality-based advance
+    gridMaxDwellMs: 3200, // Max time before timeout advance
+    gridForceAdvanceMs: 5000, // Force advance even with poor signal
     gridMinSamplesWebcam: 8,
     gridMinSamplesTobii: 6,
   },
   star: {
-    motionDurationMs: 550,      // Slightly longer — star scales in with animation
-    holdDurationMs: 1100,       // Longer hold — animated target needs settle time
-    gridMinDwellMs: 1400,       // More dwell — child needs time to find star
-    gridMaxDwellMs: 4000,       // More patient timeout
+    motionDurationMs: 550, // Slightly longer — star scales in with animation
+    holdDurationMs: 1100, // Longer hold — animated target needs settle time
+    gridMinDwellMs: 1400, // More dwell — child needs time to find star
+    gridMaxDwellMs: 4000, // More patient timeout
     gridForceAdvanceMs: 6000,
     gridMinSamplesWebcam: 7,
     gridMinSamplesTobii: 5,
   },
   stickman: {
-    motionDurationMs: 600,      // Longest — ninja runs/teleports to position
-    holdDurationMs: 1200,       // Longest hold — child shifts from tracking to fixating
-    gridMinDwellMs: 1500,       // Most patience — complex visual scene
+    motionDurationMs: 600, // Longest — ninja runs/teleports to position
+    holdDurationMs: 1200, // Longest hold — child shifts from tracking to fixating
+    gridMinDwellMs: 1500, // Most patience — complex visual scene
     gridMaxDwellMs: 4500,
     gridForceAdvanceMs: 7000,
-    gridMinSamplesWebcam: 6,    // Slightly fewer — stickman mode has more visual noise
+    gridMinSamplesWebcam: 6, // Slightly fewer — stickman mode has more visual noise
     gridMinSamplesTobii: 5,
   },
 };
@@ -89,6 +89,8 @@ export interface CalibrationModeOption {
   description: string;
   ageHint: string;
   image: string;
+  disabled?: boolean;
+  comingSoon?: boolean;
 }
 
 export const MODE_OPTIONS: CalibrationModeOption[] = [
@@ -103,8 +105,10 @@ export const MODE_OPTIONS: CalibrationModeOption[] = [
     key: 'stickman',
     label: 'Ninja Stickman',
     description: 'Track a ninja stickman as it moves across the screen — defeat it with your gaze!',
-    ageHint: 'Recommended for ages 10+',
+    ageHint: 'Coming soon',
     image: '/images/calibration/stickman-mode.svg',
+    disabled: true,
+    comingSoon: true,
   },
   {
     key: 'star',
