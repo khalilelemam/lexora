@@ -161,3 +161,35 @@ class TestEyeTrackerFeatureProcessor:
         result_large = feature_processor.process_gaze_points(gaze_points, 2560, 1440)
 
         assert not np.array_equal(result_small.sequences, result_large.sequences)
+
+    # --- Line Center Snapping ---
+
+    def test_snap_to_line_centers_snaps_to_nearest(self, feature_processor):
+        features = np.array(
+            [
+                [150.0, 0.30, 0.29, 0.10, 1.0],
+                [160.0, 0.45, 0.62, 0.11, 1.1],
+                [170.0, 0.52, 0.81, 0.12, 1.2],
+            ],
+            dtype=np.float32,
+        )
+
+        snapped = feature_processor._snap_to_line_centers(features, [0.3, 0.6, 0.8])
+
+        np.testing.assert_allclose(snapped[:, 2], np.array([0.3, 0.6, 0.8]))
+
+    def test_process_gaze_points_with_line_centers_snaps_feature_rows(
+        self, feature_processor
+    ):
+        np.random.seed(42)
+        gaze_points = create_gaze_points(100, reading_pattern=False)
+
+        result = feature_processor.process_gaze_points(
+            gaze_points,
+            1920,
+            1080,
+            normalized_line_centers=[0.25, 0.5, 0.75],
+        )
+
+        snapped_y_values = {row["fixation_y"] for row in result.features_data}
+        assert snapped_y_values.issubset({0.25, 0.5, 0.75})

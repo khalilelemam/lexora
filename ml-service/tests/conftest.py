@@ -91,7 +91,7 @@ def create_raw_gaze_points(
         screen_height: Screen height in pixels
 
     Points are generated with ~16ms intervals (60fps) simulating webcam capture.
-    Generates clear fixation-saccade patterns suitable for I-VT algorithm testing.
+    Generates clear fixation-saccade patterns suitable for I-DT algorithm testing.
 
     For the model to work properly, we need sufficient fixations:
     - Each fixation must be >= 50ms (min 4 points at 16ms)
@@ -115,9 +115,10 @@ def create_raw_gaze_points(
             line_y_positions[current_line % len(line_y_positions)] * screen_height
         )
 
-        # Generate 5-8 points per fixation (80-128ms at 16ms/point)
-        # This ensures fixations pass the 50ms minimum threshold
-        fixation_points = np.random.randint(5, 9)
+        # Generate 11-15 points per fixation.
+        # At 60fps (16ms intervals), 11 points span 10 intervals = 160ms,
+        # satisfying the I-DT Phase 1 minimum window duration (150ms).
+        fixation_points = np.random.randint(11, 16)
 
         for _ in range(min(fixation_points, count - i)):
             # Add small jitter within fixation
@@ -134,7 +135,10 @@ def create_raw_gaze_points(
             current_time += 16  # 16ms interval (60fps)
             i += 1
 
-        # Saccade to next position
+        # Saccade to next position (generate a short transition trajectory).
+        prev_x_progress = x_progress
+        prev_line = current_line
+
         x_progress += np.random.uniform(0.06, 0.12)  # 6-12% of screen width per saccade
 
         # End of line - move to next line
@@ -145,6 +149,38 @@ def create_raw_gaze_points(
         # Occasional regression (10% chance)
         if np.random.random() < 0.1:
             x_progress = max(0.15, x_progress - np.random.uniform(0.05, 0.15))
+
+        # Add 3-6 transition points to simulate a real saccade.
+        # Without this, the signal jumps instantaneously between fixations, which can
+        # interact with One Euro smoothing and cause unrealistic dispersion behavior.
+        next_fixation_x = x_progress * screen_width
+        next_fixation_y = (
+            line_y_positions[current_line % len(line_y_positions)] * screen_height
+        )
+
+        prev_fixation_x = prev_x_progress * screen_width
+        prev_fixation_y = (
+            line_y_positions[prev_line % len(line_y_positions)] * screen_height
+        )
+
+        saccade_points = int(np.random.randint(3, 7))
+        for j in range(1, saccade_points + 1):
+            if i >= count:
+                break
+            frac = j / (saccade_points + 1)
+            sx = (1 - frac) * prev_fixation_x + frac * next_fixation_x
+            sy = (1 - frac) * prev_fixation_y + frac * next_fixation_y
+            jitter_x = np.random.uniform(-4, 4)
+            jitter_y = np.random.uniform(-4, 4)
+            points.append(
+                RawGazePoint(
+                    x=np.clip(sx + jitter_x, 0, screen_width),
+                    y=np.clip(sy + jitter_y, 0, screen_height),
+                    timestamp=current_time,
+                )
+            )
+            current_time += 16
+            i += 1
 
     return points
 

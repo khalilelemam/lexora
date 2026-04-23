@@ -7,7 +7,7 @@ FastAPI service for dyslexia screening using eye-tracking and webcam-based gaze 
 This service analyzes eye movement patterns during reading tasks to predict dyslexia risk. It supports two input methods:
 
 - **Eye Tracker** - High-precision eye tracker data from three reading tasks (syllables, meaningful text, pseudo-words)
-- **Webcam** - Lower-cost webcam gaze tracking using I-VT fixation detection algorithm
+- **Webcam** - Lower-cost webcam gaze tracking using One Euro smoothing + I-DT fixation detection
 
 ## Quick Start
 
@@ -18,7 +18,7 @@ python -m venv .venv
 source .venv/bin/activate    # Linux/Mac
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -e ".[dev]"
 
 # Run the service
 python server.py
@@ -56,16 +56,29 @@ EYE_TRACKER_MAX_SEQUENCES=100
 EYE_TRACKER_MIN_FIXATION_MS=80
 EYE_TRACKER_MAX_FIXATION_MS=1000
 
-# Webcam I-VT Algorithm
-WEBCAM_VELOCITY_THRESHOLD=0.5
+# Webcam I-DT + One Euro
 WEBCAM_MIN_FIXATION_MS=50
 WEBCAM_MAX_FIXATION_MS=1500
-WEBCAM_EMA_ALPHA=0.5
+WEBCAM_IDT_DISPERSION_THRESHOLD=0.04
+WEBCAM_IDT_MIN_WINDOW_MS=150
+WEBCAM_LINE_TRANSITION_THRESHOLD=0.04
+WEBCAM_ONE_EURO_MINCUTOFF=1.0
+WEBCAM_ONE_EURO_BETA=0.007
+WEBCAM_ONE_EURO_DCUTOFF=1.0
 WEBCAM_MAX_SEQUENCES=82
 WEBCAM_MIN_SEQUENCES=10
 ```
 
+For paragraph-style tasks, sending normalized line centers from the client is strongly recommended for more stable line-aware regression and return-sweep detection.
+
 See `.env.example` for complete documentation of all options.
+
+Application metadata (`name`, `version`, `description`) is sourced from `pyproject.toml`.
+
+Dependency management is now fully pyproject-based:
+- `pyproject.toml`: project metadata, runtime dependencies, dev extras, and tool configuration
+- Install runtime deps: `pip install .`
+- Install dev/test deps: `pip install -e .[dev]`
 
 ## Model Files
 
@@ -96,6 +109,8 @@ REAL_TF=1 pytest tests/integration/ -v          # Linux/Mac
 
 Pre-built images are available on GitHub Container Registry.
 
+The Docker image installs dependencies from `pyproject.toml` via `pip install .`.
+
 ```bash
 # Pull the latest image
 docker pull ghcr.io/khalil-elemam/lexora-ml:latest
@@ -110,7 +125,7 @@ docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:1.0.0
 # Pass environment variables
 docker run -p 8001:8001 \
   -e DEBUG=true \
-  -e WEBCAM_VELOCITY_THRESHOLD=0.6 \
+  -e WEBCAM_IDT_DISPERSION_THRESHOLD=0.045 \
   ghcr.io/khalil-elemam/lexora-ml:latest
 ```
 
@@ -124,7 +139,7 @@ services:
       - "8001:8001"
     environment:
       DEBUG: "false"
-      WEBCAM_VELOCITY_THRESHOLD: "0.5"
+      WEBCAM_IDT_DISPERSION_THRESHOLD: "0.04"
       EYE_TRACKER_MIN_FIXATION_MS: "80"
 ```
 
@@ -140,5 +155,49 @@ docker run -p 8001:8001 lexora-ml
 
 - Python 3.12+
 - TensorFlow 2.20+
-- See `requirements.txt` for all dependencies
+
+## Azure Deployment (Container Apps)
+
+The ML workflow includes an Azure Container Apps deploy path (best fit for your student credits).
+
+Required GitHub environment secrets in `ml-production`:
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+
+Required repository secrets:
+- `GHCR_USERNAME`
+- `GHCR_PASSWORD`
+
+Required GitHub environment variables in `ml-production`:
+- `AZURE_CONTAINERAPP_NAME`
+- `AZURE_RESOURCE_GROUP`
+- `AZURE_LOCATION`
+- `AZURE_CONTAINERAPP_ENV`
+- `AZURE_CONTAINERAPP_TARGET_PORT` (optional, default: `8001`)
+- `AZURE_CONTAINERAPP_CPU` (optional, default: `1.0`)
+- `AZURE_CONTAINERAPP_MEMORY` (optional, default: `2.0Gi`)
+- `AZURE_CONTAINERAPP_MIN_REPLICAS` (optional, default: `1`)
+- `AZURE_CONTAINERAPP_MAX_REPLICAS` (optional, default: `1`)
+
+Deploy behavior:
+- On pull requests and pushes to `main` / `develop`, runs ML validation only (lint, unit tests, integration tests).
+- On manual run (`workflow_dispatch`) of `.github/workflows/ml-service.yml`, runs validation plus a Docker build check only.
+- On `lexora-ml-v*` tags, builds the matching image tag and deploys it to Azure Container Apps.
+- Runtime configuration is read from the GitHub `ml-production` environment and applied to the Container App during deploy or sync.
+
+Prerequisite:
+- Create the Azure Container App and its environment once (initial provisioning). After bootstrap, the release and sync workflows handle updates.
+
+### First-Time Azure Bootstrap
+
+Use `.github/workflows/ml-service-azure-bootstrap.yml` (manual dispatch from `main`) to provision first-time resources:
+- Resource Group
+- Log Analytics workspace
+- Container Apps Environment
+- Initial Container App creation
+
+After this one-time bootstrap:
+- Use `.github/workflows/ml-service.yml` release tags (`lexora-ml-v*`) for production image deployments.
+- Use `.github/workflows/ml-service-sync-env.yml` to sync GitHub `ml-production` environment values to the running Container App, optionally with a specific image tag.
 

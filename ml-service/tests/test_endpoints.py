@@ -43,6 +43,7 @@ class TestPredictEyeTrackerEndpoint:
                     "saccade_velocity": 0.32,
                 },
             ],
+            sequences_analyzed=100,
         )
         return processor
 
@@ -207,6 +208,7 @@ class TestPredictWebcamEndpoint:
                     "is_regression": False,
                 },
             ],
+            sequences_analyzed=27,
             total_fixations=65,
             mean_fixation_duration_ms=190.0,
         )
@@ -269,7 +271,7 @@ class TestPredictWebcamEndpoint:
 
         response = await predict_webcam(webcam_request_data, mock_request)
 
-        assert response.metadata.sequences_analyzed == 82
+        assert response.metadata.sequences_analyzed == 27
         assert response.metadata.total_fixations == 65
 
     @pytest.mark.asyncio

@@ -22,7 +22,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
-        description="ML service for dyslexia risk prediction from eye-tracking and webcam data",
+        description=settings.APP_DESCRIPTION,
         lifespan=lifespan,
     )
 

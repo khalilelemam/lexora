@@ -60,20 +60,29 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
             request.syllables_task.gaze_points,
             request.screen_width,
             request.screen_height,
+            request.syllables_task.normalized_line_centers,
         )
         mean_result = features.process_gaze_points(
             request.meaningful_task.gaze_points,
             request.screen_width,
             request.screen_height,
+            request.meaningful_task.normalized_line_centers,
         )
         pseudo_result = features.process_gaze_points(
             request.pseudo_task.gaze_points,
             request.screen_width,
             request.screen_height,
+            request.pseudo_task.normalized_line_centers,
         )
 
         result = prediction.predict(
             syl_result.sequences, mean_result.sequences, pseudo_result.sequences
+        )
+
+        sequences_analyzed = (
+            syl_result.sequences_analyzed
+            + mean_result.sequences_analyzed
+            + pseudo_result.sequences_analyzed
         )
 
         return PredictionResponse(
@@ -81,7 +90,7 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
             risk_level=result["risk_level"],
             confidence=result["confidence"],
             metadata=PredictionMetadata(
-                sequences_analyzed=result["sequences_analyzed"],
+                sequences_analyzed=sequences_analyzed,
                 total_fixations=(
                     syl_result.valid_fixations
                     + mean_result.valid_fixations
@@ -115,7 +124,10 @@ async def predict_webcam(request: WebcamPredictionRequest, http_request: Request
         prediction = http_request.app.state.webcam_prediction
 
         processing = features.process(
-            request.gaze_data, request.screen_width, request.screen_height
+            request.gaze_data,
+            request.screen_width,
+            request.screen_height,
+            request.normalized_line_centers,
         )
 
         result = prediction.predict(processing.sequences)
@@ -125,7 +137,7 @@ async def predict_webcam(request: WebcamPredictionRequest, http_request: Request
             risk_level=result["risk_level"],
             confidence=1.0,
             metadata=PredictionMetadata(
-                sequences_analyzed=82,
+                sequences_analyzed=processing.sequences_analyzed,
                 total_fixations=processing.total_fixations,
             ),
             features=[WebcamFeatureRow(**f) for f in processing.features_data],
