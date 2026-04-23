@@ -28,7 +28,7 @@ export function CalibrationSetup({ resolvedMode, onSelectMode, onStart }: Calibr
         style={{ animation: 'float-up 0.5s ease-out' }}
       >
         {/* ── Left: Instructions ── */}
-        <div className="flex flex-col gap-5 p-7 lg:p-8 lg:w-[420px] shrink-0">
+        <div className="flex flex-col gap-5 p-7 lg:p-8 lg:w-105 shrink-0">
           {/* Brand header */}
           <LexoraLogo size="md" />
 
