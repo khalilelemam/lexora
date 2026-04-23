@@ -58,42 +58,30 @@ jobs:
       - name: Verify auth
         run: vercel whoami --token "$VERCEL_TOKEN"
 
-      - name: Fetch GitHub env variables
+      - name: Generate .env.production.local
+        working-directory: web
         env:
-          ENV_NAME: ${{ env.GITHUB_ENVIRONMENT }}
           VARS_JSON: ${{ toJSON(vars) }}
         run: |
           set -euo pipefail
-          echo "$VARS_JSON" > vars.json
+          # Parse GitHub variables and write matching keys directly to a Vercel-compatible .env file
+          echo "$VARS_JSON" | jq -r 'to_entries | map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL"))) | .[] | "\(.key)=\(.value)"' > .env.production.local
 
-          jq '{variables: (to_entries | map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL")) | {name: .key, value: (.value | tostring)}))}' vars.json > web-vars.json
-
-          count=$(jq -r '.variables | length' web-vars.json)
-          if [ "$count" -eq 0 ]; then
-            echo "No deployable web variables found in GitHub environment: $ENV_NAME"
+          if [ ! -s .env.production.local ]; then
+            echo "No deployable web variables found in GitHub environment."
             exit 1
           fi
 
-          echo "Variables selected for Vercel sync:"
-          jq -r '.variables[].name' web-vars.json
-
-      - name: Sync to Vercel production env
-        run: |
-          set -euo pipefail
-          jq -c '.variables[]' web-vars.json | while read -r item; do
-            key=$(echo "$item" | jq -r '.name')
-            value=$(echo "$item" | jq -r '.value')
-
-            echo "Syncing $key"
-            vercel env rm "$key" production --yes --token "$VERCEL_TOKEN" >/dev/null 2>&1 || true
-            printf '%s' "$value" | vercel env add "$key" production --token "$VERCEL_TOKEN"
-          done
+          echo "Variables successfully injected for Vercel build."
 
       - name: Pull Vercel config
+        working-directory: web
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Build
+        working-directory: web
         run: vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Deploy
+        working-directory: web
         run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
