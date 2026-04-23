@@ -60,17 +60,13 @@ jobs:
 
             - name: Fetch GitHub env variables
               env:
-                  GH_TOKEN: ${{ github.token }}
                   ENV_NAME: ${{ env.GITHUB_ENVIRONMENT }}
+                  VARS_JSON: ${{ toJSON(vars) }}
               run: |
                   set -euo pipefail
-                  encoded=$(printf '%s' "$ENV_NAME" | jq -sRr @uri)
+                  echo "$VARS_JSON" > vars.json
 
-                  gh api \
-                    "repos/${GITHUB_REPOSITORY}/environments/${encoded}/variables?per_page=100" \
-                    > vars.json
-
-                  jq '{variables: [.variables[] | select((.name | test("^NEXT_PUBLIC_")) or (.name == "ML_SERVICE_URL"))]}' vars.json > web-vars.json
+                  jq '{variables: (to_entries | map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL")) | {name: .key, value: (.value | tostring)}))}' vars.json > web-vars.json
 
                   count=$(jq -r '.variables | length' web-vars.json)
                   if [ "$count" -eq 0 ]; then
