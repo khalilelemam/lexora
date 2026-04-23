@@ -158,7 +158,7 @@ docker run -p 8001:8001 lexora-ml
 
 ## Azure Deployment (Container Apps)
 
-The ML workflow includes an Azure Container Apps deploy job (best fit for your student credits).
+The ML workflow includes an Azure Container Apps deploy path (best fit for your student credits).
 
 Required repository secrets:
 - `AZURE_CLIENT_ID`
@@ -167,27 +167,35 @@ Required repository secrets:
 - `GHCR_USERNAME`
 - `GHCR_PASSWORD`
 
-Required repository variables:
+Required GitHub environment variables in `ml-production`:
 - `AZURE_CONTAINERAPP_NAME`
 - `AZURE_RESOURCE_GROUP`
 - `AZURE_LOCATION`
 - `AZURE_CONTAINERAPP_ENV`
 - `AZURE_CONTAINERAPP_TARGET_PORT` (optional, default: `8001`)
+- `AZURE_CONTAINERAPP_CPU` (optional, default: `1.0`)
+- `AZURE_CONTAINERAPP_MEMORY` (optional, default: `2.0Gi`)
+- `AZURE_CONTAINERAPP_MIN_REPLICAS` (optional, default: `1`)
+- `AZURE_CONTAINERAPP_MAX_REPLICAS` (optional, default: `1`)
 
 Deploy behavior:
-- On `lexora-ml-v*` tags, deploys the matching image tag.
-- On manual run (`workflow_dispatch`), deploys `latest`.
+- On pull requests and pushes to `main` / `develop`, runs ML validation only (lint, unit tests, integration tests).
+- On manual run (`workflow_dispatch`) of `.github/workflows/ml-service.yml`, runs validation plus a Docker build check only.
+- On `lexora-ml-v*` tags, builds the matching image tag and deploys it to Azure Container Apps.
+- Runtime configuration is read from the GitHub `ml-production` environment and applied to the Container App during deploy or sync.
 
 Prerequisite:
-- Create the Azure Container App and its environment once (initial provisioning). The workflow then updates the image on each deployment.
+- Create the Azure Container App and its environment once (initial provisioning). After bootstrap, the release and sync workflows handle updates.
 
 ### First-Time Azure Bootstrap
 
-Use `.github/workflows/ml-service-azure-bootstrap.yml` (manual dispatch) to provision first-time resources:
+Use `.github/workflows/ml-service-azure-bootstrap.yml` (manual dispatch from `main`) to provision first-time resources:
 - Resource Group
 - Log Analytics workspace
 - Container Apps Environment
-- Container App (or update if it already exists)
+- Initial Container App creation
 
-After this one-time bootstrap, the regular `deploy-azure` job in `ml-service.yml` is enough for image updates.
+After this one-time bootstrap:
+- Use `.github/workflows/ml-service.yml` release tags (`lexora-ml-v*`) for production image deployments.
+- Use `.github/workflows/ml-service-sync-env.yml` to sync GitHub `ml-production` environment values to the running Container App, optionally with a specific image tag.
 

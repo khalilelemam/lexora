@@ -2,19 +2,38 @@ name: ML Service CI/CD
 
 on:
   push:
+    branches:
+      - main
+      - develop
     tags:
-      - 'lexora-ml-v*'
+      - "lexora-ml-v*"
+    paths:
+      - "ml-service/**"
+      - ".github/workflows/ml-service.yml"
+      - ".github/workflows/ml-service-sync-env.yml"
+      - ".github/workflows/ml-service-azure-bootstrap.yml"
+      - ".github/workflows/ml-service-deploy-shared.yml"
+      - ".github/scripts/ml-service-*.sh"
   pull_request:
     branches:
       - main
       - develop
     paths:
-      - 'ml-service/**'
-      - '.github/workflows/ml-service.yml'
+      - "ml-service/**"
+      - ".github/workflows/ml-service.yml"
+      - ".github/workflows/ml-service-sync-env.yml"
+      - ".github/workflows/ml-service-azure-bootstrap.yml"
+      - ".github/workflows/ml-service-deploy-shared.yml"
+      - ".github/scripts/ml-service-*.sh"
   workflow_dispatch:
+    inputs:
+      reason:
+        description: Optional note for manually running the ML service validation pipeline
+        required: false
+        default: manual-validation-run
 
 env:
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: "3.12"
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/lexora-ml
 
@@ -47,7 +66,7 @@ jobs:
         run: ruff format --check app/ tests/
 
   test:
-    name: Test
+    name: Unit Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -61,7 +80,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          cache: "pip"
           cache-dependency-path: ml-service/pyproject.toml
 
       - name: Install dependencies
@@ -76,10 +95,9 @@ jobs:
             -v
 
   integration-test:
-    name: Integration Test
+    name: Integration Tests
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     defaults:
       run:
         working-directory: ml-service
@@ -94,7 +112,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
+          cache: "pip"
           cache-dependency-path: ml-service/pyproject.toml
 
       - name: Install dependencies
@@ -107,19 +125,66 @@ jobs:
           REAL_TF: "1"
         run: pytest tests/integration/ -v --tb=short
 
-  build:
-    name: Build Docker Image
+  docker-build-check:
+    name: Docker Build Check
     runs-on: ubuntu-latest
-    needs: [lint, test, integration-test]
-    permissions:
-      contents: read
-      packages: write
+    needs:
+      - lint
+      - test
+      - integration-test
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image locally
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ml-service
+          push: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:workflow-dispatch-check
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build:
+    name: Build And Push Docker Image
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - test
+      - integration-test
+    if: startsWith(github.ref, 'refs/tags/lexora-ml-v')
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.image_tag.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Resolve image tag from git ref
+        id: image_tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref_name="${GITHUB_REF_NAME}"
+
+          if [[ "$ref_name" =~ ^lexora-ml-v(.+)$ ]]; then
+            echo "tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unexpected ref: $ref_name"
+            exit 1
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -137,9 +202,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # 1. Capture the version from the tag (e.g., 1.0.0)
             type=match,pattern=lexora-ml-v(.*),group=1
-            # 2. Also create a major.minor tag (e.g., 1.0)
             type=match,pattern=lexora-ml-v(\d+\.\d+),group=1
             type=raw,value=latest
 
@@ -155,178 +218,11 @@ jobs:
 
   deploy-azure:
     name: Deploy To Azure Container Apps
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    concurrency:
-      group: ml-service-azure-deploy
-      cancel-in-progress: false
-    environment:
-      name: Production
     needs: build
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Validate required secrets and variables
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
-          AZURE_CONTAINERAPP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
-          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
-        run: |
-          set -euo pipefail
-          missing=0
-          for key in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID GHCR_USERNAME GHCR_PASSWORD AZURE_CONTAINERAPP_NAME AZURE_RESOURCE_GROUP; do
-            if [ -z "${!key}" ]; then
-              echo "Missing required value: $key"
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            echo "Required secrets/variables are not configured."
-            exit 1
-          fi
-
-      - name: Log in to Azure (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Resolve image tag from git ref
-        id: image
-        run: |
-          ref_name="${GITHUB_REF_NAME}"
-          if [[ "$ref_name" =~ ^lexora-ml-v(.+)$ ]]; then
-            echo "tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=latest" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Configure Container App GHCR registry auth
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            az containerapp registry set \
-              --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-              --server ghcr.io \
-              --username "${{ secrets.GHCR_USERNAME }}" \
-              --password "${{ secrets.GHCR_PASSWORD }}"
-
-      - name: Deploy latest image to Container App
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            cpu="1.0"
-            memory="2.0Gi"
-            min_replicas="1"
-            max_replicas="1"
-
-            ml_debug="${{ vars['ML_DEBUG'] }}"
-            ml_host="${{ vars['ML_HOST'] }}"
-            ml_port="${{ vars['ML_PORT'] }}"
-            ml_allowed_origins="${{ vars['ML_ALLOWED_ORIGINS'] }}"
-            ml_low_risk_threshold="${{ vars['ML_LOW_RISK_THRESHOLD'] }}"
-            ml_high_risk_threshold="${{ vars['ML_HIGH_RISK_THRESHOLD'] }}"
-            ml_eye_tracker_sequence_length="${{ vars['ML_EYE_TRACKER_SEQUENCE_LENGTH'] }}"
-            ml_eye_tracker_sequence_step="${{ vars['ML_EYE_TRACKER_SEQUENCE_STEP'] }}"
-            ml_eye_tracker_max_sequences="${{ vars['ML_EYE_TRACKER_MAX_SEQUENCES'] }}"
-            ml_eye_tracker_min_fixation_ms="${{ vars['ML_EYE_TRACKER_MIN_FIXATION_MS'] }}"
-            ml_eye_tracker_max_fixation_ms="${{ vars['ML_EYE_TRACKER_MAX_FIXATION_MS'] }}"
-            ml_webcam_min_fixation_ms="${{ vars['ML_WEBCAM_MIN_FIXATION_MS'] }}"
-            ml_webcam_max_fixation_ms="${{ vars['ML_WEBCAM_MAX_FIXATION_MS'] }}"
-            ml_webcam_idt_dispersion_threshold="${{ vars['ML_WEBCAM_IDT_DISPERSION_THRESHOLD'] }}"
-            ml_webcam_idt_min_window_ms="${{ vars['ML_WEBCAM_IDT_MIN_WINDOW_MS'] }}"
-            ml_webcam_line_transition_threshold="${{ vars['ML_WEBCAM_LINE_TRANSITION_THRESHOLD'] }}"
-            ml_webcam_one_euro_mincutoff="${{ vars['ML_WEBCAM_ONE_EURO_MINCUTOFF'] }}"
-            ml_webcam_one_euro_beta="${{ vars['ML_WEBCAM_ONE_EURO_BETA'] }}"
-            ml_webcam_one_euro_dcutoff="${{ vars['ML_WEBCAM_ONE_EURO_DCUTOFF'] }}"
-            ml_webcam_max_sequences="${{ vars['ML_WEBCAM_MAX_SEQUENCES'] }}"
-            ml_webcam_min_sequences="${{ vars['ML_WEBCAM_MIN_SEQUENCES'] }}"
-
-            ml_debug=${ml_debug:-false}
-            ml_host=${ml_host:-0.0.0.0}
-            ml_port=${ml_port:-8001}
-            ml_allowed_origins=${ml_allowed_origins:-http://localhost:3000,http://127.0.0.1:3000}
-            ml_low_risk_threshold=${ml_low_risk_threshold:-0.33}
-            ml_high_risk_threshold=${ml_high_risk_threshold:-0.66}
-            ml_eye_tracker_sequence_length=${ml_eye_tracker_sequence_length:-20}
-            ml_eye_tracker_sequence_step=${ml_eye_tracker_sequence_step:-5}
-            ml_eye_tracker_max_sequences=${ml_eye_tracker_max_sequences:-100}
-            ml_eye_tracker_min_fixation_ms=${ml_eye_tracker_min_fixation_ms:-80}
-            ml_eye_tracker_max_fixation_ms=${ml_eye_tracker_max_fixation_ms:-1000}
-            ml_webcam_min_fixation_ms=${ml_webcam_min_fixation_ms:-50}
-            ml_webcam_max_fixation_ms=${ml_webcam_max_fixation_ms:-1500}
-            ml_webcam_idt_dispersion_threshold=${ml_webcam_idt_dispersion_threshold:-0.04}
-            ml_webcam_idt_min_window_ms=${ml_webcam_idt_min_window_ms:-150}
-            ml_webcam_line_transition_threshold=${ml_webcam_line_transition_threshold:-0.04}
-            ml_webcam_one_euro_mincutoff=${ml_webcam_one_euro_mincutoff:-1.0}
-            ml_webcam_one_euro_beta=${ml_webcam_one_euro_beta:-0.007}
-            ml_webcam_one_euro_dcutoff=${ml_webcam_one_euro_dcutoff:-1.0}
-            ml_webcam_max_sequences=${ml_webcam_max_sequences:-82}
-            ml_webcam_min_sequences=${ml_webcam_min_sequences:-10}
-
-            ml_env_vars=(
-              "DEBUG=$ml_debug"
-              "HOST=$ml_host"
-              "PORT=$ml_port"
-              "ALLOWED_ORIGINS=$ml_allowed_origins"
-              "LOW_RISK_THRESHOLD=$ml_low_risk_threshold"
-              "HIGH_RISK_THRESHOLD=$ml_high_risk_threshold"
-              "EYE_TRACKER_SEQUENCE_LENGTH=$ml_eye_tracker_sequence_length"
-              "EYE_TRACKER_SEQUENCE_STEP=$ml_eye_tracker_sequence_step"
-              "EYE_TRACKER_MAX_SEQUENCES=$ml_eye_tracker_max_sequences"
-              "EYE_TRACKER_MIN_FIXATION_MS=$ml_eye_tracker_min_fixation_ms"
-              "EYE_TRACKER_MAX_FIXATION_MS=$ml_eye_tracker_max_fixation_ms"
-              "WEBCAM_MIN_FIXATION_MS=$ml_webcam_min_fixation_ms"
-              "WEBCAM_MAX_FIXATION_MS=$ml_webcam_max_fixation_ms"
-              "WEBCAM_IDT_DISPERSION_THRESHOLD=$ml_webcam_idt_dispersion_threshold"
-              "WEBCAM_IDT_MIN_WINDOW_MS=$ml_webcam_idt_min_window_ms"
-              "WEBCAM_LINE_TRANSITION_THRESHOLD=$ml_webcam_line_transition_threshold"
-              "WEBCAM_ONE_EURO_MINCUTOFF=$ml_webcam_one_euro_mincutoff"
-              "WEBCAM_ONE_EURO_BETA=$ml_webcam_one_euro_beta"
-              "WEBCAM_ONE_EURO_DCUTOFF=$ml_webcam_one_euro_dcutoff"
-              "WEBCAM_MAX_SEQUENCES=$ml_webcam_max_sequences"
-              "WEBCAM_MIN_SEQUENCES=$ml_webcam_min_sequences"
-            )
-
-            az containerapp update \
-              --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-              --image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image.outputs.tag }}" \
-              --cpu "$cpu" \
-              --memory "$memory" \
-              --min-replicas "$min_replicas" \
-              --max-replicas "$max_replicas" \
-              --set-env-vars "${ml_env_vars[@]}"
-
-      - name: Verify deployed health endpoint
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            set -euo pipefail
-            fqdn=$(az containerapp show \
-              --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-              --query properties.configuration.ingress.fqdn -o tsv)
-            echo "Deployed URL: https://$fqdn"
-
-            for i in $(seq 1 24); do
-              if python3 -c "import urllib.request; urllib.request.urlopen('https://$fqdn/health', timeout=5).read()" >/dev/null 2>&1; then
-                echo "Health check passed."
-                exit 0
-              fi
-              echo "Waiting for service health ($i/24)..."
-              sleep 5
-            done
-
-            echo "Health check did not pass in time."
-            exit 1
-
+    if: startsWith(github.ref, 'refs/tags/lexora-ml-v')
+    uses: ./.github/workflows/ml-service-deploy-shared.yml
+    with:
+      imageTag: ${{ needs.build.outputs.image_tag }}
+      updateImage: true
+      verifyHealth: true
+    secrets: inherit

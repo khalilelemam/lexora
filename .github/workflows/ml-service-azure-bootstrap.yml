@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       imageTag:
-        description: "Initial image tag to deploy"
+        description: Initial image tag to deploy when creating the Container App
         required: false
-        default: "latest"
+        default: latest
 
 env:
   REGISTRY: ghcr.io
@@ -21,36 +21,58 @@ jobs:
       group: ml-service-azure-bootstrap
       cancel-in-progress: false
     environment:
-      name: Production
+      name: ml-production
     permissions:
       id-token: write
       contents: read
+    env:
+      IMAGE_TAG: ${{ inputs.imageTag }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      AZURE_CONTAINERAPP_ENV: ${{ vars.AZURE_CONTAINERAPP_ENV }}
+      AZURE_CONTAINERAPP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
+      AZURE_CONTAINERAPP_TARGET_PORT: ${{ vars.AZURE_CONTAINERAPP_TARGET_PORT }}
+      AZURE_CONTAINERAPP_CPU: ${{ vars.AZURE_CONTAINERAPP_CPU }}
+      AZURE_CONTAINERAPP_MEMORY: ${{ vars.AZURE_CONTAINERAPP_MEMORY }}
+      AZURE_CONTAINERAPP_MIN_REPLICAS: ${{ vars.AZURE_CONTAINERAPP_MIN_REPLICAS }}
+      AZURE_CONTAINERAPP_MAX_REPLICAS: ${{ vars.AZURE_CONTAINERAPP_MAX_REPLICAS }}
+      ML_DEBUG: ${{ vars.ML_DEBUG }}
+      ML_HOST: ${{ vars.ML_HOST }}
+      ML_PORT: ${{ vars.ML_PORT }}
+      ML_ALLOWED_ORIGINS: ${{ vars.ML_ALLOWED_ORIGINS }}
+      ML_LOW_RISK_THRESHOLD: ${{ vars.ML_LOW_RISK_THRESHOLD }}
+      ML_HIGH_RISK_THRESHOLD: ${{ vars.ML_HIGH_RISK_THRESHOLD }}
+      ML_EYE_TRACKER_SEQUENCE_LENGTH: ${{ vars.ML_EYE_TRACKER_SEQUENCE_LENGTH }}
+      ML_EYE_TRACKER_SEQUENCE_STEP: ${{ vars.ML_EYE_TRACKER_SEQUENCE_STEP }}
+      ML_EYE_TRACKER_MAX_SEQUENCES: ${{ vars.ML_EYE_TRACKER_MAX_SEQUENCES }}
+      ML_EYE_TRACKER_MIN_FIXATION_MS: ${{ vars.ML_EYE_TRACKER_MIN_FIXATION_MS }}
+      ML_EYE_TRACKER_MAX_FIXATION_MS: ${{ vars.ML_EYE_TRACKER_MAX_FIXATION_MS }}
+      ML_WEBCAM_MIN_FIXATION_MS: ${{ vars.ML_WEBCAM_MIN_FIXATION_MS }}
+      ML_WEBCAM_MAX_FIXATION_MS: ${{ vars.ML_WEBCAM_MAX_FIXATION_MS }}
+      ML_WEBCAM_IDT_DISPERSION_THRESHOLD: ${{ vars.ML_WEBCAM_IDT_DISPERSION_THRESHOLD }}
+      ML_WEBCAM_IDT_MIN_WINDOW_MS: ${{ vars.ML_WEBCAM_IDT_MIN_WINDOW_MS }}
+      ML_WEBCAM_LINE_TRANSITION_THRESHOLD: ${{ vars.ML_WEBCAM_LINE_TRANSITION_THRESHOLD }}
+      ML_WEBCAM_ONE_EURO_MINCUTOFF: ${{ vars.ML_WEBCAM_ONE_EURO_MINCUTOFF }}
+      ML_WEBCAM_ONE_EURO_BETA: ${{ vars.ML_WEBCAM_ONE_EURO_BETA }}
+      ML_WEBCAM_ONE_EURO_DCUTOFF: ${{ vars.ML_WEBCAM_ONE_EURO_DCUTOFF }}
+      ML_WEBCAM_MAX_SEQUENCES: ${{ vars.ML_WEBCAM_MAX_SEQUENCES }}
+      ML_WEBCAM_MIN_SEQUENCES: ${{ vars.ML_WEBCAM_MIN_SEQUENCES }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Validate required secrets and variables
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
-          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
-          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
-          AZURE_CONTAINERAPP_ENV: ${{ vars.AZURE_CONTAINERAPP_ENV }}
-          AZURE_CONTAINERAPP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
+        shell: bash
         run: |
           set -euo pipefail
-          missing=0
-          for key in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID GHCR_USERNAME GHCR_PASSWORD AZURE_RESOURCE_GROUP AZURE_LOCATION AZURE_CONTAINERAPP_ENV AZURE_CONTAINERAPP_NAME; do
-            if [ -z "${!key}" ]; then
-              echo "Missing required value: $key"
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            echo "Required secrets/variables are not configured."
-            exit 1
-          fi
+          source .github/scripts/ml-service-common.sh
+          validate_bootstrap_inputs
 
       - name: Log in to Azure (OIDC)
         uses: azure/login@v2
@@ -105,122 +127,48 @@ jobs:
                 --logs-workspace-key "$workspace_key"
             fi
 
-      - name: Create or update Container App
+      - name: Check whether Container App already exists
+        id: containerapp
         uses: azure/CLI@v2
         with:
           inlineScript: |
-            image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.imageTag || 'latest' }}"
-            target_port="${{ vars.AZURE_CONTAINERAPP_TARGET_PORT }}"
-            cpu="1.0"
-            memory="2.0Gi"
-            min_replicas="1"
-            max_replicas="1"
-
-            ml_debug="${{ vars['ML_DEBUG'] }}"
-            ml_host="${{ vars['ML_HOST'] }}"
-            ml_port="${{ vars['ML_PORT'] }}"
-            ml_allowed_origins="${{ vars['ML_ALLOWED_ORIGINS'] }}"
-            ml_low_risk_threshold="${{ vars['ML_LOW_RISK_THRESHOLD'] }}"
-            ml_high_risk_threshold="${{ vars['ML_HIGH_RISK_THRESHOLD'] }}"
-            ml_eye_tracker_sequence_length="${{ vars['ML_EYE_TRACKER_SEQUENCE_LENGTH'] }}"
-            ml_eye_tracker_sequence_step="${{ vars['ML_EYE_TRACKER_SEQUENCE_STEP'] }}"
-            ml_eye_tracker_max_sequences="${{ vars['ML_EYE_TRACKER_MAX_SEQUENCES'] }}"
-            ml_eye_tracker_min_fixation_ms="${{ vars['ML_EYE_TRACKER_MIN_FIXATION_MS'] }}"
-            ml_eye_tracker_max_fixation_ms="${{ vars['ML_EYE_TRACKER_MAX_FIXATION_MS'] }}"
-            ml_webcam_min_fixation_ms="${{ vars['ML_WEBCAM_MIN_FIXATION_MS'] }}"
-            ml_webcam_max_fixation_ms="${{ vars['ML_WEBCAM_MAX_FIXATION_MS'] }}"
-            ml_webcam_idt_dispersion_threshold="${{ vars['ML_WEBCAM_IDT_DISPERSION_THRESHOLD'] }}"
-            ml_webcam_idt_min_window_ms="${{ vars['ML_WEBCAM_IDT_MIN_WINDOW_MS'] }}"
-            ml_webcam_line_transition_threshold="${{ vars['ML_WEBCAM_LINE_TRANSITION_THRESHOLD'] }}"
-            ml_webcam_one_euro_mincutoff="${{ vars['ML_WEBCAM_ONE_EURO_MINCUTOFF'] }}"
-            ml_webcam_one_euro_beta="${{ vars['ML_WEBCAM_ONE_EURO_BETA'] }}"
-            ml_webcam_one_euro_dcutoff="${{ vars['ML_WEBCAM_ONE_EURO_DCUTOFF'] }}"
-            ml_webcam_max_sequences="${{ vars['ML_WEBCAM_MAX_SEQUENCES'] }}"
-            ml_webcam_min_sequences="${{ vars['ML_WEBCAM_MIN_SEQUENCES'] }}"
-
-            ml_debug=${ml_debug:-false}
-            ml_host=${ml_host:-0.0.0.0}
-            ml_port=${ml_port:-8001}
-            ml_allowed_origins=${ml_allowed_origins:-http://localhost:3000,http://127.0.0.1:3000}
-            ml_low_risk_threshold=${ml_low_risk_threshold:-0.33}
-            ml_high_risk_threshold=${ml_high_risk_threshold:-0.66}
-            ml_eye_tracker_sequence_length=${ml_eye_tracker_sequence_length:-20}
-            ml_eye_tracker_sequence_step=${ml_eye_tracker_sequence_step:-5}
-            ml_eye_tracker_max_sequences=${ml_eye_tracker_max_sequences:-100}
-            ml_eye_tracker_min_fixation_ms=${ml_eye_tracker_min_fixation_ms:-80}
-            ml_eye_tracker_max_fixation_ms=${ml_eye_tracker_max_fixation_ms:-1000}
-            ml_webcam_min_fixation_ms=${ml_webcam_min_fixation_ms:-50}
-            ml_webcam_max_fixation_ms=${ml_webcam_max_fixation_ms:-1500}
-            ml_webcam_idt_dispersion_threshold=${ml_webcam_idt_dispersion_threshold:-0.04}
-            ml_webcam_idt_min_window_ms=${ml_webcam_idt_min_window_ms:-150}
-            ml_webcam_line_transition_threshold=${ml_webcam_line_transition_threshold:-0.04}
-            ml_webcam_one_euro_mincutoff=${ml_webcam_one_euro_mincutoff:-1.0}
-            ml_webcam_one_euro_beta=${ml_webcam_one_euro_beta:-0.007}
-            ml_webcam_one_euro_dcutoff=${ml_webcam_one_euro_dcutoff:-1.0}
-            ml_webcam_max_sequences=${ml_webcam_max_sequences:-82}
-            ml_webcam_min_sequences=${ml_webcam_min_sequences:-10}
-
-            ml_env_vars=(
-              "DEBUG=$ml_debug"
-              "HOST=$ml_host"
-              "PORT=$ml_port"
-              "ALLOWED_ORIGINS=$ml_allowed_origins"
-              "LOW_RISK_THRESHOLD=$ml_low_risk_threshold"
-              "HIGH_RISK_THRESHOLD=$ml_high_risk_threshold"
-              "EYE_TRACKER_SEQUENCE_LENGTH=$ml_eye_tracker_sequence_length"
-              "EYE_TRACKER_SEQUENCE_STEP=$ml_eye_tracker_sequence_step"
-              "EYE_TRACKER_MAX_SEQUENCES=$ml_eye_tracker_max_sequences"
-              "EYE_TRACKER_MIN_FIXATION_MS=$ml_eye_tracker_min_fixation_ms"
-              "EYE_TRACKER_MAX_FIXATION_MS=$ml_eye_tracker_max_fixation_ms"
-              "WEBCAM_MIN_FIXATION_MS=$ml_webcam_min_fixation_ms"
-              "WEBCAM_MAX_FIXATION_MS=$ml_webcam_max_fixation_ms"
-              "WEBCAM_IDT_DISPERSION_THRESHOLD=$ml_webcam_idt_dispersion_threshold"
-              "WEBCAM_IDT_MIN_WINDOW_MS=$ml_webcam_idt_min_window_ms"
-              "WEBCAM_LINE_TRANSITION_THRESHOLD=$ml_webcam_line_transition_threshold"
-              "WEBCAM_ONE_EURO_MINCUTOFF=$ml_webcam_one_euro_mincutoff"
-              "WEBCAM_ONE_EURO_BETA=$ml_webcam_one_euro_beta"
-              "WEBCAM_ONE_EURO_DCUTOFF=$ml_webcam_one_euro_dcutoff"
-              "WEBCAM_MAX_SEQUENCES=$ml_webcam_max_sequences"
-              "WEBCAM_MIN_SEQUENCES=$ml_webcam_min_sequences"
-            )
-            if [ -z "$target_port" ]; then
-              target_port="8001"
-            fi
-
             if az containerapp show --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" >/dev/null 2>&1; then
-              az containerapp registry set \
-                --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-                --server ghcr.io \
-                --username "${{ secrets.GHCR_USERNAME }}" \
-                --password "${{ secrets.GHCR_PASSWORD }}"
-
-              az containerapp update \
-                --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-                --image "$image" \
-                --cpu "$cpu" \
-                --memory "$memory" \
-                --min-replicas "$min_replicas" \
-                --max-replicas "$max_replicas" \
-                --set-env-vars "${ml_env_vars[@]}"
+              echo "exists=true" >> "$GITHUB_OUTPUT"
             else
-              az containerapp create \
-                --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-                --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-                --environment "${{ vars.AZURE_CONTAINERAPP_ENV }}" \
-                --image "$image" \
-                --ingress external \
-                --target-port "$target_port" \
-                --cpu "$cpu" \
-                --memory "$memory" \
-                --min-replicas "$min_replicas" \
-                --max-replicas "$max_replicas" \
-                --env-vars "${ml_env_vars[@]}" \
-                --registry-server ghcr.io \
-                --registry-username "${{ secrets.GHCR_USERNAME }}" \
-                --registry-password "${{ secrets.GHCR_PASSWORD }}"
+              echo "exists=false" >> "$GITHUB_OUTPUT"
             fi
+
+      - name: Create initial Container App
+        if: ${{ steps.containerapp.outputs.exists == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .github/scripts/ml-service-common.sh
+          build_ml_env_vars
+
+          az containerapp create \
+            --name "$AZURE_CONTAINERAPP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --environment "$AZURE_CONTAINERAPP_ENV" \
+            --image "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" \
+            --ingress external \
+            --target-port "$CONTAINER_TARGET_PORT" \
+            --cpu "$CONTAINER_CPU" \
+            --memory "$CONTAINER_MEMORY" \
+            --min-replicas "$CONTAINER_MIN_REPLICAS" \
+            --max-replicas "$CONTAINER_MAX_REPLICAS" \
+            --env-vars "${ML_ENV_VARS[@]}" \
+            --registry-server ghcr.io \
+            --registry-username "$GHCR_USERNAME" \
+            --registry-password "$GHCR_PASSWORD"
+
+      - name: Bootstrap already completed
+        if: ${{ steps.containerapp.outputs.exists == 'true' }}
+        shell: bash
+        run: |
+          echo "Container App '${AZURE_CONTAINERAPP_NAME}' already exists."
+          echo "Bootstrap only provisions missing Azure resources and the initial app."
+          echo "Use the ML Service release tag workflow or the ML Service Sync Production Env workflow for updates."
 
       - name: Show deployed URL
         uses: azure/CLI@v2
@@ -233,24 +181,10 @@ jobs:
             echo "Container App URL: https://$fqdn"
 
       - name: Verify bootstrap health endpoint
-        uses: azure/CLI@v2
-        with:
-          inlineScript: |
-            set -euo pipefail
-            fqdn=$(az containerapp show \
-              --name "${{ vars.AZURE_CONTAINERAPP_NAME }}" \
-              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-              --query properties.configuration.ingress.fqdn -o tsv)
-
-            for i in $(seq 1 36); do
-              if python3 -c "import urllib.request; urllib.request.urlopen('https://$fqdn/health', timeout=5).read()" >/dev/null 2>&1; then
-                echo "Health check passed."
-                exit 0
-              fi
-              echo "Waiting for service health ($i/36)..."
-              sleep 5
-            done
-
-            echo "Health check did not pass in time."
-            exit 1
-
+        if: ${{ steps.containerapp.outputs.exists == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .github/scripts/ml-service-common.sh
+          export HEALTH_ATTEMPTS=36
+          health_check_containerapp
