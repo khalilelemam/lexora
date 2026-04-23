@@ -1,99 +1,99 @@
 name: Web Deploy (Sync Env + Deploy)
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 env:
-    GITHUB_ENVIRONMENT: web-production
+  GITHUB_ENVIRONMENT: web-production
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
-        timeout-minutes: 30
-        concurrency:
-            group: web-vercel-deploy
-            cancel-in-progress: false
-        environment:
-            name: web-production
-        permissions:
-            contents: read
-            actions: read
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: web-vercel-deploy
+      cancel-in-progress: false
+    environment:
+      name: web-production
+    permissions:
+      contents: read
+      actions: read
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Setup Node
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "24"
-                  cache: "npm"
-                  cache-dependency-path: web/package-lock.json
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
 
-            - name: Install dependencies
-              working-directory: web
-              run: npm ci
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
 
-            - name: Install Vercel CLI
-              run: npm i -g vercel@latest
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
 
-            - name: Set Vercel env
-              run: |
-                  set -euo pipefail
-                  echo "::add-mask::${{ secrets.VERCEL_TOKEN }}"
-                  echo "VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }}" >> "$GITHUB_ENV"
-                  echo "VERCEL_PROJECT_ID=${{ vars.VERCEL_PROJECT_ID }}" >> "$GITHUB_ENV"
-                  echo "VERCEL_ORG_ID=${{ vars.VERCEL_ORG_ID }}" >> "$GITHUB_ENV"
+      - name: Set Vercel env
+        run: |
+          set -euo pipefail
+          echo "::add-mask::${{ secrets.VERCEL_TOKEN }}"
+          echo "VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }}" >> "$GITHUB_ENV"
+          echo "VERCEL_PROJECT_ID=${{ vars.VERCEL_PROJECT_ID }}" >> "$GITHUB_ENV"
+          echo "VERCEL_ORG_ID=${{ vars.VERCEL_ORG_ID }}" >> "$GITHUB_ENV"
 
-            - name: Validate required Vercel credentials
-              run: |
-                  set -euo pipefail
-                  for key in VERCEL_TOKEN VERCEL_PROJECT_ID VERCEL_ORG_ID; do
-                    if [ -z "${!key:-}" ]; then
-                      echo "Missing required value: $key"
-                      exit 1
-                    fi
-                  done
+      - name: Validate required Vercel credentials
+        run: |
+          set -euo pipefail
+          for key in VERCEL_TOKEN VERCEL_PROJECT_ID VERCEL_ORG_ID; do
+            if [ -z "${!key:-}" ]; then
+              echo "Missing required value: $key"
+              exit 1
+            fi
+          done
 
-            - name: Verify auth
-              run: vercel whoami --token "$VERCEL_TOKEN"
+      - name: Verify auth
+        run: vercel whoami --token "$VERCEL_TOKEN"
 
-            - name: Fetch GitHub env variables
-              env:
-                  ENV_NAME: ${{ env.GITHUB_ENVIRONMENT }}
-                  VARS_JSON: ${{ toJSON(vars) }}
-              run: |
-                  set -euo pipefail
-                  echo "$VARS_JSON" > vars.json
+      - name: Fetch GitHub env variables
+        env:
+          ENV_NAME: ${{ env.GITHUB_ENVIRONMENT }}
+          VARS_JSON: ${{ toJSON(vars) }}
+        run: |
+          set -euo pipefail
+          echo "$VARS_JSON" > vars.json
 
-                  jq '{variables: (to_entries | map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL")) | {name: .key, value: (.value | tostring)}))}' vars.json > web-vars.json
+          jq '{variables: (to_entries | map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL")) | {name: .key, value: (.value | tostring)}))}' vars.json > web-vars.json
 
-                  count=$(jq -r '.variables | length' web-vars.json)
-                  if [ "$count" -eq 0 ]; then
-                    echo "No deployable web variables found in GitHub environment: $ENV_NAME"
-                    exit 1
-                  fi
+          count=$(jq -r '.variables | length' web-vars.json)
+          if [ "$count" -eq 0 ]; then
+            echo "No deployable web variables found in GitHub environment: $ENV_NAME"
+            exit 1
+          fi
 
-                  echo "Variables selected for Vercel sync:"
-                  jq -r '.variables[].name' web-vars.json
+          echo "Variables selected for Vercel sync:"
+          jq -r '.variables[].name' web-vars.json
 
-            - name: Sync to Vercel production env
-              run: |
-                  set -euo pipefail
-                  jq -c '.variables[]' web-vars.json | while read -r item; do
-                    key=$(echo "$item" | jq -r '.name')
-                    value=$(echo "$item" | jq -r '.value')
+      - name: Sync to Vercel production env
+        run: |
+          set -euo pipefail
+          jq -c '.variables[]' web-vars.json | while read -r item; do
+            key=$(echo "$item" | jq -r '.name')
+            value=$(echo "$item" | jq -r '.value')
 
-                    echo "Syncing $key"
-                    vercel env rm "$key" production --yes --token "$VERCEL_TOKEN" >/dev/null 2>&1 || true
-                    printf '%s' "$value" | vercel env add "$key" production --yes --token "$VERCEL_TOKEN"
-                  done
+            echo "Syncing $key"
+            vercel env rm "$key" production --yes --token "$VERCEL_TOKEN" >/dev/null 2>&1 || true
+            printf '%s' "$value" | vercel env add "$key" production --token "$VERCEL_TOKEN"
+          done
 
-            - name: Pull Vercel config
-              run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+      - name: Pull Vercel config
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
-            - name: Build
-              run: vercel build --prod --token "$VERCEL_TOKEN"
+      - name: Build
+        run: vercel build --prod --token "$VERCEL_TOKEN"
 
-            - name: Deploy
-              run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
