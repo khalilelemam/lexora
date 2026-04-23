@@ -51,9 +51,9 @@ export function FullscreenGazeReplay({
   // Reading zone pixel bounds (must match TaskDisplay layout)
   const screenW = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const screenH = typeof window !== 'undefined' ? window.innerHeight : 1080;
-  const zoneLeft = screenW * 0.20;
-  const zoneTop = screenH * 0.10;
-  const zoneW = screenW * 0.60; // 20%–80%
+  const zoneLeft = screenW * 0.2;
+  const zoneTop = screenH * 0.1;
+  const zoneW = screenW * 0.6; // 20%–80%
   const zoneH = screenH * 0.85; // 10%–95%
 
   return (
@@ -81,16 +81,25 @@ export function FullscreenGazeReplay({
             const x2 = zoneLeft + mapX(curr.fixationX) * zoneW;
             const y2 = zoneTop + mapY(curr.fixationY) * zoneH;
 
-            const stroke = curr.isReturnSweep ? '#d1d5db' : curr.isRegression ? '#f87171' : '#86efac';
+            const stroke = curr.isReturnSweep
+              ? '#d1d5db'
+              : curr.isRegression
+                ? '#f87171'
+                : '#86efac';
             const dashArray = curr.isReturnSweep ? '3 4' : 'none';
             const opacity = curr.isReturnSweep ? 0.35 : 0.45;
 
             return (
               <line
                 key={`${replay.trail[i]}-${idx}`}
-                x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={stroke} strokeWidth={1.5}
-                strokeDasharray={dashArray} opacity={opacity}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke={stroke}
+                strokeWidth={1.5}
+                strokeDasharray={dashArray}
+                opacity={opacity}
               />
             );
           })}
@@ -134,16 +143,23 @@ export function FullscreenGazeReplay({
       })}
 
       {/* Bottom control bar */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-70 flex items-center gap-4 bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-[#E8E0D4] shadow-lg">
-        <button type="button" onClick={replay.togglePlayPause} className="text-[#4A7C59] hover:text-[#3D6A4B]">
+      <div className="bottom-4 left-1/2 z-70 fixed flex items-center gap-4 bg-white/90 shadow-lg backdrop-blur-md px-5 py-2.5 border border-[#E8E0D4] rounded-full -translate-x-1/2">
+        <button
+          type="button"
+          onClick={replay.togglePlayPause}
+          className="text-[#4A7C59] hover:text-[#3D6A4B]"
+        >
           {replay.isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
         </button>
 
-        <div className="w-32 h-1.5 bg-[#E8E0D4] rounded-full overflow-hidden">
-          <div className="h-full bg-[#4A7C59] rounded-full transition-all duration-75" style={{ width: `${replay.progress}%` }} />
+        <div className="bg-[#E8E0D4] rounded-full w-32 h-1.5 overflow-hidden">
+          <div
+            className="bg-[#4A7C59] rounded-full h-full transition-all duration-75"
+            style={{ width: `${replay.progress}%` }}
+          />
         </div>
 
-        <span className="text-[11px] text-[#8B857E] tabular-nums w-8">{replay.progress}%</span>
+        <span className="w-8 tabular-nums text-[#8B857E] text-[11px]">{replay.progress}%</span>
 
         {/* Speed selector */}
         <div className="flex items-center gap-1">
@@ -153,7 +169,9 @@ export function FullscreenGazeReplay({
               onClick={() => replay.setSpeed(s)}
               className={cn(
                 'px-1.5 py-0.5 rounded text-[10px] transition-colors',
-                replay.speed === s ? 'bg-[#4A7C59] text-white' : 'text-[#8B857E] hover:bg-[#F0EBE3]',
+                replay.speed === s
+                  ? 'bg-[#4A7C59] text-white'
+                  : 'text-[#8B857E] hover:bg-[#F0EBE3]',
               )}
             >
               {s}×
@@ -161,7 +179,7 @@ export function FullscreenGazeReplay({
           ))}
         </div>
 
-        <div className="w-px h-4 bg-[#E8E0D4]" />
+        <div className="bg-[#E8E0D4] w-px h-4" />
 
         <button type="button" onClick={onClose} className="text-[#8B857E] hover:text-[#2D2A26]">
           <X className="w-5 h-5" />
@@ -169,14 +187,28 @@ export function FullscreenGazeReplay({
       </div>
 
       {/* Legend */}
-      <div className="fixed top-4 right-4 z-70 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-xl border border-[#E8E0D4] shadow-sm flex flex-col gap-1.5 text-[11px] text-[#8B857E]">
+      <div className="top-4 right-4 z-70 fixed flex flex-col gap-1.5 bg-white/90 shadow-sm backdrop-blur-md px-4 py-2.5 border border-[#E8E0D4] rounded-xl text-[#8B857E] text-[11px]">
         <div className="flex items-center gap-1.5">
           <div className="bg-[#4A7C59] opacity-60 rounded-full w-2.5 h-2.5" />
           <span>Forward fixation</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="bg-red-400 opacity-60 rounded-full w-2.5 h-2.5" />
-          <span>Regression</span>
+          <span>Regression (backward)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <svg width="14" height="4">
+            <line
+              x1="0"
+              y1="2"
+              x2="14"
+              y2="2"
+              stroke="#d1d5db"
+              strokeWidth="1.5"
+              strokeDasharray="3 4"
+            />
+          </svg>
+          <span>Return sweep</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span>Bubble size = fixation duration</span>
