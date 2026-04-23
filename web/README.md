@@ -117,6 +117,47 @@ These control the calibration collection and validation pipeline. Tweak these to
 |---|---|---|
 | `NEXT_PUBLIC_DEBUG_GAZE_OVERLAY` | `false` | Set to `"true"` to show a real-time gaze dot on the reading screen + console diagnostics. |
 
+## Production Config And Deploy
+
+Production web runtime config is managed through the GitHub environment `web-production`.
+
+The workflow in [`.github/workflows/web-vercel-deploy.yml`](../.github/workflows/web-vercel-deploy.yml) does three things on manual dispatch:
+
+1. Reads the web variables from the GitHub environment `web-production`
+2. Syncs those values into the Vercel production environment
+3. Builds and deploys the web app to Vercel production
+
+### Source Of Truth
+
+For production web config, GitHub is the source of truth, not a checked-in `.env` file.
+
+- Put web runtime variables in the GitHub environment `web-production`
+- Keep the deploy secret `VERCEL_TOKEN` in the same environment
+- Keep `VERCEL_PROJECT_ID` and `VERCEL_ORG_ID` as environment variables there
+
+The workflow syncs only:
+
+- `ML_SERVICE_URL`
+- any variable starting with `NEXT_PUBLIC_`
+
+### How To Change A Production Web Variable
+
+1. Open the repository on GitHub
+2. Go to `Settings -> Environments -> web-production`
+3. Update or add the variable there
+4. Run the `Web Deploy (Sync Env + Deploy)` workflow from GitHub Actions
+
+This keeps Vercel production aligned with the GitHub environment.
+
+### When To Edit `.env.local`
+
+Use `.env.local` for local development only.
+
+- Local `.env.local` changes affect your machine
+- GitHub `web-production` changes affect deployed production
+
+If a teammate wants to change production behavior, they should update `web-production` and then run the deploy workflow instead of editing local files and expecting production to change.
+
 ## Tuning Guide
 
 ### "The calibration keeps failing"
