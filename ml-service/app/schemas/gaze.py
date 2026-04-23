@@ -1,12 +1,17 @@
 from typing import List
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from . import to_camel
 from .examples import GAZE_POINT_EXAMPLE, GAZE_SEQUENCE_EXAMPLE
 
 
 class GazePoint(BaseModel):
-    model_config = ConfigDict(json_schema_extra={"example": GAZE_POINT_EXAMPLE})
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel,
+        json_schema_extra={"example": GAZE_POINT_EXAMPLE},
+    )
 
     fixation_x: float = Field(ge=0.0, le=1.0)
     fixation_y: float = Field(ge=0.0, le=1.0)
@@ -14,7 +19,11 @@ class GazePoint(BaseModel):
 
 
 class GazeSequence(BaseModel):
-    model_config = ConfigDict(json_schema_extra={"example": GAZE_SEQUENCE_EXAMPLE})
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel,
+        json_schema_extra={"example": GAZE_SEQUENCE_EXAMPLE},
+    )
 
     gaze_points: List[GazePoint] = Field(min_length=20)
 

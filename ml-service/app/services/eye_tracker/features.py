@@ -1,3 +1,4 @@
+from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
@@ -6,6 +7,15 @@ from sklearn.preprocessing import StandardScaler
 
 from app.config import settings
 from app.schemas import GazePoint
+
+
+@dataclass
+class TaskProcessingResult:
+    sequences: np.ndarray
+    total_gaze_points: int
+    valid_fixations: int
+    mean_fixation_duration_ms: float
+    features_data: list[dict] = field(default_factory=list)
 
 
 class EyeTrackerFeatureProcessor:
@@ -18,7 +28,7 @@ class EyeTrackerFeatureProcessor:
 
     def process_gaze_points(
         self, gaze_points: List[GazePoint], screen_width: int, screen_height: int
-    ) -> np.ndarray:
+    ) -> TaskProcessingResult:
         """Convert raw gaze points to model-ready sequences of shape (100, 20, 5)."""
         if len(gaze_points) < settings.EYE_TRACKER_SEQUENCE_LENGTH:
             raise ValueError(
@@ -73,10 +83,33 @@ class EyeTrackerFeatureProcessor:
                 f"Need at least {settings.EYE_TRACKER_SEQUENCE_LENGTH}."
             )
 
+        valid_durations = durations_ms[valid_mask]
+        valid_timestamps = timestamps[valid_mask]
+
+        # Raw features before scaling (for storage and visualization)
+        features_data = [
+            {
+                "timestamp": int(valid_timestamps[i] / 1000),
+                "duration_ms": float(row[0]),
+                "fixation_x": float(row[1]),
+                "fixation_y": float(row[2]),
+                "saccade_amplitude": float(row[3]),
+                "saccade_velocity": float(row[4]),
+            }
+            for i, row in enumerate(features_filtered)
+        ]
+
         features_scaled = self.scaler.transform(features_filtered)
         sequences = self._create_sequences(features_scaled)
         padded_sequences = self._pad_sequences(sequences)
-        return padded_sequences
+
+        return TaskProcessingResult(
+            sequences=padded_sequences,
+            total_gaze_points=len(gaze_points),
+            valid_fixations=int(valid_mask.sum()),
+            mean_fixation_duration_ms=float(valid_durations.mean()),
+            features_data=features_data,
+        )
 
     def _calculate_saccade_amplitudes(
         self,
