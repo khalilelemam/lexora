@@ -149,12 +149,13 @@ Start with: 06-system-integration.mermaid
 ### 3️⃣ Webcam Pipeline (`03-webcam-pipeline.mermaid`)
 
 **What it shows:**
-- Webcam data → I-VT algorithm → UDA model → Prediction
+- Webcam data → One Euro smoothing + I-DT fixation detection → UDA model → Prediction
 - Domain adaptation approach
 - Noise handling strategies
 
 **Key concepts:**
-- I-VT (Identification by Velocity Threshold) for fixation detection
+- I-DT (Identification by Dispersion Threshold) for fixation detection
+- One Euro adaptive smoothing for jitter reduction with low lag
 - UDA (Unsupervised Domain Adaptation) bridges eye tracker → webcam gap
 - Signal smoothing for noise reduction
 - Accessible alternative to eye tracker

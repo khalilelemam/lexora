@@ -7,7 +7,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('assets/eye.ico', 'assets'),
+        ('assets/lexora_eye.ico', 'assets'),
     ],
     hiddenimports=[
         'tobii_research',
@@ -38,6 +38,8 @@ a = Analysis(
         'gui.service_manager',
         'gui.styles',
         'gui.widgets',
+        'gui.widgets.update_dialog',
+        'gui.updater',
         'psutil',
     ],
     hookspath=[],
@@ -72,5 +74,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets/eye.ico',
+    icon='assets/lexora_eye.ico',
 )

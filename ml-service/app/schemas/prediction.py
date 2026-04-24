@@ -21,6 +21,7 @@ class WebcamFeatureRow(BaseModel):
     fixation_y: float
     saccade_amplitude: float
     is_regression: bool
+    is_return_sweep: Optional[bool] = False
 
 
 class EyeTrackerFeatureRow(BaseModel):

@@ -1,0 +1,98 @@
+name: ML Service Shared Deploy
+
+on:
+  workflow_call:
+    inputs:
+      imageTag:
+        description: Docker image tag to deploy when updateImage is enabled.
+        required: false
+        default: ""
+        type: string
+      updateImage:
+        description: Whether to update the Container App image.
+        required: false
+        default: false
+        type: boolean
+      verifyHealth:
+        description: Whether to verify the deployed /health endpoint.
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/lexora-ml
+
+jobs:
+  deploy:
+    name: Apply ML Service Production Configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: ml-service-azure-production
+      cancel-in-progress: false
+    environment:
+      name: ml-production
+    env:
+      UPDATE_IMAGE: ${{ inputs.updateImage }}
+      VERIFY_HEALTH: ${{ inputs.verifyHealth }}
+      IMAGE_TAG: ${{ inputs.imageTag }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_PASSWORD: ${{ secrets.GHCR_PASSWORD }}
+      AZURE_CONTAINERAPP_NAME: ${{ vars.AZURE_CONTAINERAPP_NAME }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_CONTAINERAPP_TARGET_PORT: ${{ vars.AZURE_CONTAINERAPP_TARGET_PORT }}
+      AZURE_CONTAINERAPP_CPU: ${{ vars.AZURE_CONTAINERAPP_CPU }}
+      AZURE_CONTAINERAPP_MEMORY: ${{ vars.AZURE_CONTAINERAPP_MEMORY }}
+      AZURE_CONTAINERAPP_MIN_REPLICAS: ${{ vars.AZURE_CONTAINERAPP_MIN_REPLICAS }}
+      AZURE_CONTAINERAPP_MAX_REPLICAS: ${{ vars.AZURE_CONTAINERAPP_MAX_REPLICAS }}
+      ML_DEBUG: ${{ vars.ML_DEBUG }}
+      ML_HOST: ${{ vars.ML_HOST }}
+      ML_PORT: ${{ vars.ML_PORT }}
+      ML_ALLOWED_ORIGINS: ${{ vars.ML_ALLOWED_ORIGINS }}
+      ML_LOW_RISK_THRESHOLD: ${{ vars.ML_LOW_RISK_THRESHOLD }}
+      ML_HIGH_RISK_THRESHOLD: ${{ vars.ML_HIGH_RISK_THRESHOLD }}
+      ML_EYE_TRACKER_SEQUENCE_LENGTH: ${{ vars.ML_EYE_TRACKER_SEQUENCE_LENGTH }}
+      ML_EYE_TRACKER_SEQUENCE_STEP: ${{ vars.ML_EYE_TRACKER_SEQUENCE_STEP }}
+      ML_EYE_TRACKER_MAX_SEQUENCES: ${{ vars.ML_EYE_TRACKER_MAX_SEQUENCES }}
+      ML_EYE_TRACKER_MIN_FIXATION_MS: ${{ vars.ML_EYE_TRACKER_MIN_FIXATION_MS }}
+      ML_EYE_TRACKER_MAX_FIXATION_MS: ${{ vars.ML_EYE_TRACKER_MAX_FIXATION_MS }}
+      ML_WEBCAM_MIN_FIXATION_MS: ${{ vars.ML_WEBCAM_MIN_FIXATION_MS }}
+      ML_WEBCAM_MAX_FIXATION_MS: ${{ vars.ML_WEBCAM_MAX_FIXATION_MS }}
+      ML_WEBCAM_IDT_DISPERSION_THRESHOLD: ${{ vars.ML_WEBCAM_IDT_DISPERSION_THRESHOLD }}
+      ML_WEBCAM_IDT_MIN_WINDOW_MS: ${{ vars.ML_WEBCAM_IDT_MIN_WINDOW_MS }}
+      ML_WEBCAM_LINE_TRANSITION_THRESHOLD: ${{ vars.ML_WEBCAM_LINE_TRANSITION_THRESHOLD }}
+      ML_WEBCAM_ONE_EURO_MINCUTOFF: ${{ vars.ML_WEBCAM_ONE_EURO_MINCUTOFF }}
+      ML_WEBCAM_ONE_EURO_BETA: ${{ vars.ML_WEBCAM_ONE_EURO_BETA }}
+      ML_WEBCAM_ONE_EURO_DCUTOFF: ${{ vars.ML_WEBCAM_ONE_EURO_DCUTOFF }}
+      ML_WEBCAM_MAX_SEQUENCES: ${{ vars.ML_WEBCAM_MAX_SEQUENCES }}
+      ML_WEBCAM_MIN_SEQUENCES: ${{ vars.ML_WEBCAM_MIN_SEQUENCES }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets and variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .github/scripts/ml-service-common.sh
+          validate_deploy_inputs "$UPDATE_IMAGE" "$IMAGE_TAG"
+
+      - name: Log in to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Apply production configuration to Container App
+        shell: bash
+        run: bash .github/scripts/ml-service-deploy.sh

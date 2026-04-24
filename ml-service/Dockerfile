@@ -11,9 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create virtual environment and install Python dependencies
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-COPY requirements.txt .
+COPY pyproject.toml ./pyproject.toml
+COPY README.md ./README.md
+COPY app/ ./app/
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir .
 
 
 # Final stage
@@ -36,7 +38,7 @@ USER appuser
 # Application files
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser models/ ./models/
-COPY --chown=appuser:appuser server.py .
+COPY --chown=appuser:appuser pyproject.toml ./pyproject.toml
 
 # Runtime environment
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 HOST=0.0.0.0 PORT=8001
@@ -47,4 +49,4 @@ EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health').read()" || exit 1
 
-CMD ["python", "server.py"]
+CMD ["sh", "-c", "uvicorn app.api:app --host ${HOST} --port ${PORT}"]

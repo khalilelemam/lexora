@@ -1,0 +1,24 @@
+name: ML Service Sync Production Env
+
+on:
+  workflow_dispatch:
+    inputs:
+      imageTag:
+        description: Optional image tag to deploy with env sync (e.g. 1.2.3). Leave empty to keep the current image.
+        required: false
+        default: ""
+      verifyHealth:
+        description: Verify /health endpoint after applying configuration
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  sync-production-config:
+    name: Sync Production Env To Azure Container App
+    uses: ./.github/workflows/ml-service-deploy-shared.yml
+    with:
+      imageTag: ${{ inputs.imageTag }}
+      updateImage: ${{ inputs.imageTag != '' }}
+      verifyHealth: ${{ inputs.verifyHealth }}
+    secrets: inherit

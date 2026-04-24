@@ -1,0 +1,161 @@
+name: Web Deploy (Sync Env + Deploy)
+
+on:
+  workflow_dispatch:
+
+env:
+  GITHUB_ENVIRONMENT: web-production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: web-vercel-deploy
+      cancel-in-progress: false
+    environment:
+      name: web-production
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Set Vercel credentials
+        run: |
+          set -euo pipefail
+          echo "::add-mask::${{ secrets.VERCEL_TOKEN }}"
+          echo "VERCEL_TOKEN=${{ secrets.VERCEL_TOKEN }}" >> "$GITHUB_ENV"
+          echo "VERCEL_PROJECT_ID=${{ vars.VERCEL_PROJECT_ID }}" >> "$GITHUB_ENV"
+          echo "VERCEL_ORG_ID=${{ vars.VERCEL_ORG_ID }}" >> "$GITHUB_ENV"
+
+      - name: Validate required Vercel credentials
+        run: |
+          set -euo pipefail
+          for key in VERCEL_TOKEN VERCEL_PROJECT_ID VERCEL_ORG_ID; do
+            if [ -z "${!key:-}" ]; then
+              echo "Missing required value: $key"
+              exit 1
+            fi
+          done
+
+      - name: Verify auth
+        run: vercel whoami --token "$VERCEL_TOKEN"
+
+      # ============================================================
+      # STEP 1: Sync GitHub Variables → Vercel via REST API
+      # ============================================================
+      - name: Sync GitHub env vars to Vercel
+        env:
+          VARS_JSON: ${{ toJSON(vars) }}
+        run: |
+          set -euo pipefail
+
+          # Build key=value file from GitHub vars
+          echo "$VARS_JSON" | jq -r '
+            to_entries |
+            map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL"))) |
+            .[] | "\(.key)=\(.value)"
+          ' > /tmp/vars_to_sync.txt
+
+          if [ ! -s /tmp/vars_to_sync.txt ]; then
+            echo "ERROR: No matching variables found in GitHub environment."
+            echo "Make sure NEXT_PUBLIC_* or ML_SERVICE_URL vars exist in the 'web-production' environment."
+            exit 1
+          fi
+
+          # ── DEBUG: Print keys AND values (remove after debugging) ──
+          echo "Variables to sync:"
+          while IFS= read -r line; do
+            key="${line%%=*}"
+            value="${line#*=}"
+            echo "  $key = '$value'"
+          done < /tmp/vars_to_sync.txt
+          # ────────────────────────────────────────────────────────────
+
+          # Fetch all existing Vercel env vars for this project (to get IDs for deletion)
+          EXISTING=$(curl -sf \
+            "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
+            -H "Authorization: Bearer $VERCEL_TOKEN")
+
+          while IFS= read -r line; do
+            key="${line%%=*}"
+            value="${line#*=}"
+
+            echo "──────────────────────────────"
+            echo "Syncing: $key"
+            echo "Value:   $value"
+
+            # Find existing env var ID by key name (production target)
+            EXISTING_ID=$(echo "$EXISTING" | jq -r --arg k "$key" '
+              .envs[] | select(.key == $k and (.target | index("production") != null)) | .id
+            ' | head -n1)
+
+            if [ -n "$EXISTING_ID" ]; then
+              echo "Found existing entry (ID: $EXISTING_ID) — deleting..."
+              curl -sf -X DELETE \
+                "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env/$EXISTING_ID?teamId=$VERCEL_ORG_ID" \
+                -H "Authorization: Bearer $VERCEL_TOKEN"
+              echo "Deleted."
+            else
+              echo "No existing entry found — will create fresh."
+            fi
+
+            # Create the variable via REST API (plain type, not sensitive)
+            RESPONSE=$(curl -sf -X POST \
+              "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n \
+                --arg k "$key" \
+                --arg v "$value" \
+                '{key: $k, value: $v, type: "plain", target: ["production"]}'
+              )")
+
+            echo "Vercel response: $RESPONSE"
+            echo "✓ $key synced successfully"
+
+          done < /tmp/vars_to_sync.txt
+
+          echo "══════════════════════════════"
+          echo "All variables synced to Vercel."
+
+      # ============================================================
+      # STEP 2: Pull Vercel config
+      # ============================================================
+      - name: Pull Vercel config
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+
+      # ============================================================
+      # STEP 3: Build
+      # ============================================================
+      - name: Build
+        run: vercel build --prod --token "$VERCEL_TOKEN"
+
+      # ============================================================
+      # STEP 4: Deploy
+      # ============================================================
+      - name: Deploy
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
+          echo "Deployed to: $DEPLOYMENT_URL"
+
+          # Explicitly alias your custom domain to this exact deployment
+          vercel alias set "$DEPLOYMENT_URL" lexora.page --token "$VERCEL_TOKEN"
+          echo "✓ lexora.page aliased to $DEPLOYMENT_URL"
