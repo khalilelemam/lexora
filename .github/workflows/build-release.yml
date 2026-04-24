@@ -226,7 +226,7 @@ jobs:
             artifacts/lexora-macos/Lexora-macOS-Installer.pkg
             artifacts/lexora-linux/Lexora-Linux-Installer.deb
           draft: false
-          prerelease: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           body: |
             ## Lexora Eye Tracker Service
             

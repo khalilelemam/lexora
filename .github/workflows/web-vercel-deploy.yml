@@ -152,4 +152,10 @@ jobs:
       # STEP 4: Deploy
       # ============================================================
       - name: Deploy
-        run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
+          echo "Deployed to: $DEPLOYMENT_URL"
+
+          # Explicitly alias your custom domain to this exact deployment
+          vercel alias set "$DEPLOYMENT_URL" lexora.page --token "$VERCEL_TOKEN"
+          echo "✓ lexora.page aliased to $DEPLOYMENT_URL"
