@@ -37,7 +37,7 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
-      - name: Set Vercel env
+      - name: Set Vercel credentials
         run: |
           set -euo pipefail
           echo "::add-mask::${{ secrets.VERCEL_TOKEN }}"
@@ -58,26 +58,71 @@ jobs:
       - name: Verify auth
         run: vercel whoami --token "$VERCEL_TOKEN"
 
-      - name: Generate .env.production.local
+      # ============================================================
+      # STEP 1: Sync GitHub Variables to Vercel Dashboard
+      # ============================================================
+      # This is the critical fix. We push all relevant variables from
+      # GitHub to Vercel's platform so they're available during
+      # build and at runtime on Vercel's servers.
+      # ============================================================
+      - name: Sync GitHub env vars to Vercel
         working-directory: web
         env:
           VARS_JSON: ${{ toJSON(vars) }}
         run: |
           set -euo pipefail
-          echo "$VARS_JSON" | jq -r 'to_entries | map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL"))) | .[] | "\(.key)=\(.value)"' > .env.production.local
 
-          if [ ! -s .env.production.local ]; then
+          # Extract variables matching our criteria
+          echo "$VARS_JSON" | jq -r '
+            to_entries |
+            map(select((.key | test("^NEXT_PUBLIC_")) or (.key == "ML_SERVICE_URL"))) |
+            .[] | "\(.key)=\(.value)"
+          ' > /tmp/vars_to_sync.txt
+
+          if [ ! -s /tmp/vars_to_sync.txt ]; then
             echo "No deployable web variables found in GitHub environment."
             exit 1
           fi
 
-          echo "Variables successfully injected for Vercel build."
+          echo "Found variables to sync:"
+          cat /tmp/vars_to_sync.txt | cut -d'=' -f1 | sed 's/^/  - /'
 
+          # Push each variable to Vercel production environment
+          while IFS='=' read -r key value; do
+            echo "Syncing: $key"
+            
+            # Remove existing key from Vercel to avoid duplicates/errors
+            # The '|| true' prevents failure if key doesn't exist yet
+            vercel env rm "$key" production -y --token "$VERCEL_TOKEN" 2>/dev/null || true
+            
+            # Add the new value via stdin (required by vercel CLI)
+            echo "$value" | vercel env add "$key" production --token "$VERCEL_TOKEN"
+            
+          done < /tmp/vars_to_sync.txt
+
+          echo "All variables synced to Vercel successfully."
+
+      # ============================================================
+      # STEP 2: Pull Vercel config (now includes our synced vars)
+      # ============================================================
+      # After syncing, Vercel's platform has the variables. We pull
+      # the project config, which now includes the env vars.
+      # ============================================================
       - name: Pull Vercel config
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
+      # ============================================================
+      # STEP 3: Build (Vercel now has access to synced variables)
+      # ============================================================
+      # Since variables are now in Vercel's dashboard, the build
+      # process can read them. NEXT_PUBLIC_* will be baked into
+      # the bundle. ML_SERVICE_URL will be available at runtime.
+      # ============================================================
       - name: Build
         run: vercel build --prod --token "$VERCEL_TOKEN"
 
+      # ============================================================
+      # STEP 4: Deploy
+      # ============================================================
       - name: Deploy
         run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
