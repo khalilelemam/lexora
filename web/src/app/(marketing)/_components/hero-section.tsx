@@ -48,8 +48,8 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <span className="bg-linear-to-r from-[oklch(0.35_0.04_110)] via-[oklch(0.50_0.06_110)] to-[oklch(0.65_0.10_115)] bg-clip-text text-transparent">
-            See Reading Differently
+          <span className="bg-gradient-to-r from-[#a6a867] via-[#e3dc95] to-[#a6a867] bg-clip-text text-transparent">
+            Map Your Potential
           </span>
         </motion.h1>
 
@@ -59,8 +59,8 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
         >
-          Lexora uses eye-tracking technology to provide non-invasive dyslexia screening.
-          Research-backed gaze analysis helps identify reading difficulties early.
+          Lexora provides accessible, non-invasive dyslexia screening by analyzing your unique reading patterns.
+          Unlock your true capabilities with our research-backed eye-tracking technology.
         </motion.p>
 
         <motion.div

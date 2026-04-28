@@ -36,7 +36,7 @@ export function GazeTrailDemo() {
             key={i}
             x1={`${points[i].x}%`} y1={`${points[i].y}%`}
             x2={`${p.x}%`} y2={`${p.y}%`}
-            stroke="oklch(0.70 0.10 115)"
+            stroke="#a6a867"
             strokeWidth="1"
             strokeDasharray="3 3"
             initial={{ pathLength: 0, opacity: 0 }}
@@ -55,7 +55,8 @@ export function GazeTrailDemo() {
             top: `${p.y}%`,
             width: dotSizes[i],
             height: dotSizes[i],
-            background: i === 5 || i === 12 ? 'oklch(0.52 0.12 25 / 0.6)' : 'oklch(0.70 0.10 115 / 0.5)',
+            background: i === 5 || i === 12 ? '#9e5a5a' : '#a6a867',
+            opacity: i === 5 || i === 12 ? 0.6 : 0.5,
             transform: 'translate(-50%, -50%)',
           }}
           initial={{ scale: 0, opacity: 0 }}

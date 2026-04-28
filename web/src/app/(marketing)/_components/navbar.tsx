@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -42,12 +43,22 @@ export function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
+  const pathname = usePathname();
+  const router = useRouter();
+
   const scrollTo = useCallback((id: string) => {
     setMobileOpen(false);
+    
+    if (pathname !== '/') {
+      // If we are not on the homepage, redirect to the homepage with the hash
+      router.push(`/${id}`);
+      return;
+    }
+
     // Strip the '#' prefix
     const elId = id.startsWith('#') ? id.slice(1) : id;
     document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  }, [pathname, router]);
 
   return (
     <>

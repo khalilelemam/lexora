@@ -45,6 +45,34 @@ export function CtaSection() {
             Webcam (No Hardware)
           </Button>
         </div>
+
+        <div className="mt-12 pt-12 border-t w-full border-border">
+          <h3 className="text-xl font-medium mb-6">Download the Tobii Service App</h3>
+          <p className="text-sm text-muted-foreground mb-6">Required for the Tobii Eye Tracker mode.</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => window.open('https://github.com/khalilelemam/eglex/releases/latest', '_blank')}
+            >
+              Windows Download
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => window.open('https://github.com/khalilelemam/eglex/releases/latest', '_blank')}
+            >
+              macOS Download
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => window.open('https://github.com/khalilelemam/eglex/releases/latest', '_blank')}
+            >
+              Linux Download
+            </Button>
+          </div>
+        </div>
       </motion.div>
     </section>
   );

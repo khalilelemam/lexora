@@ -68,19 +68,40 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="Research Use">
+          <Section title="Data Retention & Storage">
             <p>
-              Lexora is a research tool developed at the Faculty of Computing and
-              Data Science. It is intended for screening purposes only and does not
-              store or process personal health information. If you participate in a
-              formal research study using Lexora, separate consent and data handling
-              procedures will apply as governed by the research ethics board.
+              Lexora operates on a <strong>zero-retention policy</strong> for raw biometric data.
+              Gaze coordinates and video feeds are discarded immediately after processing. The final 
+              extracted features and risk assessment results are not linked to your identity and are 
+              retained only temporarily during the active session. We do not maintain databases of user screening results.
             </p>
           </Section>
 
-          <Section title="Contact">
+          <Section title="Your Rights (GDPR / CCPA)">
             <p>
-              If you have questions about how Lexora handles your data, please reach
+              As we do not store personal identifiers, we cannot retrieve or delete specific screening results 
+              after your session ends. However, you have the right to:
+            </p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Withdraw consent at any time by closing the browser or stopping the test.</li>
+              <li>Request information on our data processing mechanisms.</li>
+              <li>Review the open-source code to verify our privacy claims.</li>
+            </ul>
+          </Section>
+
+          <Section title="Research Use & Legal Disclaimer">
+            <p>
+              Lexora is a research tool developed at the Faculty of Computing and
+              Data Science. It is intended for educational and preliminary screening purposes only. 
+              <strong> It does not provide a clinical or medical diagnosis.</strong> Results should be interpreted 
+              by qualified professionals. If you participate in a formal research study using Lexora, separate 
+              consent and data handling procedures will apply as governed by the relevant research ethics board.
+            </p>
+          </Section>
+
+          <Section title="Contact & Data Controller">
+            <p>
+              If you have questions about how Lexora handles your data, or need to contact the Data Controller, please reach
               out via the project&apos;s{' '}
               <a
                 href="https://github.com/khalilelemam/eglex"
@@ -89,7 +110,7 @@ export default function PrivacyPage() {
                 className="text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
               >
                 GitHub repository
-              </a>.
+              </a> or contact the development team directly.
             </p>
           </Section>
         </div>

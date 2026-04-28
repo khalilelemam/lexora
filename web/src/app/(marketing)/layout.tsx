@@ -14,10 +14,12 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div className="dark min-h-screen bg-background text-foreground flex flex-col">
       <Navbar />
-      {children}
+      <div className="flex-1">
+        {children}
+      </div>
       <Footer />
-    </>
+    </div>
   );
 }

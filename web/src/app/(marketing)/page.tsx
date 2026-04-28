@@ -35,10 +35,10 @@ export default function HomePage() {
           </p>
           <GazeTrailDemo />
           <p className="text-center text-xs text-muted-foreground mt-3">
-            <span className="inline-block w-2 h-2 rounded-full bg-[oklch(0.70_0.10_115/0.6)] mr-1 align-middle" />
+            <span className="inline-block w-2 h-2 rounded-full bg-[#a6a867] opacity-60 mr-1 align-middle" />
             Forward fixation
             <span className="mx-3">•</span>
-            <span className="inline-block w-2 h-2 rounded-full bg-[oklch(0.52_0.12_25/0.6)] mr-1 align-middle" />
+            <span className="inline-block w-2 h-2 rounded-full bg-[#9e5a5a] opacity-60 mr-1 align-middle" />
             Regression
           </p>
         </div>
