@@ -52,8 +52,8 @@ export function LexoraLogo({
             s.text,
             'font-bold tracking-tight',
             color
-              ? color.replace(/^text-/, 'text-')
-              : 'bg-linear-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent',
+              ? color
+              : 'text-[#1b2021]' // Solid dark color for the text looks best with the cream background
           )}
         >
           Lexora

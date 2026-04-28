@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { ChevronDown, Monitor, Camera, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { AnimatedEye } from './animated-eye';
+import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { FloatingParticles } from './floating-particles';
 
 /**
@@ -39,7 +39,7 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <AnimatedEye />
+          <LexoraLogo size="xl" showText={false} animate />
         </motion.div>
 
         <motion.h1
