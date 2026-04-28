@@ -10,7 +10,7 @@ from app.core import (
     setup_middleware,
     validation_exception_handler,
 )
-from app.routers import health_router, predict_router
+from app.routers import health_router, predict_router, gamified_router
 
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
@@ -32,6 +32,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(predict_router, prefix="/v1")
+    app.include_router(gamified_router, prefix="/v1")
 
     return app
 

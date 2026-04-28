@@ -12,10 +12,11 @@ export type FastApiPrediction = {
 const FASTAPI_BASE_URL =
   process.env.FASTAPI_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
+  process.env.ML_SERVICE_URL ??
   "http://127.0.0.1:8000";
 
 export async function predictRiskFromFastApi(payload: Record<string, unknown>) {
-  const response = await fetch(`${FASTAPI_BASE_URL}/api/v1/predict`, {
+  const response = await fetch(`${FASTAPI_BASE_URL}/v1/gamified/predict`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

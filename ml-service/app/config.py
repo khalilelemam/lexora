@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     WEBCAM_MODEL_PATH: Path = MODELS_DIR / "webcam" / "dyslexia_uda_classifier.keras"
     WEBCAM_SCALER_PATH: Path = MODELS_DIR / "webcam" / "target_domain_scaler.pkl"
 
+    # Gamified test model paths
+    GAMIFIED_MODELS_DIR: Path = MODELS_DIR / "gamified"
+    GAMIFIED_CONFIG_PATH: Path = GAMIFIED_MODELS_DIR / "question_config.json"
+
+
     # Feature engineering parameters (Eye Tracker)
     EYE_TRACKER_SEQUENCE_LENGTH: int = 20
     EYE_TRACKER_SEQUENCE_STEP: int = 5
@@ -94,6 +99,7 @@ def validate_model_files() -> None:
         "Eye tracker scaler": settings.EYE_TRACKER_SCALER_PATH,
         "Webcam model": settings.WEBCAM_MODEL_PATH,
         "Webcam scaler": settings.WEBCAM_SCALER_PATH,
+        "Gamified config": settings.GAMIFIED_CONFIG_PATH,
     }
 
     missing_files = []

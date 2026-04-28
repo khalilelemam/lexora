@@ -1,0 +1,125 @@
+{
+  "groups": {
+    "G1_7_8": {
+      "age_range": [
+        7,
+        8
+      ],
+      "questions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        17,
+        22,
+        23,
+        30
+      ],
+      "model_file": "model_G1_7_8.pkl",
+      "threshold": 0.255
+    },
+    "G2_9_11": {
+      "age_range": [
+        9,
+        11
+      ],
+      "questions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        22,
+        23,
+        24,
+        26,
+        27,
+        28,
+        30
+      ],
+      "model_file": "model_G2_9_11.pkl",
+      "threshold": 0.23
+    },
+    "G3_12_17": {
+      "age_range": [
+        12,
+        17
+      ],
+      "questions": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30,
+        31,
+        32
+      ],
+      "model_file": "model_G3_12_17.pkl",
+      "threshold": 0.155
+    }
+  },
+  "measures_per_question": [
+    "Clicks",
+    "Hits",
+    "Misses",
+    "Score",
+    "Accuracy",
+    "Missrate"
+  ],
+  "demographic_features": [
+    "Gender",
+    "Nativelang",
+    "Otherlang",
+    "Age"
+  ]
+}

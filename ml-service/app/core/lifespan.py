@@ -9,6 +9,7 @@ from app.services import (
     EyeTrackerPredictionService,
     WebcamFeatureProcessor,
     WebcamPredictionService,
+    GamifiedPredictor,
 )
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,10 @@ async def lifespan(app: FastAPI):
     app.state.eye_tracker_prediction = EyeTrackerPredictionService()
     app.state.webcam_features = WebcamFeatureProcessor()
     app.state.webcam_prediction = WebcamPredictionService()
+    app.state.gamified_predictor = GamifiedPredictor(
+        config_path=str(settings.GAMIFIED_CONFIG_PATH),
+        model_dir=str(settings.GAMIFIED_MODELS_DIR)
+    )
 
     logger.info(f"Service ready on http://{settings.HOST}:{settings.PORT}")
 
