@@ -15,6 +15,7 @@ import {
   ScreenGuard,
   TestErrorBoundary,
 } from '@/features/test/components';
+import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useTestFlow, useTobiiGazeStream } from '@/features/test/hooks';
 import { useTobiiTaskBuffers } from '@/features/test/hooks/use-tobii-task-buffers';
 import { submitTobiiTest } from '@/features/test/actions/submit-test';
@@ -179,6 +180,15 @@ export default function TobiiTestPage() {
               Start Test
             </button>
           </div>
+        );
+
+      case 'pre-test-education':
+        return (
+          <PreTestSlides
+            mode="tobii"
+            onComplete={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+            onSkip={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+          />
         );
 
       case 'device-check':

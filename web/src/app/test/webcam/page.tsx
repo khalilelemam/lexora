@@ -16,6 +16,7 @@ import {
   GazeDebugDot,
   TestErrorBoundary,
 } from '@/features/test/components';
+import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useTestFlow, useWebcamGaze } from '@/features/test/hooks';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import { submitWebcamTest } from '@/features/test/actions/submit-test';
@@ -226,6 +227,15 @@ export default function WebcamTestPage() {
               Start Test
             </button>
           </div>
+        );
+
+      case 'pre-test-education':
+        return (
+          <PreTestSlides
+            mode="webcam"
+            onComplete={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+            onSkip={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+          />
         );
 
       case 'camera-setup':
