@@ -1,5 +1,6 @@
 import multiprocessing
 import threading
+import webbrowser
 from pathlib import Path
 
 import customtkinter as ctk
@@ -68,6 +69,7 @@ class TobiiServiceGUI:
             on_start=self.start_service,
             on_stop=self.stop_service,
             on_restart=self.restart_service,
+            on_open_web=self.open_web_test,
         )
         ExitButton.create(content_frame, on_exit=self.on_exit)
 
@@ -158,14 +160,16 @@ class TobiiServiceGUI:
         if self.service_manager.restart():
             self.update_status()
 
+    def open_web_test(self):
+        """Open the Lexora web test in the default browser."""
+        webbrowser.open("https://lexora.page/test/tobii")
+
     def on_exit(self):
-        if self.service_manager.is_running():
-            self.service_manager.stop()
+        """Minimize to tray — service keeps running in the background."""
         self.minimize_to_tray()
 
     def on_close_window(self):
-        if self.service_manager.is_running():
-            self.service_manager.stop()
+        """Window close (X button) — minimize to tray, keep service running."""
         self.minimize_to_tray()
 
     def show_window(self):
