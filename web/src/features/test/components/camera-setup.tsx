@@ -40,6 +40,8 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
   const [faceDetected, setFaceDetected] = useState(false);
   // Face position offset — null means no face, {x,y} normalized −1..1 from center
   const [faceOffset, setFaceOffset] = useState<{ x: number; y: number } | null>(null);
+  // Distance hint: 'too-close' | 'too-far' | 'good' | null
+  const [distanceHint, setDistanceHint] = useState<'too-close' | 'too-far' | 'good' | null>(null);
   const faceCheckRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const { cameraReady, modelReady, error, initCamera, initModel } = webcamGaze;
@@ -96,6 +98,7 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
       if (!iris) {
         setFaceDetected(false);
         setFaceOffset(null);
+        setDistanceHint(null);
         return;
       }
       setFaceDetected(true);
@@ -106,6 +109,20 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
       const offsetX = (centerX - 0.5) * 2;
       const offsetY = (centerY - 0.5) * 2;
       setFaceOffset({ x: offsetX, y: offsetY });
+
+      // Distance estimation: iris vertical spread as proxy for face size.
+      // Larger spread = closer to camera. Optimal: iris takes ~0.03-0.06 of frame.
+      const irisSpreadY = Math.abs(iris.leftY - iris.rightY);
+      const irisSpreadX = Math.abs(iris.leftX - iris.rightX);
+      const irisSize = Math.max(irisSpreadX, irisSpreadY);
+      // Use face Y coverage: if centerY spans a large range, face is close
+      if (irisSize > 0.12) {
+        setDistanceHint('too-close');
+      } else if (irisSize < 0.02) {
+        setDistanceHint('too-far');
+      } else {
+        setDistanceHint('good');
+      }
     }, 200);
     return () => {
       if (faceCheckRef.current) clearInterval(faceCheckRef.current);
@@ -163,6 +180,25 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
 
         {/* Face position guide overlay */}
         {cameraReady && <FaceGuideOverlay detected={faceDetected} offset={faceOffset} />}
+
+        {/* Distance guidance — drawn hand icons */}
+        {cameraReady && faceDetected && distanceHint && distanceHint !== 'good' && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 rounded-xl bg-black/60 px-5 py-3 backdrop-blur-sm">
+            <span className="text-2xl" role="img" aria-label="hand">
+              {distanceHint === 'too-close' ? '🤚' : '👋'}
+            </span>
+            <div className="text-white">
+              <p className="text-sm font-semibold">
+                {distanceHint === 'too-close' ? 'Move back a little' : 'Move closer'}
+              </p>
+              <p className="text-[11px] text-white/60">
+                {distanceHint === 'too-close'
+                  ? 'You\'re too close — sit at arm\'s length'
+                  : 'Move closer to the screen for better tracking'}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Live badge + camera name */}
         {cameraReady && (

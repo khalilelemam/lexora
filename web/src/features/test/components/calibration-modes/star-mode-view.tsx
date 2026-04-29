@@ -89,63 +89,75 @@ export function StarModeView({
         }}
         className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
       >
-        <div
-          className={cn(
-            'relative flex items-center justify-center rounded-full transition-all duration-200',
-            'h-24 w-24 border-2 border-amber-200/60 bg-amber-50/40',
-            capturePulse && 'scale-110',
-          )}
-        >
-          {/* Star with gentle wobble */}
-          <motion.div
-            animate={{
-              rotate: [0, 5, 0, -5, 0],
-              y: isStableFixation ? [0, -1, 0] : [0, -4, 0],
-            }}
-            transition={{
-              duration: isStableFixation ? 1.2 : 0.75,
-              repeat: Number.POSITIVE_INFINITY,
-              ease: 'easeInOut',
-            }}
-          >
-            <StarShape />
-          </motion.div>
+        {/* Shrinking container: starts at 96px, shrinks to 40px as fixation locks */}
+        {(() => {
+          const maxSize = 96;
+          const minSize = 40;
+          const currentSize = maxSize - (maxSize - minSize) * fixationProgress;
+          const starScale = 0.4 + 0.6 * (1 - fixationProgress); // star shrinks proportionally
 
-          {/* Progress ring */}
-          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="42"
-              fill="none"
-              stroke="rgba(245,158,11,0.12)"
-              strokeWidth="3"
-            />
-            <motion.circle
-              cx="50"
-              cy="50"
-              r="42"
-              fill="none"
-              stroke={isStableFixation ? '#10b981' : '#D97706'}
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray={264}
-              animate={{ strokeDashoffset: 264 * (1 - fixationProgress) }}
-              transition={{ duration: 0.1 }}
-            />
-          </svg>
-
-          {/* Capture feedback */}
-          {capturePulse && (
-            <motion.div
-              initial={{ opacity: 0, y: -2 }}
-              animate={{ opacity: 1, y: -14 }}
-              className="pointer-events-none absolute -top-7 rounded-md bg-amber-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm"
+          return (
+            <div
+              className={cn(
+                'relative flex items-center justify-center rounded-full transition-all duration-100',
+                'border-2 border-amber-200/60 bg-amber-50/40',
+                capturePulse && 'scale-110',
+              )}
+              style={{ width: currentSize, height: currentSize }}
             >
-              ✨ Got it!
-            </motion.div>
-          )}
-        </div>
+              {/* Star with gentle wobble — scales with shrinking */}
+              <motion.div
+                animate={{
+                  rotate: [0, 5, 0, -5, 0],
+                  y: isStableFixation ? [0, -1, 0] : [0, -4, 0],
+                }}
+                transition={{
+                  duration: isStableFixation ? 1.2 : 0.75,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: 'easeInOut',
+                }}
+                style={{ transform: `scale(${starScale})` }}
+              >
+                <StarShape />
+              </motion.div>
+
+              {/* Progress ring */}
+              <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="rgba(245,158,11,0.12)"
+                  strokeWidth="3"
+                />
+                <motion.circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke={isStableFixation ? '#10b981' : '#D97706'}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={264}
+                  animate={{ strokeDashoffset: 264 * (1 - fixationProgress) }}
+                  transition={{ duration: 0.1 }}
+                />
+              </svg>
+
+              {/* Capture feedback */}
+              {capturePulse && (
+                <motion.div
+                  initial={{ opacity: 0, y: -2 }}
+                  animate={{ opacity: 1, y: -14 }}
+                  className="pointer-events-none absolute -top-7 rounded-md bg-amber-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm"
+                >
+                  ✨ Got it!
+                </motion.div>
+              )}
+            </div>
+          );
+        })()}
       </motion.div>
 
       {/* Bottom HUD strip — outside calibration area */}

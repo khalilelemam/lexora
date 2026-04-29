@@ -71,7 +71,6 @@ export function GridModeView({
           );
         })}
 
-      {/* Active target — animates from previousPoint to currentPoint */}
       <motion.div
         key={`grid-target-${collectionStep}`}
         initial={{
@@ -89,69 +88,85 @@ export function GridModeView({
         transition={{ duration: motionDurationMs / 1000, ease: [0.4, 0, 0.2, 1] }}
         className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
       >
-        <div className="relative flex h-20 w-20 items-center justify-center rounded-full">
-          {/* Breathing glow */}
-          <motion.div
-            className={cn(
-              'absolute inset-0 rounded-full',
-              isStableFixation
-                ? 'bg-emerald-400/10 shadow-[0_0_28px_rgba(52,211,153,0.22)]'
-                : 'bg-[#4A7C59]/6 shadow-[0_0_18px_rgba(74,124,89,0.18)]',
-            )}
-            animate={{ scale: [1, 1.08, 1] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-          />
+        {/* Shrinking container: starts at 80px, shrinks to 32px as fixation locks */}
+        {(() => {
+          const maxSize = 80;
+          const minSize = 32;
+          const currentSize = maxSize - (maxSize - minSize) * fixationProgress;
+          const dotMaxSize = 16;
+          const dotMinSize = 6;
+          const dotSize = dotMaxSize - (dotMaxSize - dotMinSize) * fixationProgress;
 
-          {/* Outer ring */}
-          <div className="absolute inset-2 rounded-full border-2 border-[#4A7C59]/40 transition-colors duration-200" />
-
-          {/* Center dot — charcoal on cream */}
-          <div
-            className={cn(
-              'relative z-10 h-4 w-4 rounded-full transition-all duration-200',
-              isStableFixation
-                ? 'bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.5)]'
-                : 'bg-[#2D2A26] shadow-sm',
-            )}
-          />
-
-          {/* Progress arc ring */}
-          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="44"
-              fill="none"
-              stroke="rgba(74,124,89,0.10)"
-              strokeWidth="3"
-            />
-            <motion.circle
-              cx="50"
-              cy="50"
-              r="44"
-              fill="none"
-              stroke={isStableFixation ? '#10b981' : '#4A7C59'}
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray={276.5}
-              animate={{ strokeDashoffset: 276.5 * (1 - fixationProgress) }}
-              transition={{ duration: 0.09 }}
-            />
-          </svg>
-
-          {/* Capture ripple */}
-          <AnimatePresence>
-            {capturePulse && (
+          return (
+            <div
+              className="relative flex items-center justify-center rounded-full transition-[width,height] duration-100"
+              style={{ width: currentSize, height: currentSize }}
+            >
+              {/* Breathing glow */}
               <motion.div
-                initial={{ scale: 0.8, opacity: 0.5 }}
-                animate={{ scale: 2.2, opacity: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.45, ease: 'easeOut' }}
-                className="absolute inset-0 rounded-full bg-emerald-400/15"
+                className={cn(
+                  'absolute inset-0 rounded-full',
+                  isStableFixation
+                    ? 'bg-emerald-400/10 shadow-[0_0_28px_rgba(52,211,153,0.22)]'
+                    : 'bg-[#4A7C59]/6 shadow-[0_0_18px_rgba(74,124,89,0.18)]',
+                )}
+                animate={{ scale: [1, 1.08, 1] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
               />
-            )}
-          </AnimatePresence>
-        </div>
+
+              {/* Outer ring */}
+              <div className="absolute inset-[4px] rounded-full border-2 border-[#4A7C59]/40 transition-colors duration-200" />
+
+              {/* Center dot — shrinks with the container */}
+              <div
+                className={cn(
+                  'relative z-10 rounded-full transition-all duration-200',
+                  isStableFixation
+                    ? 'bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.5)]'
+                    : 'bg-[#2D2A26] shadow-sm',
+                )}
+                style={{ width: dotSize, height: dotSize }}
+              />
+
+              {/* Progress arc ring */}
+              <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="44"
+                  fill="none"
+                  stroke="rgba(74,124,89,0.10)"
+                  strokeWidth="3"
+                />
+                <motion.circle
+                  cx="50"
+                  cy="50"
+                  r="44"
+                  fill="none"
+                  stroke={isStableFixation ? '#10b981' : '#4A7C59'}
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={276.5}
+                  animate={{ strokeDashoffset: 276.5 * (1 - fixationProgress) }}
+                  transition={{ duration: 0.09 }}
+                />
+              </svg>
+
+              {/* Capture ripple */}
+              <AnimatePresence>
+                {capturePulse && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0.5 }}
+                    animate={{ scale: 2.2, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.45, ease: 'easeOut' }}
+                    className="absolute inset-0 rounded-full bg-emerald-400/15"
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })()}
       </motion.div>
 
       {/* Bottom HUD strip — outside calibration area */}
