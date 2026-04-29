@@ -16,7 +16,7 @@ import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { cn } from '@/lib/utils';
-import type { PredictionResult, TestMode } from '../types';
+import type { PredictionResult, TestMode, CalibrationQuality } from '../types';
 import { FullscreenGazeReplay } from './fullscreen-gaze-replay';
 
 interface ResultsDisplayProps {
@@ -24,7 +24,33 @@ interface ResultsDisplayProps {
   mode: TestMode;
   onNewTest: () => void;
   readingContent?: string;
+  /** Calibration validation quality — used for the data quality badge */
+  calibrationQuality?: CalibrationQuality;
 }
+
+const DATA_QUALITY_CONFIG = {
+  good: {
+    label: 'High Quality',
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200/60',
+    description: 'Calibration was precise — results are highly reliable.',
+  },
+  acceptable: {
+    label: 'Moderate Quality',
+    color: 'text-amber-600',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200/60',
+    description: 'Calibration was adequate — results may have minor inaccuracies.',
+  },
+  poor: {
+    label: 'Low Quality',
+    color: 'text-red-600',
+    bg: 'bg-red-50',
+    border: 'border-red-200/60',
+    description: 'Calibration was imprecise — consider re-testing for more accurate results.',
+  },
+} as const;
 
 const RISK_CONFIG = {
   low: {
@@ -70,7 +96,7 @@ const RISK_CONFIG = {
   },
 } as const;
 
-export function ResultsDisplay({ result, mode, onNewTest, readingContent }: ResultsDisplayProps) {
+export function ResultsDisplay({ result, mode, onNewTest, readingContent, calibrationQuality }: ResultsDisplayProps) {
   const config = RISK_CONFIG[result.riskLevel];
   const Icon = config.icon;
   const [showTechnical, setShowTechnical] = useState(false);
@@ -184,6 +210,28 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
                 </span>
               </div>
             </div>
+
+            {/* Data quality badge — from calibration validation */}
+            {calibrationQuality && (
+              <div
+                className={cn(
+                  'flex items-start gap-2 rounded-lg border p-3 text-xs leading-relaxed',
+                  DATA_QUALITY_CONFIG[calibrationQuality].bg,
+                  DATA_QUALITY_CONFIG[calibrationQuality].border,
+                  DATA_QUALITY_CONFIG[calibrationQuality].color,
+                )}
+              >
+                <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <div>
+                  <span className="font-semibold">
+                    Data Quality: {DATA_QUALITY_CONFIG[calibrationQuality].label}
+                  </span>
+                  <span className="block mt-0.5 opacity-80">
+                    {DATA_QUALITY_CONFIG[calibrationQuality].description}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Technical details */}
             <button

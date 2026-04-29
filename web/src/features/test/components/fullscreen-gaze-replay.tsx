@@ -3,19 +3,9 @@
 import { useMemo, useCallback } from 'react';
 import { X, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CALIBRATION_POINTS, AOI_Y_BOUNDS } from '../lib/constants';
 import { TaskDisplay } from './task-display';
 import { useGazeReplay } from '../hooks/use-gaze-replay';
 import type { GazeFeature } from '../types';
-
-function getAOIXBounds() {
-  const xs = CALIBRATION_POINTS.map((p) => p.x);
-  return { min: Math.min(...xs), max: Math.max(...xs) };
-}
-
-function mapToElement(raw: number, min: number, max: number): number {
-  return Math.max(0, Math.min(1, (raw - min) / (max - min)));
-}
 
 interface FullscreenGazeReplayProps {
   /** Task type for TaskDisplay layout */
@@ -32,8 +22,10 @@ interface FullscreenGazeReplayProps {
  * Fullscreen overlay that renders TaskDisplay in preview mode
  * with ML fixation bubbles + saccade lines on top.
  *
- * Uses the exact same reading zone as the live test (20%–80% X, 10%–95% Y)
- * so fixation positions map correctly — zero perspective mismatch.
+ * Fixation coordinates from the ML service are screen-normalized [0, 1],
+ * so we position bubbles directly at `fixationX * screenW` and
+ * `fixationY * screenH` — no AOI remapping needed. This ensures
+ * zero perspective mismatch with the live test.
  */
 export function FullscreenGazeReplay({
   taskType,
@@ -43,18 +35,13 @@ export function FullscreenGazeReplay({
 }: FullscreenGazeReplayProps) {
   const replay = useGazeReplay({ features, active: true });
 
-  const aoiX = useMemo(() => getAOIXBounds(), []);
-  const aoiY = AOI_Y_BOUNDS;
-  const mapX = useCallback((raw: number) => mapToElement(raw, aoiX.min, aoiX.max), [aoiX]);
-  const mapY = useCallback((raw: number) => mapToElement(raw, aoiY.min, aoiY.max), [aoiY]);
-
-  // Reading zone pixel bounds (must match TaskDisplay layout)
+  // Fixation coords are already screen-normalized [0, 1].
+  // Convert directly to pixel positions on screen.
   const screenW = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const screenH = typeof window !== 'undefined' ? window.innerHeight : 1080;
-  const zoneLeft = screenW * 0.2;
-  const zoneTop = screenH * 0.1;
-  const zoneW = screenW * 0.6; // 20%–80%
-  const zoneH = screenH * 0.85; // 10%–95%
+
+  const toPixelX = useCallback((normX: number) => normX * screenW, [screenW]);
+  const toPixelY = useCallback((normY: number) => normY * screenH, [screenH]);
 
   return (
     <div className="z-50 fixed inset-0">
@@ -76,10 +63,10 @@ export function FullscreenGazeReplay({
             const curr = features[idx];
             if (!prev || !curr) return null;
 
-            const x1 = zoneLeft + mapX(prev.fixationX) * zoneW;
-            const y1 = zoneTop + mapY(prev.fixationY) * zoneH;
-            const x2 = zoneLeft + mapX(curr.fixationX) * zoneW;
-            const y2 = zoneTop + mapY(curr.fixationY) * zoneH;
+            const x1 = toPixelX(prev.fixationX);
+            const y1 = toPixelY(prev.fixationY);
+            const x2 = toPixelX(curr.fixationX);
+            const y2 = toPixelY(curr.fixationY);
 
             const stroke = curr.isReturnSweep
               ? '#d1d5db'
@@ -111,8 +98,8 @@ export function FullscreenGazeReplay({
         if (!f) return null;
         const size = replay.getBubbleSize(f.durationMs);
         const isCurrent = idx === replay.currentIndex;
-        const leftPx = zoneLeft + mapX(f.fixationX) * zoneW;
-        const topPx = zoneTop + mapY(f.fixationY) * zoneH;
+        const leftPx = toPixelX(f.fixationX);
+        const topPx = toPixelY(f.fixationY);
 
         return (
           <div

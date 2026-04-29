@@ -135,15 +135,11 @@ export function TaskDisplay({
       lineMap.get(lineKey)!.push({ top: rect.top, bottom: rect.bottom });
     });
 
-    // Find the first and last word to get text content bounds
-    const firstWordRect = (wordSpans[0] as HTMLElement).getBoundingClientRect();
-    const lastWordRect = (wordSpans[wordSpans.length - 1] as HTMLElement).getBoundingClientRect();
+    // Normalize line centers to full screen-space [0, 1].
+    // The ML service compares gaze Y coordinates (already screen-normalized)
+    // against these line centers, so both must be in the same coordinate frame.
+    const screenHeight = window.innerHeight;
 
-    const textTop = firstWordRect.top;
-    const textBottom = lastWordRect.bottom;
-    const textHeight = textBottom - textTop;
-
-    // Calculate the vertical center of each line and normalize
     const lineCenters: number[] = [];
     const sortedLineKeys = Array.from(lineMap.keys()).sort((a, b) => a - b);
 
@@ -153,15 +149,15 @@ export function TaskDisplay({
       const maxBottom = Math.max(...rects.map((r) => r.bottom));
       const lineCenterAbsolute = (minTop + maxBottom) / 2;
 
-      if (textHeight > 0) {
-        const normalizedCenter = (lineCenterAbsolute - textTop) / textHeight;
+      if (screenHeight > 0) {
+        const normalizedCenter = lineCenterAbsolute / screenHeight;
         const clamped = Math.max(0, Math.min(1, normalizedCenter));
         lineCenters.push(clamped);
       }
     });
 
     onLineCentersReady(lineCenters);
-  }, [isShortContent, onLineCentersReady, content]);
+  }, [isShortContent, onLineCentersReady, content, fontScale]);
 
   // ─── Auto-scale font if text overflows the reading zone ───
 

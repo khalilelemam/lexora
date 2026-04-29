@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, RotateCcw, RefreshCw, Home } from 'lucide-react';
+import { AlertCircle, RotateCcw, RefreshCw, Home, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ErrorScreenProps {
@@ -12,17 +12,118 @@ interface ErrorScreenProps {
   onGoHome?: () => void;
 }
 
+/**
+ * Maps raw ML service error messages to user-friendly explanations with tips.
+ * The ML service returns technical errors like "No valid fixations detected"
+ * which are confusing for end-users.
+ */
+function getUserFriendlyError(rawError: string): {
+  message: string;
+  tips: string[];
+} {
+  const lower = rawError.toLowerCase();
+
+  if (lower.includes('no valid fixations') || lower.includes('fixations detected')) {
+    return {
+      message:
+        'We couldn\'t detect enough eye movements during the reading task.',
+      tips: [
+        'Make sure your camera can see your face clearly',
+        'Ensure good, even lighting on your face',
+        'Sit at arm\'s length from the screen',
+        'Try to keep your head still and only move your eyes',
+      ],
+    };
+  }
+
+  if (lower.includes('insufficient') && (lower.includes('data') || lower.includes('sequence'))) {
+    return {
+      message:
+        'The reading session was too short to generate a reliable analysis.',
+      tips: [
+        'Read the full passage — don\'t skip ahead',
+        'Ensure good lighting so the camera can track your eyes',
+        'Keep your face visible throughout the entire task',
+      ],
+    };
+  }
+
+  if (lower.includes('insufficient gaze points') || lower.includes('need at least')) {
+    return {
+      message:
+        'Not enough gaze data was captured during the test.',
+      tips: [
+        'Sit closer to the screen for better tracking accuracy',
+        'Make sure nothing is blocking the camera\'s view of your face',
+        'Try recalibrating before starting the reading task',
+      ],
+    };
+  }
+
+  if (lower.includes('timeout') || lower.includes('timed out')) {
+    return {
+      message:
+        'The analysis took too long to complete. This is usually a temporary server issue.',
+      tips: [
+        'Wait a moment and try submitting again',
+        'Check your internet connection',
+      ],
+    };
+  }
+
+  if (lower.includes('network') || lower.includes('connect') || lower.includes('fetch')) {
+    return {
+      message:
+        'Unable to connect to the analysis service.',
+      tips: [
+        'Check your internet connection',
+        'Try again in a few moments',
+        'If the problem persists, the service may be temporarily down',
+      ],
+    };
+  }
+
+  // Generic fallback
+  return {
+    message: rawError || 'Something went wrong during the analysis.',
+    tips: [
+      'Try the test again with good lighting and a clear camera view',
+      'If this keeps happening, try using a different browser',
+    ],
+  };
+}
+
 export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScreenProps) {
+  const { message, tips } = getUserFriendlyError(error);
+
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-6 max-w-md mx-auto text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
         <AlertCircle className="h-8 w-8 text-destructive" />
       </div>
 
-      <div className="text-center">
+      <div>
         <h2 className="text-2xl font-semibold">Something went wrong</h2>
-        <p className="mt-2 max-w-md text-muted-foreground">{error}</p>
+        <p className="mt-2 text-muted-foreground leading-relaxed">{message}</p>
       </div>
+
+      {/* Tips section */}
+      {tips.length > 0 && (
+        <div className="w-full rounded-xl border border-amber-200/50 bg-amber-50/60 p-4 text-left">
+          <div className="flex items-center gap-2 mb-2.5 text-sm font-medium text-amber-800">
+            <Lightbulb className="h-4 w-4 shrink-0" />
+            <span>Tips for next time</span>
+          </div>
+          <ul className="space-y-1.5 text-xs text-amber-700 leading-relaxed">
+            {tips.map((tip, idx) => (
+              <li key={idx} className="flex items-start gap-2">
+                <span className="mt-0.5 shrink-0 text-amber-400">·</span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex gap-3">
         {onRetry && (

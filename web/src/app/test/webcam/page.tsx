@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FullscreenShell } from '@/components/shared';
 import { StepIndicator } from '@/components/shared';
-import { LoadingScreen } from '@/components/shared';
+import { CreativeLoading } from '@/features/test/components/creative-loading';
 import {
   CameraSetup,
   CalibrationScreen,
@@ -291,7 +291,7 @@ export default function WebcamTestPage() {
         );
 
       case 'submitting':
-        return <LoadingScreen message="Analyzing eye movement data..." />;
+        return <CreativeLoading />;
 
       case 'results':
         if (!webcamState.results) return null;
@@ -301,6 +301,7 @@ export default function WebcamTestPage() {
             mode="webcam"
             onNewTest={handleNewTest}
             readingContent={taskContent || getWebcamTaskContent()}
+            calibrationQuality={webcamState.calibration?.quality}
           />
         );
 

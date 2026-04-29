@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { CALIBRATION_POINTS, AOI_Y_BOUNDS } from '../lib/constants';
+import { AOI_Y_BOUNDS } from '../lib/constants';
 import type { GazeFeature } from '../types';
 
 interface GazeReplayViewerProps {
@@ -19,12 +19,9 @@ interface GazeReplayViewerProps {
 const SPEED_OPTIONS = [0.5, 1, 2, 4] as const;
 
 /**
- * AOI X bounds from calibration grid.
+ * AOI X bounds — reading zone spans 20%–80% of the screen.
  */
-function getAOIXBounds() {
-  const xs = CALIBRATION_POINTS.map((p) => p.x);
-  return { min: Math.min(...xs), max: Math.max(...xs) };
-}
+const AOI_X_BOUNDS = { min: 0.2, max: 0.8 };
 
 /**
  * Map a raw gaze coordinate from AOI screen-space to [0, 1] element space.
@@ -128,8 +125,9 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
     [maxDuration],
   );
 
-  // AOI bounds for both axes
-  const aoiX = useMemo(() => getAOIXBounds(), []);
+  // AOI bounds — fixation coords are screen-normalized [0, 1],
+  // so we remap from the AOI region to [0, 1] within this container.
+  const aoiX = useMemo(() => AOI_X_BOUNDS, []);
   const aoiY = AOI_Y_BOUNDS;
 
   const mapX = useCallback((raw: number) => mapToElement(raw, aoiX.min, aoiX.max), [aoiX]);

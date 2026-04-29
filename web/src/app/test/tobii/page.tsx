@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FullscreenShell } from '@/components/shared';
 import { StepIndicator } from '@/components/shared';
-import { LoadingScreen } from '@/components/shared';
+import { CreativeLoading } from '@/features/test/components/creative-loading';
 import {
   DeviceCheck,
   CalibrationScreen,
@@ -272,7 +272,7 @@ export default function TobiiTestPage() {
         );
 
       case 'submitting':
-        return <LoadingScreen message="Analyzing eye movement data..." />;
+        return <CreativeLoading />;
 
       case 'results':
         if (!tobiiState.results) return null;
@@ -285,6 +285,7 @@ export default function TobiiTestPage() {
               taskContent['meaningful-text'] ||
               getTobiiTaskContent('meaningful-text')
             }
+            calibrationQuality={tobiiState.calibration?.quality}
           />
         );
 
