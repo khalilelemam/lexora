@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,16 +22,43 @@ const NAV_LINKS: NavLink[] = [
 
 /**
  * Sticky navigation bar with scroll-blur effect and responsive mobile menu.
+ * Scroll links navigate to sections on the homepage; page links are real routes.
  */
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Track active section for scroll links on the home page
+  useEffect(() => {
+    if (pathname !== '/') return;
+
+    const sectionIds = ['features', 'how-it-works', 'get-started', 'about'];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(`#${entry.target.id}`);
+          }
+        }
+      },
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 },
+    );
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [pathname]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -44,10 +72,19 @@ export function Navbar() {
 
   const scrollTo = useCallback((id: string) => {
     setMobileOpen(false);
-    // Strip the '#' prefix
+    // If we're not on the home page, navigate there first
+    if (pathname !== '/') {
+      window.location.href = `/${id}`;
+      return;
+    }
     const elId = id.startsWith('#') ? id.slice(1) : id;
     document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  }, [pathname]);
+
+  const isLinkActive = (link: NavLink) => {
+    if (link.type === 'scroll') return activeSection === link.href;
+    return pathname === link.href;
+  };
 
   return (
     <>
@@ -62,7 +99,9 @@ export function Navbar() {
         transition={{ duration: 0.6 }}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
-          <LexoraLogo size="sm" />
+          <Link href="/">
+            <LexoraLogo size="sm" />
+          </Link>
 
           {/* Desktop links */}
           <div className="hidden sm:flex items-center gap-6 text-sm font-medium">
@@ -71,17 +110,39 @@ export function Navbar() {
                 <button
                   key={link.href}
                   onClick={() => scrollTo(link.href)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className={`transition-colors ${
+                    isLinkActive(link)
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   {link.label}
+                  {isLinkActive(link) && (
+                    <motion.div
+                      className="h-0.5 bg-accent rounded-full mt-0.5"
+                      layoutId="navbar-indicator"
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    />
+                  )}
                 </button>
               ) : (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className={`transition-colors ${
+                    isLinkActive(link)
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   {link.label}
+                  {isLinkActive(link) && (
+                    <motion.div
+                      className="h-0.5 bg-accent rounded-full mt-0.5"
+                      layoutId="navbar-indicator"
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    />
+                  )}
                 </Link>
               ),
             )}
@@ -92,7 +153,7 @@ export function Navbar() {
               variant="outline"
               size="sm"
               onClick={() => scrollTo('#get-started')}
-              className="hidden sm:inline-flex"
+              className="hidden sm:inline-flex border-[oklch(0.70_0.10_115/0.4)] text-[oklch(0.40_0.04_110)] hover:bg-[oklch(0.70_0.10_115/0.1)] hover:border-[oklch(0.70_0.10_115)]"
             >
               Start Screening
             </Button>
@@ -135,7 +196,11 @@ export function Navbar() {
                     <button
                       key={link.href}
                       onClick={() => scrollTo(link.href)}
-                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                      className={`text-left py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
+                        isLinkActive(link)
+                          ? 'text-foreground bg-accent/10'
+                          : 'text-foreground hover:bg-muted'
+                      }`}
                     >
                       {link.label}
                     </button>
@@ -144,14 +209,21 @@ export function Navbar() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
-                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                      className={`text-left py-3 px-4 rounded-lg text-sm font-medium transition-colors ${
+                        isLinkActive(link)
+                          ? 'text-foreground bg-accent/10'
+                          : 'text-foreground hover:bg-muted'
+                      }`}
                     >
                       {link.label}
                     </Link>
                   ),
                 )}
                 <div className="border-t my-2" />
-                <Button onClick={() => scrollTo('#get-started')} className="w-full">
+                <Button
+                  onClick={() => scrollTo('#get-started')}
+                  className="w-full bg-[oklch(0.40_0.04_110)] hover:bg-[oklch(0.35_0.04_110)] text-[oklch(0.94_0.02_90)]"
+                >
                   Start Screening
                 </Button>
               </div>
