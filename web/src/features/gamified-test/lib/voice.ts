@@ -1,4 +1,4 @@
-export type VoiceLocale = "en-US" | "en-GB" | "ar-SA" | "ar-EG";
+export type VoiceLocale = "en-US" | "en-GB";
 
 const VOICE_LIST_TIMEOUT_MS = 1500;
 const SPEECH_END_TIMEOUT_MS = 14000;
@@ -17,10 +17,6 @@ function normalizeLanguageTag(languageTag?: string) {
 
 function getLocaleCandidates(locale: VoiceLocale) {
   switch (locale) {
-    case "ar-EG":
-      return ["ar-eg", "ar-sa", "ar"];
-    case "ar-SA":
-      return ["ar-sa", "ar-eg", "ar"];
     case "en-GB":
       return ["en-gb", "en-us", "en"];
     case "en-US":
@@ -50,16 +46,6 @@ function pickBestVoice(
     });
     if (sameBaseVoice) {
       return sameBaseVoice;
-    }
-  }
-
-  if (locale.startsWith("ar")) {
-    const arabicVoice = voices.find((voice) =>
-      normalizeLanguageTag(voice.lang).startsWith("ar"),
-    );
-
-    if (arabicVoice) {
-      return arabicVoice;
     }
   }
 

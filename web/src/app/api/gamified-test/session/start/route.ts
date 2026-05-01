@@ -7,8 +7,8 @@ import type { ExamLanguage } from "@/features/gamified-test/lib/questions";
 import { createSessionForStudent } from "@/features/gamified-test/lib/session-store";
 import type { Demographics } from "@/features/gamified-test/lib/types";
 
-function resolveExamLanguage(value: unknown): ExamLanguage {
-  return value === "ar" ? "ar" : "en";
+function resolveExamLanguage(_value: unknown): ExamLanguage {
+  return "en";
 }
 
 export async function POST(request: Request) {

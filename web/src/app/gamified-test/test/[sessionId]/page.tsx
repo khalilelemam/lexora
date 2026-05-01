@@ -219,6 +219,16 @@ function getSpeechTextByLanguage(text: string, language: ExamLanguage) {
   return toArabicSpeechText(text);
 }
 
+async function playAudioAndWait(url: string) {
+  return new Promise<boolean>((resolve) => {
+    const audio = new Audio(url);
+    audio.onended = () => resolve(true);
+    audio.onerror = () => resolve(false);
+    audio.play().catch(() => resolve(false));
+  });
+}
+
+
 function getLetterPool(targetToken: string) {
   if (hasArabicScript(targetToken)) {
     return ARABIC_LETTER_POOL;
@@ -467,7 +477,7 @@ function shouldUseSequentialPromptCycle(question: Question) {
 }
 
 function shouldUseFixedGridTargetCell(question: Question) {
-  return SEQUENTIAL_VARIANT_QUESTION_IDS.has(question.id);
+  return false;
 }
 
 function getDefaultDistractorPool(targetToken: string) {
@@ -1017,7 +1027,13 @@ export default function TestPage() {
 
     async function startQuestionWithVoice() {
       setIsVoicePlaying(true);
-      const voiceCompleted = await speakWithVoiceFallback(question.audioText);
+
+      let voiceCompleted = false;
+      if (question.audioUrl) {
+        voiceCompleted = await playAudioAndWait(question.audioUrl);
+      } else {
+        voiceCompleted = await speakWithVoiceFallback(question.audioText);
+      }
 
       if (!active) {
         return;
@@ -1028,6 +1044,7 @@ export default function TestPage() {
         setError(voiceUnavailableMessage);
         await new Promise((resolve) => setTimeout(resolve, 1200));
       }
+
 
       if (!active) {
         return;
@@ -1429,11 +1446,12 @@ export default function TestPage() {
         );
       });
 
-      const targetLength = currentTarget.length;
+      const normalizedTarget = normalizeToken(currentTarget);
+      const targetLength = normalizedTarget.length;
       const hasFullAttempt = selectedTokens.length >= targetLength;
       const isComplete =
         hasFullAttempt &&
-        selectedTokens.toLowerCase() === currentTarget.toLowerCase();
+        selectedTokens.toLowerCase() === normalizedTarget;
 
       if (isComplete) {
         setStats((previous) => ({
