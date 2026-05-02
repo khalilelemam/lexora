@@ -43,7 +43,11 @@ export function LexoraLogo({
         alt="Lexora"
         width={iconW}
         height={s.iconH}
-        className={cn(animate && 'animate-[lexora-pulse_2.4s_ease-in-out_infinite]', color)}
+        className={cn(
+          'dark:invert dark:brightness-0 transition-all',
+          animate && 'animate-[lexora-pulse_2.4s_ease-in-out_infinite]', 
+          color
+        )}
         priority
       />
       {showText && (
