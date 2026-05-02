@@ -53,7 +53,7 @@ export function LexoraLogo({
             'font-bold tracking-tight',
             color
               ? color.replace(/^text-/, 'text-')
-              : 'bg-linear-to-r from-[hsl(var(--primary))] to-[hsl(var(--accent))] bg-clip-text text-transparent',
+              : 'bg-linear-to-r from-primary to-accent bg-clip-text text-transparent',
           )}
         >
           Lexora

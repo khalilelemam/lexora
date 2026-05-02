@@ -76,9 +76,20 @@ export function GazeTrailDemo() {
 
   return (
     <div className="relative w-full rounded-xl bg-card/60 border border-border/60 overflow-hidden" style={{ height: '160px' }}>
-      {/* Background text — faded reading content */}
-      <div className="absolute inset-0 opacity-[0.15] text-[11px] font-serif text-foreground p-4 leading-[2.4] select-none tracking-wide">
-        The morning sun cast golden streaks across the classroom walls as young readers opened their books with quiet excitement, each child finding their own rhythm in the carefully arranged words before them, some moving swiftly while others lingered on each syllable with curious attention
+      {/* Background text — aligned exactly with gaze lines */}
+      <div className="absolute inset-0 pointer-events-none select-none font-serif text-foreground opacity-30 text-base tracking-widest whitespace-nowrap overflow-hidden flex flex-col justify-center">
+        <div className="absolute w-full text-center" style={{ top: '18%', transform: 'translateY(-50%)' }}>
+          The morning sun cast brilliant golden streaks across the entire classroom
+        </div>
+        <div className="absolute w-full text-center" style={{ top: '42%', transform: 'translateY(-50%)' }}>
+          illuminating the walls as young readers opened their favorite storybooks
+        </div>
+        <div className="absolute w-full text-center" style={{ top: '66%', transform: 'translateY(-50%)' }}>
+          with quiet excitement, each child finding their own comfortable rhythm
+        </div>
+        <div className="absolute w-full text-center" style={{ top: '88%', transform: 'translateY(-50%)' }}>
+          in the carefully arranged words spread out beautifully before them.
+        </div>
       </div>
 
       {/* Saccade lines */}
@@ -126,7 +137,8 @@ export function GazeTrailDemo() {
             background: isRegression[i]
               ? 'oklch(0.52 0.12 25 / 0.55)'
               : 'oklch(0.70 0.10 115 / 0.5)',
-            transform: 'translate(-50%, -50%)',
+            x: '-50%',
+            y: '-50%',
             boxShadow: isRegression[i]
               ? '0 0 6px oklch(0.52 0.12 25 / 0.2)'
               : '0 0 6px oklch(0.70 0.10 115 / 0.15)',

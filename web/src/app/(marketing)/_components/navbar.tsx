@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 
 type NavLink =
   | { label: string; type: 'scroll'; href: string }
@@ -149,6 +150,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Button
               variant="outline"
               size="sm"
