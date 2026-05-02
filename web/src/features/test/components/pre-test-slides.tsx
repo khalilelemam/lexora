@@ -51,18 +51,19 @@ const WelcomeVisual = () => (
 );
 
 const CalibrationVisual = () => (
-  <div className="relative w-full h-full p-8 bg-[#4A7C59]/5">
-    <div className="absolute top-8 left-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
-    <div className="absolute top-8 right-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
-    <div className="absolute bottom-8 left-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
-    <div className="absolute bottom-8 right-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
+  <div className="relative w-full h-full bg-[#4A7C59]/5">
+    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '15%', left: '15%', transform: 'translate(-50%, -50%)' }} />
+    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '15%', left: '85%', transform: 'translate(-50%, -50%)' }} />
+    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '85%', left: '15%', transform: 'translate(-50%, -50%)' }} />
+    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '85%', left: '85%', transform: 'translate(-50%, -50%)' }} />
     
     <motion.div 
       className="absolute w-8 h-8 rounded-full border-4 border-[#4A7C59] flex items-center justify-center bg-white shadow-md"
+      style={{ x: '-50%', y: '-50%' }}
       animate={{ 
-        top: ['2rem', '2rem', 'calc(100% - 3rem)', 'calc(100% - 3rem)', '50%'],
-        left: ['2rem', 'calc(100% - 3rem)', '2rem', 'calc(100% - 3rem)', '50%'],
-        scale: [1, 0.7, 1, 0.7, 1, 0.7, 1, 0.7, 1]
+        top: ['15%', '15%', '85%', '85%', '50%'],
+        left: ['15%', '85%', '15%', '85%', '50%'],
+        scale: [1, 0.6, 1, 0.6, 1, 0.6, 1, 0.6, 1]
       }}
       transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
     >
