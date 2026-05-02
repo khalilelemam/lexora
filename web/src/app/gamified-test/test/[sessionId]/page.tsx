@@ -619,6 +619,7 @@ export default function TestPage() {
   const sessionId = params.sessionId;
   const examLanguage: ExamLanguage =
     searchParams.get("lang") === "ar" ? "ar" : "en";
+  const isLightTheme = searchParams.get("theme") === "light";
   const copy = EXAM_COPY[examLanguage];
   const isArabicExam = examLanguage === "ar";
   const voiceLocale: VoiceLocale = isArabicExam ? "ar-EG" : "en-US";
@@ -668,7 +669,9 @@ export default function TestPage() {
     "idle" | "cue" | "input"
   >("idle");
   const [showVisualSequence, setShowVisualSequence] = useState(false);
-  const [isBackgroundMusicMuted, setIsBackgroundMusicMuted] = useState(false);
+  const [isBackgroundMusicMuted, setIsBackgroundMusicMuted] = useState(
+    () => isLightTheme,
+  );
   const [isSpeechReady, setIsSpeechReady] = useState(false);
   const [isEnablingSpeech, setIsEnablingSpeech] = useState(false);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -1792,12 +1795,20 @@ export default function TestPage() {
       className="relative h-dvh w-full overflow-hidden"
       dir={isArabicExam ? "rtl" : "ltr"}
     >
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/gamified-test/Gemini_background.png')" }}
-      />
-      <div aria-hidden className="absolute inset-0 bg-black/12" />
+      {/* Background: only shown in dark (default) theme */}
+      {!isLightTheme && (
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/gamified-test/Gemini_background.png')" }}
+        />
+      )}
+      {!isLightTheme && (
+        <div aria-hidden className="absolute inset-0 bg-black/12" />
+      )}
+      {isLightTheme && (
+        <div aria-hidden className="absolute inset-0 bg-white" />
+      )}
 
       {SHOW_SKIP_BUTTON ? (
         <div className="absolute left-4 top-4 z-20 flex items-center gap-2 sm:left-7 sm:top-6">
@@ -1888,7 +1899,11 @@ export default function TestPage() {
                             typedKeyboardKeys.indexOf(keyToken),
                           )
                         }
-                        className="rounded-sm border border-sky-200 bg-white px-2 font-semibold leading-tight text-slate-800 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={`rounded-sm border px-2 font-bold leading-tight text-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          isLightTheme
+                            ? "border-2 border-blue-500 bg-white hover:bg-blue-50"
+                            : "border-sky-200 bg-white hover:bg-sky-50"
+                        }`}
                         style={{
                           width: "min(12.5vw, 8.8vh)",
                           height: "min(12.5vw, 8.8vh)",
@@ -1937,7 +1952,11 @@ export default function TestPage() {
                       key={`${index}-choice-${cellIndex}-${cell}`}
                       type="button"
                       onClick={() => handleAnswerClick(cell, cellIndex)}
-                      className="rounded-sm border border-sky-200 bg-white px-1 font-semibold leading-tight text-slate-800 transition hover:bg-sky-50"
+                      className={`rounded-sm border px-1 font-bold leading-tight text-black transition hover:bg-blue-50 ${
+                          isLightTheme
+                            ? "border-2 border-blue-500 bg-white"
+                            : "border-sky-200 bg-white hover:bg-sky-50"
+                        }`}
                       style={{
                         ...getSyllableTileSize(cell.length),
                       }}
@@ -2026,7 +2045,11 @@ export default function TestPage() {
                   onClick={() => handleAnswerClick(cell, cellIndex)}
                   className={
                     isClassicGridMode
-                      ? "rounded-2xl border-[3px] border-[#73a8d9] bg-linear-to-b from-[#eaf5ff] to-[#cfe7ff] px-1 text-center font-semibold leading-none text-[#0a5f87] shadow-[inset_0_2px_0_rgba(255,255,255,0.9),0_4px_0_rgba(110,155,196,0.72),0_10px_18px_rgba(0,0,0,0.24)] transition active:scale-95"
+                      ? isLightTheme
+                        ? "rounded-xl border-2 border-blue-500 bg-white px-1 text-center font-bold leading-none text-black shadow-sm transition active:scale-95 hover:bg-blue-50"
+                        : "rounded-2xl border-[3px] border-[#73a8d9] bg-linear-to-b from-[#eaf5ff] to-[#cfe7ff] px-1 text-center font-semibold leading-none text-[#0a5f87] shadow-[inset_0_2px_0_rgba(255,255,255,0.9),0_4px_0_rgba(110,155,196,0.72),0_10px_18px_rgba(0,0,0,0.24)] transition active:scale-95"
+                      : isLightTheme
+                      ? "rounded-lg border-2 border-blue-400 bg-white px-1 text-center font-bold leading-tight text-black transition hover:bg-blue-50"
                       : "rounded-sm border border-sky-200 bg-white px-1 text-center font-semibold leading-tight text-slate-800 transition hover:bg-sky-50"
                   }
                   style={{

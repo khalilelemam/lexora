@@ -14,6 +14,8 @@ export type QuestionVariant = {
   distractorTokens: string[];
   correctionTargetToken?: string;
   correctionDistractorTokens?: string[];
+  /** Per-variant audio URL — used in typedSequenceRecall to play recorded audio instead of TTS. */
+  audioUrl?: string;
 };
 
 export type InteractionType =

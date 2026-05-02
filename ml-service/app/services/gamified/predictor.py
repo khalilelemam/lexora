@@ -35,6 +35,47 @@ class GroupModel:
     model_version: str
 
 
+def _clip_and_enrich_payload(
+    payload: dict[str, Any],
+    adjusted_accuracy_questions: list[int],
+) -> dict[str, Any]:
+    """
+    Apply two feature-engineering fixes before inference:
+
+    Fix 1 — Clip raw Accuracy* and Missrate* values to [0, 1].
+             The original Dytective export contained division-by-zero
+             artifacts that produced values up to 875.  The V2 models
+             were trained on clipped data, so inference must match.
+
+    Fix 2 — Add AdjAcc{q} = Hits/(Hits+Misses) and AdjMiss{q} for
+             questions where raw Accuracy = Hits/Clicks is structurally
+             misleading:
+               Q26 (letterReplacement):  2 clicks per attempt
+               Q27 (letterArrangement):  intermediate tile taps inflate Clicks
+               Q28 (syllableArrangement): same as Q27
+               Q30-32 (typedSequenceRecall): keystrokes inflate Clicks vs rounds
+    """
+    enriched: dict[str, Any] = dict(payload)
+
+    # Fix 1: clip
+    for key, value in enriched.items():
+        if key.startswith(("Accuracy", "Missrate")) and value is not None:
+            try:
+                enriched[key] = max(0.0, min(1.0, float(value)))
+            except (TypeError, ValueError):
+                enriched[key] = 0.0
+
+    # Fix 2: adjusted accuracy for broken-mechanic questions
+    for q in adjusted_accuracy_questions:
+        hits   = float(enriched.get(f"Hits{q}",   0) or 0)
+        misses = float(enriched.get(f"Misses{q}", 0) or 0)
+        denom  = hits + misses
+        enriched[f"AdjAcc{q}"]  = (hits   / denom) if denom > 0 else 0.0
+        enriched[f"AdjMiss{q}"] = (misses / denom) if denom > 0 else 0.0
+
+    return enriched
+
+
 class GamifiedPredictor:
     """Loads age-group model packages and routes inference by participant age."""
 
@@ -43,9 +84,10 @@ class GamifiedPredictor:
         self.group_names: list[str] = []
         self.feature_names: list[str] = []
         self.threshold: float = 0.0
-        self.model_version = "multi-group-1.0"
+        self.model_version = "multi-group-2.0"
         self._demographic_features = ["Gender", "Nativelang", "Otherlang", "Age"]
         self._measures = ["Clicks", "Hits", "Misses", "Score", "Accuracy", "Missrate"]
+        self._adjusted_accuracy_questions: list[int] = []
         self._load_models(config_path, model_dir)
 
     def _build_feature_names(self, questions: list[int]) -> list[str]:
@@ -57,15 +99,14 @@ class GamifiedPredictor:
 
     def _extract_model_from_package(self, package: Any) -> tuple[Any, list[str], float, str]:
         if isinstance(package, dict):
-            model = package.get("pipeline") or package.get("model")
-            features = package.get("feat_cols") or package.get("feature_names")
+            model     = package.get("pipeline") or package.get("model")
+            features  = package.get("feat_cols") or package.get("feature_names")
             threshold = float(package.get("threshold", 0.24))
-            version = str(package.get("version", "1.0"))
+            version   = str(package.get("version", "2.0"))
             return model, list(features or []), threshold, version
 
-        # Support direct model objects if needed.
         if hasattr(package, "predict_proba"):
-            return package, [], 0.24, "1.0"
+            return package, [], 0.24, "2.0"
 
         raise ValueError("Unsupported model package format")
 
@@ -81,6 +122,9 @@ class GamifiedPredictor:
             config.get("demographic_features", self._demographic_features)
         )
         self._measures = list(config.get("measures_per_question", self._measures))
+        self._adjusted_accuracy_questions = [
+            int(q) for q in config.get("adjusted_accuracy_questions", [])
+        ]
 
         groups_cfg = config.get("groups")
         if not isinstance(groups_cfg, dict) or len(groups_cfg) == 0:
@@ -96,7 +140,7 @@ class GamifiedPredictor:
                 raise ValueError(f"Invalid age_range for group '{group_name}'")
 
             age_min, age_max = int(age_range[0]), int(age_range[1])
-            questions = [int(question) for question in group_cfg.get("questions", [])]
+            questions  = [int(q) for q in group_cfg.get("questions", [])]
             model_file = str(group_cfg.get("model_file", "")).strip()
 
             if not model_file:
@@ -119,8 +163,9 @@ class GamifiedPredictor:
             if len(feature_names) == 0:
                 feature_names = self._build_feature_names(questions)
 
-            threshold = float(group_cfg.get("threshold", package_threshold))
-            model_version = package_version if package_version else f"{group_name}-1.0"
+            # Config threshold overrides the package threshold.
+            threshold     = float(group_cfg.get("threshold", package_threshold))
+            model_version = package_version if package_version else f"{group_name}-2.0"
 
             self.groups[group_name] = GroupModel(
                 name=group_name,
@@ -134,7 +179,7 @@ class GamifiedPredictor:
             )
 
             logger.info(
-                "Loaded group %s from %s (features=%s, threshold=%.3f)",
+                "Loaded group %s from %s (features=%d, threshold=%.3f)",
                 group_name,
                 package_path,
                 len(feature_names),
@@ -145,9 +190,9 @@ class GamifiedPredictor:
             raise RuntimeError("No group models could be loaded")
 
         self.group_names = sorted(self.groups.keys(), key=lambda name: self.groups[name].age_min)
-        default_group = max(self.groups.values(), key=lambda group: len(group.feature_names))
+        default_group    = max(self.groups.values(), key=lambda g: len(g.feature_names))
         self.feature_names = default_group.feature_names
-        self.threshold = default_group.threshold
+        self.threshold     = default_group.threshold
         self.model_version = "multi-group:" + ",".join(self.group_names)
 
     def is_ready(self) -> bool:
@@ -158,7 +203,6 @@ class GamifiedPredictor:
             group = self.groups[group_name]
             if group.age_min <= age <= group.age_max:
                 return group
-
         raise ValueError(f"Age {age} is out of supported range (7-17)")
 
     def get_group_summaries(self) -> dict[str, dict[str, Any]]:
@@ -169,7 +213,7 @@ class GamifiedPredictor:
                 "age_range": [group.age_min, group.age_max],
                 "threshold": group.threshold,
                 "questions": group.questions,
-                "features": group.feature_names,
+                "features":  group.feature_names,
             }
         return summaries
 
@@ -196,7 +240,9 @@ class GamifiedPredictor:
             if value not in (0, 1):
                 return False, f"{field} must be 0 or 1"
 
-        missing = [name for name in group.feature_names if name not in payload]
+        # Enrich payload so AdjAcc* columns exist before feature validation.
+        enriched = _clip_and_enrich_payload(payload, self._adjusted_accuracy_questions)
+        missing  = [name for name in group.feature_names if name not in enriched]
         if missing:
             sample = ", ".join(missing[:6])
             return False, f"Missing required feature(s) for {group.name}: {sample}"
@@ -208,15 +254,18 @@ class GamifiedPredictor:
             raise RuntimeError("Predictor is not ready")
 
         age_value = int(payload["Age"])
-        group = self.get_group_for_age(age_value)
+        group     = self.get_group_for_age(age_value)
+
+        # Apply Fix 1 (clip) + Fix 2 (AdjAcc) before building the feature vector.
+        enriched = _clip_and_enrich_payload(payload, self._adjusted_accuracy_questions)
 
         vector = np.array(
-            [float(payload.get(feature, 0.0)) for feature in group.feature_names],
+            [float(enriched.get(feature, 0.0)) for feature in group.feature_names],
             dtype=float,
         )
-        frame = pd.DataFrame([vector], columns=group.feature_names)
+        frame       = pd.DataFrame([vector], columns=group.feature_names)
         probability = float(group.pipeline.predict_proba(frame)[0, 1])
-        prediction = "Dyslexia Risk" if probability >= group.threshold else "No Risk"
+        prediction  = "Dyslexia Risk" if probability >= group.threshold else "No Risk"
 
         # Confidence as distance from uncertainty (0.5), scaled to [0, 1].
         confidence = min(1.0, abs(probability - 0.5) * 2)

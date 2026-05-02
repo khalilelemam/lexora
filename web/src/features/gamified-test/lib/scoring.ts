@@ -5,6 +5,13 @@ import {
   SessionResult,
 } from "@/features/gamified-test/lib/types";
 
+// Q30–Q32 use typedSequenceRecall: every keystroke is a "click" but each
+// completed word attempt is one "hit" or "miss".  Using hits/clicks would
+// produce a meaninglessly low accuracy (keystrokes >> rounds).
+// Instead, accuracy = hits / rounds  where rounds = hits + misses.
+// This gives 1.0 when all words are correct, 0.25 when 1 of 4 is correct, etc.
+const TYPED_RECALL_QUESTION_IDS = new Set(["q30", "q31", "q32"]);
+
 export function buildQuestionMetrics(
   events: SessionEvent[],
   questionIds: number[],
@@ -18,8 +25,17 @@ export function buildQuestionMetrics(
     const hits = qEvents.filter((event) => event.eventType === "hit").length;
     const misses = qEvents.filter((event) => event.eventType === "miss").length;
     const score = hits;
-    const accuracy = clicks > 0 ? hits / clicks : 0;
-    const missrate = clicks > 0 ? misses / clicks : 0;
+
+    const isTypedRecall = TYPED_RECALL_QUESTION_IDS.has(questionKey);
+    const rounds = hits + misses; // completed word attempts
+
+    const accuracy = isTypedRecall
+      ? rounds > 0 ? hits / rounds : 0        // e.g. 1/4 = 0.25, 4/4 = 1.0
+      : clicks > 0 ? hits / clicks : 0;
+
+    const missrate = isTypedRecall
+      ? rounds > 0 ? misses / rounds : 0
+      : clicks > 0 ? misses / clicks : 0;
 
     return {
       questionId: questionKey,

@@ -2,12 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Monitor, Camera } from 'lucide-react';
+import { Monitor, Camera, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 
 /**
- * Bottom call-to-action section with dual mode buttons.
+ * Bottom call-to-action section with test mode buttons.
  */
 export function CtaSection() {
   const router = useRouter();
@@ -23,8 +23,8 @@ export function CtaSection() {
         <LexoraLogo size="lg" animate />
         <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
         <p className="text-muted-foreground max-w-md">
-          Choose your tracking method and begin the screening process. Results are available
-          immediately after completing the reading tasks.
+          Choose your screening method. All results are available immediately
+          after completing the tasks.
         </p>
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <Button
@@ -43,6 +43,15 @@ export function CtaSection() {
           >
             <Camera className="w-5 h-5" />
             Webcam (No Hardware)
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="gap-2 px-8 border-primary/40 text-primary hover:bg-primary/10"
+            onClick={() => router.push('/gamified-test')}
+          >
+            <Gamepad2 className="w-5 h-5" />
+            Gamified Test
           </Button>
         </div>
       </motion.div>
