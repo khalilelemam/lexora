@@ -26,24 +26,123 @@ interface PreTestSlidesProps {
 }
 
 interface Slide {
-  icon: React.ReactNode;
+  visual: React.ReactNode;
   title: string;
   description: string;
   tips?: string[];
   highlight?: string;
 }
 
+const WelcomeVisual = () => (
+  <div className="relative w-full h-full flex items-center justify-center bg-[#4A7C59]/5">
+    <motion.div 
+      className="w-24 h-24 border-4 border-[#4A7C59] rounded-full flex items-center justify-center relative shadow-sm bg-white"
+      initial={{ scale: 0.9 }}
+      animate={{ scale: 1 }}
+      transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+    >
+      <motion.div 
+        className="w-8 h-8 bg-[#4A7C59] rounded-full shadow-inner"
+        animate={{ x: [-24, 24, -24, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </motion.div>
+  </div>
+);
+
+const CalibrationVisual = () => (
+  <div className="relative w-full h-full p-8 bg-[#4A7C59]/5">
+    <div className="absolute top-8 left-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
+    <div className="absolute top-8 right-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
+    <div className="absolute bottom-8 left-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
+    <div className="absolute bottom-8 right-8 w-4 h-4 bg-[#4A7C59]/30 rounded-full" />
+    
+    <motion.div 
+      className="absolute w-8 h-8 rounded-full border-4 border-[#4A7C59] flex items-center justify-center bg-white shadow-md"
+      animate={{ 
+        top: ['2rem', '2rem', 'calc(100% - 3rem)', 'calc(100% - 3rem)', '50%'],
+        left: ['2rem', 'calc(100% - 3rem)', '2rem', 'calc(100% - 3rem)', '50%'],
+        scale: [1, 0.7, 1, 0.7, 1, 0.7, 1, 0.7, 1]
+      }}
+      transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+    >
+       <motion.div 
+         className="w-3 h-3 bg-[#4A7C59] rounded-full" 
+         animate={{ scale: [0.3, 1, 0.3] }} 
+         transition={{ duration: 1.5, repeat: Infinity }} 
+       />
+    </motion.div>
+  </div>
+);
+
+const PositionVisual = () => (
+  <div className="relative w-full h-full flex items-center justify-center bg-[#4A7C59]/5 overflow-hidden">
+    <div className="w-1/2 h-3/4 border-4 border-[#4A7C59]/30 rounded-2xl flex items-center justify-center bg-white shadow-sm">
+       <motion.div 
+         className="w-16 h-20 border-2 border-dashed border-[#4A7C59] rounded-[2rem]"
+         animate={{ scale: [0.9, 1.1, 1], opacity: [0.4, 1, 0.4] }}
+         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+       />
+    </div>
+    <motion.div 
+       className="absolute top-4 right-6 text-amber-400"
+       animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+       transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+    >
+       <Sun className="w-12 h-12 fill-amber-400/20" />
+    </motion.div>
+  </div>
+);
+
+const SecureVisual = () => (
+  <div className="relative w-full h-full flex flex-col items-center justify-center gap-6 bg-[#4A7C59]/5">
+     <Monitor className="w-16 h-16 text-[#4A7C59]" strokeWidth={1.5} />
+     <div className="flex gap-3">
+       {[0,1,2].map(i => (
+         <motion.div 
+           key={i}
+           className="w-2.5 h-2.5 bg-[#4A7C59] rounded-full"
+           animate={{ y: [0, -12, 0], opacity: [0.2, 1, 0.2] }}
+           transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
+         />
+       ))}
+     </div>
+     <div className="relative">
+       <Shield className="w-12 h-12 text-[#4A7C59]" strokeWidth={1.5} />
+       <motion.div 
+         className="absolute inset-0 bg-[#4A7C59] rounded-full blur-xl -z-10"
+         animate={{ opacity: [0.1, 0.4, 0.1], scale: [0.8, 1.5, 0.8] }}
+         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+       />
+     </div>
+  </div>
+);
+
+const PrivacyVisual = () => (
+  <div className="relative w-full h-full flex items-center justify-center bg-[#4A7C59]/5">
+     <motion.div
+       animate={{ rotateY: [0, 180, 360] }}
+       transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+       style={{ transformStyle: 'preserve-3d' }}
+     >
+       <Shield className="w-24 h-24 text-[#4A7C59] fill-[#4A7C59]/10" strokeWidth={1.5} />
+     </motion.div>
+     <motion.div className="absolute top-1/4 right-1/4 w-3 h-3 bg-[#4A7C59]/40 rounded-full" animate={{ scale: [0, 1.5, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }} />
+     <motion.div className="absolute bottom-1/4 left-1/4 w-4 h-4 bg-[#4A7C59]/40 rounded-full" animate={{ scale: [0, 1.5, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1.5 }} />
+  </div>
+);
+
 function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
   const common: Slide[] = [
     {
-      icon: <Eye />,
+      visual: <WelcomeVisual />,
       title: 'Welcome to Lexora',
       description:
         'We analyze your eye movements while you read to screen for signs of dyslexia. Non-invasive, quick, and research-backed.',
       highlight: 'The whole process takes about 5 minutes.',
     },
     {
-      icon: <BookOpen />,
+      visual: <CalibrationVisual />,
       title: 'What You\'ll Do',
       description:
         mode === 'tobii'
@@ -56,7 +155,7 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
       ],
     },
     {
-      icon: <Sun />,
+      visual: <PositionVisual />,
       title: 'Prepare Your Space',
       description: 'Good conditions ensure accurate tracking.',
       tips: [
@@ -71,7 +170,7 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
   const modeSpecific: Slide =
     mode === 'webcam'
       ? {
-          icon: <Monitor />,
+          visual: <SecureVisual />,
           title: 'Secure Webcam Tracking',
           description:
             'Your webcam tracks your eyes securely entirely inside your browser. No video is ever sent to our servers.',
@@ -82,7 +181,7 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
           ],
         }
       : {
-          icon: <Monitor />,
+          visual: <SecureVisual />,
           title: 'Secure Tobii Tracking',
           description:
             'Your local Tobii service tracks your eyes securely. All data stays entirely on your machine.',
@@ -94,7 +193,7 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
         };
 
   const privacySlide: Slide = {
-    icon: <Shield />,
+    visual: <PrivacyVisual />,
     title: 'Your Privacy',
     description:
       'Privacy first. We do not collect personal identifiers, and data exists only during your active session.',
@@ -165,11 +264,10 @@ export function PreTestSlides({ mode, onComplete, onSkip }: PreTestSlidesProps) 
             transition={{ duration: 0.4, ease: 'easeOut' }}
             className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 w-full h-[60vh]"
           >
-            {/* Left: Large Visual Icon */}
-            <div className="flex-1 flex justify-center items-center">
-              <div className="relative w-56 h-56 md:w-80 md:h-80 rounded-[3rem] bg-[#4A7C59]/10 flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-[#4A7C59]/20 to-transparent opacity-50" />
-                {React.cloneElement(slide.icon as React.ReactElement, { className: "w-28 h-28 md:w-40 md:h-40 text-[#4A7C59] relative z-10" })}
+            {/* Left: Large Animated Visual */}
+            <div className="flex-1 flex justify-center items-center h-full">
+              <div className="relative w-64 h-64 md:w-96 md:h-96 rounded-3xl overflow-hidden border border-[#E8E0D4] shadow-sm">
+                {slide.visual}
               </div>
             </div>
 
