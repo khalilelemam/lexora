@@ -101,7 +101,7 @@ export function useCalibrationEngine({
     () => resolveCalibrationMode(mode, participantAge),
     [mode, participantAge],
   );
-  const requiredStableFixationMs = resolvedMode === 'grid' ? STABLE_FIXATION_MS : 120;
+  const requiredStableFixationMs = resolvedMode === 'grid' ? STABLE_FIXATION_MS : STABLE_FIXATION_MS * 0.85;
   const stableVelocityThreshold =
     resolvedMode === 'grid' ? STABLE_VELOCITY_NORM_PER_SEC : STABLE_VELOCITY_NORM_PER_SEC * 1.5;
 

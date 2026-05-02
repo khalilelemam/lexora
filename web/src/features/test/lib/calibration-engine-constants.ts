@@ -47,12 +47,13 @@ export const COUNTDOWN_SECONDS = envNumber('NEXT_PUBLIC_CALIBRATION_COUNTDOWN_SE
  * Minimum stable fixation duration (ms) before accepting a sample.
  *
  * Research consensus (Rayner 2009, Holmqvist 2017) recommends 250-350ms
- * for reliable fixation detection. 200ms is too short — allows samples
- * during microsaccades. 300ms filters these while remaining responsive.
+ * for reliable fixation detection. However, for a calibration sequence,
+ * a longer dwell time (e.g. 1200ms) provides better visual feedback (slow shrinking animation)
+ * and forces a very high quality, intentional fixation.
  *
- * Env: NEXT_PUBLIC_STABLE_FIXATION_MS (default: 300)
+ * Env: NEXT_PUBLIC_STABLE_FIXATION_MS (default: 1200)
  */
-export const STABLE_FIXATION_MS = envNumber('NEXT_PUBLIC_STABLE_FIXATION_MS', 300);
+export const STABLE_FIXATION_MS = envNumber('NEXT_PUBLIC_STABLE_FIXATION_MS', 1200);
 
 /**
  * Maximum velocity (normalized to screen diagonal per second) at which
