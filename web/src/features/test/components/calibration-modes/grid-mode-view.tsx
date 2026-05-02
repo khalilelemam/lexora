@@ -90,10 +90,10 @@ export function GridModeView({
       >
         {/* Shrinking container: starts at 80px, shrinks to 32px as fixation locks */}
         {(() => {
-          const maxSize = 80;
+          const maxSize = 160;
           const minSize = 0;
           const currentSize = maxSize - (maxSize - minSize) * fixationProgress;
-          const dotMaxSize = 16;
+          const dotMaxSize = 32;
           const dotMinSize = 0;
           const dotSize = dotMaxSize - (dotMaxSize - dotMinSize) * fixationProgress;
 

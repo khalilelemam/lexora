@@ -91,7 +91,7 @@ export function StarModeView({
       >
         {/* Shrinking container: starts at 96px, shrinks to 40px as fixation locks */}
         {(() => {
-          const maxSize = 96;
+          const maxSize = 200;
           const minSize = 0;
           const currentSize = maxSize - (maxSize - minSize) * fixationProgress;
           const starScale = 1 - fixationProgress;
