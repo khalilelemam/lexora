@@ -48,12 +48,12 @@ export const COUNTDOWN_SECONDS = envNumber('NEXT_PUBLIC_CALIBRATION_COUNTDOWN_SE
  *
  * Research consensus (Rayner 2009, Holmqvist 2017) recommends 250-350ms
  * for reliable fixation detection. However, for a calibration sequence,
- * a longer dwell time (e.g. 1200ms) provides better visual feedback (slow shrinking animation)
- * and forces a very high quality, intentional fixation.
+ * a slightly longer dwell time (e.g. 600ms) provides better visual feedback (shrinking animation)
+ * without feeling too slow or tedious.
  *
- * Env: NEXT_PUBLIC_STABLE_FIXATION_MS (default: 1200)
+ * Env: NEXT_PUBLIC_STABLE_FIXATION_MS (default: 600)
  */
-export const STABLE_FIXATION_MS = envNumber('NEXT_PUBLIC_STABLE_FIXATION_MS', 1200);
+export const STABLE_FIXATION_MS = envNumber('NEXT_PUBLIC_STABLE_FIXATION_MS', 600);
 
 /**
  * Maximum velocity (normalized to screen diagonal per second) at which
