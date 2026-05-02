@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Eye,
@@ -36,37 +36,34 @@ interface Slide {
 function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
   const common: Slide[] = [
     {
-      icon: <Eye className="w-10 h-10" />,
+      icon: <Eye />,
       title: 'Welcome to Lexora',
       description:
-        'Lexora uses eye-tracking technology to screen for signs of dyslexia by analysing how your eyes move while reading. This is a non-invasive, research-backed screening — not a medical diagnosis.',
+        'We analyze your eye movements while you read to screen for signs of dyslexia. Non-invasive, quick, and research-backed.',
       highlight: 'The whole process takes about 5 minutes.',
     },
     {
-      icon: <BookOpen className="w-10 h-10" />,
+      icon: <BookOpen />,
       title: 'What You\'ll Do',
       description:
         mode === 'tobii'
-          ? 'You\'ll go through 3 simple steps: calibration (following dots on screen), then 3 short reading tasks — syllables, pseudo-words, and a paragraph of text.'
-          : 'You\'ll go through 3 simple steps: calibration (following dots on screen), then a short reading task — reading a paragraph of text naturally.',
+          ? 'Follow the dots to calibrate, then complete 3 short reading tasks.'
+          : 'Follow the dots to calibrate, then read a short paragraph naturally.',
       tips: [
-        'Follow the calibration dots with your eyes only',
-        'Read the text naturally — don\'t rush or skip',
-        'Results appear immediately after the reading tasks',
+        'Follow the calibration dots with your eyes',
+        'Read the text naturally — don\'t rush',
+        'Get instant results immediately after',
       ],
     },
     {
-      icon: <Sun className="w-10 h-10" />,
-      title: 'Prepare Your Environment',
-      description: 'Good conditions make a big difference in accuracy.',
+      icon: <Sun />,
+      title: 'Prepare Your Space',
+      description: 'Good conditions ensure accurate tracking.',
       tips: [
-        'Sit at arm\'s length from the screen',
-        'Make sure your face is evenly lit — avoid bright light behind you',
-        'Remove glasses if possible to reduce reflections',
-        'Close other browser tabs to improve performance',
-        mode === 'webcam'
-          ? 'Ensure your webcam is clean and unobstructed'
-          : 'Ensure your Tobii device is connected and positioned correctly',
+        'Sit directly at arm\'s length from the screen',
+        'Ensure even lighting — avoid bright backlight',
+        'Remove glasses if possible to reduce glare',
+        mode === 'webcam' ? 'Ensure your webcam is clean' : 'Ensure your Tobii is connected',
       ],
     },
   ];
@@ -74,38 +71,37 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
   const modeSpecific: Slide =
     mode === 'webcam'
       ? {
-          icon: <Monitor className="w-10 h-10" />,
-          title: 'How Webcam Tracking Works',
+          icon: <Monitor />,
+          title: 'Secure Webcam Tracking',
           description:
-            'Lexora uses your webcam to detect your iris position through a face-mesh AI model. The video feed is processed entirely in your browser — no images are ever sent to any server.',
+            'Your webcam tracks your eyes securely entirely inside your browser. No video is ever sent to our servers.',
           tips: [
-            'Camera permission is required — we\'ll ask when you proceed',
+            'We will ask for Camera permission next',
             'No video is recorded or stored',
-            'Only abstract eye coordinates are used for analysis',
+            'Only abstract coordinates are used',
           ],
         }
       : {
-          icon: <Monitor className="w-10 h-10" />,
-          title: 'How Tobii Tracking Works',
+          icon: <Monitor />,
+          title: 'Secure Tobii Tracking',
           description:
-            'Your Tobii eye tracker sends precise gaze coordinates to the local Lexora service running on your computer. All data stays on your machine during tracking.',
+            'Your local Tobii service tracks your eyes securely. All data stays entirely on your machine.',
           tips: [
-            'Make sure the Tobii service is running (green status)',
-            'The device uses infrared — invisible and safe',
-            'Tobii provides higher accuracy than webcam tracking',
+            'Ensure the Tobii service is running (green)',
+            'Infrared tracking is invisible and safe',
+            'Provides higher accuracy for analysis',
           ],
         };
 
   const privacySlide: Slide = {
-    icon: <Shield className="w-10 h-10" />,
+    icon: <Shield />,
     title: 'Your Privacy',
     description:
-      'Lexora is designed with privacy first. No personal data is collected — only abstract gaze coordinates.',
+      'Privacy first. We do not collect personal identifiers, and data exists only during your active session.',
     tips: [
-      'No video recordings or face images are stored',
-      'No names, emails, or personal identifiers collected',
-      'Data exists only during the active session',
-      'Closing the browser destroys all session data',
+      'No video recordings or face images stored',
+      'No names or emails collected',
+      'Closing the browser destroys all data',
     ],
   };
 
@@ -156,48 +152,58 @@ export function PreTestSlides({ mode, onComplete, onSkip }: PreTestSlidesProps) 
       )}
 
       {/* Slide content */}
-      <div className="flex flex-col items-center max-w-lg px-6 text-center">
-        <LexoraLogo size="sm" className="mb-8 opacity-60" />
+      <div className="flex flex-col items-center w-full max-w-5xl px-8 md:px-12">
+        <LexoraLogo size="md" className="mb-12 opacity-60 absolute top-8 left-8" />
 
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={currentSlide}
             custom={direction}
-            initial={{ opacity: 0, x: direction * 60 }}
+            initial={{ opacity: 0, x: direction * 80 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -direction * 60 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="flex flex-col items-center gap-5"
+            exit={{ opacity: 0, x: -direction * 80 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 w-full h-[60vh]"
           >
-            {/* Icon */}
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#4A7C59]/10 text-[#4A7C59]">
-              {slide.icon}
+            {/* Left: Large Visual Icon */}
+            <div className="flex-1 flex justify-center items-center">
+              <div className="relative w-56 h-56 md:w-80 md:h-80 rounded-[3rem] bg-[#4A7C59]/10 flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-[#4A7C59]/20 to-transparent opacity-50" />
+                {React.cloneElement(slide.icon as React.ReactElement, { className: "w-28 h-28 md:w-40 md:h-40 text-[#4A7C59] relative z-10" })}
+              </div>
             </div>
 
-            {/* Title */}
-            <h2 className="text-2xl font-bold text-[#2D2A26]">{slide.title}</h2>
+            {/* Right: Text Content */}
+            <div className="flex-1 flex flex-col items-start text-left gap-6">
+              <h2 className="text-4xl md:text-5xl font-extrabold text-[#2D2A26] tracking-tight leading-tight">
+                {slide.title}
+              </h2>
+              
+              <p className="text-lg md:text-xl text-[#6B6560] leading-relaxed">
+                {slide.description}
+              </p>
 
-            {/* Description */}
-            <p className="text-sm text-[#6B6560] leading-relaxed">{slide.description}</p>
+              {slide.highlight && (
+                <p className="text-lg font-semibold text-[#4A7C59] bg-[#4A7C59]/10 px-4 py-2 rounded-lg">
+                  {slide.highlight}
+                </p>
+              )}
 
-            {/* Highlight */}
-            {slide.highlight && (
-              <p className="text-sm font-semibold text-[#4A7C59]">{slide.highlight}</p>
-            )}
-
-            {/* Tips */}
-            {slide.tips && slide.tips.length > 0 && (
-              <div className="w-full rounded-xl border border-[#E8E0D4] bg-white/60 p-4 text-left">
-                <ul className="space-y-2">
-                  {slide.tips.map((tip, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5 text-sm text-[#6B6560]">
-                      <span className="mt-0.5 shrink-0 text-[#4A7C59] font-bold">✓</span>
-                      <span>{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              {slide.tips && slide.tips.length > 0 && (
+                <div className="w-full rounded-2xl border-2 border-[#E8E0D4] bg-white/80 p-6 md:p-8 mt-2 shadow-sm">
+                  <ul className="space-y-4">
+                    {slide.tips.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-4 text-base md:text-lg text-[#6B6560]">
+                        <span className="mt-0.5 shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-[#4A7C59]/20 text-[#4A7C59] font-bold text-sm">
+                          ✓
+                        </span>
+                        <span className="font-medium">{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
