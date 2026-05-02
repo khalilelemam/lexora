@@ -92,9 +92,9 @@ export function StarModeView({
         {/* Shrinking container: starts at 96px, shrinks to 40px as fixation locks */}
         {(() => {
           const maxSize = 96;
-          const minSize = 40;
+          const minSize = 0;
           const currentSize = maxSize - (maxSize - minSize) * fixationProgress;
-          const starScale = 0.4 + 0.6 * (1 - fixationProgress); // star shrinks proportionally
+          const starScale = 1 - fixationProgress;
 
           return (
             <div
@@ -121,29 +121,7 @@ export function StarModeView({
                 <StarShape />
               </motion.div>
 
-              {/* Progress ring */}
-              <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  stroke="rgba(245,158,11,0.12)"
-                  strokeWidth="3"
-                />
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  stroke={isStableFixation ? '#10b981' : '#D97706'}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={264}
-                  animate={{ strokeDashoffset: 264 * (1 - fixationProgress) }}
-                  transition={{ duration: 0.1 }}
-                />
-              </svg>
+
 
               {/* Capture feedback */}
               {capturePulse && (

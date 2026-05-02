@@ -91,10 +91,10 @@ export function GridModeView({
         {/* Shrinking container: starts at 80px, shrinks to 32px as fixation locks */}
         {(() => {
           const maxSize = 80;
-          const minSize = 32;
+          const minSize = 0;
           const currentSize = maxSize - (maxSize - minSize) * fixationProgress;
           const dotMaxSize = 16;
-          const dotMinSize = 6;
+          const dotMinSize = 0;
           const dotSize = dotMaxSize - (dotMaxSize - dotMinSize) * fixationProgress;
 
           return (
@@ -128,29 +128,6 @@ export function GridModeView({
                 style={{ width: dotSize, height: dotSize }}
               />
 
-              {/* Progress arc ring */}
-              <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="44"
-                  fill="none"
-                  stroke="rgba(74,124,89,0.10)"
-                  strokeWidth="3"
-                />
-                <motion.circle
-                  cx="50"
-                  cy="50"
-                  r="44"
-                  fill="none"
-                  stroke={isStableFixation ? '#10b981' : '#4A7C59'}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={276.5}
-                  animate={{ strokeDashoffset: 276.5 * (1 - fixationProgress) }}
-                  transition={{ duration: 0.09 }}
-                />
-              </svg>
 
               {/* Capture ripple */}
               <AnimatePresence>
