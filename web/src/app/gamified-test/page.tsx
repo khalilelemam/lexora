@@ -2,26 +2,25 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Gamepad2, Moon, Sun, ChevronRight, Info } from "lucide-react";
+import { Gamepad2, ChevronRight, Info } from "lucide-react";
 
-type Theme = "dark" | "light";
+type Theme = "gamified" | "light";
 
 type SessionStartResponse = {
   sessionId?: string;
+  questionIds?: number[];
   error?: string;
 };
 
 export default function GamifiedTestStartPage() {
   const router = useRouter();
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("gamified");
   const [gender, setGender] = useState<"male" | "female">("male");
   const [age, setAge] = useState<number>(9);
   const [nativeLang, setNativeLang] = useState(true);
   const [otherLang, setOtherLang] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const isDark = theme === "dark";
 
   async function handleStart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,14 +42,24 @@ export default function GamifiedTestStartPage() {
       });
 
       const payload = (await response.json()) as SessionStartResponse;
-      if (!response.ok || !payload.sessionId) {
+      if (!response.ok || !payload.sessionId || !payload.questionIds) {
         throw new Error(payload.error ?? "Unable to start the test.");
       }
 
-      // Route through the en shim — it redirects to the actual test page
-      // with ?lang=en&theme=... preserved
+      // Store demographics + question IDs client-side so the test page
+      // never needs to re-fetch from server (Vercel stateless functions).
+      sessionStorage.setItem(
+        `gt_session_${payload.sessionId}`,
+        JSON.stringify({
+          sessionId: payload.sessionId,
+          demographics: { age, gender, nativeLang, otherLang },
+          questionIds: payload.questionIds,
+          theme: theme === "gamified" ? "dark" : "light",
+        }),
+      );
+
       router.push(
-        `/gamified-test/test/en/${payload.sessionId}?theme=${theme}`,
+        `/gamified-test/test/${payload.sessionId}?lang=en&theme=${theme === "gamified" ? "dark" : "light"}`,
       );
     } catch (startError) {
       setError(
@@ -62,112 +71,30 @@ export default function GamifiedTestStartPage() {
   }
 
   return (
-    <main
-      className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
-        isDark
-          ? "bg-[oklch(0.13_0.02_264)] text-white"
-          : "bg-slate-50 text-slate-900"
-      }`}
-    >
+    <main className="min-h-screen flex items-center justify-center p-4 bg-[oklch(0.92_0.02_90)]">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div
-            className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 ${
-              isDark
-                ? "bg-primary/20 text-primary"
-                : "bg-blue-100 text-blue-600"
-            }`}
-          >
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 bg-[oklch(0.40_0.04_110)]/10 text-[oklch(0.40_0.04_110)]">
             <Gamepad2 className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Gamified Screening Test</h1>
-          <p
-            className={`mt-2 text-sm ${
-              isDark ? "text-white/50" : "text-slate-500"
-            }`}
-          >
+          <h1 className="text-2xl font-bold tracking-tight text-[oklch(0.18_0.01_180)]">
+            Gamified Screening Test
+          </h1>
+          <p className="mt-2 text-sm text-[oklch(0.52_0.02_90)]">
             A short interactive assessment — no hardware required.
           </p>
         </div>
 
         {/* Card */}
-        <div
-          className={`rounded-2xl p-6 shadow-lg ${
-            isDark
-              ? "bg-white/5 border border-white/10 backdrop-blur-sm"
-              : "bg-white border border-slate-200"
-          }`}
-        >
-          {/* Theme Toggle */}
-          <div className="mb-6">
-            <p
-              className={`text-xs font-semibold uppercase tracking-wider mb-3 ${
-                isDark ? "text-white/40" : "text-slate-400"
-              }`}
-            >
-              Display Theme
-            </p>
-            <div
-              className={`flex rounded-xl p-1 ${
-                isDark ? "bg-white/5" : "bg-slate-100"
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => setTheme("dark")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
-                  theme === "dark"
-                    ? isDark
-                      ? "bg-primary text-white shadow"
-                      : "bg-blue-600 text-white shadow"
-                    : isDark
-                    ? "text-white/50 hover:text-white/80"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Moon className="w-4 h-4" />
-                Dark Mode
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme("light")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
-                  theme === "light"
-                    ? "bg-white text-slate-900 shadow border border-slate-200"
-                    : isDark
-                    ? "text-white/50 hover:text-white/80"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                <Sun className="w-4 h-4" />
-                Light Mode
-              </button>
-            </div>
-            {theme === "light" && (
-              <p
-                className={`mt-2 text-xs ${
-                  isDark ? "text-white/40" : "text-slate-400"
-                }`}
-              >
-                White background, bold black letters, high-contrast borders.
-              </p>
-            )}
-          </div>
-
-          <hr
-            className={`mb-6 ${isDark ? "border-white/10" : "border-slate-100"}`}
-          />
+        <div className="rounded-2xl p-6 shadow-sm bg-[oklch(0.96_0.015_90)] border border-[oklch(0.86_0.02_90)]">
 
           {/* Form */}
           <form onSubmit={handleStart} className="space-y-5">
+
             {/* Age */}
             <div>
-              <label
-                className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${
-                  isDark ? "text-white/40" : "text-slate-400"
-                }`}
-              >
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-[oklch(0.52_0.02_90)]">
                 Age (7 – 17)
               </label>
               <input
@@ -177,24 +104,16 @@ export default function GamifiedTestStartPage() {
                 value={age}
                 onChange={(e) => setAge(Number(e.target.value))}
                 required
-                className={`w-full rounded-lg px-4 py-2.5 text-sm font-medium outline-none transition-colors ${
-                  isDark
-                    ? "bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-primary"
-                    : "bg-slate-50 border border-slate-200 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                }`}
+                className="w-full rounded-lg px-4 py-2.5 text-sm font-medium outline-none transition-colors bg-[oklch(0.90_0.015_90)] border border-[oklch(0.86_0.02_90)] text-[oklch(0.18_0.01_180)] focus:border-[oklch(0.40_0.04_110)] focus:ring-1 focus:ring-[oklch(0.40_0.04_110)]"
               />
             </div>
 
             {/* Gender */}
             <div>
-              <label
-                className={`block text-xs font-semibold uppercase tracking-wider mb-1.5 ${
-                  isDark ? "text-white/40" : "text-slate-400"
-                }`}
-              >
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5 text-[oklch(0.52_0.02_90)]">
                 Gender
               </label>
-              <div className={`flex rounded-xl p-1 ${isDark ? "bg-white/5" : "bg-slate-100"}`}>
+              <div className="flex rounded-xl p-1 bg-[oklch(0.88_0.02_90)]">
                 {(["male", "female"] as const).map((g) => (
                   <button
                     key={g}
@@ -202,12 +121,8 @@ export default function GamifiedTestStartPage() {
                     onClick={() => setGender(g)}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all ${
                       gender === g
-                        ? isDark
-                          ? "bg-primary text-white shadow"
-                          : "bg-blue-600 text-white shadow"
-                        : isDark
-                        ? "text-white/50 hover:text-white/80"
-                        : "text-slate-500 hover:text-slate-800"
+                        ? "bg-[oklch(0.40_0.04_110)] text-[oklch(0.94_0.02_90)] shadow"
+                        : "text-[oklch(0.52_0.02_90)] hover:text-[oklch(0.18_0.01_180)]"
                     }`}
                   >
                     {g}
@@ -217,12 +132,8 @@ export default function GamifiedTestStartPage() {
             </div>
 
             {/* Language toggles */}
-            <div className="space-y-3">
-              <p
-                className={`text-xs font-semibold uppercase tracking-wider ${
-                  isDark ? "text-white/40" : "text-slate-400"
-                }`}
-              >
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[oklch(0.52_0.02_90)]">
                 Language
               </p>
               {[
@@ -239,28 +150,18 @@ export default function GamifiedTestStartPage() {
               ].map(({ checked, onChange, label }) => (
                 <label
                   key={label}
-                  className={`flex items-center gap-3 cursor-pointer p-3 rounded-lg transition-colors ${
-                    isDark ? "hover:bg-white/5" : "hover:bg-slate-50"
-                  }`}
+                  className="flex items-center gap-3 cursor-pointer p-2.5 rounded-lg transition-colors hover:bg-[oklch(0.88_0.02_90)]"
                 >
                   <div
                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                       checked
-                        ? isDark
-                          ? "bg-primary border-primary"
-                          : "bg-blue-600 border-blue-600"
-                        : isDark
-                        ? "border-white/20"
-                        : "border-slate-300"
+                        ? "bg-[oklch(0.40_0.04_110)] border-[oklch(0.40_0.04_110)]"
+                        : "border-[oklch(0.70_0.03_90)]"
                     }`}
                     onClick={() => onChange(!checked)}
                   >
                     {checked && (
-                      <svg
-                        className="w-3 h-3 text-white"
-                        viewBox="0 0 12 12"
-                        fill="none"
-                      >
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
                         <path
                           d="M2 6l3 3 5-5"
                           stroke="currentColor"
@@ -271,27 +172,59 @@ export default function GamifiedTestStartPage() {
                       </svg>
                     )}
                   </div>
-                  <span className={`text-sm ${isDark ? "text-white/70" : "text-slate-600"}`}>
-                    {label}
-                  </span>
+                  <span className="text-sm text-[oklch(0.30_0.02_90)]">{label}</span>
                 </label>
               ))}
             </div>
 
+            <hr className="border-[oklch(0.86_0.02_90)]" />
+
+            {/* Test Theme */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3 text-[oklch(0.52_0.02_90)]">
+                Test Display Theme
+              </p>
+              <div className="flex rounded-xl p-1 bg-[oklch(0.88_0.02_90)]">
+                <button
+                  type="button"
+                  onClick={() => setTheme("gamified")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                    theme === "gamified"
+                      ? "bg-[oklch(0.40_0.04_110)] text-[oklch(0.94_0.02_90)] shadow"
+                      : "text-[oklch(0.52_0.02_90)] hover:text-[oklch(0.18_0.01_180)]"
+                  }`}
+                >
+                  <span>🎮</span>
+                  Gamified
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                    theme === "light"
+                      ? "bg-[oklch(0.40_0.04_110)] text-[oklch(0.94_0.02_90)] shadow"
+                      : "text-[oklch(0.52_0.02_90)] hover:text-[oklch(0.18_0.01_180)]"
+                  }`}
+                >
+                  <span>☀️</span>
+                  Light
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-[oklch(0.60_0.02_90)]">
+                {theme === "gamified"
+                  ? "Animated background with vibrant game-style cards."
+                  : "Clean white background, light borders — easier on the eyes."}
+              </p>
+            </div>
+
             {error && (
-              <p className="text-sm text-red-500 bg-red-500/10 rounded-lg px-4 py-2">
+              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2 border border-red-100">
                 {error}
               </p>
             )}
 
             {/* Disclaimer */}
-            <div
-              className={`flex gap-3 rounded-lg p-3 text-xs leading-relaxed ${
-                isDark
-                  ? "bg-amber-500/10 text-amber-300/70"
-                  : "bg-amber-50 text-amber-700 border border-amber-100"
-              }`}
-            >
+            <div className="flex gap-3 rounded-lg p-3 text-xs leading-relaxed bg-amber-50 text-amber-700 border border-amber-100">
               <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>
                 This test is a <strong>screening tool only</strong> and does not
@@ -304,11 +237,7 @@ export default function GamifiedTestStartPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all ${
-                isDark
-                  ? "bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
-                  : "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-              }`}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all bg-[oklch(0.40_0.04_110)] text-[oklch(0.94_0.02_90)] hover:bg-[oklch(0.35_0.04_110)] disabled:opacity-50"
             >
               {isSubmitting ? (
                 "Starting…"

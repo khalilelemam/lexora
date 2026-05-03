@@ -6,16 +6,17 @@ import { useEffect, useState } from "react";
 import {
   ShieldCheck,
   ShieldAlert,
-  ChevronDown,
-  ChevronUp,
   Camera,
   RefreshCw,
   Info,
+  BarChart3,
+  ChevronRight,
 } from "lucide-react";
 import type { SessionResult } from "@/features/gamified-test/lib/types";
 
-type ResultResponse = {
+type ResultPayload = {
   sessionId: string;
+  completedAt?: string;
   result: SessionResult;
 };
 
@@ -25,59 +26,41 @@ export default function ResultPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<ResultResponse | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [data, setData] = useState<ResultPayload | null>(null);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadResult() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(
-          `/api/gamified-test/session/${sessionId}/result`,
-        );
-        const payload = await response.json();
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Unable to load result.");
-        }
-
-        if (active) setData(payload as ResultResponse);
-      } catch (resultError) {
-        if (active)
-          setError(
-            resultError instanceof Error
-              ? resultError.message
-              : "Unexpected error.",
-          );
-      } finally {
-        if (active) setLoading(false);
+    try {
+      const raw = sessionStorage.getItem(`gt_result_${sessionId}`);
+      if (!raw) {
+        setError("Result not found. Please complete the test first.");
+      } else {
+        setData(JSON.parse(raw) as ResultPayload);
       }
+    } catch {
+      setError("Unable to load result.");
+    } finally {
+      setLoading(false);
     }
-
-    void loadResult();
-    return () => { active = false; };
   }, [sessionId]);
 
+  /* ─── Loading ───────────────────────────────────────────── */
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[oklch(0.13_0.02_264)]">
-        <div className="text-white/50 text-sm animate-pulse">Loading result…</div>
+      <main className="min-h-screen flex items-center justify-center bg-[#ede8de]">
+        <div className="text-[#7a7567] text-sm animate-pulse">Loading result…</div>
       </main>
     );
   }
 
+  /* ─── Error ──────────────────────────────────────────────── */
   if (error || !data) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[oklch(0.13_0.02_264)] p-6">
+      <main className="min-h-screen flex items-center justify-center bg-[#ede8de] p-6">
         <div className="text-center">
-          <p className="text-red-400 text-sm mb-4">{error ?? "No data found."}</p>
+          <p className="text-red-600 text-sm mb-4">{error ?? "No data found."}</p>
           <Link
             href="/gamified-test"
-            className="text-sm text-white/60 hover:text-white underline"
+            className="text-sm text-[#51513d] hover:text-[#2d2a24] underline"
           >
             Try again
           </Link>
@@ -90,20 +73,22 @@ export default function ResultPage() {
   const riskDetected = result.riskDetected;
 
   return (
-    <main className="min-h-screen bg-[oklch(0.13_0.02_264)] text-white flex items-start justify-center p-4 pt-12">
+    <main className="min-h-screen bg-[#ede8de] flex items-start justify-center p-4 pt-12">
       <div className="w-full max-w-lg space-y-4">
 
         {/* ── Primary result card ──────────────────────────── */}
         <div
-          className={`rounded-2xl p-8 text-center border ${
+          className={`rounded-2xl p-8 text-center border shadow-sm ${
             riskDetected
-              ? "border-red-500/30 bg-red-500/10"
-              : "border-emerald-500/30 bg-emerald-500/10"
+              ? "border-red-200 bg-red-50"
+              : "border-emerald-200 bg-emerald-50"
           }`}
         >
           <div
             className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-5 ${
-              riskDetected ? "bg-red-500/20 text-red-400" : "bg-emerald-500/20 text-emerald-400"
+              riskDetected
+                ? "bg-red-100 text-red-500"
+                : "bg-emerald-100 text-emerald-600"
             }`}
           >
             {riskDetected ? (
@@ -113,49 +98,49 @@ export default function ResultPage() {
             )}
           </div>
 
-          <h1 className="text-2xl font-bold mb-2">
+          <h1 className="text-2xl font-bold mb-2 text-[#2d2a24]">
             {riskDetected ? "Dyslexia Risk Detected" : "No Risk Detected"}
           </h1>
 
-          <p className="text-white/50 text-sm mb-6">
-            Probability score:{" "}
-            <span className="text-white font-semibold">
-              {(result.probability * 100).toFixed(1)}%
+          <div className="flex items-center justify-center gap-4 text-sm mb-6">
+            <span className="text-[#7a7567]">
+              Probability:{" "}
+              <span className="font-semibold text-[#2d2a24]">
+                {(result.probability * 100).toFixed(1)}%
+              </span>
             </span>
-            <span className="text-white/30 mx-2">·</span>
-            Threshold:{" "}
-            <span className="text-white font-semibold">
-              {(result.threshold * 100).toFixed(1)}%
+            <span className="text-[#c8c4b8]">·</span>
+            <span className="text-[#7a7567]">
+              Threshold:{" "}
+              <span className="font-semibold text-[#2d2a24]">
+                {(result.threshold * 100).toFixed(1)}%
+              </span>
             </span>
-          </p>
+          </div>
 
           {/* Disclaimer */}
-          <div className="flex gap-3 rounded-xl p-3 text-xs leading-relaxed text-left bg-white/5 border border-white/10 text-white/50">
-            <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-400/70" />
+          <div className="flex gap-3 rounded-xl p-3 text-xs leading-relaxed text-left bg-amber-50 border border-amber-200 text-amber-700">
+            <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
             <span>
-              <strong className="text-white/70">Screening only.</strong> This
-              result is a statistical risk estimate and is{" "}
-              <strong className="text-white/70">not a clinical diagnosis</strong>.
-              It is based on Rello et al. (2020) — an IRB-approved gamified
-              screening test validated on children aged 7–17. False positives
-              and false negatives are possible. Results must be interpreted by a
-              qualified speech-language pathologist or educational psychologist.
+              <strong>Screening only.</strong> This result is a statistical risk
+              estimate and is <strong>not a clinical diagnosis</strong>. Based on
+              Rello et al. (2020) — IRB-approved, validated on children 7–17.
+              Must be interpreted by a qualified professional.
             </span>
           </div>
         </div>
 
-        {/* ── Webcam suggestion (only if risk detected) ───── */}
+        {/* ── Webcam suggestion (only if risk detected) ────── */}
         {riskDetected && (
-          <div className="rounded-2xl p-6 border border-primary/30 bg-primary/10">
-            <p className="text-sm text-white/70 mb-4">
-              For a more comprehensive assessment, we recommend also completing
-              the <strong className="text-white">Webcam Eye-Tracking Test</strong>,
-              which analyses reading gaze patterns and provides an independent
-              second opinion.
+          <div className="rounded-2xl p-6 border border-[#b8c9a8] bg-[#f0f5ec] shadow-sm">
+            <p className="text-sm text-[#5a7a48] mb-4 font-medium">
+              For a more thorough assessment, we recommend the{" "}
+              <strong>Webcam Eye-Tracking Test</strong> — it analyses reading gaze
+              patterns and provides an independent second opinion.
             </p>
             <Link
               href="/test/webcam"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#5a7a48] text-white text-sm font-semibold hover:bg-[#4a6a38] transition-colors"
             >
               <Camera className="w-4 h-4" />
               Take the Webcam Test
@@ -163,77 +148,48 @@ export default function ResultPage() {
           </div>
         )}
 
-        {/* ── Details toggle ───────────────────────────────── */}
-        <button
-          onClick={() => setShowDetails((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <span>View detailed results</span>
-          {showDetails ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </button>
+        {/* ── Summary stats strip ──────────────────────────── */}
+        <div className="rounded-2xl border border-[#c8c4b8] bg-[#faf8f4] shadow-sm px-6 py-5 grid grid-cols-3 gap-4 text-center">
+          {[
+            {
+              label: "Questions",
+              value: result.metrics.length,
+              color: "text-[#2d2a24]",
+            },
+            {
+              label: "Total Hits",
+              value: result.metrics.reduce((s, m) => s + m.hits, 0),
+              color: "text-emerald-600",
+            },
+            {
+              label: "Total Misses",
+              value: result.metrics.reduce((s, m) => s + m.misses, 0),
+              color: "text-red-500",
+            },
+          ].map(({ label, value, color }) => (
+            <div key={label}>
+              <p className={`text-xl font-bold ${color}`}>{value}</p>
+              <p className="text-xs text-[#9a9287] mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
 
-        {/* ── Detailed metrics (collapsible) ──────────────── */}
-        {showDetails && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/40">
-                Per-Question Breakdown
-              </p>
-              <p className="text-xs text-white/30">
-                Source: {result.modelSource ?? "fallback"}{" "}
-                {result.modelVersion ? `(${result.modelVersion})` : ""}
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-xs">
-                <thead>
-                  <tr className="border-b border-white/10 text-white/40 text-left">
-                    {["Question", "Clicks", "Hits", "Misses", "Score", "Accuracy", "Missrate"].map(
-                      (h) => (
-                        <th key={h} className="px-4 py-3 font-semibold uppercase tracking-wider">
-                          {h}
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.metrics.map((metric, i) => (
-                    <tr
-                      key={metric.questionId}
-                      className={`border-b border-white/5 ${
-                        i % 2 === 0 ? "" : "bg-white/[0.02]"
-                      }`}
-                    >
-                      <td className="px-4 py-2.5 font-semibold text-white/80 uppercase">
-                        {metric.questionId}
-                      </td>
-                      <td className="px-4 py-2.5 text-white/60">{metric.clicks}</td>
-                      <td className="px-4 py-2.5 text-emerald-400">{metric.hits}</td>
-                      <td className="px-4 py-2.5 text-red-400">{metric.misses}</td>
-                      <td className="px-4 py-2.5 text-white/60">{metric.score}</td>
-                      <td className="px-4 py-2.5 text-white/80 font-medium">
-                        {(metric.accuracy * 100).toFixed(0)}%
-                      </td>
-                      <td className="px-4 py-2.5 text-white/60">
-                        {(metric.missrate * 100).toFixed(0)}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {/* ── View detailed breakdown ───────────────────────── */}
+        <Link
+          href={`/gamified-test/result/${sessionId}/details`}
+          className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl border border-[#c8c4b8] bg-[#faf8f4] text-sm text-[#51513d] hover:bg-[#f0ede5] hover:border-[#a8a49a] transition-colors shadow-sm group"
+        >
+          <span className="flex items-center gap-2 font-medium">
+            <BarChart3 className="w-4 h-4 text-[#7a7567]" />
+            View per-question breakdown
+          </span>
+          <ChevronRight className="w-4 h-4 text-[#9a9287] group-hover:translate-x-0.5 transition-transform" />
+        </Link>
 
         {/* ── Start new session ────────────────────────────── */}
         <Link
           href="/gamified-test"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-white/10 text-sm text-white/50 hover:text-white hover:border-white/20 transition-colors"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-[#c8c4b8] bg-[#faf8f4] text-sm text-[#7a7567] hover:text-[#2d2a24] hover:bg-[#f0ede5] transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
           Start New Session

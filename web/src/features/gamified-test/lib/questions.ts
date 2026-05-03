@@ -819,29 +819,33 @@ export const QUESTION_BANK: Question[] = [
   {
     id: "q30",
     title: "Question 30",
-    prompt: "Memorize the short letter sequence, then type it.",
-    instruction: "Watch for 3 seconds, then type from memory.",
-    audioText: "Memorize, then type.",
+    prompt: "Memorize the letter sequence shown, then type it from memory.",
+    instruction: "A sequence of letters will appear for 3 seconds. Remember them, then type them in order.",
+    audioText: "Watch the letters carefully. Memorize them, then type them in order.",
     audioUrl: "/gamified-test/questions/q30_v1 to q30_v3.mp3",
     interactionType: "typedSequenceRecall",
-    visualCue: "rato",
+    // visualCue shows spaced letters for 3 s; targetToken is what to type (no spaces)
+    visualCue: "i  u  a",
     gridSize: 3,
-    targetToken: "rato",
+    targetToken: "iua",
     targetRepeatCount: 1,
     variants: [
       {
-        visualCue: "rato",
-        targetToken: "rato",
+        // 4-letter sequence
+        visualCue: "p  g  d  j",
+        targetToken: "pgdj",
         distractorTokens: [],
       },
       {
-        visualCue: "luse",
-        targetToken: "luse",
+        // 5-letter sequence
+        visualCue: "v  h  b  z  q",
+        targetToken: "vhbzq",
         distractorTokens: [],
       },
       {
-        visualCue: "voni",
-        targetToken: "voni",
+        // 6-letter sequence
+        visualCue: "M  D  J  N  P  H",
+        targetToken: "mdjnph",
         distractorTokens: [],
       },
     ],
@@ -858,12 +862,6 @@ export const QUESTION_BANK: Question[] = [
     targetToken: "cat",
     targetRepeatCount: 1,
     variants: [
-      {
-        visualCue: "",
-        targetToken: "cat",
-        distractorTokens: [],
-        audioUrl: "/gamified-test/questions/q31_v1.mp3",
-      },
       {
         visualCue: "",
         targetToken: "dog",
@@ -896,12 +894,6 @@ export const QUESTION_BANK: Question[] = [
     targetToken: "savi",
     targetRepeatCount: 1,
     variants: [
-      {
-        visualCue: "",
-        targetToken: "savi",
-        distractorTokens: [],
-        audioUrl: "/gamified-test/questions/q32_v1.mp3",
-      },
       {
         visualCue: "",
         targetToken: "luno",

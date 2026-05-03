@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getQuestionsByNumbers } from "@/features/gamified-test/lib/questions";
 import type { ExamLanguage } from "@/features/gamified-test/lib/questions";
-import { Question } from "@/features/gamified-test/lib/types";
+import { Demographics, Question, SessionEvent } from "@/features/gamified-test/lib/types";
 import {
   speakTextAndWait,
   unlockSpeechSynthesis,
   type VoiceLocale,
 } from "@/features/gamified-test/lib/voice";
+import { Volume2, VolumeX } from "lucide-react";
 
 const QUESTION_DURATION_SECONDS = 15;
 const ENGLISH_LETTER_POOL = "abcdefghijklmnopqrstuvwxyz";
@@ -169,11 +170,15 @@ type ActivePrompt = {
   visualCue?: string;
   correctionTargetToken?: string;
   correctionDistractorTokens?: string[];
+  /** Recorded audio URL for this specific prompt (used in Q31/Q32 variants). */
+  audioUrl?: string;
 };
 
-type SessionQuestionSetResponse = {
+type ClientSessionData = {
   sessionId: string;
+  demographics: Demographics;
   questionIds: number[];
+  theme?: string;
 };
 
 function normalizeToken(token: string) {
@@ -211,12 +216,9 @@ function toArabicSpeechText(text: string) {
     .join(" ");
 }
 
-function getSpeechTextByLanguage(text: string, language: ExamLanguage) {
-  if (language !== "ar") {
-    return text;
-  }
-
-  return toArabicSpeechText(text);
+function getSpeechTextByLanguage(text: string, _language: ExamLanguage) {
+  // Currently only "en" is supported; Arabic path kept for future use
+  return text;
 }
 
 async function playAudioAndWait(url: string) {
@@ -305,6 +307,7 @@ function buildPromptSequence(question: Question): ActivePrompt[] {
     visualCue: variant.visualCue,
     correctionTargetToken: variant.correctionTargetToken,
     correctionDistractorTokens: variant.correctionDistractorTokens,
+    audioUrl: variant.audioUrl, // carry per-variant recorded audio
   }));
 
   return [basePrompt, ...variantPrompts];
@@ -617,16 +620,13 @@ export default function TestPage() {
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
   const sessionId = params.sessionId;
-  const examLanguage: ExamLanguage =
-    searchParams.get("lang") === "ar" ? "ar" : "en";
+  const examLanguage: ExamLanguage = "en";
   const isLightTheme = searchParams.get("theme") === "light";
   const copy = EXAM_COPY[examLanguage];
-  const isArabicExam = examLanguage === "ar";
-  const voiceLocale: VoiceLocale = isArabicExam ? "ar-EG" : "en-US";
+  const isArabicExam = false; // Only English is currently supported
+  const voiceLocale: VoiceLocale = "en-US";
   const voiceUnavailableMessage = copy.voiceMayBeUnavailable;
-  const typedKeyboardRows = isArabicExam
-    ? ARABIC_TYPE_KEYBOARD_ROWS
-    : ENGLISH_TYPE_KEYBOARD_ROWS;
+  const typedKeyboardRows = ENGLISH_TYPE_KEYBOARD_ROWS;
   const typedKeyboardKeys = useMemo(
     () => typedKeyboardRows.flat(),
     [typedKeyboardRows],
@@ -676,6 +676,9 @@ export default function TestPage() {
   const [isEnablingSpeech, setIsEnablingSpeech] = useState(false);
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
   const clickSoundRef = useRef<HTMLAudioElement | null>(null);
+  // Client-side event log — replaces server /event API calls
+  const clientEventsRef = useRef<SessionEvent[]>([]);
+  const clientSessionDataRef = useRef<ClientSessionData | null>(null);
 
   const question = useMemo(
     () => activeQuestions[index],
@@ -745,13 +748,7 @@ export default function TestPage() {
     setError(null);
 
     try {
-      let unlocked = await unlockSpeechSynthesis(voiceLocale);
-
-      if (!unlocked && isArabicExam) {
-        const fallbackLocale: VoiceLocale =
-          voiceLocale === "ar-EG" ? "ar-SA" : "ar-EG";
-        unlocked = await unlockSpeechSynthesis(fallbackLocale);
-      }
+      const unlocked = await unlockSpeechSynthesis(voiceLocale);
 
       if (!unlocked) {
         setError(voiceUnavailableMessage);
@@ -761,25 +758,15 @@ export default function TestPage() {
     } finally {
       setIsEnablingSpeech(false);
     }
-  }, [voiceLocale, voiceUnavailableMessage, isArabicExam]);
+  }, [voiceLocale, voiceUnavailableMessage]);
 
   const speakWithVoiceFallback = useCallback(
     async (text: string) => {
       const speechText = getSpeechTextByLanguage(text, examLanguage);
-      const localesToTry: VoiceLocale[] = isArabicExam
-        ? [voiceLocale, voiceLocale === "ar-EG" ? "ar-SA" : "ar-EG"]
-        : [voiceLocale];
-
-      for (const locale of localesToTry) {
-        const voiceCompleted = await speakTextAndWait(speechText, locale);
-        if (voiceCompleted) {
-          return true;
-        }
-      }
-
-      return false;
+      const voiceCompleted = await speakTextAndWait(speechText, voiceLocale);
+      return voiceCompleted;
     },
-    [examLanguage, isArabicExam, voiceLocale],
+    [examLanguage, voiceLocale],
   );
 
   useEffect(() => {
@@ -822,98 +809,91 @@ export default function TestPage() {
   }, [isVoicePlaying, pauseBackgroundMusic, playBackgroundMusic]);
 
   useEffect(() => {
-    let active = true;
+    // Load session data from sessionStorage (client-side only, Vercel-safe)
+    setQuestionSetLoading(true);
+    setError(null);
 
-    async function loadQuestionSet() {
-      setQuestionSetLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/gamified-test/session/${sessionId}`, {
-          cache: "no-store",
-        });
-
-        const payload = (await response.json()) as
-          | SessionQuestionSetResponse
-          | { error?: string };
-
-        if (!response.ok || !("questionIds" in payload)) {
-          throw new Error(
-            ("error" in payload && payload.error) ||
-              "Unable to load session question set.",
-          );
-        }
-
-        const questions = getQuestionsByNumbers(
-          payload.questionIds,
-          examLanguage,
+    try {
+      const raw = sessionStorage.getItem(`gt_session_${sessionId}`);
+      if (!raw) {
+        throw new Error(
+          "Session data not found. Please start the test again.",
         );
-        if (questions.length === 0) {
-          throw new Error("No questions are configured for this session.");
-        }
-
-        if (!active) {
-          return;
-        }
-
-        setActiveQuestions(questions);
-        setIndex(0);
-        setPhase("voice");
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setError(
-          loadError instanceof Error ? loadError.message : "Unexpected error.",
-        );
-      } finally {
-        if (active) {
-          setQuestionSetLoading(false);
-        }
       }
+
+      const sessionData = JSON.parse(raw) as ClientSessionData;
+      clientSessionDataRef.current = sessionData;
+      clientEventsRef.current = [];
+
+      const questions = getQuestionsByNumbers(
+        sessionData.questionIds,
+        examLanguage,
+      );
+
+      if (questions.length === 0) {
+        throw new Error("No questions are configured for this session.");
+      }
+
+      setActiveQuestions(questions);
+      setIndex(0);
+      setPhase("voice");
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error ? loadError.message : "Unexpected error.",
+      );
+    } finally {
+      setQuestionSetLoading(false);
     }
-
-    void loadQuestionSet();
-
-    return () => {
-      active = false;
-    };
   }, [sessionId, examLanguage]);
 
+  // Client-side event recorder — no API call, just push to ref
   const postEvent = useCallback(
-    async (
+    (
       eventType: "click" | "hit" | "miss",
       questionId: string,
       optionId?: string,
     ) => {
-      const response = await fetch(
-        `/api/gamified-test/session/${sessionId}/event`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventType, questionId, optionId }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Unable to save event.");
-      }
+      clientEventsRef.current.push({
+        eventType,
+        questionId,
+        optionId,
+        createdAt: new Date().toISOString(),
+      });
+      return Promise.resolve();
     },
-    [sessionId],
+    [],
   );
 
   async function finishSession() {
-    const response = await fetch(
-      `/api/gamified-test/session/${sessionId}/finish`,
-      {
-        method: "POST",
-      },
-    );
+    const sessionData = clientSessionDataRef.current;
+    if (!sessionData) {
+      throw new Error("Session data missing.");
+    }
+
+    const response = await fetch("/api/gamified-test/finish-client", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: sessionData.sessionId,
+        demographics: sessionData.demographics,
+        questionIds: sessionData.questionIds,
+        events: clientEventsRef.current,
+      }),
+    });
+
+    const payload = await response.json();
 
     if (!response.ok) {
-      throw new Error("Unable to finish session.");
+      throw new Error(
+        (payload as { error?: string }).error ?? "Unable to finish session.",
+      );
     }
+
+    // Store result client-side for the result page
+    sessionStorage.setItem(
+      `gt_result_${sessionId}`,
+      JSON.stringify(payload),
+    );
 
     router.push(`/gamified-test/result/${sessionId}`);
   }
@@ -1133,9 +1113,11 @@ export default function TestPage() {
 
         setShowVisualSequence(false);
       } else {
-        const voiceCompleted = await speakWithVoiceFallback(
-          currentPrompt.targetToken,
-        );
+        // Use recorded audio file if available (Q31/Q32 variants),
+        // otherwise fall back to TTS.
+        const voiceCompleted = currentPrompt.audioUrl
+          ? await playAudioAndWait(currentPrompt.audioUrl)
+          : await speakWithVoiceFallback(currentPrompt.targetToken);
 
         if (!active) {
           return;
@@ -1632,22 +1614,30 @@ export default function TestPage() {
         className="relative h-dvh w-full overflow-hidden"
         dir={isArabicExam ? "rtl" : "ltr"}
       >
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/gamified-test/Gemini_background.png')" }}
-        />
-        <div aria-hidden className="absolute inset-0 bg-black/12" />
+        {/* Background — Gemini only in gamified theme, solid white in light theme */}
+        {!isLightTheme && (
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url('/gamified-test/Gemini_background.png')" }}
+          />
+        )}
+        {!isLightTheme && <div aria-hidden className="absolute inset-0 bg-black/12" />}
+        {isLightTheme && <div aria-hidden className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 60% 40%, #f0ede5 0%, #e8e4da 60%, #ddd9cf 100%)" }} />}
 
         <div className="relative z-10 mx-auto flex h-full w-full max-w-3xl items-center justify-center px-6 py-10">
-          <div className="w-full rounded-3xl border border-sky-100 bg-white/95 p-10 text-center shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
+          <div className={`w-full rounded-3xl p-10 text-center ${
+              !isLightTheme
+                ? "border border-sky-100 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
+                : "border border-[#c8c4b8] bg-[#faf8f4] shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
+            }`}>
+            <p className={`text-sm font-medium ${ !isLightTheme ? "text-slate-500" : "text-[#7a7567]" }`}>
               {question.title} ({index + 1}/{total})
             </p>
-            <h1 className="mt-4 text-3xl font-semibold text-slate-800">
+            <h1 className={`mt-4 text-3xl font-semibold ${ !isLightTheme ? "text-slate-800" : "text-[#2d2a24]" }`}>
               {copy.listenHeading}
             </h1>
-            <p className="mt-3 text-slate-500">
+            <p className={`mt-3 ${ !isLightTheme ? "text-slate-500" : "text-[#7a7567]" }`}>
               {isSpeechReady ? copy.voiceHint : copy.unlockVoiceHint}
             </p>
             {!isSpeechReady ? (
@@ -1655,25 +1645,30 @@ export default function TestPage() {
                 type="button"
                 onClick={handleEnableSpeech}
                 disabled={isEnablingSpeech}
-                className="mt-5 inline-flex rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-70"
+                className={`mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70 ${
+                  !isLightTheme
+                    ? "border border-cyan-400/40 bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/20"
+                    : "border border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100"
+                }`}
               >
-                {isEnablingSpeech
-                  ? copy.enablingVoiceButton
-                  : copy.enableVoiceButton}
+                {isEnablingSpeech ? copy.enablingVoiceButton : copy.enableVoiceButton}
               </button>
             ) : null}
             {isSpeechReady && isVoicePlaying ? (
-              <p className="mt-5 text-sm text-slate-400">{copy.audioPlaying}</p>
+              <p className={`mt-5 text-sm ${ !isLightTheme ? "text-slate-400" : "text-[#9a9287]" }`}>{copy.audioPlaying}</p>
             ) : null}
             {error ? (
-              <p className="mt-4 text-sm text-amber-700">{error}</p>
+              <p className={`mt-4 text-sm ${ !isLightTheme ? "text-amber-600" : "text-amber-700" }`}>{error}</p>
             ) : null}
-
             {SHOW_SKIP_BUTTON ? (
               <button
                 type="button"
                 onClick={handleSkip}
-                className="mt-8 inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                className={`mt-8 inline-flex rounded-lg px-4 py-2 text-sm font-semibold ${
+                  !isLightTheme
+                    ? "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    : "border border-[#c8c4b8] bg-white text-[#7a7567] hover:bg-[#f0ede5]"
+                }`}
               >
                 {copy.skipTesting}
               </button>
@@ -1690,44 +1685,60 @@ export default function TestPage() {
         className="relative h-dvh w-full overflow-hidden"
         dir={isArabicExam ? "rtl" : "ltr"}
       >
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/gamified-test/Gemini_background.png')" }}
-        />
-        <div aria-hidden className="absolute inset-0 bg-black/18" />
+        {/* Background — Gemini only in gamified theme, solid white in light theme */}
+        {!isLightTheme && (
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url('/gamified-test/Gemini_background.png')" }}
+          />
+        )}
+        {!isLightTheme && <div aria-hidden className="absolute inset-0 bg-black/18" />}
+        {isLightTheme && <div aria-hidden className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 60% 40%, #f0ede5 0%, #e8e4da 60%, #ddd9cf 100%)" }} />}
 
         <div className="relative z-10 mx-auto flex h-full w-full max-w-3xl items-center justify-center px-6 py-10">
-          <div className="w-full max-w-md rounded-2xl border border-sky-200 bg-white p-8 text-center shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
+          <div className={`w-full max-w-md rounded-2xl p-8 text-center ${
+              !isLightTheme
+                ? "border border-sky-100 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
+                : "border border-[#c8c4b8] bg-[#faf8f4] shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
+            }`}>
+            <p className={`text-sm font-medium ${ !isLightTheme ? "text-slate-500" : "text-[#7a7567]" }`}>
               {question.title} {copy.completeLabel}
             </p>
-            <h1 className="mt-4 text-3xl font-semibold text-slate-800">
+            <h1 className={`mt-4 text-3xl font-semibold ${ !isLightTheme ? "text-slate-800" : "text-[#2d2a24]" }`}>
               {copy.pointsPrefix} {score} {copy.pointsSuffix}
             </h1>
-            <p className="mt-2 text-slate-500">
+            <p className={`mt-2 ${ !isLightTheme ? "text-slate-500" : "text-[#7a7567]" }`}>
               {copy.progressPrefix} {progressPercent}%
             </p>
 
             {mustRetakeQuestion ? (
-              <p className="mt-3 text-sm font-medium text-amber-700">
+              <p className={`mt-3 text-sm font-medium ${ !isLightTheme ? "text-amber-600" : "text-amber-700" }`}>
                 {copy.noClicks}
               </p>
             ) : null}
 
-            <div className="mx-auto mt-6 flex h-24 w-24 items-center justify-center rounded-full border-8 border-sky-200 text-lg font-semibold text-sky-700">
+            <div className={`mx-auto mt-6 flex h-24 w-24 items-center justify-center rounded-full border-8 text-lg font-semibold ${
+              !isLightTheme
+                ? "border-sky-200 bg-sky-50 text-sky-600"
+                : "border-[#b8c9a8] bg-[#f0f5ec] text-[#5a7a48]"
+            }`}>
               {progressPercent}%
             </div>
 
             {error ? (
-              <p className="mt-4 text-sm text-red-700">{error}</p>
+              <p className={`mt-4 text-sm ${ !isLightTheme ? "text-red-300" : "text-red-700" }`}>{error}</p>
             ) : null}
 
             <button
               type="button"
               disabled={phase === "finishing"}
               onClick={handleContinue}
-              className="mt-8 inline-flex w-full items-center justify-center rounded-lg border border-sky-300 bg-white px-4 py-3 font-semibold text-sky-700 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`mt-8 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                !isLightTheme
+                  ? "bg-sky-500 border border-sky-400 text-white hover:bg-sky-600"
+                  : "bg-[#51513d] border border-[#51513d] text-[#e3dcc2] hover:bg-[#3d3d2d]"
+              }`}
             >
               {phase === "finishing"
                 ? copy.finishing
@@ -1783,12 +1794,9 @@ export default function TestPage() {
   ).length;
   const typedPromptProgress = `${typedPromptIndex + 1}/${Math.max(typedPromptSequence.length, 1)}`;
   const typedDisplayValue = showVisualSequence
-    ? (activePrompt?.visualCue ?? "").replace(/\s+/g, "")
+    ? (activePrompt?.visualCue ?? "") // keep original spacing for memorization display
     : typedInput;
 
-  const timerCircleStyle = {
-    background: `conic-gradient(#18a7d3 ${timeProgress}%, #9dd2ea ${timeProgress}% 100%)`,
-  };
 
   return (
     <main
@@ -1807,7 +1815,7 @@ export default function TestPage() {
         <div aria-hidden className="absolute inset-0 bg-black/12" />
       )}
       {isLightTheme && (
-        <div aria-hidden className="absolute inset-0 bg-white" />
+        <div aria-hidden className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 60% 40%, #f0ede5 0%, #e8e4da 60%, #ddd9cf 100%)" }} />
       )}
 
       {SHOW_SKIP_BUTTON ? (
@@ -1815,16 +1823,27 @@ export default function TestPage() {
           <button
             type="button"
             onClick={handleSkip}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+              !isLightTheme
+                ? "border border-white/25 bg-white/90 text-slate-700 hover:bg-white"
+                : "border border-[#c8c4b8] bg-[#faf8f4] text-[#7a7567] hover:bg-[#f0ede5]"
+            }`}
           >
             {copy.skip}
           </button>
           <button
             type="button"
             onClick={toggleBackgroundMusicMute}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            title={isBackgroundMusicMuted ? "Unmute music" : "Mute music"}
+            className={`rounded-lg p-2 transition-colors ${
+              !isLightTheme
+                ? "border border-white/25 bg-white/90 text-slate-700 hover:bg-white"
+                : "border border-[#c8c4b8] bg-[#faf8f4] text-[#7a7567] hover:bg-[#f0ede5]"
+            }`}
           >
-            {isBackgroundMusicMuted ? copy.unmuteMusic : copy.muteMusic}
+            {isBackgroundMusicMuted
+              ? <VolumeX className="w-4 h-4" />
+              : <Volume2 className="w-4 h-4" />}
           </button>
         </div>
       ) : null}
@@ -1832,9 +1851,15 @@ export default function TestPage() {
       <div className="absolute right-4 top-4 z-20 sm:right-7 sm:top-6">
         <div
           className="flex h-20 w-20 items-center justify-center rounded-full p-1.5"
-          style={timerCircleStyle}
+          style={{
+            background: isLightTheme
+              ? `conic-gradient(#5a7a48 ${timeProgress}%, #c8d8bc ${timeProgress}% 100%)`
+              : `conic-gradient(#18a7d3 ${timeProgress}%, #9dd2ea ${timeProgress}% 100%)`,
+          }}
         >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-slate-700">
+          <div className={`flex h-full w-full items-center justify-center rounded-full ${
+            isLightTheme ? "bg-[#faf8f4] text-[#2d2a24]" : "bg-white text-slate-700"
+          }`}>
             <span className="text-xl font-semibold leading-none">{score}</span>
           </div>
         </div>
@@ -1854,26 +1879,24 @@ export default function TestPage() {
 
           {interactionType === "typedSequenceRecall" ? (
             <>
-              <div className="rounded-sm border border-sky-200 bg-white px-8 py-5 text-center text-slate-700 sm:min-w-105">
-                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
-                  {isArabicExam
-                    ? `جولة ${typedPromptProgress}`
-                    : `Round ${typedPromptProgress}`}
+              <div className={`rounded-xl px-8 py-5 text-center sm:min-w-105 ${
+                !isLightTheme
+                  ? "border border-sky-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
+                  : "border border-[#c8c4b8] bg-[#faf8f4] shadow-[0_4px_16px_rgba(0,0,0,0.07)] text-[#2d2a24]"
+              }`}>
+                <div className={`text-xs font-semibold uppercase tracking-[0.12em] ${ !isLightTheme ? "text-slate-400" : "text-[#9a9287]" }`}>
+                  {`Round ${typedPromptProgress}`}
                 </div>
-                <div
-                  className={`mt-2 min-h-14 text-4xl text-slate-700 sm:text-5xl ${
-                    isArabicExam ? "tracking-normal" : "tracking-[0.24em]"
-                  }`}
-                >
+                <div className={`mt-2 min-h-14 text-4xl tracking-[0.24em] sm:text-5xl ${ !isLightTheme ? "text-slate-800" : "" }`}>
                   {typedDisplayValue}
                 </div>
                 {isVoicePlaying && typedRoundStage === "cue" ? (
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className={`mt-2 text-sm ${ !isLightTheme ? "text-slate-400" : "text-[#9a9287]" }`}>
                     {copy.memorizeAndType}
                   </p>
                 ) : null}
                 {typedRoundStage === "input" ? (
-                  <p className="mt-2 text-sm text-slate-400">
+                  <p className={`mt-2 text-sm ${ !isLightTheme ? "text-slate-400" : "text-[#9a9287]" }`}>
                     {copy.typedPrefix} {typedInput.length}/{typedExpectedLength}
                   </p>
                 ) : null}
@@ -1901,7 +1924,7 @@ export default function TestPage() {
                         }
                         className={`rounded-sm border px-2 font-bold leading-tight text-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
                           isLightTheme
-                            ? "border-2 border-blue-500 bg-white hover:bg-blue-50"
+                            ? "border-2 border-sky-300 bg-white hover:bg-sky-50"
                             : "border-sky-200 bg-white hover:bg-sky-50"
                         }`}
                         style={{
@@ -1952,9 +1975,9 @@ export default function TestPage() {
                       key={`${index}-choice-${cellIndex}-${cell}`}
                       type="button"
                       onClick={() => handleAnswerClick(cell, cellIndex)}
-                      className={`rounded-sm border px-1 font-bold leading-tight text-black transition hover:bg-blue-50 ${
+                      className={`rounded-sm border px-1 font-bold leading-tight text-black transition ${
                           isLightTheme
-                            ? "border-2 border-blue-500 bg-white"
+                            ? "border-2 border-sky-300 bg-white hover:bg-sky-50"
                             : "border-sky-200 bg-white hover:bg-sky-50"
                         }`}
                       style={{
@@ -2046,10 +2069,10 @@ export default function TestPage() {
                   className={
                     isClassicGridMode
                       ? isLightTheme
-                        ? "rounded-xl border-2 border-blue-500 bg-white px-1 text-center font-bold leading-none text-black shadow-sm transition active:scale-95 hover:bg-blue-50"
+                        ? "rounded-xl border-2 border-sky-300 bg-white px-1 text-center font-bold leading-none text-black shadow-sm transition active:scale-95 hover:bg-sky-50"
                         : "rounded-2xl border-[3px] border-[#73a8d9] bg-linear-to-b from-[#eaf5ff] to-[#cfe7ff] px-1 text-center font-semibold leading-none text-[#0a5f87] shadow-[inset_0_2px_0_rgba(255,255,255,0.9),0_4px_0_rgba(110,155,196,0.72),0_10px_18px_rgba(0,0,0,0.24)] transition active:scale-95"
                       : isLightTheme
-                      ? "rounded-lg border-2 border-blue-400 bg-white px-1 text-center font-bold leading-tight text-black transition hover:bg-blue-50"
+                      ? "rounded-lg border-2 border-sky-300 bg-white px-1 text-center font-bold leading-tight text-black transition hover:bg-sky-50"
                       : "rounded-sm border border-sky-200 bg-white px-1 text-center font-semibold leading-tight text-slate-800 transition hover:bg-sky-50"
                   }
                   style={{
