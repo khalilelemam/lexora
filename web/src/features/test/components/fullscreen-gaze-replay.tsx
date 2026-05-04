@@ -57,7 +57,7 @@ export function FullscreenGazeReplay({
   const zoneH = screenH * 0.85; // 10%–95%
 
   return (
-    <div className="z-50 fixed inset-0">
+    <div className="fixed inset-0 z-50">
       {/* TaskDisplay in preview mode — identical text layout */}
       <TaskDisplay
         taskType={taskType}
@@ -69,7 +69,7 @@ export function FullscreenGazeReplay({
       />
 
       {/* Saccade lines — rendered under the bubbles */}
-      <svg className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 59 }}>
+      <svg className="pointer-events-none fixed inset-0 h-full w-full" style={{ zIndex: 59 }}>
         {replay.trail.length > 1 &&
           replay.trail.slice(1).map((idx, i) => {
             const prev = features[replay.trail[i]];
@@ -117,7 +117,7 @@ export function FullscreenGazeReplay({
         return (
           <div
             key={idx}
-            className="fixed pointer-events-none"
+            className="pointer-events-none fixed"
             style={{
               left: `${leftPx}px`,
               top: `${topPx}px`,
@@ -143,23 +143,23 @@ export function FullscreenGazeReplay({
       })}
 
       {/* Bottom control bar */}
-      <div className="bottom-4 left-1/2 z-70 fixed flex items-center gap-4 bg-white/90 shadow-lg backdrop-blur-md px-5 py-2.5 border border-[#E8E0D4] rounded-full -translate-x-1/2">
+      <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[#E8E0D4] bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
         <button
           type="button"
           onClick={replay.togglePlayPause}
           className="text-[#4A7C59] hover:text-[#3D6A4B]"
         >
-          {replay.isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          {replay.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </button>
 
-        <div className="bg-[#E8E0D4] rounded-full w-32 h-1.5 overflow-hidden">
+        <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#E8E0D4]">
           <div
-            className="bg-[#4A7C59] rounded-full h-full transition-all duration-75"
+            className="h-full rounded-full bg-[#4A7C59] transition-all duration-75"
             style={{ width: `${replay.progress}%` }}
           />
         </div>
 
-        <span className="w-8 tabular-nums text-[#8B857E] text-[11px]">{replay.progress}%</span>
+        <span className="w-8 text-[11px] text-[#8B857E] tabular-nums">{replay.progress}%</span>
 
         {/* Speed selector */}
         <div className="flex items-center gap-1">
@@ -168,7 +168,7 @@ export function FullscreenGazeReplay({
               key={s}
               onClick={() => replay.setSpeed(s)}
               className={cn(
-                'px-1.5 py-0.5 rounded text-[10px] transition-colors',
+                'rounded px-1.5 py-0.5 text-[10px] transition-colors',
                 replay.speed === s
                   ? 'bg-[#4A7C59] text-white'
                   : 'text-[#8B857E] hover:bg-[#F0EBE3]',
@@ -179,21 +179,21 @@ export function FullscreenGazeReplay({
           ))}
         </div>
 
-        <div className="bg-[#E8E0D4] w-px h-4" />
+        <div className="h-4 w-px bg-[#E8E0D4]" />
 
         <button type="button" onClick={onClose} className="text-[#8B857E] hover:text-[#2D2A26]">
-          <X className="w-5 h-5" />
+          <X className="h-5 w-5" />
         </button>
       </div>
 
       {/* Legend */}
-      <div className="top-4 right-4 z-70 fixed flex flex-col gap-1.5 bg-white/90 shadow-sm backdrop-blur-md px-4 py-2.5 border border-[#E8E0D4] rounded-xl text-[#8B857E] text-[11px]">
+      <div className="fixed top-4 right-4 z-70 flex flex-col gap-1.5 rounded-xl border border-[#E8E0D4] bg-white/90 px-4 py-2.5 text-[11px] text-[#8B857E] shadow-sm backdrop-blur-md">
         <div className="flex items-center gap-1.5">
-          <div className="bg-[#4A7C59] opacity-60 rounded-full w-2.5 h-2.5" />
+          <div className="h-2.5 w-2.5 rounded-full bg-[#4A7C59] opacity-60" />
           <span>Forward fixation</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="bg-red-400 opacity-60 rounded-full w-2.5 h-2.5" />
+          <div className="h-2.5 w-2.5 rounded-full bg-red-400 opacity-60" />
           <span>Regression (backward)</span>
         </div>
         <div className="flex items-center gap-1.5">

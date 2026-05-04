@@ -65,7 +65,7 @@ async function handleMLError(error: unknown): Promise<never> {
   if (error instanceof MLServiceError) throw error;
 
   if (error instanceof HTTPError) {
-    const errorBody = await error.response.json().catch(() => null) as MLErrorResponse | null;
+    const errorBody = (await error.response.json().catch(() => null)) as MLErrorResponse | null;
     throw new MLServiceError(
       errorBody?.code ?? `HTTP_${error.response.status}`,
       errorBody?.message ?? `ML service returned ${error.response.status}`,
@@ -156,7 +156,9 @@ interface WebcamPredictResponse {
 export async function predictEyeTracker(input: EyeTrackerPredictInput): Promise<PredictionResult> {
   try {
     const client = createMLClient();
-    const response = await client.post('v1/eye-tracker/predict', { json: input }).json<EyeTrackerPredictResponse>();
+    const response = await client
+      .post('v1/eye-tracker/predict', { json: input })
+      .json<EyeTrackerPredictResponse>();
 
     // Use meaningful-text features for the gaze replay (primary reading task).
     // Eye tracker features use saccadeVelocity instead of isRegression/isReturnSweep,
@@ -170,9 +172,11 @@ export async function predictEyeTracker(input: EyeTrackerPredictInput): Promise<
       saccadeAmplitude: f.saccadeAmplitude,
       // Regression = rightward-to-leftward movement in LTR text
       isRegression: i > 0 ? f.fixationX < rawFeatures[i - 1].fixationX : false,
-      isReturnSweep: i > 0
-        ? f.fixationY > rawFeatures[i - 1].fixationY + 0.03 && f.fixationX < rawFeatures[i - 1].fixationX
-        : false,
+      isReturnSweep:
+        i > 0
+          ? f.fixationY > rawFeatures[i - 1].fixationY + 0.03 &&
+            f.fixationX < rawFeatures[i - 1].fixationX
+          : false,
     }));
 
     return {
@@ -190,7 +194,9 @@ export async function predictEyeTracker(input: EyeTrackerPredictInput): Promise<
 export async function predictWebcam(input: WebcamPredictInput): Promise<PredictionResult> {
   try {
     const client = createMLClient();
-    const response = await client.post('v1/webcam/predict', { json: input }).json<WebcamPredictResponse>();
+    const response = await client
+      .post('v1/webcam/predict', { json: input })
+      .json<WebcamPredictResponse>();
 
     return {
       dyslexiaProbability: response.dyslexiaProbability,

@@ -62,7 +62,10 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
 
       let idx = 0;
       for (let i = timeline.length - 1; i >= 0; i--) {
-        if (elapsed >= timeline[i]) { idx = i; break; }
+        if (elapsed >= timeline[i]) {
+          idx = i;
+          break;
+        }
       }
 
       setCurrentIndex(idx);
@@ -111,9 +114,10 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
     else play();
   }, [isPlaying, play, pause]);
 
-  const progress = features.length > 0 && currentIndex >= 0
-    ? Math.round(((currentIndex + 1) / features.length) * 100)
-    : 0;
+  const progress =
+    features.length > 0 && currentIndex >= 0
+      ? Math.round(((currentIndex + 1) / features.length) * 100)
+      : 0;
 
   return {
     isPlaying,

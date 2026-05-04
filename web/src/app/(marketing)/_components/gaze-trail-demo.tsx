@@ -75,25 +75,40 @@ export function GazeTrailDemo() {
   }, []);
 
   return (
-    <div className="relative w-full rounded-xl bg-card/60 border border-border/60 overflow-hidden" style={{ height: '160px' }}>
+    <div
+      className="bg-card/60 border-border/60 relative w-full overflow-hidden rounded-xl border"
+      style={{ height: '160px' }}
+    >
       {/* Background text — aligned exactly with gaze lines */}
-      <div className="absolute inset-0 pointer-events-none select-none font-serif text-foreground opacity-30 text-base tracking-widest whitespace-nowrap overflow-hidden flex flex-col justify-center">
-        <div className="absolute w-full text-center" style={{ top: '18%', transform: 'translateY(-50%)' }}>
+      <div className="text-foreground pointer-events-none absolute inset-0 flex flex-col justify-center overflow-hidden font-serif text-base tracking-widest whitespace-nowrap opacity-30 select-none">
+        <div
+          className="absolute w-full text-center"
+          style={{ top: '18%', transform: 'translateY(-50%)' }}
+        >
           The morning sun cast brilliant golden streaks across the entire classroom
         </div>
-        <div className="absolute w-full text-center" style={{ top: '42%', transform: 'translateY(-50%)' }}>
+        <div
+          className="absolute w-full text-center"
+          style={{ top: '42%', transform: 'translateY(-50%)' }}
+        >
           illuminating the walls as young readers opened their favorite storybooks
         </div>
-        <div className="absolute w-full text-center" style={{ top: '66%', transform: 'translateY(-50%)' }}>
+        <div
+          className="absolute w-full text-center"
+          style={{ top: '66%', transform: 'translateY(-50%)' }}
+        >
           with quiet excitement, each child finding their own comfortable rhythm
         </div>
-        <div className="absolute w-full text-center" style={{ top: '88%', transform: 'translateY(-50%)' }}>
+        <div
+          className="absolute w-full text-center"
+          style={{ top: '88%', transform: 'translateY(-50%)' }}
+        >
           in the carefully arranged words spread out beautifully before them.
         </div>
       </div>
 
       {/* Saccade lines */}
-      <svg className="absolute inset-0 w-full h-full">
+      <svg className="absolute inset-0 h-full w-full">
         {points.slice(1).map((p, i) => {
           const prev = points[i];
           const isSweep = isReturnSweep[i + 1];
@@ -154,7 +169,8 @@ export function GazeTrailDemo() {
       <motion.div
         className="absolute left-0 h-[2px] rounded-full"
         style={{
-          background: 'linear-gradient(90deg, transparent, oklch(0.70 0.10 115 / 0.4), transparent)',
+          background:
+            'linear-gradient(90deg, transparent, oklch(0.70 0.10 115 / 0.4), transparent)',
           width: '15%',
           top: '18%',
         }}

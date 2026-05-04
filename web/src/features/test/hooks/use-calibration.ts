@@ -2,9 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef } from 'react';
 import type { CalibrationResult } from '../types';
-import {
-  CALIBRATION_POINTS,
-} from '../lib/constants';
+import { CALIBRATION_POINTS } from '../lib/constants';
 import { fitProductionCalibrationModel, type TrainingSample } from '../lib/calibration-models';
 import {
   type CollectedSample,

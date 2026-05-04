@@ -46,10 +46,11 @@ export function AnimatedStat({ value, label, suffix = '' }: AnimatedStatProps) {
 
   return (
     <div ref={ref} className="flex flex-col items-center gap-1">
-      <span className="text-3xl font-bold text-primary">
-        {count}{suffix}
+      <span className="text-primary text-3xl font-bold">
+        {count}
+        {suffix}
       </span>
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground text-sm">{label}</span>
     </div>
   );
 }

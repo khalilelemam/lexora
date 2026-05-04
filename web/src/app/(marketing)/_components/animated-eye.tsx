@@ -103,18 +103,8 @@ export function AnimatedEye() {
         />
 
         {/* Inner iris — sage gradient */}
-        <circle
-          cx="90"
-          cy="90"
-          r="26"
-          fill="oklch(0.70 0.10 115 / 0.6)"
-        />
-        <circle
-          cx="90"
-          cy="90"
-          r="20"
-          fill="oklch(0.65 0.10 115 / 0.8)"
-        />
+        <circle cx="90" cy="90" r="26" fill="oklch(0.70 0.10 115 / 0.6)" />
+        <circle cx="90" cy="90" r="20" fill="oklch(0.65 0.10 115 / 0.8)" />
 
         {/* Pupil core — follows mouse */}
         <motion.circle
@@ -163,10 +153,9 @@ export function AnimatedEye() {
 
       {/* Ambient glow behind the whole thing */}
       <div
-        className="absolute inset-0 rounded-full blur-2xl -z-10"
+        className="absolute inset-0 -z-10 rounded-full blur-2xl"
         style={{
-          background:
-            'radial-gradient(circle, oklch(0.70 0.10 115 / 0.15) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, oklch(0.70 0.10 115 / 0.15) 0%, transparent 70%)',
         }}
       />
     </motion.div>

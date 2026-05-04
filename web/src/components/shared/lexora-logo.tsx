@@ -44,9 +44,9 @@ export function LexoraLogo({
         width={iconW}
         height={s.iconH}
         className={cn(
-          'dark:invert dark:brightness-0 transition-all',
-          animate && 'animate-[lexora-pulse_2.4s_ease-in-out_infinite]', 
-          color
+          'transition-all dark:brightness-0 dark:invert',
+          animate && 'animate-[lexora-pulse_2.4s_ease-in-out_infinite]',
+          color,
         )}
         priority
       />
@@ -57,7 +57,7 @@ export function LexoraLogo({
             'font-bold tracking-tight',
             color
               ? color.replace(/^text-/, 'text-')
-              : 'bg-linear-to-r from-primary to-accent bg-clip-text text-transparent',
+              : 'from-primary to-accent bg-linear-to-r bg-clip-text text-transparent',
           )}
         >
           Lexora

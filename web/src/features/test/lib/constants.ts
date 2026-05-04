@@ -28,8 +28,8 @@ function envFloat(key: string, fallback: number): number {
  *   - X columns: [0.2, 0.35, 0.5, 0.65, 0.8] (60% horizontal spread, perfectly centered)
  *   - Y bounding box is shifted to the top 10% - 65% of the screen.
  *     This leaves the bottom third empty to prevent eyelid occlusion and accuracy drop-off.
- *     
- *     The original relative grid logic (Y: 0.25, 0.5, 0.75) is strictly mapped into 
+ *
+ *     The original relative grid logic (Y: 0.25, 0.5, 0.75) is strictly mapped into
  *     this new elevated container:
  *       Top    (0.0 relative to AOI) -> y = 0.10
  *       Middle (0.5 relative to AOI) -> y = 0.375
@@ -37,11 +37,11 @@ function envFloat(key: string, fallback: number): number {
  */
 export const CALIBRATION_POINTS = [
   // Row 1 (top: 10%)
-  { x: 0.2, y: 0.10 },
-  { x: 0.35, y: 0.10 },
-  { x: 0.5, y: 0.10 },
-  { x: 0.65, y: 0.10 },
-  { x: 0.8, y: 0.10 },
+  { x: 0.2, y: 0.1 },
+  { x: 0.35, y: 0.1 },
+  { x: 0.5, y: 0.1 },
+  { x: 0.65, y: 0.1 },
+  { x: 0.8, y: 0.1 },
   // Row 2 (middle: 37.5%)
   { x: 0.2, y: 0.375 },
   { x: 0.35, y: 0.375 },
@@ -57,7 +57,7 @@ export const CALIBRATION_POINTS = [
 ] as const;
 
 /** Gaze AOI Y bounds (screen-normalized). Reading content lives in top: 10% → bottom: 65%. */
-export const AOI_Y_BOUNDS = { min: 0.10, max: 0.65 } as const;
+export const AOI_Y_BOUNDS = { min: 0.1, max: 0.65 } as const;
 
 /**
  * Calibration quality thresholds (normalized error).

@@ -35,12 +35,12 @@ export function ScreenGuard({ children }: ScreenGuardProps) {
 
   if (screenInfo.tooSmall) {
     return (
-      <div className="flex justify-center items-center p-8 min-h-screen">
-        <div className="flex flex-col items-center gap-6 max-w-md text-center">
-          <MonitorSmartphone className="w-16 h-16 text-muted-foreground" />
+      <div className="flex min-h-screen items-center justify-center p-8">
+        <div className="flex max-w-md flex-col items-center gap-6 text-center">
+          <MonitorSmartphone className="text-muted-foreground h-16 w-16" />
           <div>
-            <h2 className="font-semibold text-2xl">Screen Too Small</h2>
-            <p className="mt-2 text-muted-foreground">
+            <h2 className="text-2xl font-semibold">Screen Too Small</h2>
+            <p className="text-muted-foreground mt-2">
               Eye-tracking tests require a screen of at least {MIN_WIDTH}×{MIN_HEIGHT} pixels for
               accurate results. Please use a laptop or desktop monitor.
             </p>
