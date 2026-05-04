@@ -5,47 +5,126 @@ import { motion } from 'framer-motion';
 import { seededRandom } from '@/lib/seeded-random';
 
 /**
- * Interactive gaze trail visualization showing fixation patterns
- * over simulated reading text. Demonstrates the concept of gaze
- * analytics to visitors.
+ * Interactive gaze trail visualization showing a realistic reading scan-path.
+ * Demonstrates forward fixations, return sweeps, and regressions
+ * over simulated reading text with brand-aligned colors.
  */
 export function GazeTrailDemo() {
-  const { points, dotSizes } = useMemo(() => {
+  const { points, dotSizes, isRegression, isReturnSweep } = useMemo(() => {
+    // Realistic reading scan-path: L→R across 4 lines with return sweeps and regressions
     const pts = [
-      { x: 10, y: 30 }, { x: 25, y: 30 }, { x: 42, y: 30 },
-      { x: 58, y: 30 }, { x: 75, y: 30 }, { x: 90, y: 30 },
-      { x: 10, y: 55 }, { x: 28, y: 55 }, { x: 45, y: 55 },
-      { x: 60, y: 55 }, { x: 78, y: 55 }, { x: 92, y: 55 },
-      { x: 12, y: 80 }, { x: 30, y: 80 }, { x: 50, y: 80 },
-      { x: 70, y: 80 },
+      // Line 1: left to right
+      { x: 8, y: 18 },
+      { x: 20, y: 18 },
+      { x: 34, y: 19 },
+      { x: 48, y: 18 },
+      { x: 60, y: 17 },
+      { x: 74, y: 18 },
+      { x: 88, y: 18 },
+      // Regression on line 1
+      { x: 60, y: 18 },
+      // Return sweep to line 2
+      { x: 8, y: 42 },
+      // Line 2
+      { x: 22, y: 42 },
+      { x: 38, y: 43 },
+      { x: 52, y: 42 },
+      { x: 66, y: 42 },
+      { x: 80, y: 43 },
+      { x: 92, y: 42 },
+      // Return sweep to line 3
+      { x: 8, y: 66 },
+      // Line 3
+      { x: 22, y: 66 },
+      { x: 36, y: 67 },
+      // Regression on line 3
+      { x: 22, y: 66 },
+      // Continue line 3
+      { x: 50, y: 66 },
+      { x: 64, y: 67 },
+      { x: 78, y: 66 },
+      // Return sweep to line 4
+      { x: 8, y: 88 },
+      // Line 4
+      { x: 24, y: 88 },
+      { x: 42, y: 89 },
+      { x: 58, y: 88 },
     ];
-    const rng = seededRandom(7);
-    const sizes = pts.map(() => 8 + rng() * 10);
-    return { points: pts, dotSizes: sizes };
+
+    // Mark which points are regressions and return sweeps
+    const regFlags = pts.map((p, i) => {
+      if (i === 0) return false;
+      // Regression: moving left on the same line
+      const sameLine = Math.abs(p.y - pts[i - 1].y) < 10;
+      return sameLine && p.x < pts[i - 1].x;
+    });
+
+    const sweepFlags = pts.map((p, i) => {
+      if (i === 0) return false;
+      // Return sweep: large downward + leftward movement
+      return p.y - pts[i - 1].y > 10 && p.x < pts[i - 1].x;
+    });
+
+    const rng = seededRandom(42);
+    const sizes = pts.map((_, i) => {
+      if (regFlags[i]) return 12 + rng() * 6; // Regressions are slightly larger (longer fixation)
+      return 7 + rng() * 8;
+    });
+
+    return { points: pts, dotSizes: sizes, isRegression: regFlags, isReturnSweep: sweepFlags };
   }, []);
 
   return (
-    <div className="relative w-full h-32 rounded-lg bg-card/50 border overflow-hidden">
-      <div className="absolute inset-0 opacity-20 text-[10px] font-mono text-muted-foreground p-3 leading-relaxed select-none">
-        The quick brown fox jumps over the lazy dog near the old stone bridge while
-        birds fly overhead in the warm autumn sky shining bright golden light upon meadows
+    <div className="relative w-full rounded-xl bg-card/60 border border-border/60 overflow-hidden" style={{ height: '160px' }}>
+      {/* Background text — aligned exactly with gaze lines */}
+      <div className="absolute inset-0 pointer-events-none select-none font-serif text-foreground opacity-30 text-base tracking-widest whitespace-nowrap overflow-hidden flex flex-col justify-center">
+        <div className="absolute w-full text-center" style={{ top: '18%', transform: 'translateY(-50%)' }}>
+          The morning sun cast brilliant golden streaks across the entire classroom
+        </div>
+        <div className="absolute w-full text-center" style={{ top: '42%', transform: 'translateY(-50%)' }}>
+          illuminating the walls as young readers opened their favorite storybooks
+        </div>
+        <div className="absolute w-full text-center" style={{ top: '66%', transform: 'translateY(-50%)' }}>
+          with quiet excitement, each child finding their own comfortable rhythm
+        </div>
+        <div className="absolute w-full text-center" style={{ top: '88%', transform: 'translateY(-50%)' }}>
+          in the carefully arranged words spread out beautifully before them.
+        </div>
       </div>
+
+      {/* Saccade lines */}
       <svg className="absolute inset-0 w-full h-full">
-        {points.slice(1).map((p, i) => (
-          <motion.line
-            key={i}
-            x1={`${points[i].x}%`} y1={`${points[i].y}%`}
-            x2={`${p.x}%`} y2={`${p.y}%`}
-            stroke="oklch(0.70 0.10 115)"
-            strokeWidth="1"
-            strokeDasharray="3 3"
-            initial={{ pathLength: 0, opacity: 0 }}
-            whileInView={{ pathLength: 1, opacity: 0.4 }}
-            transition={{ duration: 0.3, delay: 0.8 + i * 0.12 }}
-            viewport={{ once: true }}
-          />
-        ))}
+        {points.slice(1).map((p, i) => {
+          const prev = points[i];
+          const isSweep = isReturnSweep[i + 1];
+          const isReg = isRegression[i + 1];
+
+          return (
+            <motion.line
+              key={i}
+              x1={`${prev.x}%`}
+              y1={`${prev.y}%`}
+              x2={`${p.x}%`}
+              y2={`${p.y}%`}
+              stroke={
+                isSweep
+                  ? 'oklch(0.65 0.02 90 / 0.3)'
+                  : isReg
+                    ? 'oklch(0.52 0.12 25 / 0.4)'
+                    : 'oklch(0.70 0.10 115 / 0.35)'
+              }
+              strokeWidth={isSweep ? '1' : '1.5'}
+              strokeDasharray={isSweep ? '4 4' : 'none'}
+              initial={{ pathLength: 0, opacity: 0 }}
+              whileInView={{ pathLength: 1, opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.6 + i * 0.08 }}
+              viewport={{ once: true }}
+            />
+          );
+        })}
       </svg>
+
+      {/* Fixation dots */}
       {points.map((p, i) => (
         <motion.div
           key={i}
@@ -55,15 +134,39 @@ export function GazeTrailDemo() {
             top: `${p.y}%`,
             width: dotSizes[i],
             height: dotSizes[i],
-            background: i === 5 || i === 12 ? 'oklch(0.52 0.12 25 / 0.6)' : 'oklch(0.70 0.10 115 / 0.5)',
-            transform: 'translate(-50%, -50%)',
+            background: isRegression[i]
+              ? 'oklch(0.52 0.12 25 / 0.55)'
+              : 'oklch(0.70 0.10 115 / 0.5)',
+            x: '-50%',
+            y: '-50%',
+            boxShadow: isRegression[i]
+              ? '0 0 6px oklch(0.52 0.12 25 / 0.2)'
+              : '0 0 6px oklch(0.70 0.10 115 / 0.15)',
           }}
           initial={{ scale: 0, opacity: 0 }}
           whileInView={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.25, delay: 0.5 + i * 0.12 }}
+          transition={{ duration: 0.2, delay: 0.4 + i * 0.08 }}
           viewport={{ once: true }}
         />
       ))}
+
+      {/* Animated scan line — shows reading progression */}
+      <motion.div
+        className="absolute left-0 h-[2px] rounded-full"
+        style={{
+          background: 'linear-gradient(90deg, transparent, oklch(0.70 0.10 115 / 0.4), transparent)',
+          width: '15%',
+          top: '18%',
+        }}
+        initial={{ left: '0%', opacity: 0 }}
+        whileInView={{
+          left: ['0%', '85%', '0%', '85%', '0%', '60%'],
+          top: ['18%', '18%', '42%', '42%', '66%', '66%'],
+          opacity: [0, 0.6, 0.6, 0.6, 0.6, 0],
+        }}
+        transition={{ duration: 4, delay: 1.5, ease: 'easeInOut' }}
+        viewport={{ once: true }}
+      />
     </div>
   );
 }
