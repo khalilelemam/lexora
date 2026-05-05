@@ -7,6 +7,7 @@ import {
   Monitor,
   BookOpen,
   Sun,
+  Star,
   Shield,
   ArrowRight,
   ArrowLeft,
@@ -19,6 +20,8 @@ import { cn } from '@/lib/utils';
 interface PreTestSlidesProps {
   /** Test mode — affects slide content */
   mode: 'tobii' | 'webcam';
+  /** Whether the test is using the kid-friendly star calibration mode */
+  isStarMode?: boolean;
   /** Called when user completes the slides */
   onComplete: () => void;
   /** Called when user wants to skip */
@@ -72,6 +75,33 @@ const CalibrationVisual = () => (
          animate={{ scale: [0.3, 1, 0.3] }} 
          transition={{ duration: 1.5, repeat: Infinity }} 
        />
+    </motion.div>
+  </div>
+);
+
+const StarGameVisual = () => (
+  <div className="relative w-full h-full bg-amber-500/5">
+    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '15%', left: '15%', transform: 'translate(-50%, -50%)' }} />
+    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '15%', left: '85%', transform: 'translate(-50%, -50%)' }} />
+    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '85%', left: '15%', transform: 'translate(-50%, -50%)' }} />
+    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '85%', left: '85%', transform: 'translate(-50%, -50%)' }} />
+    
+    <motion.div 
+      className="absolute w-16 h-16 flex items-center justify-center text-amber-400 drop-shadow-md"
+      style={{ x: '-50%', y: '-50%' }}
+      animate={{ 
+        top: ['15%', '15%', '85%', '85%', '50%'],
+        left: ['15%', '85%', '15%', '85%', '50%'],
+        scale: [1, 0.2, 1, 0.2, 1, 0.2, 1, 0.2, 1]
+      }}
+      transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+    >
+       <motion.div
+         animate={{ rotate: [0, 5, 0, -5, 0] }}
+         transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+       >
+         <Star className="w-16 h-16 fill-amber-400/80" />
+       </motion.div>
     </motion.div>
   </div>
 );
@@ -133,7 +163,32 @@ const PrivacyVisual = () => (
   </div>
 );
 
-function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
+function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
+  const whatYoullDoSlide: Slide = isStarMode
+    ? {
+        visual: <StarGameVisual />,
+        title: 'Catch the Stars!',
+        description: 'Look directly at the glowing stars when they appear on the screen. They will magically shrink and vanish when you catch them with your eyes!',
+        tips: [
+          'Keep your eyes fixed on the star until it disappears',
+          'Have fun and try to catch all of them!',
+          'After the stars, just read the short story naturally',
+        ],
+      }
+    : {
+        visual: <CalibrationVisual />,
+        title: 'What You\'ll Do',
+        description:
+          mode === 'tobii'
+            ? 'Follow the dots to calibrate, then complete 3 short reading tasks.'
+            : 'Follow the dots to calibrate, then read a short paragraph naturally.',
+        tips: [
+          'Follow the calibration dots with your eyes',
+          'Read the text naturally — don\'t rush',
+          'Get instant results immediately after',
+        ],
+      };
+
   const common: Slide[] = [
     {
       visual: <WelcomeVisual />,
@@ -142,19 +197,7 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
         'We analyze your eye movements while you read to screen for signs of dyslexia. Non-invasive, quick, and research-backed.',
       highlight: 'The whole process takes about 5 minutes.',
     },
-    {
-      visual: <CalibrationVisual />,
-      title: 'What You\'ll Do',
-      description:
-        mode === 'tobii'
-          ? 'Follow the dots to calibrate, then complete 3 short reading tasks.'
-          : 'Follow the dots to calibrate, then read a short paragraph naturally.',
-      tips: [
-        'Follow the calibration dots with your eyes',
-        'Read the text naturally — don\'t rush',
-        'Get instant results immediately after',
-      ],
-    },
+    whatYoullDoSlide,
     {
       visual: <PositionVisual />,
       title: 'Prepare Your Space',
@@ -213,8 +256,8 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
  * Shown after "Start Test" but before camera setup / device check.
  * Ensures users understand what the test involves before proceeding.
  */
-export function PreTestSlides({ mode, onComplete, onSkip }: PreTestSlidesProps) {
-  const slides = getSlides(mode);
+export function PreTestSlides({ mode, isStarMode = false, onComplete, onSkip }: PreTestSlidesProps) {
+  const slides = getSlides(mode, isStarMode);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
 

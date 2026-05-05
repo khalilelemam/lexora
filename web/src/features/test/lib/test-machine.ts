@@ -10,7 +10,7 @@ import type {
 export function createTobiiInitialState(): TobiiTestFlowState {
   return {
     mode: 'tobii',
-    currentState: 'idle',
+    currentState: 'pre-test-education',
     calibration: null,
     taskData: {
       syllables: [],
@@ -25,7 +25,7 @@ export function createTobiiInitialState(): TobiiTestFlowState {
 export function createWebcamInitialState(): WebcamTestFlowState {
   return {
     mode: 'webcam',
-    currentState: 'idle',
+    currentState: 'pre-test-education',
     calibration: null,
     taskData: {
       paragraph: [],

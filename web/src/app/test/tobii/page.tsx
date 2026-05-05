@@ -165,27 +165,12 @@ export default function TobiiTestPage() {
 
   const renderState = () => {
     switch (tobiiState.currentState) {
-      case 'idle':
-        return (
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="font-bold text-3xl">Eye Tracker Test</h1>
-            <p className="text-muted-foreground">
-              This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of 3
-              reading tasks: syllables, pseudo-words, and meaningful text.
-            </p>
-            <button
-              onClick={() => dispatch({ type: 'START' })}
-              className="bg-primary hover:bg-primary/90 px-6 py-3 rounded-md font-medium text-primary-foreground text-lg"
-            >
-              Start Test
-            </button>
-          </div>
-        );
 
       case 'pre-test-education':
         return (
           <PreTestSlides
             mode="tobii"
+            isStarMode={requestedCalibrationMode === 'star'}
             onComplete={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
             onSkip={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
           />
