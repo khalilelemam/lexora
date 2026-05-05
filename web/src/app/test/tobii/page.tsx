@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FullscreenShell } from '@/components/shared';
 import { StepIndicator } from '@/components/shared';
@@ -16,7 +16,9 @@ import {
   TestErrorBoundary,
 } from '@/features/test/components';
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
+import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { useTestFlow, useTobiiGazeStream } from '@/features/test/hooks';
+import { Star, Target } from 'lucide-react';
 import { useTobiiTaskBuffers } from '@/features/test/hooks/use-tobii-task-buffers';
 import { submitTobiiTest } from '@/features/test/actions/submit-test';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
@@ -49,8 +51,15 @@ export default function TobiiTestPage() {
     };
   }, []);
 
-  const requestedCalibrationMode = calibrationParams.mode;
+  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(calibrationParams.mode);
+
+  const requestedCalibrationMode = selectedMode || 'grid';
   const participantAge = calibrationParams.age;
+
+  const handleStartTest = useCallback((mode: CalibrationVisualMode) => {
+    setSelectedMode(mode);
+    dispatch({ type: 'START' });
+  }, [dispatch]);
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 
@@ -165,6 +174,15 @@ export default function TobiiTestPage() {
 
   const renderState = () => {
     switch (tobiiState.currentState) {
+      case 'idle':
+        return (
+          <CalibrationSetup
+            resolvedMode={requestedCalibrationMode}
+            onSelectMode={setSelectedMode}
+            onStart={() => dispatch({ type: 'START' })}
+            startButtonText="Continue to Instructions"
+          />
+        );
 
       case 'pre-test-education':
         return (
