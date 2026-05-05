@@ -1,9 +1,4 @@
-import type {
-  TobiiTestFlowState,
-  WebcamTestFlowState,
-  TestFlowState,
-  TestAction,
-} from '../types';
+import type { TobiiTestFlowState, WebcamTestFlowState, TestFlowState, TestAction } from '../types';
 
 // ─── Initial States ──────────────────────────────────────
 

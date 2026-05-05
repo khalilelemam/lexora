@@ -61,17 +61,17 @@ const faqs: { question: string; answer: string }[] = [
 
 export default function FaqPage() {
   return (
-    <main className="min-h-screen bg-background pt-24 pb-16">
-      <div className="max-w-3xl mx-auto px-6">
-        <h1 className="text-4xl font-bold mb-4">Frequently Asked Questions</h1>
+    <main className="bg-background min-h-screen pt-24 pb-16">
+      <div className="mx-auto max-w-3xl px-6">
+        <h1 className="mb-4 text-4xl font-bold">Frequently Asked Questions</h1>
         <p className="text-muted-foreground mb-10">
           Common questions about Lexora, eye tracking, privacy, and technical requirements.
         </p>
 
         <div className="space-y-8">
           {faqs.map((faq, i) => (
-            <div key={i} className="pb-8 border-b last:border-b-0">
-              <h2 className="text-lg font-semibold mb-3">{faq.question}</h2>
+            <div key={i} className="border-b pb-8 last:border-b-0">
+              <h2 className="mb-3 text-lg font-semibold">{faq.question}</h2>
               <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
             </div>
           ))}

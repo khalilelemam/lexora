@@ -23,11 +23,11 @@ export function FloatingParticles() {
   }, []);
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       {particles.map((p, i) => (
         <motion.div
           key={i}
-          className="absolute w-1.5 h-1.5 rounded-full"
+          className="absolute h-1.5 w-1.5 rounded-full"
           style={{ background: p.background, left: p.left, top: p.top }}
           animate={{
             y: [0, p.yOffset, 0],

@@ -280,7 +280,9 @@ export default function TobiiTestPage() {
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
-            readingContent={taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')}
+            readingContent={
+              taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')
+            }
           />
         );
 
@@ -295,8 +297,7 @@ export default function TobiiTestPage() {
             mode="tobii"
             onNewTest={handleNewTest}
             readingContent={
-              taskContent['meaningful-text'] ||
-              getTobiiTaskContent('meaningful-text')
+              taskContent['meaningful-text'] || getTobiiTaskContent('meaningful-text')
             }
           />
         );
