@@ -44,6 +44,16 @@ else
 fi
 
 # Always sync app version explicitly.
+version_existing_id=$(curl -sf -H "Authorization: Bearer $VERCEL_TOKEN" \
+  "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
+  | jq -r '.envs[] | select(.key == "NEXT_PUBLIC_APP_VERSION" and (.target | index("production") != null)) | .id' \
+  | head -n1)
+
+if [[ -n "$version_existing_id" ]]; then
+  curl -sf -X DELETE -H "Authorization: Bearer $VERCEL_TOKEN" \
+    "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env/$version_existing_id?teamId=$VERCEL_ORG_ID" >/dev/null
+fi
+
 curl -sf -X POST -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" \
   "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID" \
   -d "$(jq -n --arg v "$VERSION_VALUE" '{key: "NEXT_PUBLIC_APP_VERSION", value: $v, type: "plain", target: ["production"]}')" \
