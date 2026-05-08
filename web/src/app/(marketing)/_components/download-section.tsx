@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 type Platform = 'windows' | 'macos' | 'linux' | 'unknown';
 
-const GITHUB_RELEASE_BASE = 'https://github.com/khalilelemam/eglex/releases/latest';
+const DOWNLOAD_BASE = '/api/download/service';
 
 interface PlatformInfo {
   label: string;
@@ -30,8 +30,8 @@ const PLATFORMS: Record<Exclude<Platform, 'unknown'>, PlatformInfo> = {
     label: 'macOS',
     icon: <Apple className="h-5 w-5" />,
     assetKeyword: 'macos',
-    extension: '.dmg',
-    available: false,
+    extension: '.pkg',
+    available: true,
   },
   linux: {
     label: 'Linux',
@@ -46,8 +46,8 @@ const PLATFORMS: Record<Exclude<Platform, 'unknown'>, PlatformInfo> = {
       </svg>
     ),
     assetKeyword: 'linux',
-    extension: '.AppImage',
-    available: false,
+    extension: '.deb',
+    available: true,
   },
 };
 
@@ -104,7 +104,7 @@ export function DownloadSection() {
                 transition={{ delay: platformKeys.indexOf(key) * 0.1 }}
               >
                 {info.available ? (
-                  <a href={GITHUB_RELEASE_BASE} target="_blank" rel="noopener noreferrer">
+                  <a href={`${DOWNLOAD_BASE}?platform=${key}`}>
                     <Button
                       variant={isCurrent ? 'default' : 'outline'}
                       className={cn(
@@ -141,14 +141,7 @@ export function DownloadSection() {
         </div>
 
         <p className="text-muted-foreground/50 mt-6 text-xs">
-          <a
-            href={GITHUB_RELEASE_BASE}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-muted-foreground inline-flex items-center gap-1 transition-colors"
-          >
-            View all releases on GitHub <ExternalLink className="h-3 w-3" />
-          </a>
+          The service runs locally on your machine and streams gaze data to the web app.
         </p>
       </div>
     </section>

@@ -121,12 +121,10 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <li>Make sure it shows a green status indicator</li>
               </ol>
               <a
-                href="https://github.com/khalilelemam/eglex/releases"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/api/download/service"
                 className="text-primary inline-flex items-center gap-1.5 text-xs font-medium underline-offset-4 hover:underline"
               >
-                Download from GitHub Releases
+                Download Tobii Service
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
@@ -157,7 +155,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => window.open('https://github.com/khalilelemam/eglex/releases/latest', '_blank')}
+                onClick={() => window.open('/api/download/service', '_blank')}
               >
                 Download Service
               </Button>
@@ -280,7 +278,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => window.open('https://github.com/khalilelemam/eglex/releases/latest', '_blank')}
+                  onClick={() => window.open('/api/download/service', '_blank')}
                 >
                   Download Service
                 </Button>

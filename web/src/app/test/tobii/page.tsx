@@ -40,7 +40,7 @@ export default function TobiiTestPage() {
 
   const openTobiiService = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const url = serviceRunning ? TOBII_SERVICE_URL : 'https://github.com/khalilelemam/eglex/releases/latest';
+    const url = serviceRunning ? TOBII_SERVICE_URL : '/api/download/service';
     window.open(url, '_blank');
   }, [serviceRunning, TOBII_SERVICE_URL]);
 
