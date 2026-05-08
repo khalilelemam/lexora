@@ -26,12 +26,19 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller      
 
-      - name: Set version from tag
+      - name: Set version and token from tag/secrets
         shell: pwsh
+        env:
+          UPDATER_TOKEN: ${{ secrets.UPDATER_GITHUB_TOKEN }}
         run: |
           $version = "$env:GITHUB_REF_NAME" -replace '^lexora-v', ''
           (Get-Content app/config.py) -replace 'VERSION: str = ".*"', "VERSION: str = `"$version`"" | Set-Content app/config.py
-          Write-Host "Injected version: $version"
+          if ($env:UPDATER_TOKEN) {
+            (Get-Content app/config.py) -replace 'GITHUB_TOKEN: str = ".*"', "GITHUB_TOKEN: str = `"$env:UPDATER_TOKEN`"" | Set-Content app/config.py
+            Write-Host "Injected version: $version and GitHub Token"
+          } else {
+            Write-Host "Injected version: $version (No GitHub Token provided)"
+          }
 
       - name: Build executable
         run: pyinstaller lexora-windows.spec
@@ -117,11 +124,18 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller      
 
-      - name: Set version from tag
+      - name: Set version and token from tag/secrets
+        env:
+          UPDATER_TOKEN: ${{ secrets.UPDATER_GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#lexora-v}"
           sed -i '' "s/VERSION: str = \".*\"/VERSION: str = \"${VERSION}\"/" app/config.py
-          echo "Injected version: $VERSION"
+          if [ ! -z "$UPDATER_TOKEN" ]; then
+            sed -i '' "s/GITHUB_TOKEN: str = \".*\"/GITHUB_TOKEN: str = \"${UPDATER_TOKEN}\"/" app/config.py
+            echo "Injected version: $VERSION and GitHub Token"
+          else
+            echo "Injected version: $VERSION (No GitHub Token provided)"
+          fi
 
       - name: Build executable
         run: pyinstaller lexora-macos.spec
@@ -165,11 +179,18 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Set version from tag
+      - name: Set version and token from tag/secrets
+        env:
+          UPDATER_TOKEN: ${{ secrets.UPDATER_GITHUB_TOKEN }}
         run: |
           VERSION="${GITHUB_REF_NAME#lexora-v}"
           sed -i "s/VERSION: str = \".*\"/VERSION: str = \"${VERSION}\"/" app/config.py
-          echo "Injected version: $VERSION"
+          if [ ! -z "$UPDATER_TOKEN" ]; then
+            sed -i "s/GITHUB_TOKEN: str = \".*\"/GITHUB_TOKEN: str = \"${UPDATER_TOKEN}\"/" app/config.py
+            echo "Injected version: $VERSION and GitHub Token"
+          else
+            echo "Injected version: $VERSION (No GitHub Token provided)"
+          fi
 
       - name: Build executable
         run: pyinstaller lexora-linux.spec
