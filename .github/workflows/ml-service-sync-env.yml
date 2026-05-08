@@ -13,6 +13,10 @@ on:
         default: true
         type: boolean
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   sync-production-config:
     name: Sync Production Env To Azure Container App
