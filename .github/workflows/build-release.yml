@@ -26,6 +26,13 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller      
 
+      - name: Set version from tag
+        shell: pwsh
+        run: |
+          $version = "$env:GITHUB_REF_NAME" -replace '^lexora-v', ''
+          (Get-Content app/config.py) -replace 'VERSION: str = ".*"', "VERSION: str = `"$version`"" | Set-Content app/config.py
+          Write-Host "Injected version: $version"
+
       - name: Build executable
         run: pyinstaller lexora-windows.spec
 
@@ -110,6 +117,12 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller      
 
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#lexora-v}"
+          sed -i '' "s/VERSION: str = \".*\"/VERSION: str = \"${VERSION}\"/" app/config.py
+          echo "Injected version: $VERSION"
+
       - name: Build executable
         run: pyinstaller lexora-macos.spec
 
@@ -151,6 +164,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#lexora-v}"
+          sed -i "s/VERSION: str = \".*\"/VERSION: str = \"${VERSION}\"/" app/config.py
+          echo "Injected version: $VERSION"
 
       - name: Build executable
         run: pyinstaller lexora-linux.spec

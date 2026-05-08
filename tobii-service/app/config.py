@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: list[str] = ["http://localhost:3000", "https://lexora.page"]
     APP_NAME: str = "Lexora Eye Tracker Service"
     VERSION: str = "1.0.0"
+    GITHUB_TOKEN: str = ""  # Optional: set for private repo update checks
 
 
 settings = Settings()

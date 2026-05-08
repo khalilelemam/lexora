@@ -44,11 +44,22 @@ class UpdateChecker:
 
     def __init__(self):
         self.current_version = settings.VERSION
+        self._github_token = settings.GITHUB_TOKEN
         self._latest_update: Optional[UpdateInfo] = None
         self._checking = False
         self._on_update_available = None
         self._on_update_downloaded = None
         self._on_error = None
+
+    def _get_auth_headers(self) -> dict:
+        """Return auth headers if a GitHub token is configured (for private repos)."""
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": f"Lexora-Updater/{self.current_version}",
+        }
+        if self._github_token:
+            headers["Authorization"] = f"Bearer {self._github_token}"
+        return headers
 
     def set_callbacks(
         self,
@@ -92,10 +103,7 @@ class UpdateChecker:
         try:
             req = request.Request(
                 RELEASES_API,
-                headers={
-                    "Accept": "application/vnd.github.v3+json",
-                    "User-Agent": f"Lexora-Updater/{self.current_version}",
-                },
+                headers=self._get_auth_headers(),
             )
             with request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
@@ -111,7 +119,11 @@ class UpdateChecker:
             for asset in data.get("assets", []):
                 name_lower = asset["name"].lower()
                 if platform_key in name_lower:
-                    download_url = asset["browser_download_url"]
+                    # For private repos, use the API URL with Accept header for binary
+                    if self._github_token:
+                        download_url = asset["url"]  # api.github.com URL
+                    else:
+                        download_url = asset["browser_download_url"]
                     break
 
             # Fallback to the release page if no matching asset
@@ -168,9 +180,14 @@ class UpdateChecker:
             return None
 
         try:
+            headers = {"User-Agent": f"Lexora-Updater/{self.current_version}"}
+            if self._github_token:
+                headers["Authorization"] = f"Bearer {self._github_token}"
+                headers["Accept"] = "application/octet-stream"  # Required for private repo asset downloads
+
             req = request.Request(
                 update.download_url,
-                headers={"User-Agent": f"Lexora-Updater/{self.current_version}"},
+                headers=headers,
             )
 
             # Derive filename from URL
