@@ -14,8 +14,9 @@ type NavLink =
   | { label: string; type: 'page'; href: string };
 
 const NAV_LINKS: NavLink[] = [
-  { label: 'Features', type: 'scroll', href: '#features' },
-  { label: 'How It Works', type: 'scroll', href: '#how-it-works' },
+  { label: 'Signal', type: 'scroll', href: '#signal' },
+  { label: 'Modes', type: 'scroll', href: '#modes' },
+  { label: 'Workflow', type: 'scroll', href: '#workflow' },
   { label: 'About', type: 'page', href: '/about' },
   { label: 'FAQ', type: 'page', href: '/faq' },
   { label: 'Privacy', type: 'page', href: '/privacy' },
@@ -41,7 +42,7 @@ export function Navbar() {
   useEffect(() => {
     if (pathname !== '/') return;
 
-    const sectionIds = ['features', 'how-it-works', 'get-started', 'about'];
+    const sectionIds = ['signal', 'modes', 'workflow', 'download', 'get-started', 'about'];
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -96,7 +97,9 @@ export function Navbar() {
     <>
       <motion.nav
         className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-background/80 border-b shadow-sm backdrop-blur-xl' : 'bg-transparent'
+          scrolled
+            ? 'bg-background/80 border-b shadow-sm backdrop-blur-xl'
+            : 'bg-transparent text-[#1b2021]'
         }`}
         initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -117,13 +120,13 @@ export function Navbar() {
                   className={`transition-colors ${
                     isLinkActive(link)
                       ? 'text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
+                      : 'text-[#1b2021]/62 hover:text-[#1b2021]'
                   }`}
                 >
                   {link.label}
                   {isLinkActive(link) && (
                     <motion.div
-                      className="bg-accent mt-0.5 h-0.5 rounded-full"
+                      className="mt-0.5 h-0.5 rounded-full bg-[#a6a867]"
                       layoutId="navbar-indicator"
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
@@ -136,13 +139,13 @@ export function Navbar() {
                   className={`transition-colors ${
                     isLinkActive(link)
                       ? 'text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
+                      : 'text-[#1b2021]/62 hover:text-[#1b2021]'
                   }`}
                 >
                   {link.label}
                   {isLinkActive(link) && (
                     <motion.div
-                      className="bg-accent mt-0.5 h-0.5 rounded-full"
+                      className="mt-0.5 h-0.5 rounded-full bg-[#a6a867]"
                       layoutId="navbar-indicator"
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
@@ -158,7 +161,7 @@ export function Navbar() {
               variant="outline"
               size="sm"
               onClick={() => scrollTo('#get-started')}
-              className="hidden border-[oklch(0.70_0.10_115/0.4)] text-[oklch(0.40_0.04_110)] hover:border-[oklch(0.70_0.10_115)] hover:bg-[oklch(0.70_0.10_115/0.1)] sm:inline-flex"
+              className="hidden border-[#51513d]/35 bg-[#e3dcc2]/55 text-[#1b2021] hover:bg-[#e3dc95]/55 sm:inline-flex"
             >
               Start Screening
             </Button>

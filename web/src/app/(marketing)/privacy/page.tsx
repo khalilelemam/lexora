@@ -1,223 +1,166 @@
 import type { Metadata } from 'next';
+import { Camera, Database, EyeOff, LockKeyhole, ShieldCheck, UserRoundCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Lexora',
+  title: 'Privacy Policy',
   description:
-    'How Lexora handles eye-tracking data, camera access, and personal information during dyslexia screening.',
+    'How Lexora handles camera access, gaze data, child privacy, and research screening information.',
 };
+
+const PROMISES = [
+  {
+    icon: Camera,
+    title: 'Camera stays purposeful',
+    copy: 'Webcam mode uses camera access for gaze estimation during the active test flow.',
+  },
+  {
+    icon: EyeOff,
+    title: 'No video-first design',
+    copy: 'The product is built around gaze coordinates and fixation features, not stored video recordings.',
+  },
+  {
+    icon: UserRoundCheck,
+    title: 'Guardian-led sessions',
+    copy: 'Children are supervised by guardians, parents, or teachers. Child accounts are not independent login identities.',
+  },
+  {
+    icon: LockKeyhole,
+    title: 'Sensitive access is limited',
+    copy: 'Where guardian or claim information is needed, it should be collected only for a clear purpose.',
+  },
+];
+
+const DATA_ROWS = [
+  ['Gaze samples', 'Screen x/y coordinates and timestamps captured during reading.'],
+  ['Screen metadata', 'Display size and normalized coordinates used to interpret gaze correctly.'],
+  ['Prediction output', 'Risk level, probability, confidence, and derived fixation context.'],
+  ['Guardian context', 'Profile and supervision information needed to run and review child sessions.'],
+];
 
 export default function PrivacyPage() {
   return (
-    <main className="bg-background min-h-screen pt-24 pb-16">
-      <div className="mx-auto max-w-3xl px-6">
-        <h1 className="mb-2 text-4xl font-bold">Privacy Policy</h1>
-        <p className="text-muted-foreground mb-10 text-sm">Last updated: April 2026</p>
-
-        <div className="space-y-10">
-          <Section title="1. Data Controller">
-            <p>
-              Lexora is a research tool developed at the Faculty of Computing and Data Science. For
-              questions about data handling, contact us via the project&apos;s{' '}
-              <a
-                href="https://github.com/khalilelemam/eglex"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors"
-              >
-                GitHub repository
-              </a>
-              .
-            </p>
-          </Section>
-
-          <Section title="2. Legal Basis for Processing">
-            <p>
-              We process limited gaze coordinate data under the legal basis of{' '}
-              <strong>legitimate research interest</strong> (GDPR Article 6(1)(f)). This processing
-              is necessary for conducting non-invasive dyslexia screening research. No personal data
-              beyond abstract gaze coordinates is collected or processed.
-            </p>
-          </Section>
-
-          <Section title="3. Camera Access &amp; Video Processing">
-            <p>
-              When using webcam-based tracking, Lexora requests access to your device&apos;s camera.
-              The video feed is processed <strong>entirely in your browser</strong> using
-              Google&apos;s MediaPipe FaceLandmarker (loaded as a WebAssembly module). Critical
-              details:
-            </p>
-            <ul className="mt-3 list-inside list-disc space-y-1.5">
-              <li>No video frames are transmitted to any server</li>
-              <li>No video is recorded, stored, or cached</li>
-              <li>No screenshots or images of the user are captured</li>
-              <li>Only abstract iris position coordinates (numerical x, y values) are extracted</li>
-              <li>Camera access ends immediately when you leave the test page</li>
-            </ul>
-          </Section>
-
-          <Section title="4. Data Categories Collected">
-            <p>
-              During a screening session, Lexora collects <strong>only</strong> the following:
-            </p>
-            <ul className="mt-3 list-inside list-disc space-y-1.5">
-              <li>
-                <strong>Gaze coordinates</strong> — normalized x, y values (0 to 1) representing
-                where on the screen the user was looking, sampled at the device&apos;s refresh rate
-              </li>
-              <li>
-                <strong>Timestamps</strong> — millisecond-precision timing for each gaze sample
-              </li>
-              <li>
-                <strong>Screen dimensions</strong> — width and height of the display (for coordinate
-                normalization)
-              </li>
-            </ul>
-            <p className="mt-3">
-              This data is abstract, anonymized, and contains{' '}
-              <strong>no personally identifiable information</strong>.
-            </p>
-          </Section>
-
-          <Section title="5. Data Retention &amp; Storage">
-            <p>
-              Lexora operates on a <strong>session-only</strong> data model:
-            </p>
-            <ul className="mt-3 list-inside list-disc space-y-1.5">
-              <li>Gaze data exists only in browser memory during the active session</li>
-              <li>Data is sent to the ML classification endpoint for real-time analysis</li>
-              <li>No gaze data is stored persistently on any server</li>
-              <li>No databases, logs, or files retain user data after the session ends</li>
-              <li>Closing the browser tab permanently destroys all session data</li>
-            </ul>
-          </Section>
-
-          <Section title="6. Tobii Eye Tracker">
-            <p>
-              When using a Tobii eye tracker, gaze data is streamed from the local Tobii desktop
-              service (
-              <code className="bg-muted rounded px-1.5 py-0.5 text-xs">localhost:28980</code>)
-              directly to the web application via WebSocket. This communication is entirely local —{' '}
-              <strong>no data leaves your computer</strong> during tracking. The Tobii service runs
-              as a local process and does not communicate with external servers.
-            </p>
-          </Section>
-
-          <Section title="7. Third-Party Services">
-            <p>Lexora uses the following third-party resources:</p>
-            <ul className="mt-3 list-inside list-disc space-y-1.5">
-              <li>
-                <strong>MediaPipe FaceLandmarker</strong> — Google&apos;s face mesh model, loaded as
-                a WebAssembly module from CDN. The model runs locally in your browser; no data is
-                sent to Google.
-              </li>
-              <li>
-                <strong>Lexora ML Service</strong> — Our classification endpoint receives only
-                abstract gaze feature vectors (fixation durations, saccade amplitudes) for risk
-                assessment. No personal identifiers are attached.
-              </li>
-            </ul>
-          </Section>
-
-          <Section title="8. What We Do NOT Collect">
-            <ul className="list-inside list-disc space-y-1.5">
-              <li>No names, emails, phone numbers, or personal identifiers</li>
-              <li>No video recordings, camera snapshots, or face images</li>
-              <li>No browsing history, device fingerprints, or IP addresses</li>
-              <li>No cookies for tracking or advertising purposes</li>
-              <li>No analytics scripts, ad trackers, or third-party tracking</li>
-              <li>No health records or medical data</li>
-            </ul>
-          </Section>
-
-          <Section title="9. Children's Privacy">
-            <p>
-              Lexora is designed as a dyslexia screening tool that may be used with children. We
-              take children&apos;s privacy especially seriously:
-            </p>
-            <ul className="mt-3 list-inside list-disc space-y-1.5">
-              <li>No personal information about the child is collected or stored</li>
-              <li>Camera feed is processed locally and never transmitted</li>
-              <li>
-                We recommend that a parent, guardian, or educator supervises any session involving a
-                child
-              </li>
-              <li>
-                Results are displayed immediately and not stored — the supervising adult should note
-                them if needed
-              </li>
-            </ul>
-          </Section>
-
-          <Section title="10. Data Subject Rights">
-            <p>
-              Under applicable data protection regulations (including GDPR), you have the right to:
-            </p>
-            <ul className="mt-3 list-inside list-disc space-y-1.5">
-              <li>
-                <strong>Access</strong> — request what data we hold (none is persisted)
-              </li>
-              <li>
-                <strong>Erasure</strong> — request deletion (data is automatically deleted after
-                each session)
-              </li>
-              <li>
-                <strong>Objection</strong> — you can stop the test at any time by closing the
-                browser
-              </li>
-              <li>
-                <strong>Portability</strong> — gaze data can be exported during the session if
-                needed
-              </li>
-            </ul>
-            <p className="mt-3">
-              Since Lexora does not store any personal data beyond the active session, most of these
-              rights are inherently satisfied by design.
-            </p>
-          </Section>
-
-          <Section title="11. Research Use">
-            <p>
-              This tool is intended for <strong>research and screening purposes only</strong> and
-              does not constitute a medical diagnosis. If you participate in a formal research study
-              using Lexora, separate informed consent and data handling procedures will apply as
-              governed by the relevant research ethics board.
-            </p>
-          </Section>
-
-          <Section title="12. Changes to This Policy">
-            <p>
-              We may update this privacy policy from time to time. Changes will be reflected on this
-              page with an updated &quot;Last updated&quot; date. Continued use of Lexora after
-              changes constitutes acceptance of the revised policy.
-            </p>
-          </Section>
-
-          <Section title="13. Contact">
-            <p>
-              If you have questions about how Lexora handles your data, please reach out via the
-              project&apos;s{' '}
-              <a
-                href="https://github.com/khalilelemam/eglex"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors"
-              >
-                GitHub repository
-              </a>
-              .
-            </p>
-          </Section>
+    <main className="min-h-screen bg-[#e3dcc2] text-[#1b2021]">
+      <section className="relative overflow-hidden px-5 pt-32 pb-20 md:px-8 md:pt-40">
+        <div className="absolute top-0 right-0 h-full w-[30vw] min-w-64 bg-[#51513d]" />
+        <div className="absolute top-32 right-[11%] hidden h-36 w-36 bg-[#a6a867] shadow-[12px_12px_0_rgba(27,32,33,.18)] md:grid md:place-items-center">
+          <ShieldCheck className="h-12 w-12 text-[#51513d]" />
         </div>
-      </div>
+        <div className="relative mx-auto max-w-7xl">
+          <p className="mb-5 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
+            Privacy
+          </p>
+          <h1 className="max-w-4xl text-5xl leading-[0.95] font-black text-balance md:text-7xl">
+            Designed for children, supervised by adults.
+          </h1>
+          <p className="mt-8 max-w-2xl text-lg leading-8 text-[#1b2021]/68">
+            Lexora handles reading and gaze information with a narrow purpose: support supervised
+            dyslexia risk screening and learning follow-up. This page explains what the product
+            uses, what it avoids, and why.
+          </p>
+          <p className="mt-5 text-sm font-bold tracking-[0.18em] text-[#51513d] uppercase">
+            Last updated: May 2026
+          </p>
+        </div>
+      </section>
+
+      <section className="px-5 py-16 md:px-8">
+        <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-4">
+          {PROMISES.map((item) => {
+            const Icon = item.icon;
+            return (
+              <article key={item.title} className="border border-[#51513d]/18 bg-[#f3edd7] p-6">
+                <Icon className="mb-12 h-8 w-8 text-[#51513d]" />
+                <h2 className="text-xl font-black">{item.title}</h2>
+                <p className="mt-4 text-sm leading-6 text-[#1b2021]/64">{item.copy}</p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="bg-[#1b2021] px-5 py-20 text-[#e3dcc2] md:px-8 md:py-28">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.78fr_1.22fr]">
+          <div>
+            <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#e3dc95] uppercase">
+              What data means here
+            </p>
+            <h2 className="text-4xl leading-tight font-black text-balance md:text-6xl">
+              Gaze data is not a face recording.
+            </h2>
+            <p className="mt-6 max-w-md leading-7 text-[#e3dcc2]/68">
+              During screening, Lexora cares about where gaze lands on the screen and how long it
+              stays there. That information is used to produce a risk signal and visual context for
+              the supervising adult.
+            </p>
+          </div>
+
+          <div className="grid gap-px overflow-hidden border border-[#e3dcc2]/16 bg-[#e3dcc2]/16">
+            {DATA_ROWS.map(([name, copy]) => (
+              <article key={name} className="grid gap-4 bg-[#51513d] p-6 md:grid-cols-[12rem_1fr]">
+                <h3 className="font-black">{name}</h3>
+                <p className="leading-7 text-[#e3dcc2]/72">{copy}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-20 md:px-8 md:py-28">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_1fr]">
+          <PolicyBlock title="Camera and webcam mode" icon={<Camera className="h-8 w-8" />}>
+            Webcam mode requests camera permission only for the active screening flow. The camera
+            feed is used to estimate gaze through browser-based face and iris landmarks. Lexora does
+            not need to store video recordings to perform this screening experience.
+          </PolicyBlock>
+
+          <PolicyBlock title="Tobii helper service" icon={<Database className="h-8 w-8" />}>
+            Tobii mode uses a local helper service to stream gaze data from supported hardware to
+            the web app. This enables precise tracking while keeping the device connection local to
+            the screening machine.
+          </PolicyBlock>
+
+          <PolicyBlock title="Children and guardians" icon={<UserRoundCheck className="h-8 w-8" />}>
+            Lexora is designed for guardian-supervised use. Parents and teachers manage child
+            profiles, test initiation, retakes, and report review. Children should not be asked to
+            manage privacy decisions alone.
+          </PolicyBlock>
+
+          <PolicyBlock title="Research and diagnosis" icon={<ShieldCheck className="h-8 w-8" />}>
+            Lexora is a screening and research tool. Results are not a clinical diagnosis. If a
+            result indicates risk, it should be discussed with qualified professionals for proper
+            assessment and support planning.
+          </PolicyBlock>
+        </div>
+      </section>
+
+      <section className="px-5 pb-24 md:px-8">
+        <div className="mx-auto max-w-7xl border border-[#51513d]/18 bg-[#e3dc95] p-7">
+          <h2 className="text-3xl font-black">Questions or data requests</h2>
+          <p className="mt-4 max-w-3xl leading-7 text-[#1b2021]/70">
+            If you have questions about Lexora&apos;s privacy approach, use the project repository
+            or contact the team managing your screening or research session. Any formal study using
+            Lexora may also provide separate consent terms.
+          </p>
+        </div>
+      </section>
     </main>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function PolicyBlock({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <section>
-      <h2 className="mb-3 text-xl font-semibold">{title}</h2>
-      <div className="text-muted-foreground space-y-2 leading-relaxed">{children}</div>
-    </section>
+    <article className="border border-[#51513d]/18 bg-[#f3edd7] p-7 shadow-[10px_10px_0_rgba(81,81,61,.1)]">
+      <div className="mb-14 text-[#51513d]">{icon}</div>
+      <h2 className="text-2xl font-black">{title}</h2>
+      <p className="mt-4 leading-7 text-[#1b2021]/66">{children}</p>
+    </article>
   );
 }

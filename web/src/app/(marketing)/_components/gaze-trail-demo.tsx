@@ -76,7 +76,7 @@ export function GazeTrailDemo() {
 
   return (
     <div
-      className="bg-card/60 border-border/60 relative w-full overflow-hidden rounded-xl border"
+      className="relative w-full overflow-hidden border border-[#51513d]/18 bg-[#e3dcc2]"
       style={{ height: '160px' }}
     >
       {/* Background text — aligned exactly with gaze lines */}
@@ -123,10 +123,10 @@ export function GazeTrailDemo() {
               y2={`${p.y}%`}
               stroke={
                 isSweep
-                  ? 'oklch(0.65 0.02 90 / 0.3)'
+                  ? 'rgba(81, 81, 61, 0.24)'
                   : isReg
-                    ? 'oklch(0.52 0.12 25 / 0.4)'
-                    : 'oklch(0.70 0.10 115 / 0.35)'
+                    ? 'rgba(81, 81, 61, 0.48)'
+                    : 'rgba(166, 168, 103, 0.55)'
               }
               strokeWidth={isSweep ? '1' : '1.5'}
               strokeDasharray={isSweep ? '4 4' : 'none'}
@@ -150,13 +150,13 @@ export function GazeTrailDemo() {
             width: dotSizes[i],
             height: dotSizes[i],
             background: isRegression[i]
-              ? 'oklch(0.52 0.12 25 / 0.55)'
-              : 'oklch(0.70 0.10 115 / 0.5)',
+              ? 'rgba(81, 81, 61, 0.72)'
+              : 'rgba(166, 168, 103, 0.72)',
             x: '-50%',
             y: '-50%',
             boxShadow: isRegression[i]
-              ? '0 0 6px oklch(0.52 0.12 25 / 0.2)'
-              : '0 0 6px oklch(0.70 0.10 115 / 0.15)',
+              ? '0 0 6px rgba(81, 81, 61, 0.22)'
+              : '0 0 6px rgba(166, 168, 103, 0.18)',
           }}
           initial={{ scale: 0, opacity: 0 }}
           whileInView={{ scale: 1, opacity: 1 }}
@@ -169,8 +169,7 @@ export function GazeTrailDemo() {
       <motion.div
         className="absolute left-0 h-[2px] rounded-full"
         style={{
-          background:
-            'linear-gradient(90deg, transparent, oklch(0.70 0.10 115 / 0.4), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(227, 220, 149, 0.65), transparent)',
           width: '15%',
           top: '18%',
         }}
