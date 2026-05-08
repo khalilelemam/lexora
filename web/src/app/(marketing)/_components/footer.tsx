@@ -10,10 +10,10 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="py-8 px-6 border-t">
-      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+    <footer className="border-t px-6 py-8">
+      <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 sm:flex-row">
         <LexoraLogo size="sm" />
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs">
           <span>© {year} Lexora</span>
           <span className="hidden sm:inline">•</span>
           <Link href="/about" className="hover:text-foreground transition-colors">
@@ -31,9 +31,9 @@ export function Footer() {
             href="https://github.com/khalilelemam/eglex"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 hover:text-foreground transition-colors"
+            className="hover:text-foreground flex items-center gap-1 transition-colors"
           >
-            GitHub <ExternalLink className="w-3 h-3" />
+            GitHub <ExternalLink className="h-3 w-3" />
           </a>
         </div>
       </div>

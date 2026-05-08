@@ -59,8 +59,18 @@ export function AnimatedEye() {
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       />
       {/* Light reflections */}
-      <circle cx={106 + pupilPos.x * 0.4} cy={54 + pupilPos.y * 0.4} r="3" fill="oklch(0.94 0.02 90 / 0.7)" />
-      <circle cx={96 + pupilPos.x * 0.3} cy={62 + pupilPos.y * 0.3} r="1.5" fill="oklch(0.94 0.02 90 / 0.4)" />
+      <circle
+        cx={106 + pupilPos.x * 0.4}
+        cy={54 + pupilPos.y * 0.4}
+        r="3"
+        fill="oklch(0.94 0.02 90 / 0.7)"
+      />
+      <circle
+        cx={96 + pupilPos.x * 0.3}
+        cy={62 + pupilPos.y * 0.3}
+        r="1.5"
+        fill="oklch(0.94 0.02 90 / 0.4)"
+      />
     </motion.svg>
   );
 }

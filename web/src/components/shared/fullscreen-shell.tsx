@@ -15,13 +15,13 @@ interface FullscreenShellProps {
  */
 export function FullscreenShell({ children, onExit, showExit = true }: FullscreenShellProps) {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background">
+    <div className="bg-background relative flex min-h-screen flex-col items-center justify-center">
       {showExit && onExit && (
         <Button
           variant="ghost"
           size="icon"
           onClick={onExit}
-          className="absolute right-4 top-4 z-50 text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground absolute top-4 right-4 z-50"
           aria-label="Exit test"
         >
           <X className="h-5 w-5" />

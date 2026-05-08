@@ -39,7 +39,9 @@ export function Navbar() {
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [mobileOpen]);
 
   const scrollTo = useCallback((id: string) => {
@@ -52,20 +54,18 @@ export function Navbar() {
   return (
     <>
       <motion.nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-background/80 backdrop-blur-xl border-b shadow-sm'
-            : 'bg-transparent'
+        className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${
+          scrolled ? 'bg-background/80 border-b shadow-sm backdrop-blur-xl' : 'bg-transparent'
         }`}
         initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <LexoraLogo size="sm" />
 
           {/* Desktop links */}
-          <div className="hidden sm:flex items-center gap-6 text-sm font-medium">
+          <div className="hidden items-center gap-6 text-sm font-medium sm:flex">
             {NAV_LINKS.map((link) =>
               link.type === 'scroll' ? (
                 <button
@@ -100,10 +100,10 @@ export function Navbar() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="sm:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-muted transition-colors"
+              className="hover:bg-muted flex h-10 w-10 items-center justify-center rounded-lg transition-colors sm:hidden"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -123,7 +123,7 @@ export function Navbar() {
             />
             {/* Panel */}
             <motion.div
-              className="fixed top-16 right-0 bottom-0 z-40 w-72 bg-background border-l shadow-xl sm:hidden"
+              className="bg-background fixed top-16 right-0 bottom-0 z-40 w-72 border-l shadow-xl sm:hidden"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -135,7 +135,7 @@ export function Navbar() {
                     <button
                       key={link.href}
                       onClick={() => scrollTo(link.href)}
-                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                      className="text-foreground hover:bg-muted rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors"
                     >
                       {link.label}
                     </button>
@@ -144,13 +144,13 @@ export function Navbar() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
-                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                      className="text-foreground hover:bg-muted rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors"
                     >
                       {link.label}
                     </Link>
                   ),
                 )}
-                <div className="border-t my-2" />
+                <div className="my-2 border-t" />
                 <Button onClick={() => scrollTo('#get-started')} className="w-full">
                   Start Screening
                 </Button>

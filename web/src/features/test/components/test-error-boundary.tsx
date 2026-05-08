@@ -47,20 +47,20 @@ export class TestErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
 
       return (
-        <div className="flex min-h-screen items-center justify-center bg-background p-8">
+        <div className="bg-background flex min-h-screen items-center justify-center p-8">
           <div className="flex max-w-md flex-col items-center gap-6 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
+            <div className="bg-destructive/10 flex h-16 w-16 items-center justify-center rounded-2xl">
+              <AlertTriangle className="text-destructive h-8 w-8" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold mb-2">Something went wrong</h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                An error occurred in the test component. This might be caused by a
-                browser compatibility issue or a temporary rendering problem.
+              <h2 className="mb-2 text-xl font-semibold">Something went wrong</h2>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                An error occurred in the test component. This might be caused by a browser
+                compatibility issue or a temporary rendering problem.
               </p>
             </div>
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <pre className="w-full overflow-auto rounded-lg bg-muted p-4 text-left text-xs text-muted-foreground">
+              <pre className="bg-muted text-muted-foreground w-full overflow-auto rounded-lg p-4 text-left text-xs">
                 {this.state.error.message}
               </pre>
             )}

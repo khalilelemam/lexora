@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { CheckCircle2, RotateCcw, ArrowRight, AlertTriangle, Eye, X, Play, Pause } from 'lucide-react';
+import {
+  CheckCircle2,
+  RotateCcw,
+  ArrowRight,
+  AlertTriangle,
+  Eye,
+  X,
+  Play,
+  Pause,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { cn } from '@/lib/utils';
@@ -119,16 +128,15 @@ export function ReviewPanel({
     }
   }, [currentIndex, rawGazeData.length, isPlaying]);
 
-  const progress = rawGazeData.length > 1
-    ? Math.round((currentIndex / (rawGazeData.length - 1)) * 100)
-    : 0;
+  const progress =
+    rawGazeData.length > 1 ? Math.round((currentIndex / (rawGazeData.length - 1)) * 100) : 0;
 
   // ═══════════════════════════════════════════════════════
   //  FULLSCREEN GAZE PREVIEW
   // ═══════════════════════════════════════════════════════
   if (showGazePreview && readingContent) {
     return (
-      <div className="z-50 fixed inset-0">
+      <div className="fixed inset-0 z-50">
         <TaskDisplay
           taskType={taskType}
           content={readingContent}
@@ -148,7 +156,7 @@ export function ReviewPanel({
           return (
             <div
               key={`${point.timestamp}-${idx}`}
-              className="fixed pointer-events-none"
+              className="pointer-events-none fixed"
               style={{
                 left: `${point.x}px`,
                 top: `${point.y}px`,
@@ -171,17 +179,28 @@ export function ReviewPanel({
         })}
 
         {/* Bottom controls */}
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-70 flex items-center gap-4 bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-full border border-[#E8E0D4] shadow-lg">
-          <button type="button" onClick={handlePlayPause} className="text-[#4A7C59] hover:text-[#3D6A4B]">
-            {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[#E8E0D4] bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+          <button
+            type="button"
+            onClick={handlePlayPause}
+            className="text-[#4A7C59] hover:text-[#3D6A4B]"
+          >
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          <div className="w-32 h-1.5 bg-[#E8E0D4] rounded-full overflow-hidden">
-            <div className="h-full bg-[#4A7C59] rounded-full transition-all duration-75" style={{ width: `${progress}%` }} />
+          <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#E8E0D4]">
+            <div
+              className="h-full rounded-full bg-[#4A7C59] transition-all duration-75"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-          <span className="text-[11px] text-[#8B857E] tabular-nums w-8">{progress}%</span>
-          <div className="w-px h-4 bg-[#E8E0D4]" />
-          <button type="button" onClick={handleCloseGaze} className="text-[#8B857E] hover:text-[#2D2A26]">
-            <X className="w-5 h-5" />
+          <span className="w-8 text-[11px] text-[#8B857E] tabular-nums">{progress}%</span>
+          <div className="h-4 w-px bg-[#E8E0D4]" />
+          <button
+            type="button"
+            onClick={handleCloseGaze}
+            className="text-[#8B857E] hover:text-[#2D2A26]"
+          >
+            <X className="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -192,42 +211,58 @@ export function ReviewPanel({
   //  DEFAULT VIEW — Status card
   // ═══════════════════════════════════════════════════════
   return (
-    <div className="z-50 fixed inset-0 bg-[#FDF8F0] flex items-center justify-center" style={{ animation: 'float-up 0.4s ease-out' }}>
-      <div className="bg-white/80 backdrop-blur-sm border border-[#E8E0D4] rounded-2xl shadow-lg w-[min(420px,90vw)] overflow-hidden">
-        <div className="p-5 border-b border-[#E8E0D4]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDF8F0]"
+      style={{ animation: 'float-up 0.4s ease-out' }}
+    >
+      <div className="w-[min(420px,90vw)] overflow-hidden rounded-2xl border border-[#E8E0D4] bg-white/80 shadow-lg backdrop-blur-sm">
+        <div className="border-b border-[#E8E0D4] p-5">
           <LexoraLogo size="sm" />
         </div>
 
         <div className="flex flex-col gap-4 p-5">
           {/* Status */}
           <div className="flex items-center gap-3">
-            <div className={cn(
-              'flex items-center justify-center w-10 h-10 rounded-full',
-              hasEnoughData ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200',
-            )}>
-              {hasEnoughData
-                ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                : <AlertTriangle className="w-5 h-5 text-amber-500" />}
+            <div
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full',
+                hasEnoughData
+                  ? 'border border-emerald-200 bg-emerald-50'
+                  : 'border border-amber-200 bg-amber-50',
+              )}
+            >
+              {hasEnoughData ? (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              )}
             </div>
             <div>
-              <h2 className="font-bold text-base text-[#2D2A26]">
+              <h2 className="text-base font-bold text-[#2D2A26]">
                 {hasEnoughData ? 'Task Complete' : 'Task Finished'}
               </h2>
-              <p className="text-[#8B857E] text-xs">{label}</p>
+              <p className="text-xs text-[#8B857E]">{label}</p>
             </div>
           </div>
 
           {/* Data quality */}
-          <div className={cn(
-            'p-3.5 rounded-xl border text-sm leading-relaxed',
-            hasEnoughData
-              ? 'bg-emerald-50/60 border-emerald-200/60 text-emerald-700'
-              : 'bg-amber-50 border-amber-200 text-amber-700',
-          )}>
+          <div
+            className={cn(
+              'rounded-xl border p-3.5 text-sm leading-relaxed',
+              hasEnoughData
+                ? 'border-emerald-200/60 bg-emerald-50/60 text-emerald-700'
+                : 'border-amber-200 bg-amber-50 text-amber-700',
+            )}
+          >
             {hasEnoughData ? (
-              <p><span className="font-medium">{pointCount}</span> gaze points captured successfully.</p>
+              <p>
+                <span className="font-medium">{pointCount}</span> gaze points captured successfully.
+              </p>
             ) : (
-              <p>Only <span className="font-medium">{pointCount}</span> points captured. Consider retaking.</p>
+              <p>
+                Only <span className="font-medium">{pointCount}</span> points captured. Consider
+                retaking.
+              </p>
             )}
           </div>
 
@@ -236,9 +271,9 @@ export function ReviewPanel({
             <button
               type="button"
               onClick={handleOpenGaze}
-              className="flex items-center gap-2 p-3 rounded-xl border border-[#4A7C59]/20 bg-[#4A7C59]/5 text-[#4A7C59] text-sm hover:bg-[#4A7C59]/10 transition-colors"
+              className="flex items-center gap-2 rounded-xl border border-[#4A7C59]/20 bg-[#4A7C59]/5 p-3 text-sm text-[#4A7C59] transition-colors hover:bg-[#4A7C59]/10"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="h-4 w-4" />
               <span className="font-medium">View Gaze Trail</span>
               <span className="ml-auto text-xs text-[#8B857E]">Fullscreen replay</span>
             </button>
@@ -246,11 +281,18 @@ export function ReviewPanel({
 
           {/* Actions */}
           <div className="flex flex-col gap-2.5 pt-1">
-            <Button onClick={onContinue} className="w-full bg-[#4A7C59] hover:bg-[#3D6A4B] text-white">
+            <Button
+              onClick={onContinue}
+              className="w-full bg-[#4A7C59] text-white hover:bg-[#3D6A4B]"
+            >
               {isLastTask ? 'Submit for Analysis' : 'Next Task'}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button variant="outline" onClick={onRetake} className="w-full border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26]">
+            <Button
+              variant="outline"
+              onClick={onRetake}
+              className="w-full border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26]"
+            >
               <RotateCcw className="mr-2 h-4 w-4" />
               Retake
             </Button>

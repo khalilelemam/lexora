@@ -62,12 +62,12 @@ export function CreativeLoading() {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FDF8F0]">
       {/* Scan-path animation */}
-      <div className="relative w-64 h-40 mb-8">
+      <div className="relative mb-8 h-40 w-64">
         {/* Background text lines (faded) */}
         {[0, 1, 2, 3].map((line) => (
           <div
             key={line}
-            className="absolute left-[12%] right-[12%] h-[2px] rounded-full bg-[#E8E0D4]/60"
+            className="absolute right-[12%] left-[12%] h-[2px] rounded-full bg-[#E8E0D4]/60"
             style={{ top: `${20 + line * 18}%` }}
           />
         ))}
@@ -97,7 +97,7 @@ export function CreativeLoading() {
         ))}
 
         {/* Saccade connections */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+        <svg className="pointer-events-none absolute inset-0 h-full w-full">
           {scanDots.slice(1, dotCount).map((dot, i) => {
             const prev = scanDots[i];
             return (
@@ -121,7 +121,7 @@ export function CreativeLoading() {
         {/* Current "scanner" dot */}
         {dotCount > 0 && dotCount <= scanDots.length && (
           <motion.div
-            className="absolute w-3 h-3 rounded-full bg-[#4A7C59] shadow-md shadow-[#4A7C59]/30"
+            className="absolute h-3 w-3 rounded-full bg-[#4A7C59] shadow-md shadow-[#4A7C59]/30"
             style={{
               left: `${scanDots[Math.min(dotCount - 1, scanDots.length - 1)].x}%`,
               top: `${scanDots[Math.min(dotCount - 1, scanDots.length - 1)].y}%`,
@@ -137,7 +137,7 @@ export function CreativeLoading() {
       <LexoraLogo size="sm" className="mb-4" />
 
       {/* Rotating message */}
-      <div className="h-6 relative overflow-hidden">
+      <div className="relative h-6 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.p
             key={msgIndex}
@@ -153,9 +153,9 @@ export function CreativeLoading() {
       </div>
 
       {/* Subtle progress bar */}
-      <div className="mt-6 w-48 h-1 bg-[#E8E0D4] rounded-full overflow-hidden">
+      <div className="mt-6 h-1 w-48 overflow-hidden rounded-full bg-[#E8E0D4]">
         <motion.div
-          className="h-full bg-[#4A7C59] rounded-full"
+          className="h-full rounded-full bg-[#4A7C59]"
           initial={{ width: '0%' }}
           animate={{ width: '100%' }}
           transition={{ duration: 12, ease: 'linear' }}

@@ -25,12 +25,11 @@ function getUserFriendlyError(rawError: string): {
 
   if (lower.includes('no valid fixations') || lower.includes('fixations detected')) {
     return {
-      message:
-        'We couldn\'t detect enough eye movements during the reading task.',
+      message: "We couldn't detect enough eye movements during the reading task.",
       tips: [
         'Make sure your camera can see your face clearly',
         'Ensure good, even lighting on your face',
-        'Sit at arm\'s length from the screen',
+        "Sit at arm's length from the screen",
         'Try to keep your head still and only move your eyes',
       ],
     };
@@ -38,10 +37,9 @@ function getUserFriendlyError(rawError: string): {
 
   if (lower.includes('insufficient') && (lower.includes('data') || lower.includes('sequence'))) {
     return {
-      message:
-        'The reading session was too short to generate a reliable analysis.',
+      message: 'The reading session was too short to generate a reliable analysis.',
       tips: [
-        'Read the full passage — don\'t skip ahead',
+        "Read the full passage — don't skip ahead",
         'Ensure good lighting so the camera can track your eyes',
         'Keep your face visible throughout the entire task',
       ],
@@ -50,11 +48,10 @@ function getUserFriendlyError(rawError: string): {
 
   if (lower.includes('insufficient gaze points') || lower.includes('need at least')) {
     return {
-      message:
-        'Not enough gaze data was captured during the test.',
+      message: 'Not enough gaze data was captured during the test.',
       tips: [
         'Sit closer to the screen for better tracking accuracy',
-        'Make sure nothing is blocking the camera\'s view of your face',
+        "Make sure nothing is blocking the camera's view of your face",
         'Try recalibrating before starting the reading task',
       ],
     };
@@ -62,19 +59,14 @@ function getUserFriendlyError(rawError: string): {
 
   if (lower.includes('timeout') || lower.includes('timed out')) {
     return {
-      message:
-        'The analysis took too long to complete. This is usually a temporary server issue.',
-      tips: [
-        'Wait a moment and try submitting again',
-        'Check your internet connection',
-      ],
+      message: 'The analysis took too long to complete. This is usually a temporary server issue.',
+      tips: ['Wait a moment and try submitting again', 'Check your internet connection'],
     };
   }
 
   if (lower.includes('network') || lower.includes('connect') || lower.includes('fetch')) {
     return {
-      message:
-        'Unable to connect to the analysis service.',
+      message: 'Unable to connect to the analysis service.',
       tips: [
         'Check your internet connection',
         'Try again in a few moments',
@@ -97,24 +89,24 @@ export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScre
   const { message, tips } = getUserFriendlyError(error);
 
   return (
-    <div className="flex flex-col items-center gap-6 max-w-md mx-auto text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-        <AlertCircle className="h-8 w-8 text-destructive" />
+    <div className="mx-auto flex max-w-md flex-col items-center gap-6 text-center">
+      <div className="bg-destructive/10 flex h-16 w-16 items-center justify-center rounded-full">
+        <AlertCircle className="text-destructive h-8 w-8" />
       </div>
 
       <div>
         <h2 className="text-2xl font-semibold">Something went wrong</h2>
-        <p className="mt-2 text-muted-foreground leading-relaxed">{message}</p>
+        <p className="text-muted-foreground mt-2 leading-relaxed">{message}</p>
       </div>
 
       {/* Tips section */}
       {tips.length > 0 && (
         <div className="w-full rounded-xl border border-amber-200/50 bg-amber-50/60 p-4 text-left">
-          <div className="flex items-center gap-2 mb-2.5 text-sm font-medium text-amber-800">
+          <div className="mb-2.5 flex items-center gap-2 text-sm font-medium text-amber-800">
             <Lightbulb className="h-4 w-4 shrink-0" />
             <span>Tips for next time</span>
           </div>
-          <ul className="space-y-1.5 text-xs text-amber-700 leading-relaxed">
+          <ul className="space-y-1.5 text-xs leading-relaxed text-amber-700">
             {tips.map((tip, idx) => (
               <li key={idx} className="flex items-start gap-2">
                 <span className="mt-0.5 shrink-0 text-amber-400">·</span>

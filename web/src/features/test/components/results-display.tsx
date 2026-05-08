@@ -96,7 +96,13 @@ const RISK_CONFIG = {
   },
 } as const;
 
-export function ResultsDisplay({ result, mode, onNewTest, readingContent, calibrationQuality }: ResultsDisplayProps) {
+export function ResultsDisplay({
+  result,
+  mode,
+  onNewTest,
+  readingContent,
+  calibrationQuality,
+}: ResultsDisplayProps) {
   const config = RISK_CONFIG[result.riskLevel];
   const Icon = config.icon;
   const [showTechnical, setShowTechnical] = useState(false);
@@ -226,7 +232,7 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent, calibr
                   <span className="font-semibold">
                     Data Quality: {DATA_QUALITY_CONFIG[calibrationQuality].label}
                   </span>
-                  <span className="block mt-0.5 opacity-80">
+                  <span className="mt-0.5 block opacity-80">
                     {DATA_QUALITY_CONFIG[calibrationQuality].description}
                   </span>
                 </div>

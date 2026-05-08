@@ -12,11 +12,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import {
-  MIN_GAZE_POINTS,
-  ESTIMATED_READING_WPM,
-  MIN_AUTO_DETECT_SECONDS,
-} from '../lib/constants';
+import { MIN_GAZE_POINTS, ESTIMATED_READING_WPM, MIN_AUTO_DETECT_SECONDS } from '../lib/constants';
 
 /* ── Public types ──────────────────────────────────────── */
 
@@ -190,8 +186,8 @@ export function TaskDisplay({
       <div ref={textContentRef}>
         <p
           className={cn(
-            'leading-loose sm:leading-loose md:leading-loose whitespace-pre-line text-[#2D2A26]',
-            'font-normal select-none text-left',
+            'leading-loose whitespace-pre-line text-[#2D2A26] sm:leading-loose md:leading-loose',
+            'text-left font-normal select-none',
           )}
           style={{
             fontSize: `calc(${fontScale} * clamp(1.15rem, 2.5vw, 1.875rem))`,
@@ -278,7 +274,7 @@ export function TaskDisplay({
   // ─── Render ─────────────────────────────────────────
 
   return (
-    <div className={cn('z-40 fixed inset-0 bg-[#FDF8F0]', !preview && 'cursor-none')}>
+    <div className={cn('fixed inset-0 z-40 bg-[#FDF8F0]', !preview && 'cursor-none')}>
       {/*
        * Reading zone — text flows naturally from the top.
        * Horizontal bounds: 20%–80% of screen (matches calibration X: 0.2–0.8)
@@ -297,16 +293,16 @@ export function TaskDisplay({
       >
         <div
           className={cn(
-            'w-full flex-1 min-h-0 overflow-y-auto',
+            'min-h-0 w-full flex-1 overflow-y-auto',
             isShortContent && 'flex items-center justify-center',
           )}
           style={{ scrollbarWidth: 'none' }}
         >
           {isShortContent ? (
-            <div className="flex flex-col justify-center items-center gap-6">
+            <div className="flex flex-col items-center justify-center gap-6">
               <pre
                 className={cn(
-                  'font-mono text-center whitespace-pre-wrap text-[#2D2A26]',
+                  'text-center font-mono whitespace-pre-wrap text-[#2D2A26]',
                   'text-3xl leading-loose tracking-[0.25em] sm:text-4xl md:text-5xl',
                   'select-none',
                 )}
@@ -315,9 +311,7 @@ export function TaskDisplay({
               </pre>
             </div>
           ) : (
-            <div>
-              {renderParagraphWithWords()}
-            </div>
+            <div>{renderParagraphWithWords()}</div>
           )}
         </div>
       </div>
@@ -325,11 +319,11 @@ export function TaskDisplay({
       {/* Tracking indicator — pinned to bottom of screen */}
       {isCollecting && !preview && (
         <div
-          className="fixed left-1/2 -translate-x-1/2 pointer-events-none z-50"
+          className="pointer-events-none fixed left-1/2 z-50 -translate-x-1/2"
           style={{ bottom: '12px' }}
         >
-          <div className="flex items-center gap-1.5 bg-white/60 backdrop-blur-sm px-3 py-1 border border-[#E8E0D4] rounded-full text-[#8B857E] text-xs">
-            <div className="bg-[#4A7C59] rounded-full w-1.5 h-1.5 animate-pulse" />
+          <div className="flex items-center gap-1.5 rounded-full border border-[#E8E0D4] bg-white/60 px-3 py-1 text-xs text-[#8B857E] backdrop-blur-sm">
+            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4A7C59]" />
             <span>Tracking</span>
           </div>
         </div>
@@ -340,17 +334,17 @@ export function TaskDisplay({
         <Dialog open={showDialog} onOpenChange={(open) => !open && handleContinueReading()}>
           <DialogContent showCloseButton={false} className="sm:max-w-md">
             <DialogHeader>
-              <div className="flex justify-center items-center bg-primary/10 mx-auto mb-2 rounded-full w-12 h-12">
-                <BookOpen className="w-6 h-6 text-primary" />
+              <div className="bg-primary/10 mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
+                <BookOpen className="text-primary h-6 w-6" />
               </div>
               <DialogTitle className="text-center">Has the reader finished?</DialogTitle>
               <DialogDescription className="text-center">
                 It looks like enough time has passed for this passage. Is the child done reading?
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex-row justify-center sm:justify-center gap-3">
+            <DialogFooter className="flex-row justify-center gap-3 sm:justify-center">
               <Button variant="outline" onClick={handleContinueReading}>
-                <Clock className="mr-2 w-4 h-4" />
+                <Clock className="mr-2 h-4 w-4" />
                 Need more time
               </Button>
               <Button onClick={handleConfirmDone}>Yes, done reading</Button>

@@ -46,7 +46,12 @@ export interface SpeedLine {
 export function createExplosion(x: number, y: number): { particles: Particle[]; bones: Bone[] } {
   const burst = 30;
   const boneTypes: Array<'head' | 'spine' | 'limb'> = [
-    'head', 'spine', 'limb', 'limb', 'limb', 'limb',
+    'head',
+    'spine',
+    'limb',
+    'limb',
+    'limb',
+    'limb',
   ];
 
   const bones: Bone[] = boneTypes.map((type) => ({
@@ -66,7 +71,8 @@ export function createExplosion(x: number, y: number): { particles: Particle[]; 
   for (let i = 0; i < 30; i++) {
     particles.push({
       type: 'slash',
-      x, y,
+      x,
+      y,
       angle: Math.random() * Math.PI * 2,
       length: Math.random() * 120 + 50,
       life: 450,
@@ -122,7 +128,8 @@ export function createObstacleDebris(x: number, y: number): Particle[] {
   for (let i = 0; i < 15; i++) {
     particles.push({
       type: 'slash',
-      x, y: y - 10,
+      x,
+      y: y - 10,
       angle: Math.random() * Math.PI * 2,
       length: Math.random() * 40 + 10,
       life: 200,
@@ -130,7 +137,8 @@ export function createObstacleDebris(x: number, y: number): Particle[] {
     });
     particles.push({
       type: 'dust',
-      x, y,
+      x,
+      y,
       vx: (Math.random() - 0.5) * 15,
       vy: (Math.random() - 0.5) * 15,
       life: 200,
@@ -189,8 +197,6 @@ export function createPoofParticles(x: number, y: number): Particle[] {
   }
   return particles;
 }
-
-
 
 /** Render all particles onto the canvas and remove expired ones in-place. */
 export function drawAndUpdateParticles(

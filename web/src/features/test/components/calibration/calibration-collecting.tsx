@@ -36,7 +36,7 @@ export function CalibrationCollecting({
   const showFaceLost = tracker === 'webcam' && !gazeCursor;
 
   return (
-    <div className="z-50 fixed inset-0 overflow-hidden cursor-none">
+    <div className="fixed inset-0 z-50 cursor-none overflow-hidden">
       {modeSurface}
 
       {/* Face-lost overlay — pauses the feeling of progress clearly */}
@@ -45,17 +45,30 @@ export function CalibrationCollecting({
           className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#FDF8F0]/80 backdrop-blur-[2px]"
           style={{ animation: 'float-up 0.25s ease-out' }}
         >
-          <div className="flex flex-col items-center gap-3 bg-white/90 px-7 py-6 border border-[#E8E0D4] rounded-2xl shadow-lg max-w-xs text-center">
+          <div className="flex max-w-xs flex-col items-center gap-3 rounded-2xl border border-[#E8E0D4] bg-white/90 px-7 py-6 text-center shadow-lg">
             {/* Animated eye icon */}
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <path d="M4 24C4 24 12 10 24 10C36 10 44 24 44 24C44 24 36 38 24 38C12 38 4 24 4 24Z"
-                stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" />
+              <path
+                d="M4 24C4 24 12 10 24 10C36 10 44 24 44 24C44 24 36 38 24 38C12 38 4 24 4 24Z"
+                stroke="#D97706"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
               <circle cx="24" cy="24" r="6" stroke="#D97706" strokeWidth="2.5" />
-              <line x1="20" y1="20" x2="28" y2="28" stroke="#D97706" strokeWidth="2" strokeLinecap="round" />
+              <line
+                x1="20"
+                y1="20"
+                x2="28"
+                y2="28"
+                stroke="#D97706"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
-            <p className="font-semibold text-[#2D2A26] text-sm">Face not detected</p>
-            <p className="text-[#8B857E] text-xs leading-relaxed">
-              Make sure your face is visible and well-lit.<br />
+            <p className="text-sm font-semibold text-[#2D2A26]">Face not detected</p>
+            <p className="text-xs leading-relaxed text-[#8B857E]">
+              Make sure your face is visible and well-lit.
+              <br />
               Keep your head inside the camera frame.
             </p>
           </div>
@@ -63,12 +76,12 @@ export function CalibrationCollecting({
       )}
 
       {/* Skip button — bottom-right, above HUD strip */}
-      <div className="bottom-16 right-4 absolute z-30">
+      <div className="absolute right-4 bottom-16 z-30">
         <Button
           variant="outline"
           size="sm"
           onClick={onSkip}
-          className="bg-white/70 backdrop-blur-sm border-[#E8E0D4] text-[#8B857E] hover:text-[#2D2A26] text-xs"
+          className="border-[#E8E0D4] bg-white/70 text-xs text-[#8B857E] backdrop-blur-sm hover:text-[#2D2A26]"
         >
           Skip
         </Button>
@@ -77,7 +90,7 @@ export function CalibrationCollecting({
       {/* Webcam collection-quality warnings — subtle top-center toast */}
       {tracker === 'webcam' && collectionIssue && !showFaceLost && (
         <div
-          className="top-4 left-1/2 absolute -translate-x-1/2 bg-amber-50/90 backdrop-blur-sm px-4 py-2 border border-amber-300/70 rounded-lg text-amber-700 text-xs pointer-events-none z-20"
+          className="pointer-events-none absolute top-4 left-1/2 z-20 -translate-x-1/2 rounded-lg border border-amber-300/70 bg-amber-50/90 px-4 py-2 text-xs text-amber-700 backdrop-blur-sm"
           style={{ animation: 'float-up 0.3s ease-out' }}
         >
           {collectionIssue === 'no-signal'
@@ -89,7 +102,7 @@ export function CalibrationCollecting({
       {/* Gaze dot for Tobii — shows operator where gaze is landing */}
       {tracker === 'tobii' && gazeCursor && (
         <div
-          className="absolute bg-[#4A7C59]/60 shadow-[0_0_12px_rgba(74,124,89,0.6)] border border-white/80 rounded-full w-4 h-4 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10"
+          className="pointer-events-none absolute z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-[#4A7C59]/60 shadow-[0_0_12px_rgba(74,124,89,0.6)]"
           style={{ left: gazeCursor.x, top: gazeCursor.y }}
         />
       )}

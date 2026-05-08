@@ -41,7 +41,7 @@ export function StepIndicator({ steps, currentStepKey, className }: StepIndicato
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors',
                   isCompleted && 'bg-primary text-primary-foreground',
-                  isCurrent && 'bg-primary text-primary-foreground ring-2 ring-primary/30',
+                  isCurrent && 'bg-primary text-primary-foreground ring-primary/30 ring-2',
                   !isCompleted && !isCurrent && 'bg-muted text-muted-foreground',
                 )}
               >

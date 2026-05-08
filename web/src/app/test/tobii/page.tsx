@@ -167,14 +167,14 @@ export default function TobiiTestPage() {
       case 'idle':
         return (
           <div className="flex flex-col items-center gap-6">
-            <h1 className="font-bold text-3xl">Eye Tracker Test</h1>
+            <h1 className="text-3xl font-bold">Eye Tracker Test</h1>
             <p className="text-muted-foreground">
               This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of 3
               reading tasks: syllables, pseudo-words, and meaningful text.
             </p>
             <button
               onClick={() => dispatch({ type: 'START' })}
-              className="bg-primary hover:bg-primary/90 px-6 py-3 rounded-md font-medium text-primary-foreground text-lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-6 py-3 text-lg font-medium"
             >
               Start Test
             </button>
@@ -267,7 +267,9 @@ export default function TobiiTestPage() {
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
-            readingContent={taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')}
+            readingContent={
+              taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')
+            }
           />
         );
 
@@ -282,8 +284,7 @@ export default function TobiiTestPage() {
             mode="tobii"
             onNewTest={handleNewTest}
             readingContent={
-              taskContent['meaningful-text'] ||
-              getTobiiTaskContent('meaningful-text')
+              taskContent['meaningful-text'] || getTobiiTaskContent('meaningful-text')
             }
             calibrationQuality={tobiiState.calibration?.quality}
           />
