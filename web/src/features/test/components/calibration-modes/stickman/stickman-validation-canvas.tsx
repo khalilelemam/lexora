@@ -19,10 +19,10 @@ interface StickmanValidationCanvasProps {
 }
 
 type NinjaPhase =
-  | 'approaching'  // ninja runs/sprints toward target
-  | 'cornered'     // ninja arrived, taking damage
-  | 'defeated'     // ninja falls, poof, then next
-  | 'done';        // all points complete
+  | 'approaching' // ninja runs/sprints toward target
+  | 'cornered' // ninja arrived, taking damage
+  | 'defeated' // ninja falls, poof, then next
+  | 'done'; // all points complete
 
 interface NinjaState {
   phase: NinjaPhase;
@@ -36,8 +36,8 @@ interface NinjaState {
   approachDuration: number;
   pose: StickmanPose;
   facingRight: boolean;
-  health: number;          // 1 → 0 during cornered phase
-  fallProgress: number;    // 0 → 1 during defeated phase
+  health: number; // 1 → 0 during cornered phase
+  fallProgress: number; // 0 → 1 during defeated phase
   defeatStart: number;
   particles: Particle[];
   screenShake: number;
@@ -81,8 +81,12 @@ export function StickmanValidationCanvas({
   const prevTargetRef = useRef<{ x: number; y: number } | null>(null);
   const holdProgressRef = useRef(holdProgress);
 
-  useEffect(() => { gazeRef.current = { x: gazeX, y: gazeY }; }, [gazeX, gazeY]);
-  useEffect(() => { holdProgressRef.current = holdProgress; }, [holdProgress]);
+  useEffect(() => {
+    gazeRef.current = { x: gazeX, y: gazeY };
+  }, [gazeX, gazeY]);
+  useEffect(() => {
+    holdProgressRef.current = holdProgress;
+  }, [holdProgress]);
 
   const audio = useMemo(() => getCalibrationAudio(), []);
 
@@ -91,234 +95,273 @@ export function StickmanValidationCanvas({
     const edge = Math.floor(Math.random() * 4);
     const margin = 60;
     switch (edge) {
-      case 0: return { x: Math.random() * w, y: -margin };        // top
-      case 1: return { x: Math.random() * w, y: h + margin };     // bottom
-      case 2: return { x: -margin, y: Math.random() * h };        // left
-      default: return { x: w + margin, y: Math.random() * h };    // right
+      case 0:
+        return { x: Math.random() * w, y: -margin }; // top
+      case 1:
+        return { x: Math.random() * w, y: h + margin }; // bottom
+      case 2:
+        return { x: -margin, y: Math.random() * h }; // left
+      default:
+        return { x: w + margin, y: Math.random() * h }; // right
     }
   }, []);
 
   /** Initialise ninja state for a new target */
-  const initNinja = useCallback((
-    targetNorm: { x: number; y: number },
-    w: number, h: number, dpr: number,
-  ): NinjaState => {
-    const targetX = targetNorm.x * w;
-    const targetY = targetNorm.y * h;
-    const spawn = pickEdgeSpawn(w, h);
+  const initNinja = useCallback(
+    (targetNorm: { x: number; y: number }, w: number, h: number, dpr: number): NinjaState => {
+      const targetX = targetNorm.x * w;
+      const targetY = targetNorm.y * h;
+      const spawn = pickEdgeSpawn(w, h);
 
-    return {
-      phase: 'approaching',
-      x: spawn.x, y: spawn.y,
-      startX: spawn.x, startY: spawn.y,
-      targetX, targetY,
-      approachStart: performance.now(),
-      approachDuration: APPROACH_DURATION_MS,
-      pose: 'sprint', facingRight: spawn.x < targetX,
-      health: 1,
-      fallProgress: 0, defeatStart: 0,
-      particles: [], screenShake: 0, lastHitTime: 0,
-      poofDone: false,
-      width: w, height: h, dpr,
-    };
-  }, [pickEdgeSpawn]);
+      return {
+        phase: 'approaching',
+        x: spawn.x,
+        y: spawn.y,
+        startX: spawn.x,
+        startY: spawn.y,
+        targetX,
+        targetY,
+        approachStart: performance.now(),
+        approachDuration: APPROACH_DURATION_MS,
+        pose: 'sprint',
+        facingRight: spawn.x < targetX,
+        health: 1,
+        fallProgress: 0,
+        defeatStart: 0,
+        particles: [],
+        screenShake: 0,
+        lastHitTime: 0,
+        poofDone: false,
+        width: w,
+        height: h,
+        dpr,
+      };
+    },
+    [pickEdgeSpawn],
+  );
 
   /** easeInOutCubic */
-  const ease = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-  const render = useCallback((time: number) => {
-    const canvas = canvasRef.current;
-    const state = stateRef.current;
-    if (!canvas || !state) {
-      animationRef.current = requestAnimationFrame(t => renderRef.current?.(t));
-      return;
-    }
-
-    const { width: w, height: h, dpr } = state;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Screen shake
-    ctx.save();
-    if (state.screenShake > 0) {
-      ctx.translate(
-        (Math.random() - 0.5) * state.screenShake * 4,
-        (Math.random() - 0.5) * state.screenShake * 4,
-      );
-      state.screenShake = Math.max(0, state.screenShake - 0.5);
-    }
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, w, h);
-
-    // Background — warm cream, matches calibration + test
-    ctx.fillStyle = '#FDF8F0';
-    ctx.fillRect(0, 0, w, h);
-
-    // Subtle grid
-    ctx.strokeStyle = 'rgba(45,42,38,0.04)';
-    ctx.lineWidth = 1;
-    const gridSize = Math.round(w / 24);
-    for (let x = 0; x < w; x += gridSize) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-    }
-    for (let y = 0; y < h; y += gridSize) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-    }
-
-    // ------ Phase logic ------
-    const gaze = gazeRef.current;
-    const progress = holdProgressRef.current;
-
-    if (state.phase === 'approaching') {
-      const elapsed = time - state.approachStart;
-      const t = Math.min(1, elapsed / state.approachDuration);
-      const et = ease(t);
-      state.x = state.startX + (state.targetX - state.startX) * et;
-      state.y = state.startY + (state.targetY - state.startY) * et;
-
-      // Speed lines while sprinting
-      if (t < 0.85) {
-        ctx.strokeStyle = 'rgba(45,42,38,0.06)';
-        ctx.lineWidth = 1;
-        const lineDir = { x: state.targetX - state.startX, y: state.targetY - state.startY };
-        const len = Math.hypot(lineDir.x, lineDir.y) || 1;
-        const dx = (lineDir.x / len) * 40;
-        const dy = (lineDir.y / len) * 40;
-        for (let i = 0; i < 4; i++) {
-          const lx = state.x + (Math.random() - 0.5) * 30;
-          const ly = state.y + (Math.random() - 0.5) * 30;
-          ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx - dx, ly - dy); ctx.stroke();
-        }
+  const render = useCallback(
+    (time: number) => {
+      const canvas = canvasRef.current;
+      const state = stateRef.current;
+      if (!canvas || !state) {
+        animationRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
+        return;
       }
 
-      // Transition to cornered
-      if (t >= 1) {
-        state.phase = 'cornered';
-        state.x = state.targetX;
-        state.y = state.targetY;
-        state.pose = 'idle';
-      }
+      const { width: w, height: h, dpr } = state;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    } else if (state.phase === 'cornered') {
-      // Sync health with hold progress from parent (cosmetic only)
-      state.health = 1 - progress;
-
-      // Draw damage aura / target reticle shrinking
-      const auraRadius = 38 + (1 - progress) * 20;
-      const dangerLevel = progress;
-
-      // Outer crosshair reticle
+      // Screen shake
       ctx.save();
-      ctx.translate(state.x, state.y);
-      ctx.strokeStyle = `rgba(220,38,38,${0.2 + dangerLevel * 0.7})`;
-      ctx.lineWidth = 1.5;
-      const rSize = auraRadius * 1.4;
-      const gap = rSize * 0.25;
-      // crosshair lines
-      ctx.beginPath(); ctx.moveTo(-rSize, 0); ctx.lineTo(-gap, 0); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(gap, 0); ctx.lineTo(rSize, 0); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, -rSize); ctx.lineTo(0, -gap); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, gap); ctx.lineTo(0, rSize); ctx.stroke();
-      // damage ring
+      if (state.screenShake > 0) {
+        ctx.translate(
+          (Math.random() - 0.5) * state.screenShake * 4,
+          (Math.random() - 0.5) * state.screenShake * 4,
+        );
+        state.screenShake = Math.max(0, state.screenShake - 0.5);
+      }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, w, h);
+
+      // Background — warm cream, matches calibration + test
+      ctx.fillStyle = '#FDF8F0';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle grid
+      ctx.strokeStyle = 'rgba(45,42,38,0.04)';
+      ctx.lineWidth = 1;
+      const gridSize = Math.round(w / 24);
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // ------ Phase logic ------
+      const gaze = gazeRef.current;
+      const progress = holdProgressRef.current;
+
+      if (state.phase === 'approaching') {
+        const elapsed = time - state.approachStart;
+        const t = Math.min(1, elapsed / state.approachDuration);
+        const et = ease(t);
+        state.x = state.startX + (state.targetX - state.startX) * et;
+        state.y = state.startY + (state.targetY - state.startY) * et;
+
+        // Speed lines while sprinting
+        if (t < 0.85) {
+          ctx.strokeStyle = 'rgba(45,42,38,0.06)';
+          ctx.lineWidth = 1;
+          const lineDir = { x: state.targetX - state.startX, y: state.targetY - state.startY };
+          const len = Math.hypot(lineDir.x, lineDir.y) || 1;
+          const dx = (lineDir.x / len) * 40;
+          const dy = (lineDir.y / len) * 40;
+          for (let i = 0; i < 4; i++) {
+            const lx = state.x + (Math.random() - 0.5) * 30;
+            const ly = state.y + (Math.random() - 0.5) * 30;
+            ctx.beginPath();
+            ctx.moveTo(lx, ly);
+            ctx.lineTo(lx - dx, ly - dy);
+            ctx.stroke();
+          }
+        }
+
+        // Transition to cornered
+        if (t >= 1) {
+          state.phase = 'cornered';
+          state.x = state.targetX;
+          state.y = state.targetY;
+          state.pose = 'idle';
+        }
+      } else if (state.phase === 'cornered') {
+        // Sync health with hold progress from parent (cosmetic only)
+        state.health = 1 - progress;
+
+        // Draw damage aura / target reticle shrinking
+        const auraRadius = 38 + (1 - progress) * 20;
+        const dangerLevel = progress;
+
+        // Outer crosshair reticle
+        ctx.save();
+        ctx.translate(state.x, state.y);
+        ctx.strokeStyle = `rgba(220,38,38,${0.2 + dangerLevel * 0.7})`;
+        ctx.lineWidth = 1.5;
+        const rSize = auraRadius * 1.4;
+        const gap = rSize * 0.25;
+        // crosshair lines
+        ctx.beginPath();
+        ctx.moveTo(-rSize, 0);
+        ctx.lineTo(-gap, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(gap, 0);
+        ctx.lineTo(rSize, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -rSize);
+        ctx.lineTo(0, -gap);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, gap);
+        ctx.lineTo(0, rSize);
+        ctx.stroke();
+        // damage ring
+        ctx.beginPath();
+        ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(220,38,38,${0.1 + dangerLevel * 0.3})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        // progress arc
+        ctx.beginPath();
+        ctx.arc(0, 0, auraRadius, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+        ctx.strokeStyle = `rgba(220,38,38,${0.6 + dangerLevel * 0.4})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.restore();
+
+        // Hit sparks when gaze is close
+        const dist = Math.hypot(gaze.x - state.x, gaze.y - state.y);
+        const now = performance.now();
+        if (dist < HIT_RADIUS_PX && now - state.lastHitTime > HIT_COOLDOWN_MS) {
+          state.lastHitTime = now;
+          state.screenShake = 2 + dangerLevel * 2;
+          // Spark particles
+          for (let i = 0; i < 5; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 50 + Math.random() * 80;
+            state.particles.push({
+              x: state.x,
+              y: state.y,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 40,
+              life: 400 + Math.random() * 200,
+              maxLife: 600,
+              size: 2 + Math.random() * 3,
+              color: `hsl(${10 + Math.random() * 30},90%,55%)`,
+              type: 'spark',
+            } as Particle);
+          }
+          audio.play('hit');
+        }
+
+        // Wounded pose when heavily damaged
+        if (progress > 0.65) state.pose = 'fall';
+        else if (progress > 0.35)
+          state.pose = 'walk'; // hunched
+        else state.pose = 'idle';
+
+        // Transition to defeated
+        if (progress >= 1) {
+          state.phase = 'defeated';
+          state.defeatStart = time;
+          state.fallProgress = 0;
+          // Poof
+          const poofParticles = createPoofParticles(state.x, state.y);
+          state.particles.push(...poofParticles);
+          audio.play('collect');
+        }
+      } else if (state.phase === 'defeated') {
+        state.fallProgress = Math.min(1, (time - state.defeatStart) / DEFEAT_ANIM_MS);
+        state.pose = 'proud'; // ninja slumped victorious child
+      }
+
+      // Draw stickman (not when fully defeated + poof done)
+      const shouldDrawNinja = !(state.phase === 'defeated' && state.fallProgress > 0.7);
+      if (shouldDrawNinja) {
+        // Wounded tilt
+        const tilt = state.phase === 'cornered' ? (1 - state.health) * 0.4 : 0;
+        ctx.save();
+        ctx.translate(state.x, state.y);
+        if (tilt > 0) ctx.rotate(tilt * (state.facingRight ? 1 : -1));
+        ctx.translate(-state.x, -state.y);
+        drawStickman(ctx, state.x, state.y, time, state.pose, state.facingRight);
+        ctx.restore();
+      }
+
+      // Particles
+      drawAndUpdateParticles(ctx, state.particles, 16);
+
+      // Gaze cursor — red "laser eye" for stickman mode
       ctx.beginPath();
-      ctx.arc(0, 0, auraRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(220,38,38,${0.1 + dangerLevel * 0.3})`;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      // progress arc
+      ctx.arc(gaze.x, gaze.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(220,38,38,0.6)';
+      ctx.fill();
       ctx.beginPath();
-      ctx.arc(0, 0, auraRadius, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
-      ctx.strokeStyle = `rgba(220,38,38,${0.6 + dangerLevel * 0.4})`;
-      ctx.lineWidth = 4;
+      ctx.arc(gaze.x, gaze.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(220,38,38,0.9)';
+      ctx.fill();
+      // Laser glow
+      ctx.beginPath();
+      ctx.arc(gaze.x, gaze.y, 14, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(220,38,38,0.25)';
+      ctx.lineWidth = 2;
       ctx.stroke();
+
       ctx.restore();
 
-      // Hit sparks when gaze is close
-      const dist = Math.hypot(gaze.x - state.x, gaze.y - state.y);
-      const now = performance.now();
-      if (dist < HIT_RADIUS_PX && now - state.lastHitTime > HIT_COOLDOWN_MS) {
-        state.lastHitTime = now;
-        state.screenShake = 2 + dangerLevel * 2;
-        // Spark particles
-        for (let i = 0; i < 5; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 50 + Math.random() * 80;
-          state.particles.push({
-            x: state.x, y: state.y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - 40,
-            life: 400 + Math.random() * 200,
-            maxLife: 600,
-            size: 2 + Math.random() * 3,
-            color: `hsl(${10 + Math.random() * 30},90%,55%)`,
-            type: 'spark',
-          } as Particle);
-        }
-        audio.play('hit');
-      }
-
-      // Wounded pose when heavily damaged
-      if (progress > 0.65) state.pose = 'fall';
-      else if (progress > 0.35) state.pose = 'walk'; // hunched
-      else state.pose = 'idle';
-
-      // Transition to defeated
-      if (progress >= 1) {
-        state.phase = 'defeated';
-        state.defeatStart = time;
-        state.fallProgress = 0;
-        // Poof
-        const poofParticles = createPoofParticles(state.x, state.y);
-        state.particles.push(...poofParticles);
-        audio.play('collect');
-      }
-
-    } else if (state.phase === 'defeated') {
-      state.fallProgress = Math.min(1, (time - state.defeatStart) / DEFEAT_ANIM_MS);
-      state.pose = 'proud';  // ninja slumped victorious child
-    }
-
-    // Draw stickman (not when fully defeated + poof done)
-    const shouldDrawNinja = !(state.phase === 'defeated' && state.fallProgress > 0.7);
-    if (shouldDrawNinja) {
-      // Wounded tilt
-      const tilt = state.phase === 'cornered' ? (1 - state.health) * 0.4 : 0;
-      ctx.save();
-      ctx.translate(state.x, state.y);
-      if (tilt > 0) ctx.rotate(tilt * (state.facingRight ? 1 : -1));
-      ctx.translate(-state.x, -state.y);
-      drawStickman(ctx, state.x, state.y, time, state.pose, state.facingRight);
-      ctx.restore();
-    }
-
-    // Particles
-    drawAndUpdateParticles(ctx, state.particles, 16);
-
-    // Gaze cursor — red "laser eye" for stickman mode
-    ctx.beginPath();
-    ctx.arc(gaze.x, gaze.y, 8, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(220,38,38,0.6)';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(gaze.x, gaze.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(220,38,38,0.9)';
-    ctx.fill();
-    // Laser glow
-    ctx.beginPath();
-    ctx.arc(gaze.x, gaze.y, 14, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(220,38,38,0.25)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.restore();
-
-    animationRef.current = requestAnimationFrame(t => renderRef.current?.(t));
-  }, [audio]);
+      animationRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
+    },
+    [audio],
+  );
 
   // Keep render ref fresh
-  useEffect(() => { renderRef.current = render; }, [render]);
+  useEffect(() => {
+    renderRef.current = render;
+  }, [render]);
 
   // Re-init ninja when target changes
   useEffect(() => {
@@ -359,7 +402,7 @@ export function StickmanValidationCanvas({
 
     resize();
     window.addEventListener('resize', resize);
-    animationRef.current = requestAnimationFrame(t => renderRef.current?.(t));
+    animationRef.current = requestAnimationFrame((t) => renderRef.current?.(t));
 
     return () => {
       window.removeEventListener('resize', resize);
@@ -368,19 +411,21 @@ export function StickmanValidationCanvas({
   }, []);
 
   return (
-    <div className="z-50 fixed inset-0 overflow-hidden cursor-none">
+    <div className="fixed inset-0 z-50 cursor-none overflow-hidden">
       <canvas ref={canvasRef} className="block" />
 
       {/* Bottom HUD */}
-      <div className="bottom-0 left-0 right-0 absolute flex items-center justify-center h-16 pointer-events-none">
-        <div className="bg-white/85 backdrop-blur-md px-5 py-2.5 border border-[#E8E0D4] rounded-xl w-[min(420px,85vw)] shadow-sm">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[#8B857E] text-xs">🎯 Lock eyes on the ninja</span>
-            <span className="font-semibold text-[#2D2A26] text-xs">{currentStep} / {totalSteps}</span>
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-16 items-center justify-center">
+        <div className="w-[min(420px,85vw)] rounded-xl border border-[#E8E0D4] bg-white/85 px-5 py-2.5 shadow-sm backdrop-blur-md">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-xs text-[#8B857E]">🎯 Lock eyes on the ninja</span>
+            <span className="text-xs font-semibold text-[#2D2A26]">
+              {currentStep} / {totalSteps}
+            </span>
           </div>
-          <div className="bg-[#E8E0D4]/60 rounded-full h-1.5 overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#E8E0D4]/60">
             <div
-              className="rounded-full h-full transition-all duration-150"
+              className="h-full rounded-full transition-all duration-150"
               style={{ width: `${Math.round(holdProgress * 100)}%`, backgroundColor: '#DC2626' }}
             />
           </div>

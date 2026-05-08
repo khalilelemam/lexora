@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 
 type NavLink =
   | { label: string; type: 'scroll'; href: string }
@@ -21,16 +23,43 @@ const NAV_LINKS: NavLink[] = [
 
 /**
  * Sticky navigation bar with scroll-blur effect and responsive mobile menu.
+ * Scroll links navigate to sections on the homepage; page links are real routes.
  */
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Track active section for scroll links on the home page
+  useEffect(() => {
+    if (pathname !== '/') return;
+
+    const sectionIds = ['features', 'how-it-works', 'get-started', 'about'];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(`#${entry.target.id}`);
+          }
+        }
+      },
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 },
+    );
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [pathname]);
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -39,60 +68,97 @@ export function Navbar() {
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [mobileOpen]);
 
-  const scrollTo = useCallback((id: string) => {
-    setMobileOpen(false);
-    // Strip the '#' prefix
-    const elId = id.startsWith('#') ? id.slice(1) : id;
-    document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+  const scrollTo = useCallback(
+    (id: string) => {
+      setMobileOpen(false);
+      // If we're not on the home page, navigate there first
+      if (pathname !== '/') {
+        window.location.href = `/${id}`;
+        return;
+      }
+      const elId = id.startsWith('#') ? id.slice(1) : id;
+      document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth' });
+    },
+    [pathname],
+  );
+
+  const isLinkActive = (link: NavLink) => {
+    if (link.type === 'scroll') return activeSection === link.href;
+    return pathname === link.href;
+  };
 
   return (
     <>
       <motion.nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-background/80 backdrop-blur-xl border-b shadow-sm'
-            : 'bg-transparent'
+        className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${
+          scrolled ? 'bg-background/80 border-b shadow-sm backdrop-blur-xl' : 'bg-transparent'
         }`}
         initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
-          <LexoraLogo size="sm" />
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <Link href="/">
+            <LexoraLogo size="sm" />
+          </Link>
 
           {/* Desktop links */}
-          <div className="hidden sm:flex items-center gap-6 text-sm font-medium">
+          <div className="hidden items-center gap-6 text-sm font-medium sm:flex">
             {NAV_LINKS.map((link) =>
               link.type === 'scroll' ? (
                 <button
                   key={link.href}
                   onClick={() => scrollTo(link.href)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className={`transition-colors ${
+                    isLinkActive(link)
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   {link.label}
+                  {isLinkActive(link) && (
+                    <motion.div
+                      className="bg-accent mt-0.5 h-0.5 rounded-full"
+                      layoutId="navbar-indicator"
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    />
+                  )}
                 </button>
               ) : (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className={`transition-colors ${
+                    isLinkActive(link)
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   {link.label}
+                  {isLinkActive(link) && (
+                    <motion.div
+                      className="bg-accent mt-0.5 h-0.5 rounded-full"
+                      layoutId="navbar-indicator"
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    />
+                  )}
                 </Link>
               ),
             )}
           </div>
 
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Button
               variant="outline"
               size="sm"
               onClick={() => scrollTo('#get-started')}
-              className="hidden sm:inline-flex"
+              className="hidden border-[oklch(0.70_0.10_115/0.4)] text-[oklch(0.40_0.04_110)] hover:border-[oklch(0.70_0.10_115)] hover:bg-[oklch(0.70_0.10_115/0.1)] sm:inline-flex"
             >
               Start Screening
             </Button>
@@ -100,10 +166,10 @@ export function Navbar() {
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="sm:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-muted transition-colors"
+              className="hover:bg-muted flex h-10 w-10 items-center justify-center rounded-lg transition-colors sm:hidden"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
@@ -123,7 +189,7 @@ export function Navbar() {
             />
             {/* Panel */}
             <motion.div
-              className="fixed top-16 right-0 bottom-0 z-40 w-72 bg-background border-l shadow-xl sm:hidden"
+              className="bg-background fixed top-16 right-0 bottom-0 z-40 w-72 border-l shadow-xl sm:hidden"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -135,7 +201,11 @@ export function Navbar() {
                     <button
                       key={link.href}
                       onClick={() => scrollTo(link.href)}
-                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                      className={`rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
+                        isLinkActive(link)
+                          ? 'text-foreground bg-accent/10'
+                          : 'text-foreground hover:bg-muted'
+                      }`}
                     >
                       {link.label}
                     </button>
@@ -144,14 +214,21 @@ export function Navbar() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setMobileOpen(false)}
-                      className="text-left py-3 px-4 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                      className={`rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
+                        isLinkActive(link)
+                          ? 'text-foreground bg-accent/10'
+                          : 'text-foreground hover:bg-muted'
+                      }`}
                     >
                       {link.label}
                     </Link>
                   ),
                 )}
-                <div className="border-t my-2" />
-                <Button onClick={() => scrollTo('#get-started')} className="w-full">
+                <div className="my-2 border-t" />
+                <Button
+                  onClick={() => scrollTo('#get-started')}
+                  className="w-full bg-[oklch(0.40_0.04_110)] text-[oklch(0.94_0.02_90)] hover:bg-[oklch(0.35_0.04_110)]"
+                >
                   Start Screening
                 </Button>
               </div>

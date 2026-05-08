@@ -88,7 +88,10 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
 
       let idx = 0;
       for (let i = timeline.length - 1; i >= 0; i--) {
-        if (elapsed >= timeline[i]) { idx = i; break; }
+        if (elapsed >= timeline[i]) {
+          idx = i;
+          break;
+        }
       }
 
       setCurrentIndex(idx);
@@ -105,7 +108,10 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
   }, [isPlaying, speed, totalDuration, features, timeline]);
 
   const handlePlay = useCallback(() => {
-    if (currentIndex >= features.length - 1) { setCurrentIndex(-1); setTrail([]); }
+    if (currentIndex >= features.length - 1) {
+      setCurrentIndex(-1);
+      setTrail([]);
+    }
     startTimeRef.current = performance.now();
     setIsPlaying(true);
   }, [currentIndex, features.length]);
@@ -138,14 +144,14 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
   const progress = currentIndex >= 0 ? Math.round(((currentIndex + 1) / features.length) * 100) : 0;
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="flex w-full flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center gap-2 text-[#8B857E] text-sm">
-        <Eye className="w-4 h-4" />
+      <div className="flex items-center gap-2 text-sm text-[#8B857E]">
+        <Eye className="h-4 w-4" />
         <span className="font-medium text-[#2D2A26]">Gaze Replay</span>
-        <span className="text-[#C4BDB4] text-xs">— where the reader&apos;s eyes tracked</span>
+        <span className="text-xs text-[#C4BDB4]">— where the reader&apos;s eyes tracked</span>
         {currentIndex >= 0 && (
-          <span className="ml-auto text-[#8B857E] text-xs">
+          <span className="ml-auto text-xs text-[#8B857E]">
             {currentIndex + 1} / {features.length} fixations
           </span>
         )}
@@ -158,7 +164,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       <div
         ref={containerRef}
         className={cn(
-          'relative bg-[#FDF8F0] border border-[#E8E0D4] rounded-xl overflow-hidden select-none',
+          'relative overflow-hidden rounded-xl border border-[#E8E0D4] bg-[#FDF8F0] select-none',
         )}
         dir={direction}
         style={{
@@ -177,7 +183,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
               test's text wrapping at any display size. */}
           <p
             className={cn(
-              'text-[#2D2A26]/30 leading-loose whitespace-pre-line w-full',
+              'w-full leading-loose whitespace-pre-line text-[#2D2A26]/30',
               'font-normal',
               direction === 'rtl' && 'text-right',
             )}
@@ -208,7 +214,7 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
             <div
               key={idx}
               className={cn(
-                'absolute rounded-full pointer-events-none transition-opacity duration-200',
+                'pointer-events-none absolute rounded-full transition-opacity duration-200',
                 f.isRegression ? 'bg-red-400' : 'bg-[#4A7C59]',
                 isCurrent ? 'opacity-75' : 'opacity-20',
               )}
@@ -229,14 +235,18 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
         })}
 
         {/* Saccade lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" overflow="visible">
+        <svg className="pointer-events-none absolute inset-0 h-full w-full" overflow="visible">
           {trail.length > 1 &&
             trail.slice(1).map((idx, i) => {
               const prev = features[trail[i]];
               const curr = features[idx];
               if (!prev || !curr) return null;
 
-              const stroke = curr.isReturnSweep ? '#d1d5db' : curr.isRegression ? '#f87171' : '#86efac';
+              const stroke = curr.isReturnSweep
+                ? '#d1d5db'
+                : curr.isRegression
+                  ? '#f87171'
+                  : '#86efac';
               const dashArray = curr.isReturnSweep ? '3 4' : 'none';
               const opacity = curr.isReturnSweep ? 0.35 : 0.45;
 
@@ -259,50 +269,61 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
         {/* Empty state */}
         {trail.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-[#C4BDB4] text-xs">Press play to see the eye movement replay</p>
+            <p className="text-xs text-[#C4BDB4]">Press play to see the eye movement replay</p>
           </div>
         )}
       </div>
 
       {/* Progress bar */}
-      <div className="bg-[#E8E0D4]/60 rounded-full w-full h-1.5 overflow-hidden">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#E8E0D4]/60">
         <div
-          className="bg-[#4A7C59] rounded-full h-full transition-all duration-150"
+          className="h-full rounded-full bg-[#4A7C59] transition-all duration-150"
           style={{ width: `${progress}%` }}
         />
       </div>
 
       {/* Controls */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isPlaying ? (
-            <Button size="sm" variant="outline" onClick={handlePause}
-              className="border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26] h-8">
-              <Pause className="mr-1 w-3.5 h-3.5" />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePause}
+              className="h-8 border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26]"
+            >
+              <Pause className="mr-1 h-3.5 w-3.5" />
               Pause
             </Button>
           ) : (
-            <Button size="sm" onClick={handlePlay}
-              className="bg-[#4A7C59] hover:bg-[#3D6A4B] text-white h-8">
-              <Play className="mr-1 w-3.5 h-3.5" />
+            <Button
+              size="sm"
+              onClick={handlePlay}
+              className="h-8 bg-[#4A7C59] text-white hover:bg-[#3D6A4B]"
+            >
+              <Play className="mr-1 h-3.5 w-3.5" />
               {currentIndex >= features.length - 1 ? 'Replay' : 'Play'}
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={handleReset}
-            className="text-[#8B857E] hover:text-[#2D2A26] w-8 h-8 p-0">
-            <RotateCcw className="w-3.5 h-3.5" />
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleReset}
+            className="h-8 w-8 p-0 text-[#8B857E] hover:text-[#2D2A26]"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
           </Button>
         </div>
 
         {/* Speed selector */}
         <div className="flex items-center gap-1">
-          <span className="mr-1 text-[#8B857E] text-xs">Speed:</span>
+          <span className="mr-1 text-xs text-[#8B857E]">Speed:</span>
           {SPEED_OPTIONS.map((s) => (
             <button
               key={s}
               onClick={() => setSpeed(s)}
               className={cn(
-                'px-2 py-0.5 rounded text-xs transition-colors',
+                'rounded px-2 py-0.5 text-xs transition-colors',
                 speed === s
                   ? 'bg-[#4A7C59] text-white'
                   : 'text-[#8B857E] hover:bg-[#F0EBE3] hover:text-[#2D2A26]',
@@ -315,18 +336,26 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[#8B857E] text-[11px]">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] text-[#8B857E]">
         <div className="flex items-center gap-1.5">
-          <div className="bg-[#4A7C59] opacity-60 rounded-full w-2.5 h-2.5" />
+          <div className="h-2.5 w-2.5 rounded-full bg-[#4A7C59] opacity-60" />
           <span>Forward fixation</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="bg-red-400 opacity-60 rounded-full w-2.5 h-2.5" />
+          <div className="h-2.5 w-2.5 rounded-full bg-red-400 opacity-60" />
           <span>Regression</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg width="14" height="4">
-            <line x1="0" y1="2" x2="14" y2="2" stroke="#d1d5db" strokeWidth="1.5" strokeDasharray="3 4" />
+            <line
+              x1="0"
+              y1="2"
+              x2="14"
+              y2="2"
+              stroke="#d1d5db"
+              strokeWidth="1.5"
+              strokeDasharray="3 4"
+            />
           </svg>
           <span>Return sweep</span>
         </div>

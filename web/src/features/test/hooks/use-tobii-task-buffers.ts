@@ -32,8 +32,12 @@ export function useTobiiTaskBuffers() {
 
   // ── UI state ──
   const [gazePointCount, setGazePointCount] = useState(0);
-  const [taskPointCounts, setTaskPointCounts] = useState<Record<TobiiTaskKey, number>>({ ...INITIAL_COUNTS });
-  const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(null);
+  const [taskPointCounts, setTaskPointCounts] = useState<Record<TobiiTaskKey, number>>({
+    ...INITIAL_COUNTS,
+  });
+  const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   // ── Last raw gaze ref (for calibration sampling) ──
   const lastGazeRef = useRef<{ x: number; y: number } | null>(null);
