@@ -131,7 +131,19 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               </a>
             </div>
 
-            <div className="flex gap-3 pt-1">
+            <div className="rounded-2xl border border-border bg-background p-4 text-sm text-muted-foreground">
+              <p className="mb-2 text-xs font-semibold text-foreground">Supported Tobii Devices</p>
+              <ul className="list-disc space-y-1 pl-4">
+                <li>Tobii Pro Fusion</li>
+                <li>Tobii Pro Spectrum</li>
+                <li>Tobii Pro Nano</li>
+              </ul>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Only Tobii Pro devices with SDK support are compatible. Consumer trackers such as Tobii Eye Tracker 5 are not supported.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-1">
               <Button
                 variant="outline"
                 size="sm"
@@ -141,6 +153,13 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 }}
               >
                 Already installed? Skip →
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.open('https://github.com/khalilelemam/eglex/releases/latest', '_blank')}
+              >
+                Download Service
               </Button>
               <Button size="sm" onClick={() => setStep('connect')}>
                 I&apos;ve installed it
@@ -249,7 +268,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               </div>
             )}
 
-            <div className="flex gap-3 pt-1">
+            <div className="flex flex-wrap gap-3 pt-1">
               <Button variant="outline" size="sm" onClick={() => setStep('install')}>
                 ← Start Over
               </Button>
@@ -257,6 +276,24 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${checking ? 'animate-spin' : ''}`} />
                 Retry
               </Button>
+              {!isConnected && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open('https://github.com/khalilelemam/eglex/releases/latest', '_blank')}
+                >
+                  Download Service
+                </Button>
+              )}
+              {isConnected && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open('http://localhost:28980', '_blank')}
+                >
+                  Open Service
+                </Button>
+              )}
               {isConnected && (
                 <Button size="sm" onClick={onReady} className="px-6">
                   Continue to Calibration
