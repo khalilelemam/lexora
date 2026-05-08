@@ -76,7 +76,7 @@ class TobiiServiceGUI:
         # ── Version footer ──────────────────────────────────────
         footer = ctk.CTkLabel(
             self.root,
-            text=f"v{settings.VERSION}  ·  {settings.HOST}:{settings.PORT}",
+            text=f"v{settings.VERSION}  ·  Port {settings.PORT}",
             font=(Styles.FONT_FAMILY, 10),
             text_color=Styles.TEXT_MUTED,
         )
