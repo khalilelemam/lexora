@@ -55,15 +55,20 @@ export default function WebcamTestPage() {
     };
   }, []);
 
-  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(calibrationParams.mode);
+  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(
+    calibrationParams.mode,
+  );
 
   const requestedCalibrationMode = selectedMode || 'grid';
   const participantAge = calibrationParams.age;
 
-  const handleStartTest = useCallback((mode: CalibrationVisualMode) => {
-    setSelectedMode(mode);
-    dispatch({ type: 'START' });
-  }, [dispatch]);
+  const handleStartTest = useCallback(
+    (mode: CalibrationVisualMode) => {
+      setSelectedMode(mode);
+      dispatch({ type: 'START' });
+    },
+    [dispatch],
+  );
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 

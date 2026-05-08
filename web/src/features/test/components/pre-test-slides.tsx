@@ -37,15 +37,15 @@ interface Slide {
 }
 
 const WelcomeVisual = () => (
-  <div className="relative w-full h-full flex items-center justify-center bg-[#4A7C59]/5">
-    <motion.div 
-      className="w-24 h-24 border-4 border-[#4A7C59] rounded-full flex items-center justify-center relative shadow-sm bg-white"
+  <div className="relative flex h-full w-full items-center justify-center bg-[#4A7C59]/5">
+    <motion.div
+      className="relative flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#4A7C59] bg-white shadow-sm"
       initial={{ scale: 0.9 }}
       animate={{ scale: 1 }}
       transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
     >
-      <motion.div 
-        className="w-8 h-8 bg-[#4A7C59] rounded-full shadow-inner"
+      <motion.div
+        className="h-8 w-8 rounded-full bg-[#4A7C59] shadow-inner"
         animate={{ x: [-24, 24, -24, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       />
@@ -54,112 +54,144 @@ const WelcomeVisual = () => (
 );
 
 const CalibrationVisual = () => (
-  <div className="relative w-full h-full bg-[#4A7C59]/5">
-    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '15%', left: '15%', transform: 'translate(-50%, -50%)' }} />
-    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '15%', left: '85%', transform: 'translate(-50%, -50%)' }} />
-    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '85%', left: '15%', transform: 'translate(-50%, -50%)' }} />
-    <div className="absolute w-4 h-4 bg-[#4A7C59]/30 rounded-full" style={{ top: '85%', left: '85%', transform: 'translate(-50%, -50%)' }} />
-    
-    <motion.div 
-      className="absolute w-8 h-8 rounded-full border-4 border-[#4A7C59] flex items-center justify-center bg-white shadow-md"
+  <div className="relative h-full w-full bg-[#4A7C59]/5">
+    <div
+      className="absolute h-4 w-4 rounded-full bg-[#4A7C59]/30"
+      style={{ top: '15%', left: '15%', transform: 'translate(-50%, -50%)' }}
+    />
+    <div
+      className="absolute h-4 w-4 rounded-full bg-[#4A7C59]/30"
+      style={{ top: '15%', left: '85%', transform: 'translate(-50%, -50%)' }}
+    />
+    <div
+      className="absolute h-4 w-4 rounded-full bg-[#4A7C59]/30"
+      style={{ top: '85%', left: '15%', transform: 'translate(-50%, -50%)' }}
+    />
+    <div
+      className="absolute h-4 w-4 rounded-full bg-[#4A7C59]/30"
+      style={{ top: '85%', left: '85%', transform: 'translate(-50%, -50%)' }}
+    />
+
+    <motion.div
+      className="absolute flex h-8 w-8 items-center justify-center rounded-full border-4 border-[#4A7C59] bg-white shadow-md"
       style={{ x: '-50%', y: '-50%' }}
-      animate={{ 
+      animate={{
         top: ['15%', '15%', '85%', '85%', '50%'],
         left: ['15%', '85%', '15%', '85%', '50%'],
-        scale: [1, 0.6, 1, 0.6, 1, 0.6, 1, 0.6, 1]
+        scale: [1, 0.6, 1, 0.6, 1, 0.6, 1, 0.6, 1],
       }}
       transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
     >
-       <motion.div 
-         className="w-3 h-3 bg-[#4A7C59] rounded-full" 
-         animate={{ scale: [0.3, 1, 0.3] }} 
-         transition={{ duration: 1.5, repeat: Infinity }} 
-       />
+      <motion.div
+        className="h-3 w-3 rounded-full bg-[#4A7C59]"
+        animate={{ scale: [0.3, 1, 0.3] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      />
     </motion.div>
   </div>
 );
 
 const StarGameVisual = () => (
-  <div className="relative w-full h-full bg-amber-500/5">
-    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '15%', left: '15%', transform: 'translate(-50%, -50%)' }} />
-    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '15%', left: '85%', transform: 'translate(-50%, -50%)' }} />
-    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '85%', left: '15%', transform: 'translate(-50%, -50%)' }} />
-    <div className="absolute w-4 h-4 bg-amber-500/30 rounded-full" style={{ top: '85%', left: '85%', transform: 'translate(-50%, -50%)' }} />
-    
-    <motion.div 
-      className="absolute w-16 h-16 flex items-center justify-center text-amber-400 drop-shadow-md"
+  <div className="relative h-full w-full bg-amber-500/5">
+    <div
+      className="absolute h-4 w-4 rounded-full bg-amber-500/30"
+      style={{ top: '15%', left: '15%', transform: 'translate(-50%, -50%)' }}
+    />
+    <div
+      className="absolute h-4 w-4 rounded-full bg-amber-500/30"
+      style={{ top: '15%', left: '85%', transform: 'translate(-50%, -50%)' }}
+    />
+    <div
+      className="absolute h-4 w-4 rounded-full bg-amber-500/30"
+      style={{ top: '85%', left: '15%', transform: 'translate(-50%, -50%)' }}
+    />
+    <div
+      className="absolute h-4 w-4 rounded-full bg-amber-500/30"
+      style={{ top: '85%', left: '85%', transform: 'translate(-50%, -50%)' }}
+    />
+
+    <motion.div
+      className="absolute flex h-16 w-16 items-center justify-center text-amber-400 drop-shadow-md"
       style={{ x: '-50%', y: '-50%' }}
-      animate={{ 
+      animate={{
         top: ['15%', '15%', '85%', '85%', '50%'],
         left: ['15%', '85%', '15%', '85%', '50%'],
-        scale: [1, 0.2, 1, 0.2, 1, 0.2, 1, 0.2, 1]
+        scale: [1, 0.2, 1, 0.2, 1, 0.2, 1, 0.2, 1],
       }}
       transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
     >
-       <motion.div
-         animate={{ rotate: [0, 5, 0, -5, 0] }}
-         transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-       >
-         <Star className="w-16 h-16 fill-amber-400/80" />
-       </motion.div>
+      <motion.div
+        animate={{ rotate: [0, 5, 0, -5, 0] }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <Star className="h-16 w-16 fill-amber-400/80" />
+      </motion.div>
     </motion.div>
   </div>
 );
 
 const PositionVisual = () => (
-  <div className="relative w-full h-full flex items-center justify-center bg-[#4A7C59]/5 overflow-hidden">
-    <div className="w-1/2 h-3/4 border-4 border-[#4A7C59]/30 rounded-2xl flex items-center justify-center bg-white shadow-sm">
-       <motion.div 
-         className="w-16 h-20 border-2 border-dashed border-[#4A7C59] rounded-[2rem]"
-         animate={{ scale: [0.9, 1.1, 1], opacity: [0.4, 1, 0.4] }}
-         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-       />
+  <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#4A7C59]/5">
+    <div className="flex h-3/4 w-1/2 items-center justify-center rounded-2xl border-4 border-[#4A7C59]/30 bg-white shadow-sm">
+      <motion.div
+        className="h-20 w-16 rounded-[2rem] border-2 border-dashed border-[#4A7C59]"
+        animate={{ scale: [0.9, 1.1, 1], opacity: [0.4, 1, 0.4] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      />
     </div>
-    <motion.div 
-       className="absolute top-4 right-6 text-amber-400"
-       animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-       transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+    <motion.div
+      className="absolute top-4 right-6 text-amber-400"
+      animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+      transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
     >
-       <Sun className="w-12 h-12 fill-amber-400/20" />
+      <Sun className="h-12 w-12 fill-amber-400/20" />
     </motion.div>
   </div>
 );
 
 const SecureVisual = () => (
-  <div className="relative w-full h-full flex flex-col items-center justify-center gap-6 bg-[#4A7C59]/5">
-     <Monitor className="w-16 h-16 text-[#4A7C59]" strokeWidth={1.5} />
-     <div className="flex gap-3">
-       {[0,1,2].map(i => (
-         <motion.div 
-           key={i}
-           className="w-2.5 h-2.5 bg-[#4A7C59] rounded-full"
-           animate={{ y: [0, -12, 0], opacity: [0.2, 1, 0.2] }}
-           transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
-         />
-       ))}
-     </div>
-     <div className="relative">
-       <Shield className="w-12 h-12 text-[#4A7C59]" strokeWidth={1.5} />
-       <motion.div 
-         className="absolute inset-0 bg-[#4A7C59] rounded-full blur-xl -z-10"
-         animate={{ opacity: [0.1, 0.4, 0.1], scale: [0.8, 1.5, 0.8] }}
-         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-       />
-     </div>
+  <div className="relative flex h-full w-full flex-col items-center justify-center gap-6 bg-[#4A7C59]/5">
+    <Monitor className="h-16 w-16 text-[#4A7C59]" strokeWidth={1.5} />
+    <div className="flex gap-3">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="h-2.5 w-2.5 rounded-full bg-[#4A7C59]"
+          animate={{ y: [0, -12, 0], opacity: [0.2, 1, 0.2] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2, ease: 'easeInOut' }}
+        />
+      ))}
+    </div>
+    <div className="relative">
+      <Shield className="h-12 w-12 text-[#4A7C59]" strokeWidth={1.5} />
+      <motion.div
+        className="absolute inset-0 -z-10 rounded-full bg-[#4A7C59] blur-xl"
+        animate={{ opacity: [0.1, 0.4, 0.1], scale: [0.8, 1.5, 0.8] }}
+        transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </div>
   </div>
 );
 
 const PrivacyVisual = () => (
-  <div className="relative w-full h-full flex items-center justify-center bg-[#4A7C59]/5">
-     <motion.div
-       animate={{ rotateY: [0, 180, 360] }}
-       transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-       style={{ transformStyle: 'preserve-3d' }}
-     >
-       <Shield className="w-24 h-24 text-[#4A7C59] fill-[#4A7C59]/10" strokeWidth={1.5} />
-     </motion.div>
-     <motion.div className="absolute top-1/4 right-1/4 w-3 h-3 bg-[#4A7C59]/40 rounded-full" animate={{ scale: [0, 1.5, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }} />
-     <motion.div className="absolute bottom-1/4 left-1/4 w-4 h-4 bg-[#4A7C59]/40 rounded-full" animate={{ scale: [0, 1.5, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1.5 }} />
+  <div className="relative flex h-full w-full items-center justify-center bg-[#4A7C59]/5">
+    <motion.div
+      animate={{ rotateY: [0, 180, 360] }}
+      transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+      style={{ transformStyle: 'preserve-3d' }}
+    >
+      <Shield className="h-24 w-24 fill-[#4A7C59]/10 text-[#4A7C59]" strokeWidth={1.5} />
+    </motion.div>
+    <motion.div
+      className="absolute top-1/4 right-1/4 h-3 w-3 rounded-full bg-[#4A7C59]/40"
+      animate={{ scale: [0, 1.5, 0] }}
+      transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+    />
+    <motion.div
+      className="absolute bottom-1/4 left-1/4 h-4 w-4 rounded-full bg-[#4A7C59]/40"
+      animate={{ scale: [0, 1.5, 0] }}
+      transition={{ duration: 2, repeat: Infinity, delay: 1.5 }}
+    />
   </div>
 );
 
@@ -168,7 +200,8 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
     ? {
         visual: <StarGameVisual />,
         title: 'Catch the Stars!',
-        description: 'Look directly at the glowing stars when they appear on the screen. They will magically shrink and vanish when you catch them with your eyes!',
+        description:
+          'Look directly at the glowing stars when they appear on the screen. They will magically shrink and vanish when you catch them with your eyes!',
         tips: [
           'Keep your eyes fixed on the star until it disappears',
           'Have fun and try to catch all of them!',
@@ -177,14 +210,14 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
       }
     : {
         visual: <CalibrationVisual />,
-        title: 'What You\'ll Do',
+        title: "What You'll Do",
         description:
           mode === 'tobii'
             ? 'Follow the dots to calibrate, then complete 3 short reading tasks.'
             : 'Follow the dots to calibrate, then read a short paragraph naturally.',
         tips: [
           'Follow the calibration dots with your eyes',
-          'Read the text naturally — don\'t rush',
+          "Read the text naturally — don't rush",
           'Get instant results immediately after',
         ],
       };
@@ -203,7 +236,7 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
       title: 'Prepare Your Space',
       description: 'Good conditions ensure accurate tracking.',
       tips: [
-        'Sit directly at arm\'s length from the screen',
+        "Sit directly at arm's length from the screen",
         'Ensure even lighting — avoid bright backlight',
         'Remove glasses if possible to reduce glare',
         mode === 'webcam' ? 'Ensure your webcam is clean' : 'Ensure your Tobii is connected',
@@ -256,7 +289,12 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
  * Shown after "Start Test" but before camera setup / device check.
  * Ensures users understand what the test involves before proceeding.
  */
-export function PreTestSlides({ mode, isStarMode = false, onComplete, onSkip }: PreTestSlidesProps) {
+export function PreTestSlides({
+  mode,
+  isStarMode = false,
+  onComplete,
+  onSkip,
+}: PreTestSlidesProps) {
   const slides = getSlides(mode, isStarMode);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
@@ -288,15 +326,15 @@ export function PreTestSlides({ mode, isStarMode = false, onComplete, onSkip }: 
         <button
           type="button"
           onClick={onSkip}
-          className="absolute top-6 right-6 text-xs text-[#A09890] hover:text-[#6B6560] transition-colors"
+          className="absolute top-6 right-6 text-xs text-[#A09890] transition-colors hover:text-[#6B6560]"
         >
           Skip introduction →
         </button>
       )}
 
       {/* Slide content */}
-      <div className="flex flex-col items-center w-full max-w-5xl px-8 md:px-12">
-        <LexoraLogo size="md" className="mb-12 opacity-60 absolute top-8 left-8" />
+      <div className="flex w-full max-w-5xl flex-col items-center px-8 md:px-12">
+        <LexoraLogo size="md" className="absolute top-8 left-8 mb-12 opacity-60" />
 
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
@@ -306,37 +344,40 @@ export function PreTestSlides({ mode, isStarMode = false, onComplete, onSkip }: 
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -direction * 80 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 w-full h-[60vh]"
+            className="flex h-[60vh] w-full flex-col items-center justify-center gap-12 md:flex-row md:gap-24"
           >
             {/* Left: Large Animated Visual */}
-            <div className="flex-1 flex justify-center items-center h-full">
-              <div className="relative w-64 h-64 md:w-96 md:h-96 rounded-3xl overflow-hidden border border-[#E8E0D4] shadow-sm">
+            <div className="flex h-full flex-1 items-center justify-center">
+              <div className="relative h-64 w-64 overflow-hidden rounded-3xl border border-[#E8E0D4] shadow-sm md:h-96 md:w-96">
                 {slide.visual}
               </div>
             </div>
 
             {/* Right: Text Content */}
-            <div className="flex-1 flex flex-col items-start text-left gap-6">
-              <h2 className="text-4xl md:text-5xl font-extrabold text-[#2D2A26] tracking-tight leading-tight">
+            <div className="flex flex-1 flex-col items-start gap-6 text-left">
+              <h2 className="text-4xl leading-tight font-extrabold tracking-tight text-[#2D2A26] md:text-5xl">
                 {slide.title}
               </h2>
-              
-              <p className="text-lg md:text-xl text-[#6B6560] leading-relaxed">
+
+              <p className="text-lg leading-relaxed text-[#6B6560] md:text-xl">
                 {slide.description}
               </p>
 
               {slide.highlight && (
-                <p className="text-lg font-semibold text-[#4A7C59] bg-[#4A7C59]/10 px-4 py-2 rounded-lg">
+                <p className="rounded-lg bg-[#4A7C59]/10 px-4 py-2 text-lg font-semibold text-[#4A7C59]">
                   {slide.highlight}
                 </p>
               )}
 
               {slide.tips && slide.tips.length > 0 && (
-                <div className="w-full rounded-2xl border-2 border-[#E8E0D4] bg-white/80 p-6 md:p-8 mt-2 shadow-sm">
+                <div className="mt-2 w-full rounded-2xl border-2 border-[#E8E0D4] bg-white/80 p-6 shadow-sm md:p-8">
                   <ul className="space-y-4">
                     {slide.tips.map((tip, idx) => (
-                      <li key={idx} className="flex items-start gap-4 text-base md:text-lg text-[#6B6560]">
-                        <span className="mt-0.5 shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-[#4A7C59]/20 text-[#4A7C59] font-bold text-sm">
+                      <li
+                        key={idx}
+                        className="flex items-start gap-4 text-base text-[#6B6560] md:text-lg"
+                      >
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#4A7C59]/20 text-sm font-bold text-[#4A7C59]">
                           ✓
                         </span>
                         <span className="font-medium">{tip}</span>
@@ -351,7 +392,7 @@ export function PreTestSlides({ mode, isStarMode = false, onComplete, onSkip }: 
       </div>
 
       {/* Navigation controls */}
-      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-4">
+      <div className="absolute right-0 bottom-8 left-0 flex flex-col items-center gap-4">
         {/* Dot indicators */}
         <div className="flex items-center gap-2">
           {slides.map((_, idx) => (
@@ -364,9 +405,7 @@ export function PreTestSlides({ mode, isStarMode = false, onComplete, onSkip }: 
               }}
               className={cn(
                 'h-2 rounded-full transition-all duration-300',
-                idx === currentSlide
-                  ? 'w-6 bg-[#4A7C59]'
-                  : 'w-2 bg-[#D4CBBD] hover:bg-[#A09890]',
+                idx === currentSlide ? 'w-6 bg-[#4A7C59]' : 'w-2 bg-[#D4CBBD] hover:bg-[#A09890]',
               )}
               aria-label={`Go to slide ${idx + 1}`}
             />
@@ -385,10 +424,7 @@ export function PreTestSlides({ mode, isStarMode = false, onComplete, onSkip }: 
               Back
             </Button>
           )}
-          <Button
-            onClick={goNext}
-            className="bg-[#4A7C59] text-white hover:bg-[#3D6A4B] px-8"
-          >
+          <Button onClick={goNext} className="bg-[#4A7C59] px-8 text-white hover:bg-[#3D6A4B]">
             {isLast ? (
               <>
                 I&apos;m Ready

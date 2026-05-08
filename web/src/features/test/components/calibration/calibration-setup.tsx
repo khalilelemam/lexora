@@ -21,7 +21,12 @@ interface CalibrationSetupProps {
  * Left: Instructions + fullscreen consent + start button
  * Right: Mode selection cards
  */
-export function CalibrationSetup({ resolvedMode, onSelectMode, onStart, startButtonText = "Enter Fullscreen & Start Calibration" }: CalibrationSetupProps) {
+export function CalibrationSetup({
+  resolvedMode,
+  onSelectMode,
+  onStart,
+  startButtonText = 'Enter Fullscreen & Start Calibration',
+}: CalibrationSetupProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-[#FDF8F0] px-4 py-6">
       <div
