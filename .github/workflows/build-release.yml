@@ -78,9 +78,16 @@ jobs:
             
             WriteUninstaller "$INSTDIR\Uninstall.exe"
             CreateShortCut "$SMPROGRAMS\Lexora\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+
+            ; Register lexora:// protocol
+            WriteRegStr HKCR "lexora" "" "URL:Lexora Protocol"
+            WriteRegStr HKCR "lexora" "URL Protocol" ""
+            WriteRegStr HKCR "lexora\shell\open\command" "" '"$INSTDIR\Lexora.exe" "%1"'
           SectionEnd
 
           Section "Uninstall"
+            ; Remove lexora:// protocol
+            DeleteRegKey HKCR "lexora"
             Delete "$INSTDIR\Lexora.exe"
             Delete "$INSTDIR\Uninstall.exe"
             RMDir /r "$INSTDIR"
