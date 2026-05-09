@@ -45,9 +45,13 @@ export default function TobiiTestPage() {
 
   const openTobiiService = useCallback(() => {
     if (typeof window === 'undefined') return;
-    const url = serviceRunning ? TOBII_SERVICE_URL : '/api/download/service';
-    window.open(url, '_blank');
-  }, [serviceRunning, TOBII_SERVICE_URL]);
+    if (serviceRunning) {
+      // Launch custom protocol without opening a blank tab
+      window.location.href = 'lexora://open';
+    } else {
+      window.open('/api/download/service', '_blank');
+    }
+  }, [serviceRunning]);
 
   useEffect(() => {
     checkStatus();

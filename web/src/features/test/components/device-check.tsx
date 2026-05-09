@@ -288,7 +288,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => window.open('http://localhost:28980', '_blank')}
+                  onClick={() => { window.location.href = 'lexora://open'; }}
                 >
                   Open Service
                 </Button>
