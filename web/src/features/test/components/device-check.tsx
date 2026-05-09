@@ -156,7 +156,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => window.open('/api/download/service', '_blank')}
+                onClick={() => { window.location.href = '/api/download/service'; }}
               >
                 Download Service
               </Button>
@@ -279,7 +279,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => window.open('/api/download/service', '_blank')}
+                  onClick={() => { window.location.href = '/api/download/service'; }}
                 >
                   Download Service
                 </Button>

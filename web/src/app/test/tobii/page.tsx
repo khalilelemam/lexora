@@ -50,7 +50,7 @@ export default function TobiiTestPage() {
       // Launch custom protocol without opening a blank tab
       window.location.href = 'lexora://open';
     } else {
-      window.open('/api/download/service', '_blank');
+      window.location.href = '/api/download/service';
     }
   }, [serviceRunning]);
 
