@@ -179,26 +179,26 @@ export function ReviewPanel({
         })}
 
         {/* Bottom controls */}
-        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[#E8E0D4] bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[#51513d] bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
           <button
             type="button"
             onClick={handlePlayPause}
-            className="text-[#4A7C59] hover:text-[#3D6A4B]"
+            className="text-[#51513d] hover:text-[#1b2021]"
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#E8E0D4]">
+          <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#51513d]">
             <div
-              className="h-full rounded-full bg-[#4A7C59] transition-all duration-75"
+              className="h-full rounded-full bg-[#51513d] transition-all duration-75"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="w-8 text-[11px] text-[#8B857E] tabular-nums">{progress}%</span>
-          <div className="h-4 w-px bg-[#E8E0D4]" />
+          <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{progress}%</span>
+          <div className="h-4 w-px bg-[#51513d]" />
           <button
             type="button"
             onClick={handleCloseGaze}
-            className="text-[#8B857E] hover:text-[#2D2A26]"
+            className="text-[#1b2021] hover:text-[#1b2021]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -212,11 +212,11 @@ export function ReviewPanel({
   // ═══════════════════════════════════════════════════════
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#FDF8F0]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#e3dcc2]"
       style={{ animation: 'float-up 0.4s ease-out' }}
     >
-      <div className="w-[min(420px,90vw)] overflow-hidden rounded-2xl border border-[#E8E0D4] bg-white/80 shadow-lg backdrop-blur-sm">
-        <div className="border-b border-[#E8E0D4] p-5">
+      <div className="w-[min(420px,90vw)] overflow-hidden rounded-2xl border border-[#51513d] bg-white/80 shadow-lg backdrop-blur-sm">
+        <div className="border-b border-[#51513d] p-5">
           <LexoraLogo size="sm" />
         </div>
 
@@ -238,10 +238,10 @@ export function ReviewPanel({
               )}
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#2D2A26]">
+              <h2 className="text-base font-bold text-[#1b2021]">
                 {hasEnoughData ? 'Task Complete' : 'Task Finished'}
               </h2>
-              <p className="text-xs text-[#8B857E]">{label}</p>
+              <p className="text-xs text-[#1b2021]">{label}</p>
             </div>
           </div>
 
@@ -271,11 +271,11 @@ export function ReviewPanel({
             <button
               type="button"
               onClick={handleOpenGaze}
-              className="flex items-center gap-2 rounded-xl border border-[#4A7C59]/20 bg-[#4A7C59]/5 p-3 text-sm text-[#4A7C59] transition-colors hover:bg-[#4A7C59]/10"
+              className="flex items-center gap-2 rounded-xl border border-[#51513d]/20 bg-[#51513d]/5 p-3 text-sm text-[#51513d] transition-colors hover:bg-[#51513d]/10"
             >
               <Eye className="h-4 w-4" />
               <span className="font-medium">View Gaze Trail</span>
-              <span className="ml-auto text-xs text-[#8B857E]">Fullscreen replay</span>
+              <span className="ml-auto text-xs text-[#1b2021]">Fullscreen replay</span>
             </button>
           )}
 
@@ -283,7 +283,7 @@ export function ReviewPanel({
           <div className="flex flex-col gap-2.5 pt-1">
             <Button
               onClick={onContinue}
-              className="w-full bg-[#4A7C59] text-white hover:bg-[#3D6A4B]"
+              className="w-full bg-[#51513d] text-white hover:bg-[#1b2021]"
             >
               {isLastTask ? 'Submit for Analysis' : 'Next Task'}
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -291,7 +291,7 @@ export function ReviewPanel({
             <Button
               variant="outline"
               onClick={onRetake}
-              className="w-full border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26]"
+              className="w-full border-[#51513d] text-[#1b2021] hover:text-[#1b2021]"
             >
               <RotateCcw className="mr-2 h-4 w-4" />
               Retake

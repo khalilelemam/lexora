@@ -24,7 +24,7 @@ const MODE_CONFIG: Record<
     instruction: 'A dot will appear at different positions on screen.',
     howTo:
       'Follow each dot with your eyes and hold your gaze steady until the ring fills completely.',
-    accentColor: '#4A7C59',
+    accentColor: '#51513d',
     icon: '◉',
   },
   stickman: {
@@ -57,15 +57,15 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
   const config = MODE_CONFIG[resolvedMode];
 
   return (
-    <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#FDF8F0]">
+    <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#e3dcc2]">
       <div
-        className="flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-[#E8E0D4] bg-white/80 px-10 py-8 shadow-lg backdrop-blur-sm"
+        className="flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-[#51513d] bg-white/80 px-10 py-8 shadow-lg backdrop-blur-sm"
         style={{ animation: 'float-up 0.4s ease-out' }}
       >
-        <h2 className="text-2xl font-bold tracking-tight text-[#2D2A26]">Get Ready</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-[#1b2021]">Get Ready</h2>
 
         {/* Mode badge */}
-        <div className="flex items-center gap-2 rounded-full border border-[#E8E0D4] bg-white px-4 py-1.5">
+        <div className="flex items-center gap-2 rounded-full border border-[#51513d] bg-white px-4 py-1.5">
           <span className="text-lg">{config.icon}</span>
           <span className="text-sm font-medium" style={{ color: config.accentColor }}>
             {config.label}
@@ -74,9 +74,9 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
 
         {/* Instructions */}
         <div className="max-w-sm space-y-2 text-center">
-          <p className="text-sm leading-relaxed text-[#6B6560]">{config.instruction}</p>
-          <p className="text-xs leading-relaxed text-[#8B857E]">
-            <span className="font-medium text-[#2D2A26]">How: </span>
+          <p className="text-sm leading-relaxed text-[#1b2021]">{config.instruction}</p>
+          <p className="text-xs leading-relaxed text-[#1b2021]">
+            <span className="font-medium text-[#1b2021]">How: </span>
             {config.howTo}
           </p>
         </div>
@@ -87,7 +87,7 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
         {/* Countdown ring */}
         <div className="relative flex h-20 w-20 items-center justify-center">
           <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 96 96">
-            <circle cx="48" cy="48" r="44" fill="none" stroke="#E8E0D4" strokeWidth="4" />
+            <circle cx="48" cy="48" r="44" fill="none" stroke="#51513d" strokeWidth="4" />
             <circle
               cx="48"
               cy="48"
@@ -106,7 +106,7 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
           </span>
         </div>
 
-        <p className="text-xs text-[#8B857E]">Keep your head still — move only your eyes</p>
+        <p className="text-xs text-[#1b2021]">Keep your head still — move only your eyes</p>
       </div>
     </div>
   );
@@ -165,9 +165,9 @@ function ModePreview({ mode, accentColor }: { mode: CalibrationVisualMode; accen
   }, [mode, accentColor]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#E8E0D4] bg-[#FDF8F0]">
+    <div className="overflow-hidden rounded-xl border border-[#51513d] bg-[#e3dcc2]">
       <canvas ref={canvasRef} className="block" />
-      <p className="pb-1.5 text-center text-[9px] text-[#A09890]">Preview</p>
+      <p className="pb-1.5 text-center text-[9px] text-[#51513d]">Preview</p>
     </div>
   );
 }
@@ -186,7 +186,7 @@ function drawGridPreview(
   // Background ring
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(74,124,89,0.15)';
+  ctx.strokeStyle = 'rgba(81,81,61,0.15)';
   ctx.lineWidth = 3;
   ctx.stroke();
 
@@ -201,14 +201,14 @@ function drawGridPreview(
   // Center dot
   ctx.beginPath();
   ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-  ctx.fillStyle = '#2D2A26';
+  ctx.fillStyle = '#1b2021';
   ctx.fill();
 
   // Breathing glow
   const glow = 0.08 + Math.sin(t * 2.8) * 0.04;
   ctx.beginPath();
   ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(74,124,89,${glow})`;
+  ctx.fillStyle = `rgba(81,81,61,${glow})`;
   ctx.fill();
 }
 
@@ -266,16 +266,16 @@ function drawNinjaPreview(ctx: CanvasRenderingContext2D, cx: number, cy: number,
   // Head
   ctx.beginPath();
   ctx.arc(cx, ny - 18, 9, 0, Math.PI * 2);
-  ctx.strokeStyle = '#2D2A26';
+  ctx.strokeStyle = '#1b2021';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
   // Mask band
-  ctx.fillStyle = '#2D2A26';
+  ctx.fillStyle = '#1b2021';
   ctx.fillRect(cx - 8, ny - 22, 16, 5);
 
   // Eyes
-  ctx.fillStyle = '#FDF8F0';
+  ctx.fillStyle = '#e3dcc2';
   ctx.beginPath();
   ctx.arc(cx - 3, ny - 20.5, 1.2, 0, Math.PI * 2);
   ctx.fill();
@@ -298,7 +298,7 @@ function drawNinjaPreview(ctx: CanvasRenderingContext2D, cx: number, cy: number,
   ctx.stroke();
 
   // Body
-  ctx.strokeStyle = '#2D2A26';
+  ctx.strokeStyle = '#1b2021';
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.moveTo(cx, ny - 9);

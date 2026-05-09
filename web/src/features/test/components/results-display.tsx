@@ -95,21 +95,21 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
   // ── Default: Results page ──
   return (
     <div
-      className="fixed inset-0 flex flex-col bg-[#FDF8F0]"
+      className="fixed inset-0 flex flex-col bg-[#e3dcc2]"
       style={{ animation: 'float-up 0.5s ease-out' }}
     >
       {/* Top bar */}
-      <div className="z-10 shrink-0 border-b border-[#E8E0D4] bg-[#FDF8F0]/90 backdrop-blur-sm">
+      <div className="z-10 shrink-0 border-b border-[#51513d] bg-[#e3dcc2]/90 backdrop-blur-sm">
         <div className="flex items-center justify-between px-6 py-3">
           <LexoraLogo size="sm" />
-          <span className="text-xs font-medium text-[#8B857E]">Screening Results</span>
+          <span className="text-xs font-medium text-[#1b2021]">Screening Results</span>
         </div>
       </div>
 
       {/* Main content — horizontal split */}
       <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
         {/* LEFT — Risk result + recommendations */}
-        <div className="shrink-0 overflow-y-auto border-b border-[#E8E0D4] bg-white/50 lg:w-105 lg:border-r lg:border-b-0 xl:w-115">
+        <div className="shrink-0 overflow-y-auto border-b border-[#51513d] bg-white/50 lg:w-105 lg:border-r lg:border-b-0 xl:w-115">
           <div className="flex flex-col gap-5 p-6 lg:p-8">
             {/* Score gauge */}
             <div className="flex items-center gap-5">
@@ -147,23 +147,23 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
                   <Icon className={cn('h-5 w-5', config.color)} />
                   <h2 className={cn('text-xl font-bold', config.color)}>{config.label}</h2>
                 </div>
-                <p className="text-sm leading-relaxed text-[#6B6560]">{config.description}</p>
+                <p className="text-sm leading-relaxed text-[#1b2021]">{config.description}</p>
               </div>
             </div>
 
-            <div className="border-t border-[#E8E0D4]" />
+            <div className="border-t border-[#51513d]" />
 
             {/* Next steps */}
             <div>
-              <h3 className="mb-3 text-sm font-semibold text-[#2D2A26]">What should you do?</h3>
-              <p className="mb-4 text-sm leading-relaxed text-[#6B6560]">{config.recommendation}</p>
+              <h3 className="mb-3 text-sm font-semibold text-[#1b2021]">What should you do?</h3>
+              <p className="mb-4 text-sm leading-relaxed text-[#1b2021]">{config.recommendation}</p>
               <div className="space-y-2.5">
                 {config.nextSteps.map((step, idx) => (
                   <div key={idx} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#4A7C59] text-[10px] font-bold text-white">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#51513d] text-[10px] font-bold text-white">
                       {idx + 1}
                     </span>
-                    <span className="text-sm text-[#6B6560]">{step}</span>
+                    <span className="text-sm text-[#1b2021]">{step}</span>
                   </div>
                 ))}
               </div>
@@ -177,7 +177,7 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
                   <span>Webcam tracking is less accurate than professional hardware.</span>
                 </div>
               )}
-              <div className="flex items-start gap-2 rounded-lg border border-[#4A7C59]/15 bg-[#4A7C59]/5 p-3 text-xs leading-relaxed text-[#4A7C59]">
+              <div className="flex items-start gap-2 rounded-lg border border-[#51513d]/15 bg-[#51513d]/5 p-3 text-xs leading-relaxed text-[#51513d]">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   This is a screening tool, not a medical diagnosis. Consult a specialist.
@@ -189,7 +189,7 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
             <button
               type="button"
               onClick={() => setShowTechnical(!showTechnical)}
-              className="flex items-center gap-1.5 text-xs text-[#8B857E] transition-colors hover:text-[#6B6560]"
+              className="flex items-center gap-1.5 text-xs text-[#1b2021] transition-colors hover:text-[#1b2021]"
             >
               {showTechnical ? (
                 <ChevronUp className="h-3.5 w-3.5" />
@@ -200,7 +200,7 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
             </button>
 
             {showTechnical && (
-              <div className="rounded-lg border border-[#E8E0D4] bg-[#F5F0E8]/50 p-3 text-xs text-[#8B857E]">
+              <div className="rounded-lg border border-[#51513d] bg-[#f3edd7]/50 p-3 text-xs text-[#1b2021]">
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { label: 'Probability', value: `${probability}%` },
@@ -214,8 +214,8 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
                     { label: 'Date', value: new Date().toLocaleDateString() },
                   ].map(({ label, value }) => (
                     <div key={label}>
-                      <span className="block text-[11px] font-medium text-[#2D2A26]">{label}</span>
-                      <span className="text-[#8B857E]">{value}</span>
+                      <span className="block text-[11px] font-medium text-[#1b2021]">{label}</span>
+                      <span className="text-[#1b2021]">{value}</span>
                     </div>
                   ))}
                 </div>
@@ -227,14 +227,14 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
               <Button
                 variant="outline"
                 onClick={onNewTest}
-                className="flex-1 border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26]"
+                className="flex-1 border-[#51513d] text-[#1b2021] hover:text-[#1b2021]"
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
                 New Test
               </Button>
               <Button
                 onClick={onNewTest}
-                className="flex-1 bg-[#4A7C59] text-white hover:bg-[#3D6A4B]"
+                className="flex-1 bg-[#51513d] text-white hover:bg-[#1b2021]"
               >
                 Dashboard
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -248,12 +248,12 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
           <div className="flex h-full flex-col items-center justify-center p-6 lg:p-8">
             {hasReplay ? (
               <div className="flex max-w-sm flex-col items-center gap-5 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#4A7C59]/10">
-                  <Eye className="h-8 w-8 text-[#4A7C59]" />
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#51513d]/10">
+                  <Eye className="h-8 w-8 text-[#51513d]" />
                 </div>
                 <div>
-                  <h3 className="mb-2 text-lg font-semibold text-[#2D2A26]">Eye Movement Replay</h3>
-                  <p className="text-sm leading-relaxed text-[#8B857E]">
+                  <h3 className="mb-2 text-lg font-semibold text-[#1b2021]">Eye Movement Replay</h3>
+                  <p className="text-sm leading-relaxed text-[#1b2021]">
                     Watch how the reader&apos;s eyes moved across the text with ML-analyzed fixation
                     data. Larger bubbles indicate longer pauses.
                     <span className="text-red-500"> Red</span> = regressions.
@@ -265,7 +265,7 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
                 </div>
                 <Button
                   onClick={() => setShowGazeReplay(true)}
-                  className="bg-[#4A7C59] px-8 text-white hover:bg-[#3D6A4B]"
+                  className="bg-[#51513d] px-8 text-white hover:bg-[#1b2021]"
                 >
                   <Play className="mr-2 h-4 w-4" />
                   View Gaze Replay
