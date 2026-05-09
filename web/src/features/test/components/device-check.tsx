@@ -129,15 +129,16 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               </a>
             </div>
 
-            <div className="rounded-2xl border border-border bg-background p-4 text-sm text-muted-foreground">
-              <p className="mb-2 text-xs font-semibold text-foreground">Supported Tobii Devices</p>
+            <div className="border-border bg-background text-muted-foreground rounded-2xl border p-4 text-sm">
+              <p className="text-foreground mb-2 text-xs font-semibold">Supported Tobii Devices</p>
               <ul className="list-disc space-y-1 pl-4">
                 <li>Tobii Pro Fusion</li>
                 <li>Tobii Pro Spectrum</li>
                 <li>Tobii Pro Nano</li>
               </ul>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Only Tobii Pro devices with SDK support are compatible. Consumer trackers such as Tobii Eye Tracker 5 are not supported.
+              <p className="text-muted-foreground mt-3 text-xs">
+                Only Tobii Pro devices with SDK support are compatible. Consumer trackers such as
+                Tobii Eye Tracker 5 are not supported.
               </p>
             </div>
 
