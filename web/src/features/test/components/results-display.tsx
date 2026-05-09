@@ -216,7 +216,10 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
                     {[
                       { label: 'Probability', value: `${probability}%` },
                       { label: 'Confidence', value: `${Math.round(result.confidence * 100)}%` },
-                      { label: 'Fixations', value: result.metadata.totalFixations.toLocaleString() },
+                      {
+                        label: 'Fixations',
+                        value: result.metadata.totalFixations.toLocaleString(),
+                      },
                       {
                         label: 'Sequences',
                         value: result.metadata.sequencesAnalyzed.toLocaleString(),
@@ -292,9 +295,7 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
             ) : (
               <div className="flex flex-col items-center text-[#51513d]/40">
                 <Eye className="mb-4 h-12 w-12" />
-                <p className="font-black uppercase tracking-[0.1em]">
-                  No gaze replay data
-                </p>
+                <p className="font-black tracking-[0.1em] uppercase">No gaze replay data</p>
                 <p className="mt-2 text-xs">
                   The ML service did not return fixation features for this test.
                 </p>

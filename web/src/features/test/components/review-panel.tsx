@@ -226,9 +226,7 @@ export function ReviewPanel({
             <div
               className={cn(
                 'flex h-12 w-12 shrink-0 items-center justify-center border',
-                hasEnoughData
-                  ? 'border-[#a6a867] bg-[#a6a867]/15'
-                  : 'border-amber-400 bg-amber-50',
+                hasEnoughData ? 'border-[#a6a867] bg-[#a6a867]/15' : 'border-amber-400 bg-amber-50',
               )}
             >
               {hasEnoughData ? (
@@ -258,8 +256,8 @@ export function ReviewPanel({
           >
             {hasEnoughData ? (
               <p>
-                <span className="font-black text-[#51513d]">{pointCount}</span> gaze points
-                captured successfully.
+                <span className="font-black text-[#51513d]">{pointCount}</span> gaze points captured
+                successfully.
               </p>
             ) : (
               <p>
