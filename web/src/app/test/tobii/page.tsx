@@ -32,7 +32,12 @@ export default function TobiiTestPage() {
   const router = useRouter();
   const { state, dispatch } = useTestFlow({ mode: 'tobii' });
   const tobiiState = state as TobiiTestFlowState;
-  const { status: tobiiStatus, checking: serviceChecking, error: serviceError, checkStatus } = useTobiiStatus();
+  const {
+    status: tobiiStatus,
+    checking: serviceChecking,
+    error: serviceError,
+    checkStatus,
+  } = useTobiiStatus();
 
   const TOBII_SERVICE_URL = process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
   const serviceRunning = tobiiStatus?.connected === true;
@@ -196,80 +201,107 @@ export default function TobiiTestPage() {
     switch (tobiiState.currentState) {
       case 'idle':
         return (
-          <div className="flex flex-col items-center gap-6 w-full max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold">Eye Tracker Test</h1>
-            <p className="text-muted-foreground max-w-2xl text-center">
-              This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of 3
-              reading tasks: syllables, pseudo-words, and meaningful text.
-            </p>
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+            {/* Hero heading */}
+            <div className="text-center">
+              <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
+                Tobii Eye Tracking
+              </p>
+              <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
+                Eye Tracker Test
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#1b2021]/64">
+                This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of
+                3 reading tasks: syllables, pseudo-words, and meaningful text.
+              </p>
+            </div>
 
             {/* Service Status & Supported Devices */}
-            <div className="grid w-full gap-6 md:grid-cols-[1fr_auto]">
-              <div className="rounded-3xl border border-border bg-background p-6 shadow-sm">
+            <div className="grid w-full gap-5 md:grid-cols-[1.2fr_0.8fr]">
+              {/* Service status card */}
+              <div className="border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[10px_10px_0_rgba(81,81,61,.08)]">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold">Tobii Service Status</p>
-                    <p className="text-muted-foreground text-xs">
-                      Lexora checks the local Tobii helper service on <code>localhost:28980</code>.
+                    <p className="text-sm font-black text-[#1b2021]">Tobii Service Status</p>
+                    <p className="mt-1 text-xs leading-relaxed text-[#1b2021]/58">
+                      Lexora checks the local Tobii helper service on{' '}
+                      <code className="border border-[#51513d]/15 bg-[#e3dcc2] px-1 py-0.5 font-mono text-[10px]">
+                        localhost:28980
+                      </code>
                     </p>
                   </div>
                   <span
-                    className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${
+                    className={`inline-flex px-3 py-1 text-[11px] font-black tracking-wider uppercase ${
                       serviceChecking
-                        ? 'bg-slate-200 text-slate-700'
+                        ? 'bg-[#51513d]/10 text-[#51513d]'
                         : serviceRunning
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 text-amber-800'
+                          ? 'bg-[#a6a867] text-[#1b2021]'
+                          : 'bg-[#e3dc95] text-[#51513d]'
                     }`}
                   >
                     {serviceChecking ? 'Checking…' : serviceRunning ? 'Running' : 'Not running'}
                   </span>
                 </div>
                 {serviceRunning ? (
-                  <div className="mt-4 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm">
-                    <p className="font-medium text-foreground">Connected to the Tobii helper app.</p>
-                    <p className="text-muted-foreground">
-                      {serviceDevice?.deviceName ?? 'Tobii Pro device'} ({serviceDevice?.model ?? 'Unknown model'})
+                  <div className="mt-5 space-y-2 border border-[#a6a867]/30 bg-[#a6a867]/8 p-4 text-sm">
+                    <p className="font-black text-[#1b2021]">Connected to the Tobii helper app.</p>
+                    <p className="text-[#1b2021]/64">
+                      {serviceDevice?.deviceName ?? 'Tobii Pro device'} (
+                      {serviceDevice?.model ?? 'Unknown model'})
                     </p>
-                    <p className="text-muted-foreground text-xs">Serial: {serviceDevice?.serialNumber ?? 'N/A'}</p>
+                    <p className="text-xs text-[#1b2021]/50">
+                      Serial: {serviceDevice?.serialNumber ?? 'N/A'}
+                    </p>
                   </div>
                 ) : (
-                  <div className="mt-4 space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm">
-                    <p className="font-medium text-foreground">Tobii helper is not reachable.</p>
-                    <p className="text-muted-foreground">
-                      Install or start the Lexora Tobii Service app on your computer before running the Tobii test.
+                  <div className="mt-5 space-y-2 border border-[#e3dc95]/60 bg-[#e3dc95]/15 p-4 text-sm">
+                    <p className="font-black text-[#1b2021]">Tobii helper is not reachable.</p>
+                    <p className="text-[#1b2021]/64">
+                      Install or start the Lexora Tobii Service app on your computer before running
+                      the Tobii test.
                     </p>
-                    {serviceError && <p className="text-xs text-amber-700">{serviceError}</p>}
+                    {serviceError && <p className="text-xs text-[#51513d]">{serviceError}</p>}
                   </div>
                 )}
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
                     onClick={openTobiiService}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-5 py-2 text-sm font-medium"
+                    className="bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
                   >
                     {serviceRunning ? 'Open Tobii Service' : 'Download Tobii Service'}
                   </button>
                   <button
                     type="button"
                     onClick={checkStatus}
-                    className="inline-flex items-center justify-center rounded-md border border-border bg-background px-5 py-2 text-sm font-medium text-foreground hover:bg-muted/70"
+                    className="border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
                   >
                     Refresh Status
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-border bg-background p-6 shadow-sm">
-                <p className="text-sm font-semibold">Supported Tobii Devices</p>
-                <p className="text-muted-foreground text-xs mb-3">
-                  Lexora supports Tobii Pro devices with SDK support. Consumer trackers such as Tobii Eye Tracker 5 are not compatible.
+              {/* Supported devices card */}
+              <div className="border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[10px_10px_0_rgba(81,81,61,.08)]">
+                <p className="mb-1 text-xs font-black tracking-[0.2em] text-[#51513d] uppercase">
+                  Supported Devices
                 </p>
-                <ul className="list-disc space-y-2 pl-4 text-sm text-muted-foreground">
-                  <li>Tobii Pro Fusion</li>
-                  <li>Tobii Pro Spectrum</li>
-                  <li>Tobii Pro Nano</li>
-                </ul>
+                <p className="mb-5 text-xs leading-relaxed text-[#1b2021]/58">
+                  Tobii Pro devices with SDK support. Consumer trackers (e.g. Eye Tracker 5) are not
+                  compatible.
+                </p>
+                <div className="grid gap-px overflow-hidden border border-[#51513d]/18 bg-[#51513d]/18">
+                  {['Tobii Pro Fusion', 'Tobii Pro Spectrum', 'Tobii Pro Nano'].map(
+                    (device, idx) => (
+                      <div key={device} className="grid grid-cols-[3rem_1fr] bg-[#e3dcc2]">
+                        <div className="bg-[#a6a867] p-3 font-mono text-xs font-black text-[#1b2021]">
+                          0{idx + 1}
+                        </div>
+                        <div className="p-3 text-sm font-black text-[#1b2021]">{device}</div>
+                      </div>
+                    ),
+                  )}
+                </div>
               </div>
             </div>
 
