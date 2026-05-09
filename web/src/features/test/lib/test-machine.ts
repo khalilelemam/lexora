@@ -35,7 +35,10 @@ export function createWebcamInitialState(): WebcamTestFlowState {
 function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestFlowState {
   switch (action.type) {
     case 'START':
-      return { ...state, currentState: 'pre-test-education', error: null };
+      return { ...state, currentState: 'hardware-check', error: null };
+
+    case 'HARDWARE_CONFIRMED':
+      return { ...state, currentState: 'pre-test-education' };
 
     case 'EDUCATION_COMPLETE':
       return { ...state, currentState: 'device-check' };

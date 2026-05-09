@@ -17,6 +17,7 @@ import {
 } from '@/features/test/components';
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
+import { SupportedHardware } from '@/features/test/components/supported-hardware';
 import { useTestFlow, useTobiiGazeStream, useTobiiStatus } from '@/features/test/hooks';
 import { Star, Target } from 'lucide-react';
 import { useTobiiTaskBuffers } from '@/features/test/hooks/use-tobii-task-buffers';
@@ -212,8 +213,8 @@ export default function TobiiTestPage() {
               reading tasks: syllables, pseudo-words, and meaningful text.
             </p>
 
-            {/* Service Status & Supported Devices */}
-            <div className="grid w-full gap-6 md:grid-cols-[1fr_auto]">
+            {/* Service Status */}
+            <div className="mx-auto w-full max-w-2xl">
               <div className="border-border bg-background rounded-3xl border p-6 shadow-sm">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -274,19 +275,6 @@ export default function TobiiTestPage() {
                   </button>
                 </div>
               </div>
-
-              <div className="border-border bg-background rounded-3xl border p-6 shadow-sm">
-                <p className="text-sm font-semibold">Supported Tobii Devices</p>
-                <p className="text-muted-foreground mb-3 text-xs">
-                  Lexora supports Tobii Pro devices with SDK support. Consumer trackers such as
-                  Tobii Eye Tracker 5 are not compatible.
-                </p>
-                <ul className="text-muted-foreground list-disc space-y-2 pl-4 text-sm">
-                  <li>Tobii Pro Fusion</li>
-                  <li>Tobii Pro Spectrum</li>
-                  <li>Tobii Pro Nano</li>
-                </ul>
-              </div>
             </div>
 
             {/* Calibration Mode Selection */}
@@ -298,6 +286,9 @@ export default function TobiiTestPage() {
             />
           </div>
         );
+
+      case 'hardware-check':
+        return <SupportedHardware onContinue={() => dispatch({ type: 'HARDWARE_CONFIRMED' })} />;
 
       case 'pre-test-education':
         return (

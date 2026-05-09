@@ -78,6 +78,7 @@ export interface PredictionResult {
 // ─── Test Flow States ────────────────────────────────────
 export type TobiiTestState =
   | 'idle'
+  | 'hardware-check'
   | 'pre-test-education'
   | 'device-check'
   | 'calibrating'
@@ -107,6 +108,7 @@ export type TestState = TobiiTestState | WebcamTestState;
 // ─── Test Flow Actions ───────────────────────────────────
 export type TestAction =
   | { type: 'START' }
+  | { type: 'HARDWARE_CONFIRMED' }
   | { type: 'EDUCATION_COMPLETE' }
   | { type: 'DEVICE_READY' }
   | { type: 'CAMERA_READY' }
