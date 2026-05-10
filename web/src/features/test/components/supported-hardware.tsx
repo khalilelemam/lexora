@@ -16,14 +16,24 @@ interface DeviceInfo {
   note?: string;
 }
 
-const SUPPORTED_DEVICES: DeviceInfo[] = [
+const parseEnvList = (envValue: string | undefined, fallback: DeviceInfo[]): DeviceInfo[] => {
+  if (!envValue) return fallback;
+  try {
+    return JSON.parse(envValue);
+  } catch (e) {
+    console.error('Failed to parse device list from env', e);
+    return fallback;
+  }
+};
+
+const SUPPORTED_DEVICES_FALLBACK: DeviceInfo[] = [
   { name: 'Tobii Pro Spectrum', type: 'screen-based', status: 'supported', hz: 'Up to 1200 Hz' },
   { name: 'Tobii Pro Fusion', type: 'screen-based', status: 'supported', hz: 'Up to 250 Hz' },
   { name: 'Tobii Pro Spark', type: 'screen-based', status: 'supported', hz: '60 Hz' },
   { name: 'Tobii Pro Nano', type: 'screen-based', status: 'supported', hz: '60 Hz' },
 ];
 
-const LEGACY_DEVICES: DeviceInfo[] = [
+const LEGACY_DEVICES_FALLBACK: DeviceInfo[] = [
   { name: 'Tobii Pro X3-120', type: 'screen-based', status: 'legacy', hz: '120 Hz' },
   { name: 'Tobii Pro X2-60', type: 'screen-based', status: 'legacy', hz: '60 Hz' },
   { name: 'Tobii Pro X2-30', type: 'screen-based', status: 'legacy', hz: '30 Hz' },
@@ -39,7 +49,7 @@ const LEGACY_DEVICES: DeviceInfo[] = [
   { name: 'Tobii X60 / X120', type: 'screen-based', status: 'legacy', note: 'Firmware ≥ 2.0.0' },
 ];
 
-const INCOMPATIBLE_DEVICES: DeviceInfo[] = [
+const INCOMPATIBLE_DEVICES_FALLBACK: DeviceInfo[] = [
   {
     name: 'Tobii Eye Tracker 5',
     type: 'screen-based',
@@ -72,6 +82,19 @@ const INCOMPATIBLE_DEVICES: DeviceInfo[] = [
   },
   { name: 'VR Headsets (all)', type: 'portable', status: 'incompatible', note: 'Not supported' },
 ];
+
+const SUPPORTED_DEVICES = parseEnvList(
+  process.env.NEXT_PUBLIC_SUPPORTED_DEVICES,
+  SUPPORTED_DEVICES_FALLBACK,
+);
+const LEGACY_DEVICES = parseEnvList(
+  process.env.NEXT_PUBLIC_LEGACY_DEVICES,
+  LEGACY_DEVICES_FALLBACK,
+);
+const INCOMPATIBLE_DEVICES = parseEnvList(
+  process.env.NEXT_PUBLIC_INCOMPATIBLE_DEVICES,
+  INCOMPATIBLE_DEVICES_FALLBACK,
+);
 
 function StatusBadge({ status }: { status: DeviceInfo['status'] }) {
   if (status === 'supported') {
@@ -127,7 +150,7 @@ function DeviceRow({ device, index }: { device: DeviceInfo; index: number }) {
  */
 export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 py-8">
+    <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 px-4 py-8 sm:px-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
