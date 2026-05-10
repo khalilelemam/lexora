@@ -156,7 +156,9 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => { window.location.href = '/api/download/service'; }}
+                onClick={() => {
+                  window.location.href = '/api/download/service';
+                }}
               >
                 Download Service
               </Button>
@@ -279,7 +281,9 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => { window.location.href = '/api/download/service'; }}
+                  onClick={() => {
+                    window.location.href = '/api/download/service';
+                  }}
                 >
                   Download Service
                 </Button>
@@ -288,7 +292,9 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => { window.location.href = 'lexora://open'; }}
+                  onClick={() => {
+                    window.location.href = 'lexora://open';
+                  }}
                 >
                   Open Service
                 </Button>

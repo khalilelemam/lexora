@@ -1,14 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import {
-  Monitor,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  ArrowRight,
-  Eye,
-} from 'lucide-react';
+import { Monitor, CheckCircle2, XCircle, Clock, ArrowRight, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SupportedHardwareProps {
@@ -34,18 +27,49 @@ const LEGACY_DEVICES: DeviceInfo[] = [
   { name: 'Tobii Pro X3-120', type: 'screen-based', status: 'legacy', hz: '120 Hz' },
   { name: 'Tobii Pro X2-60', type: 'screen-based', status: 'legacy', hz: '60 Hz' },
   { name: 'Tobii Pro X2-30', type: 'screen-based', status: 'legacy', hz: '30 Hz' },
-  { name: 'Tobii Pro TX300', type: 'screen-based', status: 'legacy', hz: '300 Hz', note: 'Firmware ≥ 1.0.0' },
+  {
+    name: 'Tobii Pro TX300',
+    type: 'screen-based',
+    status: 'legacy',
+    hz: '300 Hz',
+    note: 'Firmware ≥ 1.0.0',
+  },
   { name: 'Tobii Pro T60 XL', type: 'screen-based', status: 'legacy', note: 'Firmware ≥ 2.0.0' },
   { name: 'Tobii T60 / T120', type: 'screen-based', status: 'legacy', note: 'Firmware ≥ 2.0.0' },
   { name: 'Tobii X60 / X120', type: 'screen-based', status: 'legacy', note: 'Firmware ≥ 2.0.0' },
 ];
 
 const INCOMPATIBLE_DEVICES: DeviceInfo[] = [
-  { name: 'Tobii Eye Tracker 5', type: 'screen-based', status: 'incompatible', note: 'Consumer / gaming device' },
-  { name: 'Tobii Eye Tracker 5L', type: 'screen-based', status: 'incompatible', note: 'Consumer / gaming device' },
-  { name: 'Tobii Eye Tracker 4C', type: 'screen-based', status: 'incompatible', note: 'Consumer / gaming device' },
-  { name: 'Tobii Pro Glasses 2', type: 'portable', status: 'incompatible', note: 'Wearable – not supported' },
-  { name: 'Tobii Pro Glasses 3', type: 'portable', status: 'incompatible', note: 'Wearable – not supported' },
+  {
+    name: 'Tobii Eye Tracker 5',
+    type: 'screen-based',
+    status: 'incompatible',
+    note: 'Consumer / gaming device',
+  },
+  {
+    name: 'Tobii Eye Tracker 5L',
+    type: 'screen-based',
+    status: 'incompatible',
+    note: 'Consumer / gaming device',
+  },
+  {
+    name: 'Tobii Eye Tracker 4C',
+    type: 'screen-based',
+    status: 'incompatible',
+    note: 'Consumer / gaming device',
+  },
+  {
+    name: 'Tobii Pro Glasses 2',
+    type: 'portable',
+    status: 'incompatible',
+    note: 'Wearable – not supported',
+  },
+  {
+    name: 'Tobii Pro Glasses 3',
+    type: 'portable',
+    status: 'incompatible',
+    note: 'Wearable – not supported',
+  },
   { name: 'VR Headsets (all)', type: 'portable', status: 'incompatible', note: 'Not supported' },
 ];
 
@@ -77,18 +101,16 @@ function DeviceRow({ device, index }: { device: DeviceInfo; index: number }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
-      className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 transition-colors hover:bg-muted/40"
+      className="border-border bg-background hover:bg-muted/40 flex items-center justify-between rounded-xl border px-4 py-3 transition-colors"
     >
       <div className="flex items-center gap-3">
-        <Monitor className="h-4 w-4 text-muted-foreground" />
+        <Monitor className="text-muted-foreground h-4 w-4" />
         <div>
           <p className="text-sm font-medium">{device.name}</p>
           <div className="flex items-center gap-2">
-            {device.hz && (
-              <span className="text-[11px] text-muted-foreground">{device.hz}</span>
-            )}
+            {device.hz && <span className="text-muted-foreground text-[11px]">{device.hz}</span>}
             {device.note && (
-              <span className="text-[11px] text-muted-foreground italic">{device.note}</span>
+              <span className="text-muted-foreground text-[11px] italic">{device.note}</span>
             )}
           </div>
         </div>
@@ -112,13 +134,13 @@ export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-center gap-3 text-center"
       >
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-          <Eye className="h-7 w-7 text-primary" />
+        <div className="bg-primary/10 flex h-14 w-14 items-center justify-center rounded-2xl">
+          <Eye className="text-primary h-7 w-7" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight">Compatible Eye Trackers</h1>
-        <p className="max-w-lg text-sm text-muted-foreground leading-relaxed">
-          Lexora works with Tobii Pro screen-based eye trackers. Check that your device
-          is on the supported list before proceeding.
+        <p className="text-muted-foreground max-w-lg text-sm leading-relaxed">
+          Lexora works with Tobii Pro screen-based eye trackers. Check that your device is on the
+          supported list before proceeding.
         </p>
       </motion.div>
 
@@ -132,7 +154,7 @@ export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
         <div className="mb-3 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
           <h2 className="text-sm font-semibold">Fully Supported</h2>
-          <span className="text-[11px] text-muted-foreground">(Current models)</span>
+          <span className="text-muted-foreground text-[11px]">(Current models)</span>
         </div>
         <div className="space-y-2">
           {SUPPORTED_DEVICES.map((device, i) => (
@@ -151,7 +173,7 @@ export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
         <div className="mb-3 flex items-center gap-2">
           <Clock className="h-4 w-4 text-amber-600" />
           <h2 className="text-sm font-semibold">Legacy Devices</h2>
-          <span className="text-[11px] text-muted-foreground">(Discontinued — may still work)</span>
+          <span className="text-muted-foreground text-[11px]">(Discontinued — may still work)</span>
         </div>
         <div className="space-y-2">
           {LEGACY_DEVICES.map((device, i) => (
@@ -193,7 +215,7 @@ export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
           I have a compatible device — Continue
           <ArrowRight className="h-4 w-4" />
         </Button>
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-muted-foreground text-[11px]">
           You can also use the webcam-based test if you don&apos;t have a Tobii device.
         </p>
       </motion.div>
