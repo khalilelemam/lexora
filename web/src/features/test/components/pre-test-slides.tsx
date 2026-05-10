@@ -2,15 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Monitor,
-  Sun,
-  Star,
-  Shield,
-  ArrowRight,
-  ArrowLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { Monitor, Sun, Star, Shield, ArrowRight, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { cn } from '@/lib/utils';
