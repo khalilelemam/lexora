@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionCookie } from 'better-auth/cookies';
+
+import { auth } from '@/lib/auth';
 
 /**
- * Next.js 16 proxy — lightweight cookie-based auth guard.
+ * Next.js 16 proxy — session-validated auth guard.
  *
- * Only checks for the *existence* of a session cookie to redirect
- * unauthenticated users. Full validation happens inside each
- * protected page/route via `auth.api.getSession()`.
+ * Validates the session token against Better Auth (not just cookie
+ * existence) to prevent stale/revoked cookies from bypassing protection.
+ * Preserves the full URL (path + query) in the callbackUrl.
  */
-export function proxy(request: NextRequest) {
-  const sessionCookie = getSessionCookie(request);
+export async function proxy(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
 
-  if (!sessionCookie) {
+  if (!session) {
     const signInUrl = new URL('/sign-in', request.url);
-    signInUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
+    const callbackUrl = request.nextUrl.pathname + request.nextUrl.search;
+    signInUrl.searchParams.set('callbackUrl', callbackUrl);
     return NextResponse.redirect(signInUrl);
   }
 

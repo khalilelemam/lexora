@@ -14,10 +14,23 @@ interface SignInPageProps {
 }
 
 /**
+ * Validates that a callback URL is a safe, internal path.
+ * Rejects absolute URLs, protocol-relative URLs, and other external redirects
+ * to prevent open-redirect attacks (e.g. `/sign-in?callbackUrl=https://evil.com`).
+ */
+function sanitizeCallbackUrl(url: string | undefined): string {
+  if (!url) return '/';
+  // Must start with a single slash (not //) to be a relative path
+  if (!url.startsWith('/') || url.startsWith('//')) return '/';
+  return url;
+}
+
+/**
  * Sign-in page — **server component**.
  *
  * - Redirects authenticated users away (they shouldn't see this page).
  * - Reads `callbackUrl` from search params and passes it to the client card.
+ * - Sanitizes callbackUrl to prevent open-redirect attacks.
  * - All interactive logic lives in `_components/sign-in-card.tsx`.
  */
 export default async function SignInPage({ searchParams }: SignInPageProps) {
@@ -25,12 +38,12 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     headers: await headers(),
   });
 
-  if (session) {
-    const params = await searchParams;
-    redirect(params.callbackUrl || '/');
-  }
+  const { callbackUrl: rawCallbackUrl } = await searchParams;
+  const callbackUrl = sanitizeCallbackUrl(rawCallbackUrl);
 
-  const { callbackUrl = '/' } = await searchParams;
+  if (session) {
+    redirect(callbackUrl);
+  }
 
   return (
     <div className="relative flex w-full max-w-[420px] flex-col items-center">
