@@ -43,3 +43,5 @@ next-env.d.ts
 
 # shadcn
 components.json
+
+/src/generated/prisma

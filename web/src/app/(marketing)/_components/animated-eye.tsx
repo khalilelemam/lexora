@@ -4,6 +4,24 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 /**
+ * Pre-computed radial tick marks (compass lines).
+ *
+ * Coordinates are rounded to 2 decimal places to guarantee identical
+ * values on server and client — avoids React hydration mismatches
+ * caused by floating-point trig precision differences.
+ */
+const TICK_MARKS = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i * 30 * Math.PI) / 180;
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    x1: round(90 + Math.cos(angle) * 70),
+    y1: round(90 + Math.sin(angle) * 70),
+    x2: round(90 + Math.cos(angle) * 74),
+    y2: round(90 + Math.sin(angle) * 74),
+  };
+});
+
+/**
  * Animated abstract brand mark — concentric iris rings with gentle
  * mouse-tracking parallax. Replaces the realistic eye SVG with
  * a friendly, brand-aligned design.
@@ -132,23 +150,18 @@ export function AnimatedEye() {
         />
 
         {/* Radial tick marks — like a compass */}
-        {Array.from({ length: 12 }).map((_, i) => {
-          const angle = (i * 30 * Math.PI) / 180;
-          const innerR = 70;
-          const outerR = 74;
-          return (
-            <line
-              key={i}
-              x1={90 + Math.cos(angle) * innerR}
-              y1={90 + Math.sin(angle) * innerR}
-              x2={90 + Math.cos(angle) * outerR}
-              y2={90 + Math.sin(angle) * outerR}
-              stroke="oklch(0.70 0.10 115 / 0.3)"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          );
-        })}
+        {TICK_MARKS.map(({ x1, y1, x2, y2 }, i) => (
+          <line
+            key={i}
+            x1={x1}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            stroke="oklch(0.70 0.10 115 / 0.3)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        ))}
       </svg>
 
       {/* Ambient glow behind the whole thing */}

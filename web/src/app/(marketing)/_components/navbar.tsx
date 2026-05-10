@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { UserNav } from '@/components/shared/user-nav';
 
 type NavLink =
   | { label: string; type: 'scroll'; href: string }
@@ -114,7 +114,7 @@ export function Navbar() {
                 <button
                   key={link.href}
                   onClick={() => scrollTo(link.href)}
-                  className={`transition-colors ${
+                  className={`cursor-pointer transition-colors ${
                     isLinkActive(link)
                       ? 'text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -154,19 +154,14 @@ export function Navbar() {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => scrollTo('#get-started')}
-              className="hidden border-[oklch(0.70_0.10_115/0.4)] text-[oklch(0.40_0.04_110)] hover:border-[oklch(0.70_0.10_115)] hover:bg-[oklch(0.70_0.10_115/0.1)] sm:inline-flex"
-            >
-              Start Screening
-            </Button>
+            <div className="hidden sm:block">
+              <UserNav />
+            </div>
 
             {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="hover:bg-muted flex h-10 w-10 items-center justify-center rounded-lg transition-colors sm:hidden"
+              className="hover:bg-muted flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg transition-colors sm:hidden"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -201,7 +196,7 @@ export function Navbar() {
                     <button
                       key={link.href}
                       onClick={() => scrollTo(link.href)}
-                      className={`rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
+                      className={`cursor-pointer rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
                         isLinkActive(link)
                           ? 'text-foreground bg-accent/10'
                           : 'text-foreground hover:bg-muted'
@@ -225,12 +220,9 @@ export function Navbar() {
                   ),
                 )}
                 <div className="my-2 border-t" />
-                <Button
-                  onClick={() => scrollTo('#get-started')}
-                  className="w-full bg-[oklch(0.40_0.04_110)] text-[oklch(0.94_0.02_90)] hover:bg-[oklch(0.35_0.04_110)]"
-                >
-                  Start Screening
-                </Button>
+                <div className="px-4">
+                  <UserNav />
+                </div>
               </div>
             </motion.div>
           </>
