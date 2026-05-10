@@ -19,7 +19,6 @@ import {
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { useTestFlow, useWebcamGaze } from '@/features/test/hooks';
-import { Star, Target } from 'lucide-react';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import { submitWebcamTest } from '@/features/test/actions/submit-test';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
@@ -61,14 +60,6 @@ export default function WebcamTestPage() {
 
   const requestedCalibrationMode = selectedMode || 'grid';
   const participantAge = calibrationParams.age;
-
-  const handleStartTest = useCallback(
-    (mode: CalibrationVisualMode) => {
-      setSelectedMode(mode);
-      dispatch({ type: 'START' });
-    },
-    [dispatch],
-  );
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 

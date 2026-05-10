@@ -19,7 +19,6 @@ import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { SupportedHardware } from '@/features/test/components/supported-hardware';
 import { useTestFlow, useTobiiGazeStream, useTobiiStatus } from '@/features/test/hooks';
-import { Star, Target } from 'lucide-react';
 import { useTobiiTaskBuffers } from '@/features/test/hooks/use-tobii-task-buffers';
 import { submitTobiiTest } from '@/features/test/actions/submit-test';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
@@ -40,7 +39,6 @@ export default function TobiiTestPage() {
     checkStatus,
   } = useTobiiStatus();
 
-  const TOBII_SERVICE_URL = process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
   const serviceRunning = tobiiStatus?.connected === true;
   const serviceDevice = tobiiStatus?.device;
 
@@ -82,14 +80,6 @@ export default function TobiiTestPage() {
 
   const requestedCalibrationMode = selectedMode || 'grid';
   const participantAge = calibrationParams.age;
-
-  const handleStartTest = useCallback(
-    (mode: CalibrationVisualMode) => {
-      setSelectedMode(mode);
-      dispatch({ type: 'START' });
-    },
-    [dispatch],
-  );
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 

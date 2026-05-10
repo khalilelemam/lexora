@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Download, Monitor, Apple, ExternalLink } from 'lucide-react';
+import { Download, Monitor, Apple } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -69,6 +69,8 @@ export function DownloadSection() {
   const [currentPlatform, setCurrentPlatform] = useState<Platform>('unknown');
 
   useEffect(() => {
+    // @ts-expect-error - necessary to avoid hydration mismatch
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPlatform(detectPlatform());
   }, []);
 
