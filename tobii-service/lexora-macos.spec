@@ -76,5 +76,11 @@ app = BUNDLE(
     info_plist={
         'NSHighResolutionCapable': 'True',
         'LSUIElement': '1',
+        'CFBundleURLTypes': [
+            {
+                'CFBundleURLName': 'Lexora Protocol',
+                'CFBundleURLSchemes': ['lexora']
+            }
+        ],
     },
 )
