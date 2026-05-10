@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Monitor, Sun, Star, Shield, ArrowRight, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
+import { StepIndicator } from '@/components/shared';
 import { cn } from '@/lib/utils';
 
 interface PreTestSlidesProps {
@@ -384,23 +385,12 @@ export function PreTestSlides({
       {/* Navigation controls */}
       <div className="absolute right-0 bottom-8 left-0 flex flex-col items-center gap-4">
         {/* Dot indicators */}
-        <div className="flex items-center gap-2">
-          {slides.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => {
-                setDirection(idx > currentSlide ? 1 : -1);
-                setCurrentSlide(idx);
-              }}
-              className={cn(
-                'h-2 rounded-full transition-all duration-300',
-                idx === currentSlide ? 'w-6 bg-[#4A7C59]' : 'w-2 bg-[#D4CBBD] hover:bg-[#A09890]',
-              )}
-              aria-label={`Go to slide ${idx + 1}`}
-            />
-          ))}
-        </div>
+        {/* Step indicator */}
+        <StepIndicator
+          steps={slides.map((s, idx) => ({ key: idx.toString(), label: s.title }))}
+          currentStepKey={currentSlide.toString()}
+          className="mx-auto"
+        />
 
         {/* Buttons */}
         <div className="flex items-center gap-3">
