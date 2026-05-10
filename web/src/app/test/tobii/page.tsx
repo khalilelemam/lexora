@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FullscreenShell } from '@/components/shared';
 import { StepIndicator } from '@/components/shared';
@@ -15,7 +15,10 @@ import {
   ScreenGuard,
   TestErrorBoundary,
 } from '@/features/test/components';
-import { useTestFlow, useTobiiGazeStream } from '@/features/test/hooks';
+import { PreTestSlides } from '@/features/test/components/pre-test-slides';
+import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
+import { SupportedHardware } from '@/features/test/components/supported-hardware';
+import { useTestFlow, useTobiiGazeStream, useTobiiStatus } from '@/features/test/hooks';
 import { useTobiiTaskBuffers } from '@/features/test/hooks/use-tobii-task-buffers';
 import { submitTobiiTest } from '@/features/test/actions/submit-test';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
@@ -29,6 +32,29 @@ export default function TobiiTestPage() {
   const router = useRouter();
   const { state, dispatch } = useTestFlow({ mode: 'tobii' });
   const tobiiState = state as TobiiTestFlowState;
+  const {
+    status: tobiiStatus,
+    checking: serviceChecking,
+    error: serviceError,
+    checkStatus,
+  } = useTobiiStatus();
+
+  const serviceRunning = tobiiStatus?.connected === true;
+  const serviceDevice = tobiiStatus?.device;
+
+  const openTobiiService = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (serviceRunning) {
+      // Launch custom protocol without opening a blank tab
+      window.location.href = 'lexora://open';
+    } else {
+      window.location.href = '/api/download/service';
+    }
+  }, [serviceRunning]);
+
+  useEffect(() => {
+    checkStatus();
+  }, [checkStatus]);
 
   const calibrationParams = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -48,7 +74,11 @@ export default function TobiiTestPage() {
     };
   }, []);
 
-  const requestedCalibrationMode = calibrationParams.mode;
+  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(
+    calibrationParams.mode,
+  );
+
+  const requestedCalibrationMode = selectedMode || 'grid';
   const participantAge = calibrationParams.age;
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
@@ -166,19 +196,98 @@ export default function TobiiTestPage() {
     switch (tobiiState.currentState) {
       case 'idle':
         return (
-          <div className="flex flex-col items-center gap-6">
+          <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6">
             <h1 className="text-3xl font-bold">Eye Tracker Test</h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground max-w-2xl text-center">
               This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of 3
               reading tasks: syllables, pseudo-words, and meaningful text.
             </p>
-            <button
-              onClick={() => dispatch({ type: 'START' })}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-6 py-3 text-lg font-medium"
-            >
-              Start Test
-            </button>
+
+            {/* Service Status */}
+            <div className="mx-auto w-full max-w-2xl">
+              <div className="border-border bg-background rounded-3xl border p-6 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold">Tobii Service Status</p>
+                    <p className="text-muted-foreground text-xs">
+                      Lexora checks the local Tobii helper service on <code>localhost:28980</code>.
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${
+                      serviceChecking
+                        ? 'bg-slate-200 text-slate-700'
+                        : serviceRunning
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {serviceChecking ? 'Checking…' : serviceRunning ? 'Running' : 'Not running'}
+                  </span>
+                </div>
+                {serviceRunning ? (
+                  <div className="mt-4 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm">
+                    <p className="text-foreground font-medium">
+                      Connected to the Tobii helper app.
+                    </p>
+                    <p className="text-muted-foreground">
+                      {serviceDevice?.deviceName ?? 'Tobii Pro device'} (
+                      {serviceDevice?.model ?? 'Unknown model'})
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      Serial: {serviceDevice?.serialNumber ?? 'N/A'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm">
+                    <p className="text-foreground font-medium">Tobii helper is not reachable.</p>
+                    <p className="text-muted-foreground">
+                      Install or start the Lexora Tobii Service app on your computer before running
+                      the Tobii test.
+                    </p>
+                    {serviceError && <p className="text-xs text-amber-700">{serviceError}</p>}
+                  </div>
+                )}
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={openTobiiService}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-5 py-2 text-sm font-medium"
+                  >
+                    {serviceRunning ? 'Open Tobii Service' : 'Download Tobii Service'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={checkStatus}
+                    className="border-border bg-background text-foreground hover:bg-muted/70 inline-flex items-center justify-center rounded-md border px-5 py-2 text-sm font-medium"
+                  >
+                    Refresh Status
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Calibration Mode Selection */}
+            <CalibrationSetup
+              resolvedMode={requestedCalibrationMode}
+              onSelectMode={setSelectedMode}
+              onStart={() => dispatch({ type: 'START' })}
+              startButtonText="Continue to Instructions"
+            />
           </div>
+        );
+
+      case 'hardware-check':
+        return <SupportedHardware onContinue={() => dispatch({ type: 'HARDWARE_CONFIRMED' })} />;
+
+      case 'pre-test-education':
+        return (
+          <PreTestSlides
+            mode="tobii"
+            isStarMode={requestedCalibrationMode === 'star'}
+            onComplete={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+            onSkip={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+          />
         );
 
       case 'device-check':

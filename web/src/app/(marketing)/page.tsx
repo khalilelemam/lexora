@@ -5,6 +5,7 @@ import { AnimatedStat } from './_components/animated-stat';
 import { FeatureCard } from './_components/feature-card';
 import { StepCard } from './_components/step-card';
 import { CtaSection } from './_components/cta-section';
+import { DownloadSection } from './_components/download-section';
 
 /**
  * Lexora landing page — Server Component.
@@ -151,6 +152,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Download Tobii Service ────────────────────────── */}
+      <DownloadSection />
 
       {/* ── Call to Action ────────────────────────────────── */}
       <CtaSection />

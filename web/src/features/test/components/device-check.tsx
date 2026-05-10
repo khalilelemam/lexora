@@ -121,17 +121,28 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <li>Make sure it shows a green status indicator</li>
               </ol>
               <a
-                href="https://github.com/khalilelemam/eglex/releases"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/api/download/service"
                 className="text-primary inline-flex items-center gap-1.5 text-xs font-medium underline-offset-4 hover:underline"
               >
-                Download from GitHub Releases
+                Download Tobii Service
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>
 
-            <div className="flex gap-3 pt-1">
+            <div className="border-border bg-background text-muted-foreground rounded-2xl border p-4 text-sm">
+              <p className="text-foreground mb-2 text-xs font-semibold">Supported Tobii Devices</p>
+              <ul className="list-disc space-y-1 pl-4">
+                <li>Tobii Pro Fusion</li>
+                <li>Tobii Pro Spectrum</li>
+                <li>Tobii Pro Nano</li>
+              </ul>
+              <p className="text-muted-foreground mt-3 text-xs">
+                Only Tobii Pro devices with SDK support are compatible. Consumer trackers such as
+                Tobii Eye Tracker 5 are not supported.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-1">
               <Button
                 variant="outline"
                 size="sm"
@@ -141,6 +152,15 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 }}
               >
                 Already installed? Skip →
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  window.location.href = '/api/download/service';
+                }}
+              >
+                Download Service
               </Button>
               <Button size="sm" onClick={() => setStep('connect')}>
                 I&apos;ve installed it
@@ -249,7 +269,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               </div>
             )}
 
-            <div className="flex gap-3 pt-1">
+            <div className="flex flex-wrap gap-3 pt-1">
               <Button variant="outline" size="sm" onClick={() => setStep('install')}>
                 ← Start Over
               </Button>
@@ -257,6 +277,28 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
                 <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${checking ? 'animate-spin' : ''}`} />
                 Retry
               </Button>
+              {!isConnected && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = '/api/download/service';
+                  }}
+                >
+                  Download Service
+                </Button>
+              )}
+              {isConnected && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = 'lexora://open';
+                  }}
+                >
+                  Open Service
+                </Button>
+              )}
               {isConnected && (
                 <Button size="sm" onClick={onReady} className="px-6">
                   Continue to Calibration

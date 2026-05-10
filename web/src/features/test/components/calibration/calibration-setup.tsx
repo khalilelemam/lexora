@@ -12,6 +12,7 @@ interface CalibrationSetupProps {
   resolvedMode: CalibrationVisualMode;
   onSelectMode: (mode: CalibrationVisualMode) => void;
   onStart: () => void;
+  startButtonText?: string;
 }
 
 /**
@@ -20,7 +21,12 @@ interface CalibrationSetupProps {
  * Left: Instructions + fullscreen consent + start button
  * Right: Mode selection cards
  */
-export function CalibrationSetup({ resolvedMode, onSelectMode, onStart }: CalibrationSetupProps) {
+export function CalibrationSetup({
+  resolvedMode,
+  onSelectMode,
+  onStart,
+  startButtonText = 'Enter Fullscreen & Start Calibration',
+}: CalibrationSetupProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-[#FDF8F0] px-4 py-6">
       <div
@@ -70,7 +76,7 @@ export function CalibrationSetup({ resolvedMode, onSelectMode, onStart }: Calibr
             size="lg"
             className="mt-auto w-full bg-[#4A7C59] px-10 text-white hover:bg-[#3D6A4B]"
           >
-            Enter Fullscreen & Start Calibration
+            {startButtonText}
           </Button>
         </div>
 

@@ -35,7 +35,13 @@ export function createWebcamInitialState(): WebcamTestFlowState {
 function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestFlowState {
   switch (action.type) {
     case 'START':
-      return { ...state, currentState: 'device-check', error: null };
+      return { ...state, currentState: 'hardware-check', error: null };
+
+    case 'HARDWARE_CONFIRMED':
+      return { ...state, currentState: 'pre-test-education' };
+
+    case 'EDUCATION_COMPLETE':
+      return { ...state, currentState: 'device-check' };
 
     case 'DEVICE_READY':
       return { ...state, currentState: 'calibrating' };
@@ -123,7 +129,10 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
 function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTestFlowState {
   switch (action.type) {
     case 'START':
-      return { ...state, currentState: 'camera-setup', error: null };
+      return { ...state, currentState: 'pre-test-education', error: null };
+
+    case 'EDUCATION_COMPLETE':
+      return { ...state, currentState: 'camera-setup' };
 
     case 'CAMERA_READY':
       return { ...state, currentState: 'calibrating' };

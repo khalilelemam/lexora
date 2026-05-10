@@ -12,7 +12,6 @@ import {
   useCalibrationEngine,
 } from '../hooks/use-calibration-engine';
 import {
-  CalibrationSetup,
   CalibrationCountdown,
   CalibrationCollecting,
   CalibrationPreValidation,
@@ -58,8 +57,6 @@ export function CalibrationScreen({
   blockOnPoor = false,
 }: CalibrationScreenProps) {
   /* ---- local state ---- */
-  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(mode);
-  const [hasStartedCalibration, setHasStartedCalibration] = useState(false);
   const [collectionIssue, setCollectionIssue] = useState<'no-signal' | 'low-samples' | null>(null);
 
   /* ---- engine ---- */
@@ -85,7 +82,7 @@ export function CalibrationScreen({
     readyForPreValidation,
   } = useCalibrationEngine({
     tracker,
-    mode: selectedMode,
+    mode: mode,
     participantAge,
     onGetGazeSample,
     onGetIrisSample,
@@ -112,6 +109,10 @@ export function CalibrationScreen({
   const [previousPoint, setPreviousPoint] = useState<CalibrationPoint>(CALIBRATION_POINTS[0]);
   const captureCountRef = useRef(0);
   const stableFixationRef = useRef(false);
+
+  useEffect(() => {
+    beginCalibration();
+  }, [beginCalibration]);
 
   useEffect(() => {
     captureCountRef.current = captureCount;
@@ -218,16 +219,9 @@ export function CalibrationScreen({
   /* ---- callbacks ---- */
   const handleRetry = useCallback(() => {
     resetEngine();
-    setHasStartedCalibration(false);
     setCollectionIssue(null);
     setDismissedValidationRound(null);
   }, [resetEngine]);
-
-  const handleStartCalibration = useCallback(() => {
-    beginCalibration();
-    setHasStartedCalibration(true);
-    setCollectionIssue(null);
-  }, [beginCalibration]);
 
   const handleSkip = useCallback(() => {
     skipCalibration();
@@ -264,17 +258,6 @@ export function CalibrationScreen({
   /* ================================================================ */
   /*  RENDER — delegates to extracted sub-components                   */
   /* ================================================================ */
-
-  /* 1. Setup (mode selection + instructions) */
-  if (!hasStartedCalibration) {
-    return (
-      <CalibrationSetup
-        resolvedMode={resolvedMode}
-        onSelectMode={setSelectedMode}
-        onStart={handleStartCalibration}
-      />
-    );
-  }
 
   /* 2. Countdown */
   if (showCountdown) {

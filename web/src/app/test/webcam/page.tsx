@@ -16,6 +16,8 @@ import {
   GazeDebugDot,
   TestErrorBoundary,
 } from '@/features/test/components';
+import { PreTestSlides } from '@/features/test/components/pre-test-slides';
+import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { useTestFlow, useWebcamGaze } from '@/features/test/hooks';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import { submitWebcamTest } from '@/features/test/actions/submit-test';
@@ -52,7 +54,11 @@ export default function WebcamTestPage() {
     };
   }, []);
 
-  const requestedCalibrationMode = calibrationParams.mode;
+  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(
+    calibrationParams.mode,
+  );
+
+  const requestedCalibrationMode = selectedMode || 'grid';
   const participantAge = calibrationParams.age;
 
   const { enterFullscreen, exitFullscreen } = useFullscreen();
@@ -212,20 +218,22 @@ export default function WebcamTestPage() {
     switch (webcamState.currentState) {
       case 'idle':
         return (
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-3xl font-bold">Webcam Eye Test</h1>
-            <p className="text-muted-foreground max-w-lg text-center">
-              This test uses your webcam to track eye movement while reading a paragraph. It&apos;s
-              less accurate than a professional eye tracker but doesn&apos;t require special
-              hardware.
-            </p>
-            <button
-              onClick={() => dispatch({ type: 'START' })}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-6 py-3 text-lg font-medium"
-            >
-              Start Test
-            </button>
-          </div>
+          <CalibrationSetup
+            resolvedMode={requestedCalibrationMode}
+            onSelectMode={setSelectedMode}
+            onStart={() => dispatch({ type: 'START' })}
+            startButtonText="Continue to Instructions"
+          />
+        );
+
+      case 'pre-test-education':
+        return (
+          <PreTestSlides
+            mode="webcam"
+            isStarMode={requestedCalibrationMode === 'star'}
+            onComplete={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+            onSkip={() => dispatch({ type: 'EDUCATION_COMPLETE' })}
+          />
         );
 
       case 'camera-setup':
