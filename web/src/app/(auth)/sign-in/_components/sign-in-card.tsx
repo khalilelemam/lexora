@@ -26,8 +26,9 @@ function setConsentCookie(terms: boolean, rawData: boolean) {
     ts: new Date().toISOString(),
   });
 
-  // 10-minute expiry — long enough for OAuth round-trip or magic-link click
-  const maxAge = 600;
+  // 20-minute expiry — must exceed the magic-link token lifetime (900s)
+  // so the cookie is still present when a delayed link is clicked.
+  const maxAge = 1200;
   document.cookie = `${CONSENT_COOKIE_NAME}=${encodeURIComponent(payload)}; path=/; max-age=${maxAge}; SameSite=Lax`;
 }
 

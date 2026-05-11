@@ -1,4 +1,5 @@
 import { render } from '@react-email/components';
+import { APIError } from 'better-auth/api';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
@@ -65,11 +66,17 @@ export const auth = betterAuth({
           const cookieHeader = ctx?.headers?.get?.('cookie') ?? null;
           const consent = parseConsentCookie(cookieHeader);
 
+          if (!consent?.terms) {
+            throw new APIError('BAD_REQUEST', {
+              message: 'Terms and Privacy Policy must be accepted before creating an account.',
+            });
+          }
+
           return {
             data: {
               ...user,
-              termsAcceptedAt: consent?.terms ? new Date(consent.ts) : null,
-              rawDataConsent: consent?.rawData ?? false,
+              termsAcceptedAt: new Date(consent.ts),
+              rawDataConsent: consent.rawData ?? false,
             },
           };
         },
