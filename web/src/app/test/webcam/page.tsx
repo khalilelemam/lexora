@@ -17,6 +17,7 @@ import {
   TestErrorBoundary,
 } from '@/features/test/components';
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
+import { PreTestIntake } from '@/features/test/components/pre-test-intake';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { useTestFlow, useWebcamGaze } from '@/features/test/hooks';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
@@ -27,6 +28,7 @@ import type {
   WebcamGazePoint,
   WebcamTestFlowState,
   CalibrationResult,
+  IntakeData,
 } from '@/features/test/types';
 import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
 import { parseCalibrationMode } from '@/features/test/lib/parse-calibration-mode';
@@ -223,6 +225,13 @@ export default function WebcamTestPage() {
             onSelectMode={setSelectedMode}
             onStart={() => dispatch({ type: 'START' })}
             startButtonText="Continue to Instructions"
+          />
+        );
+
+      case 'intake':
+        return (
+          <PreTestIntake
+            onComplete={(data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data })}
           />
         );
 
