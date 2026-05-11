@@ -15,6 +15,8 @@ interface EmailFormProps {
   onLoadingChange: (loading: boolean) => void;
   onError: (message: string) => void;
   onSuccess: (email: string) => void;
+  /** Called immediately before sending the magic link to persist consent cookie. */
+  onBeforeAuth?: () => void;
 }
 
 /**
@@ -28,6 +30,7 @@ export function EmailForm({
   onLoadingChange,
   onError,
   onSuccess,
+  onBeforeAuth,
 }: EmailFormProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,6 +46,8 @@ export function EmailForm({
         setValidationError(result.error.issues[0].message);
         return;
       }
+
+      onBeforeAuth?.();
 
       setLoading(true);
       onLoadingChange(true);
@@ -69,7 +74,7 @@ export function EmailForm({
         onLoadingChange(false);
       }
     },
-    [email, callbackUrl, onLoadingChange, onError, onSuccess],
+    [email, callbackUrl, onLoadingChange, onError, onSuccess, onBeforeAuth],
   );
 
   return (

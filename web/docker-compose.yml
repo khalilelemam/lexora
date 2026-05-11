@@ -1,0 +1,34 @@
+# ──────────────────────────────────────────────────────────────
+# Lexora Web — Local Development Stack
+#
+# Spins up a PostgreSQL database so you can run the web app
+# without needing a Neon account or remote database.
+#
+# Usage:
+#   docker compose up -d          # start PostgreSQL
+#   npm run dev                   # start the Next.js app
+#   docker compose down           # stop everything
+#   docker compose down -v        # stop + delete data
+# ──────────────────────────────────────────────────────────────
+
+services:
+  db:
+    image: postgres:17.6
+    container_name: lexora-db
+    restart: unless-stopped
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: lexora
+      POSTGRES_PASSWORD: lexora_dev
+      POSTGRES_DB: lexora
+    volumes:
+      - lexora_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lexora']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  lexora_pgdata:

@@ -1,5 +1,4 @@
 import { headers } from 'next/headers';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { LexoraLogo } from '@/components/shared/lexora-logo';
@@ -59,19 +58,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <LexoraLogo size="lg" animate />
       </div>
 
-      {/* Sign-in card */}
+      {/* Sign-in card (includes consent checkboxes — issue #45) */}
       <SignInCard callbackUrl={callbackUrl} />
-
-      {/* Footer */}
-      <p className="text-muted-foreground mt-6 text-center text-xs">
-        By signing in, you agree to our{' '}
-        <Link
-          href="/privacy"
-          className="text-foreground underline underline-offset-2 hover:no-underline"
-        >
-          Privacy Policy
-        </Link>
-      </p>
     </div>
   );
 }
