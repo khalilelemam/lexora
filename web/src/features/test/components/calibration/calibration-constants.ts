@@ -33,7 +33,7 @@ const MODE_TIMING: Record<CalibrationVisualMode, ModeTimingConfig> = {
     gridMinDwellMs: 1000, // Min time before quality-based advance
     gridMaxDwellMs: 3200, // Max time before timeout advance
     gridForceAdvanceMs: 5000, // Force advance even with poor signal
-    gridMinSamplesWebcam: 8,
+    gridMinSamplesWebcam: 60,
     gridMinSamplesTobii: 6,
   },
   star: {

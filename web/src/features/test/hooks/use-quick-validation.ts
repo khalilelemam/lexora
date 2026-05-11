@@ -28,8 +28,33 @@ export interface QuickValidationState {
   pointScores: number[];
 }
 
+export interface QuickValidationRunResult {
+  accuracyPercent: number | null;
+  normalizedErrors: number[];
+  completedPoints: number;
+  totalPoints: number;
+  pointScores: number[];
+  perPointResults: Array<{
+    pointIndex: number;
+    meanDistancePx: number;
+    verticalErrorPx: number;
+    horizontalErrorPx: number;
+  }>;
+  meanVerticalErrorPx: number;
+  meanHorizontalErrorPx: number;
+}
+
 export type MappingFn = {
-  predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
+  predict: (
+    ix: number,
+    iy: number,
+    yaw: number,
+    pitch: number,
+    roll: number,
+    headX: number,
+    headY: number,
+    invHeadZ: number,
+  ) => { x: number; y: number };
 } | null;
 
 type PredictionReader = (mapping: MappingFn) => { x: number; y: number } | null;
@@ -61,7 +86,7 @@ function createInitialState(): QuickValidationState {
  */
 export function useQuickValidation(
   readCurrentPrediction: PredictionReader,
-  setGazeCursor: (cursor: { x: number; y: number }) => void,
+  setGazeCursor: (cursor: { x: number; y: number } | null) => void,
 ) {
   const [state, setState] = useState<QuickValidationState>(createInitialState);
   const cancelledRef = useRef(false);
@@ -71,12 +96,32 @@ export function useQuickValidation(
   }, []);
 
   const run = useCallback(
-    async (mapping: MappingFn): Promise<number | null> => {
+    async (
+      mapping: MappingFn,
+      targetOverride: readonly CalibrationPoint[] = [],
+    ): Promise<QuickValidationRunResult | null> => {
       const { width, height, diagonal } = getScreenInfo();
-      // Randomize validation order to prevent anticipatory saccades
-      const shuffledIndices = shuffleArray(VALIDATION_POINT_INDICES);
-      const validationPoints = shuffledIndices.map((index) => CALIBRATION_POINTS[index]);
+      const usingOverride = targetOverride.length > 0;
+      if (usingOverride) {
+        console.log('[QUICK VALIDATION RUN] Using reading anchor override targets', {
+          count: targetOverride.length,
+          phases: targetOverride.map((t) => t.phase),
+        });
+      } else {
+        console.log('[QUICK VALIDATION RUN] Using default grid VALIDATION_POINT_INDICES');
+      }
+      const validationTargets =
+        targetOverride.length > 0
+          ? targetOverride.map((target, index) => ({ target, pointIndex: index }))
+          : VALIDATION_POINT_INDICES.map((pointIndex) => ({
+            target: CALIBRATION_POINTS[pointIndex],
+            pointIndex,
+          }));
+      const shuffledTargets = shuffleArray(validationTargets);
+      const validationPoints = shuffledTargets.map((entry) => entry.target);
       const scores: number[] = [];
+      const normalizedErrors: number[] = [];
+      const perPointResults: Array<{ pointIndex: number; meanDistancePx: number; verticalErrorPx: number; horizontalErrorPx: number }> = [];
 
       setState({
         phase: 'running',
@@ -89,7 +134,7 @@ export function useQuickValidation(
       });
 
       for (let index = 0; index < validationPoints.length; index++) {
-        if (cancelledRef.current) return 0;
+        if (cancelledRef.current) return null;
 
         const target = validationPoints[index];
         const targetX = target.x * width;
@@ -108,14 +153,20 @@ export function useQuickValidation(
         while (performance.now() - settleStartedAt < VALIDATION_SETTLE_MS) {
           await nextAnimationFrame();
           const prediction = readCurrentPrediction(mapping);
-          if (prediction) {
-            setGazeCursor({ x: prediction.x, y: prediction.y });
+          if (prediction == null) {
+            // Clear the cursor instead of leaving the last position "stuck" onscreen.
+            setGazeCursor(null);
+            continue;
           }
+
+          setGazeCursor({ x: prediction.x, y: prediction.y });
         }
 
         // ── Hold phase ──────────────────────────────────
         const startedAt = performance.now();
         let progressBucket = -1;
+        const predictedXCoords: number[] = [];
+        const predictedYCoords: number[] = [];
         while (performance.now() - startedAt < VALIDATION_HOLD_MS) {
           // Keep reads synced with rendering cadence.
           await nextAnimationFrame();
@@ -131,18 +182,37 @@ export function useQuickValidation(
           }
 
           const prediction = readCurrentPrediction(mapping);
-          if (!prediction) continue;
+          if (prediction == null) {
+            // Clear the cursor instead of leaving the last position "stuck" onscreen.
+            setGazeCursor(null);
+            continue;
+          }
 
           setGazeCursor({ x: prediction.x, y: prediction.y });
 
           const distance = Math.hypot(prediction.x - targetX, prediction.y - targetY);
           distances.push(distance);
+          predictedXCoords.push(prediction.x);
+          predictedYCoords.push(prediction.y);
         }
 
         // ── Score ───────────────────────────────────────
         // If we did not observe enough valid prediction samples, skip this
         // point so transient camera loss does not force a false 0% verdict.
         if (distances.length < VALIDATION_MIN_SAMPLES_PER_POINT) {
+          console.warn('[QUICK VALIDATION] skipped point', {
+            step: index + 1,
+            pointIndex: shuffledTargets[index].pointIndex,
+            label: target.label,
+            target: {
+              normalizedX: target.x,
+              normalizedY: target.y,
+              screenX: Math.round(targetX),
+              screenY: Math.round(targetY),
+            },
+            sampleCount: distances.length,
+            minRequired: VALIDATION_MIN_SAMPLES_PER_POINT,
+          });
           setState((prev) => ({
             ...prev,
             holdProgress: 1,
@@ -152,6 +222,11 @@ export function useQuickValidation(
         }
 
         const meanDistance = mean(distances);
+        const meanPredictedX = mean(predictedXCoords);
+        const meanPredictedY = mean(predictedYCoords);
+        const horizontalErrorPx = Math.abs(meanPredictedX - targetX);
+        const verticalErrorPx = Math.abs(meanPredictedY - targetY);
+        const normalizedError = meanDistance / diagonal;
         const pointScore = Math.round(
           Math.max(
             0,
@@ -161,6 +236,33 @@ export function useQuickValidation(
             ),
           ),
         );
+        normalizedErrors.push(normalizedError);
+        perPointResults.push({
+          pointIndex: shuffledTargets[index].pointIndex,
+          meanDistancePx: meanDistance,
+          horizontalErrorPx,
+          verticalErrorPx,
+        });
+
+        console.log('[QUICK VALIDATION] point result', {
+          step: index + 1,
+          pointIndex: shuffledTargets[index].pointIndex,
+          label: target.label,
+          target: {
+            normalizedX: target.x,
+            normalizedY: target.y,
+            screenX: Math.round(targetX),
+            screenY: Math.round(targetY),
+          },
+          sampleCount: distances.length,
+          meanDistancePx: Number(meanDistance.toFixed(2)),
+          horizontalErrorPx: Number(horizontalErrorPx.toFixed(2)),
+          verticalErrorPx: Number(verticalErrorPx.toFixed(2)),
+          normalizedError: Number(normalizedError.toFixed(4)),
+          minDistancePx: Number(Math.min(...distances).toFixed(2)),
+          maxDistancePx: Number(Math.max(...distances).toFixed(2)),
+          score: pointScore,
+        });
 
         scores.push(pointScore);
 
@@ -172,6 +274,36 @@ export function useQuickValidation(
       }
 
       const accuracy = scores.length > 0 ? Math.round(mean(scores)) : null;
+
+      // Calculate mean vertical and horizontal errors across all points
+      const meanVerticalError = perPointResults.length > 0
+        ? perPointResults.reduce((sum, p) => sum + p.verticalErrorPx, 0) / perPointResults.length
+        : 0;
+      const meanHorizontalError = perPointResults.length > 0
+        ? perPointResults.reduce((sum, p) => sum + p.horizontalErrorPx, 0) / perPointResults.length
+        : 0;
+
+      const result = {
+        accuracy,
+        scores,
+        totalPoints: validationPoints.length,
+        perPointResults,
+        meanVerticalErrorPx: meanVerticalError,
+        meanHorizontalErrorPx: meanHorizontalError,
+      };
+      console.log('[QUICK VALIDATION] finished', JSON.stringify({
+        accuracy: result.accuracy,
+        scores: result.scores,
+        totalPoints: result.totalPoints,
+        meanVerticalErrorPx: Number(result.meanVerticalErrorPx.toFixed(2)),
+        meanHorizontalErrorPx: Number(result.meanHorizontalErrorPx.toFixed(2)),
+        perPointDistances: result.perPointResults?.map(p => ({
+          pointIndex: p.pointIndex,
+          meanDistancePx: Math.round(p.meanDistancePx),
+          horizontalErrorPx: Number(p.horizontalErrorPx.toFixed(2)),
+          verticalErrorPx: Number(p.verticalErrorPx.toFixed(2))
+        }))
+      }));
       setState((prev) => ({
         ...prev,
         phase: 'done',
@@ -181,7 +313,16 @@ export function useQuickValidation(
         pointScores: [...scores],
       }));
 
-      return accuracy;
+      return {
+        accuracyPercent: accuracy,
+        normalizedErrors,
+        completedPoints: normalizedErrors.length,
+        totalPoints: validationPoints.length,
+        pointScores: scores,
+        perPointResults,
+        meanVerticalErrorPx: meanVerticalError,
+        meanHorizontalErrorPx: meanHorizontalError,
+      };
     },
     [readCurrentPrediction, setGazeCursor],
   );

@@ -35,8 +35,8 @@ export function CalibrationSetup({ resolvedMode, onSelectMode, onStart }: Calibr
           <div>
             <h2 className="font-bold text-[#2D2A26] text-2xl tracking-tight">Calibration</h2>
             <p className="mt-2 text-[#6B6560] text-sm leading-relaxed">
-              We need to calibrate the eye tracker before the test. Follow the target with your eyes
-              — it only takes about 30–60 seconds.
+              We need to calibrate the eye tracker before the test. First, follow the target with
+              your eyes. Then, read a short paragraph so we can fine-tune accuracy for reading.
             </p>
           </div>
 
@@ -47,7 +47,7 @@ export function CalibrationSetup({ resolvedMode, onSelectMode, onStart }: Calibr
               <li>Sit at a comfortable distance (about arm&apos;s length)</li>
               <li>Keep your head still — move only your eyes</li>
               <li>Make sure your face is well-lit</li>
-              <li>The calibration takes about 30–60 seconds</li>
+              <li>The reading check takes about 15–25 seconds</li>
             </ul>
           </div>
 

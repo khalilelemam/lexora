@@ -1,9 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CalibrationPoint, CalibrationResult } from '../types';
+import type { CalibrationPoint, CalibrationResult, CalibrationPhaseType } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
 import { useCalibration } from './use-calibration';
+import { buildCalibrationResult } from '../lib/calibration-math';
+import type { CollectedSample } from '../lib/calibration-math';
+
 import {
   useQuickValidation,
   type QuickValidationState,
@@ -18,6 +21,8 @@ import {
   getScreenInfo,
 } from '../lib/calibration-engine-constants';
 
+const FULL_POINT_SEQUENCE = CALIBRATION_POINTS;
+
 /* ── Public types ───────────────────────────────────────── */
 
 export type CalibrationVisualMode = 'grid' | 'stickman' | 'star';
@@ -31,6 +36,10 @@ export interface RawIrisLandmark {
 export interface WebcamCalibrationSample {
   x: number;
   y: number;
+  roll?: number;
+  headX?: number;
+  headY?: number;
+  headZ?: number;
   rawIrisLandmarks?: RawIrisLandmark[] | null;
   /** Screen-space hint used for live feedback and stability velocity. */
   screenHint?: { x: number; y: number } | null;
@@ -54,7 +63,14 @@ interface UseCalibrationEngineOptions {
   participantAge?: number;
   onGetGazeSample?: () => { x: number; y: number } | null;
   onGetIrisSample?: () => WebcamCalibrationSample | null;
-  onGetHeadPoseSample?: () => { yaw: number; pitch: number } | null;
+  onGetHeadPoseSample?: () => {
+    yaw: number;
+    pitch: number;
+    roll: number;
+    headX: number;
+    headY: number;
+    headZ: number;
+  } | null;
 }
 
 /* ── Helpers ────────────────────────────────────────────── */
@@ -87,20 +103,38 @@ export function useCalibrationEngine({
   onGetIrisSample,
   onGetHeadPoseSample,
 }: UseCalibrationEngineOptions) {
-  const calibration = useCalibration();
-  const {
-    phase: calibrationPhase,
-    startCalibration,
-    resetCalibration,
-    addSample,
-    computeTobiiCalibration,
-    computeWebcamCalibration,
-  } = calibration;
-
   const resolvedMode = useMemo(
     () => resolveCalibrationMode(mode, participantAge),
     [mode, participantAge],
   );
+
+  /** Reading-augmented calibration: grid anchors first, reading anchors second. */
+  const fullPointSequence = FULL_POINT_SEQUENCE;
+  const loggedOptionBKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const logKey = `${tracker}:${resolvedMode}`;
+    if (loggedOptionBKeyRef.current === logKey) return;
+    loggedOptionBKeyRef.current = logKey;
+
+    console.log('[OPTION B CALIBRATION] grid-dot sequence selected', {
+      tracker,
+      resolvedMode,
+      totalPoints: fullPointSequence.length,
+      phaseCounts: { STATIC: fullPointSequence.length },
+    });
+  }, [tracker, resolvedMode, fullPointSequence.length]);
+
+  const calibration = useCalibration(fullPointSequence);
+  const {
+    phase: calibrationPhase,
+    startCalibration,
+    resetCalibration,
+    addSampleForPoint,
+    completeReadingAnchors,
+    computeTobiiCalibration,
+    computeWebcamCalibration,
+  } = calibration;
   const requiredStableFixationMs = resolvedMode === 'grid' ? STABLE_FIXATION_MS : 120;
   const stableVelocityThreshold =
     resolvedMode === 'grid' ? STABLE_VELOCITY_NORM_PER_SEC : STABLE_VELOCITY_NORM_PER_SEC * 1.5;
@@ -114,9 +148,8 @@ export function useCalibrationEngine({
   const [gazeCursor, setGazeCursor] = useState<{ x: number; y: number } | null>(null);
   const [finalResult, setFinalResult] = useState<CalibrationResult | null>(null);
   const [activeMapping, setActiveMapping] = useState<MappingFn>(null);
-  // Prevents the pre-validation card from flashing before recalibration.
-  // Only becomes true once the post-calibration computation finishes
-  // WITHOUT triggering a recalibration round.
+  const [readingValidationTargets, setReadingValidationTargets] = useState<CalibrationPoint[]>([]);
+  // Gate for pre-validation UI (recalibration currently disabled)
   const [readyForPreValidation, setReadyForPreValidation] = useState(false);
 
   /* ---- refs ---- */
@@ -126,6 +159,8 @@ export function useCalibrationEngine({
   const lastCaptureAtRef = useRef(0);
   const finalizationStartedRef = useRef(false);
   const storedSamplesRef = useRef<StoredCalibrationSample[]>([]);
+
+  const currentPointCaptureCountRef = useRef<number>(0);
 
   /* ---- prediction reader (shared with quick validation) ---- */
   const readCurrentPrediction = useCallback(
@@ -140,8 +175,24 @@ export function useCalibrationEngine({
 
       const sample = onGetIrisSample?.();
       if (!sample || !mapping) return null;
-      const headPose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
-      return mapping.predict(sample.x, sample.y, headPose.yaw, headPose.pitch);
+      const headPose = onGetHeadPoseSample?.() ?? {
+        yaw: 0,
+        pitch: 0,
+        roll: sample.roll ?? 0,
+        headX: sample.headX ?? 0,
+        headY: sample.headY ?? 0,
+        headZ: sample.headZ ?? 0.65,
+      };
+      return mapping.predict(
+        sample.x,
+        sample.y,
+        headPose.yaw,
+        headPose.pitch,
+        headPose.roll ?? sample.roll ?? 0,
+        headPose.headX ?? sample.headX ?? 0,
+        headPose.headY ?? sample.headY ?? 0,
+        0,
+      );
     },
     [tracker, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample],
   );
@@ -164,6 +215,7 @@ export function useCalibrationEngine({
     setIsStableFixation(false);
     lastStabilityPointRef.current = null;
     stableSinceRef.current = null;
+    currentPointCaptureCountRef.current = 0;
   }, []);
 
   /** Shared state reset — used by both resetEngine and beginCalibration */
@@ -174,6 +226,7 @@ export function useCalibrationEngine({
     setGazeCursor(null);
     setFinalResult(null);
     setActiveMapping(null);
+    setReadingValidationTargets([]);
     setReadyForPreValidation(false);
     resetQuickValidation();
     resetFixationState();
@@ -211,9 +264,6 @@ export function useCalibrationEngine({
     return () => clearTimeout(timer);
   }, [showCountdown, countdown, startCalibration]);
 
-  /* ---- pending result ref for two-step finalization ---- */
-  const pendingResultRef = useRef<CalibrationResult | null>(null);
-
   /**
    * Step 1: When calibrationPhase → 'validating', compute the mapping/result
    *         but DO NOT start validation yet. The UI shows pre-validation instructions first.
@@ -227,14 +277,16 @@ export function useCalibrationEngine({
     const { width, height } = getScreenInfo();
 
     if (tracker === 'tobii') {
-      const result = computeTobiiCalibration();
-      pendingResultRef.current = result;
+      computeTobiiCalibration();
       queueMicrotask(() => setReadyForPreValidation(true));
       // Don't run validation yet — UI will call startValidation()
       return;
     }
 
-    const { result, mapping, needsRecalibration } = computeWebcamCalibration(width, height);
+    const { result, mapping, mappingIsFallback, needsRecalibration } = computeWebcamCalibration(
+      width,
+      height,
+    );
 
     if (needsRecalibration) {
       mappingRef.current = null;
@@ -243,12 +295,12 @@ export function useCalibrationEngine({
       queueMicrotask(() => setReadyForPreValidation(false));
       resetQuickValidation();
       finalizationStartedRef.current = false;
-      pendingResultRef.current = null;
       return;
     }
 
-    mappingRef.current = mapping;
-    queueMicrotask(() => setActiveMapping(mapping));
+    const liveMapping = mappingIsFallback ? null : mapping;
+    mappingRef.current = liveMapping;
+    queueMicrotask(() => setActiveMapping(liveMapping));
 
     if (!result) {
       queueMicrotask(() =>
@@ -262,7 +314,6 @@ export function useCalibrationEngine({
       return;
     }
 
-    pendingResultRef.current = result;
     queueMicrotask(() => setReadyForPreValidation(true));
     // Don't run validation yet — UI will call startValidation()
   }, [
@@ -280,17 +331,43 @@ export function useCalibrationEngine({
   const startValidation = useCallback(async () => {
     if (quickValidation.phase !== 'idle') return;
     const mapping = mappingRef.current;
-    await runQuickValidation(tracker === 'tobii' ? null : mapping);
-    if (pendingResultRef.current) {
-      setFinalResult(pendingResultRef.current);
-      pendingResultRef.current = null;
+    if (tracker === 'webcam' && !mapping) {
+      console.warn('[QUICK VALIDATION] missing webcam mapping; validation will fail closed');
     }
-  }, [quickValidation.phase, tracker, runQuickValidation]);
+
+    // Log which validation targets are being used
+    if (readingValidationTargets.length > 0) {
+      console.log('[QUICK VALIDATION] Starting with reading anchor validation targets', {
+        count: readingValidationTargets.length,
+        targets: readingValidationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
+      });
+    } else {
+      console.log('[QUICK VALIDATION] No reading targets; using default grid validation points');
+    }
+
+    const validation = await runQuickValidation(
+      tracker === 'tobii' ? null : mapping,
+      readingValidationTargets,
+    );
+    if (!validation) return;
+
+    const validationResult =
+      validation.normalizedErrors.length > 0
+        ? buildCalibrationResult(validation.normalizedErrors)
+        : {
+          quality: 'poor' as const,
+          pointAccuracies: CALIBRATION_POINTS.map(() => 1),
+          averageError: 1,
+        };
+    setFinalResult(validationResult);
+  }, [quickValidation.phase, tracker, runQuickValidation, readingValidationTargets]);
 
   /* ---- sample ingestion ---- */
   const ingestSampleForTarget = useCallback(
     (target: CalibrationPoint) => {
-      if (calibrationPhase !== 'collecting' && calibrationPhase !== 'recalibrating') return;
+      if (calibrationPhase !== 'collecting' && calibrationPhase !== 'recalibrating') {
+        return;
+      }
 
       const now = performance.now();
       const { width, height, diagonal } = getScreenInfo();
@@ -302,7 +379,14 @@ export function useCalibrationEngine({
       let stabilityX = 0;
       let stabilityY = 0;
       let rawIrisLandmarks: RawIrisLandmark[] = [];
-      const headPose = onGetHeadPoseSample?.() ?? { yaw: 0, pitch: 0 };
+      const headPose = onGetHeadPoseSample?.() ?? {
+        yaw: 0,
+        pitch: 0,
+        roll: 0,
+        headX: 0,
+        headY: 0,
+        headZ: 0.65,
+      };
 
       if (tracker === 'tobii') {
         const gaze = onGetGazeSample?.();
@@ -388,11 +472,30 @@ export function useCalibrationEngine({
       setIsStableFixation(stableMs >= requiredStableFixationMs);
       setFixationProgress(clamp01(stableMs / requiredStableFixationMs));
 
-      if (
+      const shouldCollect =
         stableMs >= requiredStableFixationMs &&
-        now - lastCaptureAtRef.current >= CAPTURE_COOLDOWN_MS
-      ) {
-        addSample(observedX, observedY, target.x, target.y, headPose.yaw, headPose.pitch);
+        now - lastCaptureAtRef.current >= CAPTURE_COOLDOWN_MS;
+
+      if (shouldCollect) {
+        const pointIndex = fullPointSequence.findIndex((p) => p.x === target.x && p.y === target.y);
+
+        if (pointIndex >= 0) {
+          addSampleForPoint(
+            pointIndex,
+            observedX,
+            observedY,
+            target.x,
+            target.y,
+            headPose.yaw,
+            headPose.pitch,
+            headPose.roll,
+            headPose.headX,
+            headPose.headY,
+            headPose.headZ,
+            1.0,
+            'STATIC',
+          );
+        }
         storedSamplesRef.current.push({
           screenX: target.x * width,
           screenY: target.y * height,
@@ -400,14 +503,29 @@ export function useCalibrationEngine({
           timestamp: Date.now(),
         });
         lastCaptureAtRef.current = now;
+        currentPointCaptureCountRef.current += 1;
         setCaptureCount((prev) => prev + 1);
+
+        // Log only the first sample per point to avoid spam:
+        if (currentPointCaptureCountRef.current === 1) {
+          console.log('[TARGET UNITS]', {
+            pointIndex,
+            phase: 'STATIC',
+            targetX_stored: target.x,
+            targetY_stored: target.y,
+            currentPoint_x: target.x,
+            currentPoint_y: target.y,
+            screenW: width,
+            screenH: height,
+          });
+        }
       }
 
       lastStabilityPointRef.current = { x: stabilityX, y: stabilityY, timestamp: now };
     },
     [
       calibrationPhase,
-      addSample,
+      addSampleForPoint,
       tracker,
       onGetGazeSample,
       onGetIrisSample,
@@ -415,7 +533,47 @@ export function useCalibrationEngine({
       resolvedMode,
       requiredStableFixationMs,
       stableVelocityThreshold,
+      fullPointSequence,
     ],
+  );
+
+  const ingestReadingAnchorSample = useCallback(
+    (sample: CollectedSample) => {
+      if (calibrationPhase !== 'reading-anchors') return;
+      addSampleForPoint(
+        sample.pointIndex,
+        sample.observedX,
+        sample.observedY,
+        sample.targetX,
+        sample.targetY,
+        sample.yaw,
+        sample.pitch,
+        sample.roll ?? 0,
+        sample.headX ?? 0,
+        sample.headY ?? 0,
+        sample.headZ ?? 0.65,
+        sample.sampleWeight ?? 0.7,
+        sample.phase ?? 'READING_ANCHOR',
+      );
+      setCaptureCount((prev) => prev + 1);
+    },
+    [addSampleForPoint, calibrationPhase],
+  );
+
+  const finishReadingAnchors = useCallback(
+    (validationTargets: CalibrationPoint[] = []) => {
+      setReadingValidationTargets(validationTargets);
+      if (validationTargets.length > 0) {
+        console.log('[READING ANCHORS COMPLETE] Stored validation targets in engine', {
+          count: validationTargets.length,
+          targets: validationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
+        });
+      } else {
+        console.warn('[READING ANCHORS COMPLETE] No validation targets received');
+      }
+      completeReadingAnchors();
+    },
+    [completeReadingAnchors],
   );
 
   const skipCalibration = useCallback(() => {
@@ -429,7 +587,10 @@ export function useCalibrationEngine({
     setFinalResult(fallbackResult);
     if (tracker === 'webcam') {
       mappingRef.current = {
-        predict: () => ({ x: width * 0.5, y: height * 0.5 }),
+        predict: () => ({
+          x: width * 0.5,
+          y: height * 0.5,
+        }),
       };
       setActiveMapping(mappingRef.current);
     }
@@ -439,6 +600,9 @@ export function useCalibrationEngine({
     calibrationPhase === 'complete' ||
     (calibrationPhase === 'validating' && quickValidation.phase === 'done');
 
+  const currentPointIndex = calibration.currentPointIndex ?? -1;
+  const currentPointSampleCount = calibration.pointSampleCounts?.[currentPointIndex] ?? 0;
+
   return {
     resolvedMode,
     calibration,
@@ -447,17 +611,23 @@ export function useCalibrationEngine({
     fixationProgress,
     isStableFixation,
     captureCount,
+    currentPointSampleCount,
     gazeCursor,
     finalResult,
     quickValidation,
     canFinalize,
     readyForPreValidation,
     mapping: activeMapping,
+    fullPointSequence,
+    currentPhase: 1 as const,
+    currentPhaseType: 'STATIC' as CalibrationPhaseType,
     beginCalibration,
     resetEngine,
     ingestSampleForTarget,
     resetFixationState,
     skipCalibration,
+    ingestReadingAnchorSample,
+    finishReadingAnchors,
     startValidation,
   };
 }

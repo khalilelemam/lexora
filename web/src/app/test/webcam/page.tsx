@@ -20,6 +20,7 @@ import { useTestFlow, useWebcamGaze } from '@/features/test/hooks';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
 import { submitWebcamTest } from '@/features/test/actions/submit-test';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
+import { DEBUG_GAZE_OVERLAY } from '@/features/test/lib/debug-config';
 import { WEBCAM_STEPS, getStepKeyForState, MIN_GAZE_POINTS } from '@/features/test/lib/constants';
 import type {
   WebcamGazePoint,
@@ -67,6 +68,7 @@ export default function WebcamTestPage() {
   const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const lastTaskGazePositionRef = useRef<{ x: number; y: number } | null>(null);
 
   // Task content
   const [taskContent, setTaskContent] = useState<string>('');
@@ -80,7 +82,14 @@ export default function WebcamTestPage() {
     onGazePoint: useCallback((point: WebcamGazePoint) => {
       gazeDataRef.current.push(point);
       setGazePointCount((prev) => prev + 1);
-      setLastTaskGazePosition({ x: point.x, y: point.y });
+      const previous = lastTaskGazePositionRef.current;
+      const dx = previous ? point.x - previous.x : Number.POSITIVE_INFINITY;
+      const dy = previous ? point.y - previous.y : Number.POSITIVE_INFINITY;
+      if (!previous || dx * dx + dy * dy > 1) {
+        const next = { x: point.x, y: point.y };
+        lastTaskGazePositionRef.current = next;
+        setLastTaskGazePosition(next);
+      }
     }, []),
   });
 
@@ -94,7 +103,16 @@ export default function WebcamTestPage() {
     (
       result: CalibrationResult,
       mapping?: {
-        predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
+        predict: (
+          ix: number,
+          iy: number,
+          yaw: number,
+          pitch: number,
+          roll: number,
+          headX: number,
+          headY: number,
+          invHeadZ: number,
+        ) => { x: number; y: number };
       },
     ) => {
       if (mapping) {
@@ -107,6 +125,7 @@ export default function WebcamTestPage() {
       gazeDataRef.current = [];
       setGazePointCount(0);
       setReviewGazeData([]);
+      lastTaskGazePositionRef.current = null;
       setLastTaskGazePosition(null);
     },
     [dispatch, webcamGaze],
@@ -127,6 +146,7 @@ export default function WebcamTestPage() {
     gazeDataRef.current = [];
     setGazePointCount(0);
     setReviewGazeData([]);
+    lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     dispatch({ type: 'RETAKE' });
   }, [dispatch]);
@@ -174,6 +194,7 @@ export default function WebcamTestPage() {
     gazeDataRef.current = [];
     setGazePointCount(0);
     setReviewGazeData([]);
+    lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     setTaskContent('');
     dispatch({ type: 'RESET' });
@@ -245,16 +266,21 @@ export default function WebcamTestPage() {
 
               const rawIrisLandmarks = webcamGaze.getLastRawIrisLandmarks();
               const globalIris = webcamGaze.getLastGlobalIrisPosition();
+              const headPose = webcamGaze.getLastHeadPose();
 
               return {
                 x: (iris.leftX + iris.rightX) / 2,
                 y: (iris.leftY + iris.rightY) / 2,
+                roll: headPose?.roll ?? 0,
+                headX: headPose?.headX ?? 0,
+                headY: headPose?.headY ?? 0,
+                headZ: headPose?.headZ ?? 0.65,
                 rawIrisLandmarks: rawIrisLandmarks ?? [],
                 screenHint: globalIris
                   ? {
-                      x: globalIris.x * window.screen.width,
-                      y: globalIris.y * window.screen.height,
-                    }
+                    x: globalIris.x * window.screen.width,
+                    y: globalIris.y * window.screen.height,
+                  }
                   : null,
               };
             }}
@@ -350,11 +376,11 @@ export default function WebcamTestPage() {
               </div>
             )}
           {renderState()}
-          {/* Gaze debug dot disabled during active reading tests.
-            Research: visible gaze feedback creates tracking feedback loops
-            where the child follows the dot instead of reading naturally.
-            Can be re-enabled for review/debug screens. */}
-          <GazeDebugDot active={false} getPosition={() => lastTaskGazePosition} />
+          {DEBUG_GAZE_OVERLAY &&
+            (webcamState.currentState === 'task-paragraph' ||
+              webcamState.currentState === 'review-paragraph') && (
+              <GazeDebugDot active getPosition={() => lastTaskGazePosition} />
+            )}
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

@@ -101,13 +101,24 @@ export const VALIDATION_MIN_SAMPLES_PER_POINT = 10;
 
 /**
  * Indices into CALIBRATION_POINTS used for quick validation.
- * These 5 points span corners + center for representative coverage.
+ * Center + nearby inner-edge points for the 20-point (4x5) grid.
  *
- * IMPORTANT: The order is randomized at runtime (Fisher–Yates shuffle)
- * to prevent anticipatory saccades — research shows subjects learn
- * fixed sequences and look ahead, contaminating validation data.
+ * CALIBRATION_POINTS order:
+ * 0:(0.2,0.15)   1:(0.35,0.15)  2:(0.5,0.15)   3:(0.65,0.15)  4:(0.8,0.15)
+ * 5:(0.2,0.30)   6:(0.35,0.30)  7:(0.5,0.30)   8:(0.65,0.30)  9:(0.8,0.30)
+ * 10:(0.2,0.45) 11:(0.35,0.45) 12:(0.5,0.45) 13:(0.65,0.45) 14:(0.8,0.45)
+ * 15:(0.2,0.60) 16:(0.35,0.60) 17:(0.5,0.60) 18:(0.65,0.60) 19:(0.8,0.60)
+ *
+ * IMPORTANT: The order is randomized at runtime (Fisher-Yates shuffle)
+ * to prevent anticipatory saccades; subjects can learn fixed sequences.
  */
-export const VALIDATION_POINT_INDICES = [0, 4, 7, 10, 14];
+export const VALIDATION_POINT_INDICES = [12, 8, 6, 16, 18];
+
+/* ── Calibration phase type ─────────────────────────────── */
+
+// Re-export CalibrationPhaseType from types for convenience
+// (Defined in ../types.ts)
+export type { CalibrationPhaseType } from '../types';
 
 /**
  * Shuffle an array in-place using Fisher–Yates algorithm.

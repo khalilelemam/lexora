@@ -12,5 +12,7 @@
  * - Validation sequence is skipped
  *
  * Configurable via NEXT_PUBLIC_DEBUG_GAZE_OVERLAY env var.
+ * 
+ export const DEBUG_GAZE_OVERLAY = process.env.NEXT_PUBLIC_DEBUG_GAZE_OVERLAY === 'true';
  */
-export const DEBUG_GAZE_OVERLAY = process.env.NEXT_PUBLIC_DEBUG_GAZE_OVERLAY === 'true';
+export const DEBUG_GAZE_OVERLAY = true;

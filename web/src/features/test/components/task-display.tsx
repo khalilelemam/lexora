@@ -284,18 +284,18 @@ export function TaskDisplay({
   return (
     <div className={cn('z-40 fixed inset-0 bg-[#FDF8F0]', !preview && 'cursor-none')}>
       {/*
-       * Reading zone — text flows naturally from the top.
-       * Horizontal bounds: 20%–80% of screen (matches calibration X: 0.2–0.8)
-       * Vertical: starts at 10% from top, flows downward.
+       * Reading zone — text flows naturally within calibration space.
+       * Horizontal bounds: 25%–75% of screen (within calibration X: 0.2–0.8)
+       * Vertical bounds: 15%–60% of screen (within calibration Y: 0.1–0.65)
        */}
       <div
         ref={readingZoneRef}
         className="absolute flex flex-col"
         style={{
-          top: '10%',
-          left: '20%',
-          right: '20%',
-          bottom: '5%',
+          top: '18%',
+          left: '25%',
+          right: '25%',
+          bottom: '38%', /* should be 43% */
         }}
         dir="ltr"
       >

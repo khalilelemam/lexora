@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { WebcamGazePoint } from '../types';
-import { WEBCAM_GAZE_EMA_ALPHA } from '../lib/constants';
+import { GazeKalman } from '../lib/gaze-kalman';
 
 /**
  * Webcam gaze tracking using MediaPipe FaceLandmarker.
@@ -20,7 +20,16 @@ import { WEBCAM_GAZE_EMA_ALPHA } from '../lib/constants';
 
 interface CalibrationMapping {
   /** Model-agnostic predict: (irisX, irisY, yaw, pitch) → screen (px) */
-  predict: (irisX: number, irisY: number, yaw: number, pitch: number) => { x: number; y: number };
+  predict: (
+    irisX: number,
+    irisY: number,
+    yaw: number,
+    pitch: number,
+    roll: number,
+    headX: number,
+    headY: number,
+    invHeadZ: number,
+  ) => { x: number; y: number };
 }
 
 interface IrisPosition {
@@ -46,6 +55,14 @@ interface HeadPose {
   yaw: number;
   /** Up-down head nod — positive = tilted down (normalized by face height) */
   pitch: number;
+  /** Head tilt around camera axis (radians), positive = clockwise */
+  roll: number;
+  /** Lateral translation estimate in meters, right = positive */
+  headX: number;
+  /** Vertical translation estimate in meters, down = positive */
+  headY: number;
+  /** Depth estimate from camera in meters */
+  headZ: number;
 }
 
 interface UseWebcamGazeOptions {
@@ -115,16 +132,21 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   const streamRef = useRef<MediaStream | null>(null);
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
   const calibrationRef = useRef<CalibrationMapping | null>(null);
+  const gazeKalmanRef = useRef(new GazeKalman());
   const rafRef = useRef<number>(0);
   const onGazePointRef = useRef(onGazePoint);
+  const enabledRef = useRef(enabled);
+  const cameraReadyRef = useRef(cameraReady);
+  const modelReadyRef = useRef(modelReady);
+  const detectLastTimestampRef = useRef<number>(-1);
   // Track last iris positions for calibration
   const lastIrisRef = useRef<IrisPosition | null>(null);
   const lastRawIrisLandmarksRef = useRef<RawIrisLandmark[] | null>(null);
   const lastGlobalIrisRef = useRef<GlobalIrisPosition | null>(null);
   // Track last head pose for diagnostics
   const lastHeadPoseRef = useRef<HeadPose | null>(null);
-  // Track previous smoothed gaze position for EMA
-  const prevSmoothedRef = useRef<{ x: number; y: number } | null>(null);
+  const pointCountRef = useRef(0);
+  const frameCountRef = useRef(0);
 
   // ─── Initialize Camera ──────────────────────────────────
 
@@ -239,11 +261,18 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
       const rightMinX = Math.min(rightOuter.x, rightInner.x);
       const rightMinY = Math.min(rightTop.y, rightBottom.y);
 
+      // Anchor vertical position to the inner canthus (medial canthi) and
+      // normalize by eye width. Inner canthi are cartilage-anchored points
+      // that barely move with vertical gaze, so using them as Y reference
+      // produces a more monotonic and robust vertical feature.
+      const leftRelY = leftEyeW > 0.001 ? (leftIris.y - leftInner.y) / leftEyeW : 0.5;
+      const rightRelY = rightEyeW > 0.001 ? (rightIris.y - rightInner.y) / rightEyeW : 0.5;
+
       return {
         leftX: leftEyeW > 0.001 ? (leftIris.x - leftMinX) / leftEyeW : 0.5,
-        leftY: leftEyeH > 0.001 ? (leftIris.y - leftMinY) / leftEyeH : 0.5,
+        leftY: leftRelY,
         rightX: rightEyeW > 0.001 ? (rightIris.x - rightMinX) / rightEyeW : 0.5,
-        rightY: rightEyeH > 0.001 ? (rightIris.y - rightMinY) / rightEyeH : 0.5,
+        rightY: rightRelY,
       };
     },
     [],
@@ -300,7 +329,23 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
       const faceCenterY = (forehead.y + chin.y) / 2;
       const pitch = faceHeight > 0.001 ? (noseTip.y - faceCenterY) / faceHeight : 0;
 
-      return { yaw, pitch };
+      const leftEye = landmarks[33];
+      const rightEye = landmarks[263];
+      const rollRaw = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
+
+      const iod = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y);
+      const headZApprox = (0.065 / Math.max(iod, 0.001)) * 0.65;
+
+      // Approximate translation from face center offsets scaled by depth.
+      const headXRaw = (faceCenterX - 0.5) * headZApprox;
+      const headYRaw = (faceCenterY - 0.5) * headZApprox;
+
+      const roll = Number.isFinite(rollRaw) ? rollRaw : 0;
+      const headX = Number.isFinite(headXRaw) ? headXRaw : 0;
+      const headY = Number.isFinite(headYRaw) ? headYRaw : 0;
+      const headZ = Number.isFinite(headZApprox) && headZApprox > 0.1 ? headZApprox : 0.65;
+
+      return { yaw, pitch, roll, headX, headY, headZ };
     },
     [],
   );
@@ -315,12 +360,14 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     const ix = (iris.leftX + iris.rightX) / 2;
     const iy = (iris.leftY + iris.rightY) / 2;
 
-    // Include head pose in prediction (model uses it for better Y-axis mapping)
+    // Keep the legacy call shape; calibrated models now use pitch for vertical correction.
     const hp = lastHeadPoseRef.current;
     const yaw = hp?.yaw ?? 0;
     const pitch = hp?.pitch ?? 0;
-
-    return cal.predict(ix, iy, yaw, pitch);
+    const roll = hp?.roll ?? 0;
+    const headX = hp?.headX ?? 0;
+    const headY = hp?.headY ?? 0;
+    return cal.predict(ix, iy, yaw, pitch, roll, headX, headY, 0);
   }, []);
 
   // ─── Detection Loop ─────────────────────────────────────
@@ -334,22 +381,38 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   }, [onGazePoint]);
 
   useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
+  useEffect(() => {
+    cameraReadyRef.current = cameraReady;
+  }, [cameraReady]);
+
+  useEffect(() => {
+    modelReadyRef.current = modelReady;
+  }, [modelReady]);
+
+  useEffect(() => {
     collectingRef.current = collecting;
   }, [collecting]);
 
   useEffect(() => {
-    if (!enabled || !cameraReady || !modelReady) return;
-
-    const video = videoRef.current;
-    const faceLandmarker = faceLandmarkerRef.current;
-    if (!video || !faceLandmarker) return;
-
-    let lastTimestamp = -1;
-
     const detect = () => {
-      if (video.readyState >= 2 && video.currentTime !== lastTimestamp) {
-        lastTimestamp = video.currentTime;
-        const results = faceLandmarker.detectForVideo(video, performance.now());
+      if (!enabledRef.current || !cameraReadyRef.current || !modelReadyRef.current) {
+        rafRef.current = requestAnimationFrame(detect);
+        return;
+      }
+
+      const activeVideo = videoRef.current;
+      const faceLandmarker = faceLandmarkerRef.current;
+      if (!activeVideo || !faceLandmarker) {
+        rafRef.current = requestAnimationFrame(detect);
+        return;
+      }
+
+      if (activeVideo.readyState >= 2 && activeVideo.currentTime !== detectLastTimestampRef.current) {
+        detectLastTimestampRef.current = activeVideo.currentTime;
+        const results = faceLandmarker.detectForVideo(activeVideo, performance.now());
 
         if (results.faceLandmarks && results.faceLandmarks.length > 0) {
           const landmarks = results.faceLandmarks[0];
@@ -378,27 +441,27 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
             if (collectingRef.current && calibrationRef.current) {
               const screenPos = mapToScreen(iris);
               if (screenPos) {
-                // Apply EMA smoothing to reduce frame-to-frame jitter.
-                // The ML service I-VT detector uses a tight velocity threshold
-                // (0.5 norm-units/s → ~16 px/frame at 60 fps). Without smoothing,
-                // webcam iris tracking noise causes most points to be classified
-                // as saccades, producing too few fixations.
-                const alpha = WEBCAM_GAZE_EMA_ALPHA;
-                const prev = prevSmoothedRef.current;
-                const smoothed = prev
-                  ? {
-                      x: alpha * screenPos.x + (1 - alpha) * prev.x,
-                      y: alpha * screenPos.y + (1 - alpha) * prev.y,
-                    }
-                  : screenPos;
-                prevSmoothedRef.current = smoothed;
+                // Apply adaptive Kalman filtering to smooth gaze position.
+                // The filter adapts its process noise based on gaze velocity:
+                // - Low velocity (fixations): high confidence in filter prediction → smooth
+                // - High velocity (saccades): low confidence in prediction → responsive to raw signal
+                // This prevents jitter during reading while preserving saccade responsiveness.
+                const smoothed = gazeKalmanRef.current.update(
+                  screenPos.x,
+                  screenPos.y,
+                  performance.now(),
+                );
 
                 onGazePointRef.current?.({
                   x: smoothed.x,
                   y: smoothed.y,
                   timestamp: Math.round(performance.now()),
                 });
-                setPointCount((prev) => prev + 1);
+                pointCountRef.current += 1;
+                frameCountRef.current += 1;
+                if (frameCountRef.current % 5 === 0) {
+                  setPointCount(pointCountRef.current);
+                }
               }
             }
           }
@@ -412,16 +475,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [
-    enabled,
-    cameraReady,
-    modelReady,
-    extractIrisPosition,
-    extractRawIrisLandmarks,
-    extractGlobalIrisPosition,
-    extractHeadPose,
-    mapToScreen,
-  ]);
+  }, []);
 
   // ─── Public API ─────────────────────────────────────────
 
@@ -430,8 +484,10 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   }, []);
 
   const startCollecting = useCallback(() => {
+    pointCountRef.current = 0;
+    frameCountRef.current = 0;
     setPointCount(0);
-    prevSmoothedRef.current = null; // Reset EMA state for fresh collection
+    gazeKalmanRef.current.reset(); // Reset Kalman filter state for fresh task collection
     setCollecting(true);
   }, []);
 
@@ -469,7 +525,6 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     setModelReady(false);
     setCollecting(false);
     calibrationRef.current = null;
-    prevSmoothedRef.current = null;
     lastIrisRef.current = null;
     lastRawIrisLandmarksRef.current = null;
     lastGlobalIrisRef.current = null;
