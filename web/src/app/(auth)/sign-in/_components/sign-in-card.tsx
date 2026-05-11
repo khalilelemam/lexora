@@ -3,6 +3,9 @@
 import { useCallback, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
+import { CONSENT_COOKIE_NAME } from '@/lib/consent';
+
+import { ConsentCheckboxes } from './consent-checkboxes';
 import { EmailForm } from './email-form';
 import { EmailSent } from './email-sent';
 import { GoogleButton } from './google-button';
@@ -12,18 +15,51 @@ interface SignInCardProps {
 }
 
 /**
+ * Sets a short-lived consent cookie so the server can read the user's
+ * Terms / Privacy acceptance and raw-data opt-in during account creation
+ * or session creation (issue #45).
+ */
+function setConsentCookie(terms: boolean, rawData: boolean) {
+  const payload = JSON.stringify({
+    terms,
+    rawData,
+    ts: new Date().toISOString(),
+  });
+
+  // 10-minute expiry — long enough for OAuth round-trip or magic-link click
+  const maxAge = 600;
+  document.cookie = `${CONSENT_COOKIE_NAME}=${encodeURIComponent(payload)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+/**
  * Client-side sign-in card — orchestrates Google and email flows.
  * Extracted from page.tsx to keep the page as a server component.
+ *
+ * Consent checkboxes gate the auth buttons:
+ * - Terms / Privacy acceptance is **required** to proceed.
+ * - Raw data opt-in is optional and unchecked by default.
  */
 export function SignInCard({ callbackUrl }: SignInCardProps) {
   const [globalLoading, setGlobalLoading] = useState(false);
   const [error, setError] = useState('');
   const [sentEmail, setSentEmail] = useState<string | null>(null);
 
+  // ── Consent state ───────────────────────────────────────
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [rawDataOptIn, setRawDataOptIn] = useState(false);
+
   const handleBack = useCallback(() => {
     setSentEmail(null);
     setError('');
   }, []);
+
+  /**
+   * Must be called before initiating any auth flow so the server
+   * can read consent from the cookie in `databaseHooks`.
+   */
+  const persistConsent = useCallback(() => {
+    setConsentCookie(termsAccepted, rawDataOptIn);
+  }, [termsAccepted, rawDataOptIn]);
 
   return (
     <motion.div
@@ -55,9 +91,10 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
             {/* Google */}
             <GoogleButton
               callbackUrl={callbackUrl}
-              disabled={globalLoading}
+              disabled={globalLoading || !termsAccepted}
               onLoadingChange={setGlobalLoading}
               onError={setError}
+              onBeforeAuth={persistConsent}
             />
 
             {/* Divider */}
@@ -72,11 +109,37 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
             {/* Email */}
             <EmailForm
               callbackUrl={callbackUrl}
-              disabled={globalLoading}
+              disabled={globalLoading || !termsAccepted}
               onLoadingChange={setGlobalLoading}
               onError={setError}
               onSuccess={setSentEmail}
+              onBeforeAuth={persistConsent}
             />
+
+            {/* Consent checkboxes (issue #45) */}
+            <div className="mt-6">
+              <ConsentCheckboxes
+                termsAccepted={termsAccepted}
+                rawDataOptIn={rawDataOptIn}
+                onTermsChange={setTermsAccepted}
+                onRawDataChange={setRawDataOptIn}
+                disabled={globalLoading}
+              />
+            </div>
+
+            {/* Terms-not-accepted hint */}
+            <AnimatePresence>
+              {!termsAccepted && !error && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-muted-foreground mt-3 text-center text-xs"
+                >
+                  Please accept the Terms &amp; Privacy Policy to continue.
+                </motion.p>
+              )}
+            </AnimatePresence>
 
             {/* Error */}
             <AnimatePresence>

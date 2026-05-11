@@ -12,6 +12,8 @@ interface GoogleButtonProps {
   disabled?: boolean;
   onLoadingChange: (loading: boolean) => void;
   onError: (message: string) => void;
+  /** Called immediately before the OAuth redirect to persist consent cookie. */
+  onBeforeAuth?: () => void;
 }
 
 /**
@@ -23,10 +25,13 @@ export function GoogleButton({
   disabled,
   onLoadingChange,
   onError,
+  onBeforeAuth,
 }: GoogleButtonProps) {
   const [loading, setLoading] = useState(false);
 
   const handleClick = useCallback(async () => {
+    onBeforeAuth?.();
+
     setLoading(true);
     onLoadingChange(true);
     onError('');
@@ -41,7 +46,7 @@ export function GoogleButton({
       setLoading(false);
       onLoadingChange(false);
     }
-  }, [callbackUrl, onLoadingChange, onError]);
+  }, [callbackUrl, onLoadingChange, onError, onBeforeAuth]);
 
   return (
     <Button

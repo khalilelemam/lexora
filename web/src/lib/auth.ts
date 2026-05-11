@@ -5,6 +5,7 @@ import { nextCookies } from 'better-auth/next-js';
 import { magicLink } from 'better-auth/plugins';
 import { Resend } from 'resend';
 
+import { parseConsentCookie } from '@/lib/consent';
 import { MagicLinkEmail } from '@/emails/magic-link';
 import { prisma } from '@/lib/prisma';
 
@@ -41,6 +42,58 @@ export const auth = betterAuth({
         required: false,
         defaultValue: 'USER',
         input: false,
+      },
+      termsAcceptedAt: {
+        type: 'date',
+        required: false,
+        input: false,
+      },
+      rawDataConsent: {
+        type: 'boolean',
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
+    },
+  },
+
+  /* ── Database hooks — consent capture ────── */
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user, ctx) => {
+          const cookieHeader = ctx?.headers?.get?.('cookie') ?? null;
+          const consent = parseConsentCookie(cookieHeader);
+
+          return {
+            data: {
+              ...user,
+              termsAcceptedAt: consent?.terms ? new Date(consent.ts) : null,
+              rawDataConsent: consent?.rawData ?? false,
+            },
+          };
+        },
+      },
+    },
+    session: {
+      create: {
+        /**
+         * On every new session (including returning-user sign-ins),
+         * update `termsAcceptedAt` from the consent cookie if present.
+         * We intentionally do NOT overwrite `rawDataConsent` for existing
+         * users — changes to that require contacting support (github issue #45).
+         */
+        after: async (session, ctx) => {
+          const cookieHeader = ctx?.headers?.get?.('cookie') ?? null;
+          const consent = parseConsentCookie(cookieHeader);
+
+          if (consent?.terms) {
+            await prisma.user.update({
+              where: { id: session.userId },
+              data: { termsAcceptedAt: new Date(consent.ts) },
+            });
+          }
+        },
       },
     },
   },
