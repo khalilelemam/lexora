@@ -6,18 +6,8 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from '@/components/ui/field';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import type { IntakeData } from '../types';
 
@@ -92,14 +82,17 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
               Child&apos;s Age <span className="text-destructive">*</span>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
                     <Info className="size-3.5" />
                     <span className="sr-only">Age info</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-60">
-                  Our models were trained on data from children around ages 9–11, so
-                  accuracy tends to be highest in that range.
+                  Our models were trained on data from children around ages 9–11, so accuracy tends
+                  to be highest in that range.
                 </TooltipContent>
               </Tooltip>
             </FieldLabel>
@@ -134,14 +127,17 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
               Session Name
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
                     <Info className="size-3.5" />
                     <span className="sr-only">Session name info</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-60">
-                  Give this test a name so you can find it later. If you leave it blank,
-                  we&apos;ll generate one automatically (e.g. &quot;Test — May 11, 2026&quot;).
+                  Give this test a name so you can find it later. If you leave it blank, we&apos;ll
+                  generate one automatically (e.g. &quot;Test — May 11, 2026&quot;).
                 </TooltipContent>
               </Tooltip>
             </FieldLabel>
@@ -149,7 +145,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
             <Input
               id="intake-label"
               type="text"
-              placeholder="e.g. &quot;John&apos;s Test&quot;"
+              placeholder='e.g. "John&apos;s Test"'
               value={label}
               onChange={(e) => {
                 setLabel(e.target.value);
