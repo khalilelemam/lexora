@@ -107,16 +107,16 @@ Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to
 
 ### Database & Auth
 
-| Variable             | Required | Default                              | Description                                                                                                                    |
-| -------------------- | -------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `DATABASE_URL`       | **Yes**  | —                                    | PostgreSQL connection string. Neon (production) or local Docker.                                                               |
-| `DATABASE_ADAPTER`   | No       | Auto-detected from `DATABASE_URL`    | `neon` (serverless WebSocket) or `pg` (standard TCP). Set explicitly if auto-detection doesn't match your setup.               |
-| `BETTER_AUTH_SECRET` | **Yes**  | —                                    | Secret key for Better Auth (min 32 chars). Generate: `openssl rand -base64 32`                                                 |
-| `BETTER_AUTH_URL`    | No       | `http://localhost:3000`              | Base URL of the app (used for OAuth callbacks, magic link URLs).                                                               |
-| `GOOGLE_CLIENT_ID`   | **Yes**  | —                                    | Google OAuth client ID (from Google Cloud Console).                                                                            |
-| `GOOGLE_CLIENT_SECRET`| **Yes** | —                                    | Google OAuth client secret.                                                                                                    |
-| `RESEND_API_KEY`     | **Yes**  | —                                    | Resend API key for sending magic link emails.                                                                                  |
-| `EMAIL_FROM`         | No       | `Lexora <noreply@lexora.app>`        | Email sender address for magic links.                                                                                          |
+| Variable               | Required | Default                           | Description                                                                                                      |
+| ---------------------- | -------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`         | **Yes**  | —                                 | PostgreSQL connection string. Neon (production) or local Docker.                                                 |
+| `DATABASE_ADAPTER`     | No       | Auto-detected from `DATABASE_URL` | `neon` (serverless WebSocket) or `pg` (standard TCP). Set explicitly if auto-detection doesn't match your setup. |
+| `BETTER_AUTH_SECRET`   | **Yes**  | —                                 | Secret key for Better Auth (min 32 chars). Generate: `openssl rand -base64 32`                                   |
+| `BETTER_AUTH_URL`      | No       | `http://localhost:3000`           | Base URL of the app (used for OAuth callbacks, magic link URLs).                                                 |
+| `GOOGLE_CLIENT_ID`     | **Yes**  | —                                 | Google OAuth client ID (from Google Cloud Console).                                                              |
+| `GOOGLE_CLIENT_SECRET` | **Yes**  | —                                 | Google OAuth client secret.                                                                                      |
+| `RESEND_API_KEY`       | **Yes**  | —                                 | Resend API key for sending magic link emails.                                                                    |
+| `EMAIL_FROM`           | No       | `Lexora <noreply@lexora.app>`     | Email sender address for magic links.                                                                            |
 
 ### Backend Services
 

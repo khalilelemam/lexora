@@ -17,7 +17,7 @@ services:
     container_name: lexora-db
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - '5433:5432'
     environment:
       POSTGRES_USER: lexora
       POSTGRES_PASSWORD: lexora_dev
@@ -25,7 +25,7 @@ services:
     volumes:
       - lexora_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lexora"]
+      test: ['CMD-SHELL', 'pg_isready -U lexora']
       interval: 5s
       timeout: 3s
       retries: 5
