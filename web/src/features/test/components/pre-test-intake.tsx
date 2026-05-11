@@ -26,8 +26,8 @@ const intakeSchema = z.object({
   age: z
     .number({ error: 'Please enter a valid age.' })
     .int({ error: 'Age must be a whole number.' })
-    .min(1, { error: 'Age must be at least 1.' })
-    .max(18, { error: 'Age must be 18 or under.' }),
+    .min(5, { error: 'Age must be at least 5.' })
+    .max(25, { error: 'Age must be 25 or under.' }),
   label: z.string().max(100, 'Label must be 100 characters or fewer.').optional(),
 });
 
@@ -92,7 +92,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
               Child&apos;s Age <span className="text-destructive">*</span>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
+                  <button type="button" className="cursor-pointer text-muted-foreground hover:text-foreground">
                     <Info className="size-3.5" />
                     <span className="sr-only">Age info</span>
                   </button>
@@ -123,7 +123,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
               <FieldError>{errors.age}</FieldError>
             ) : (
               <FieldDescription>
-                Enter the child&apos;s age (1–18). Results are most accurate for ages 9–11.
+                Enter the child&apos;s age (5–25). Results are most accurate for ages 9–11.
               </FieldDescription>
             )}
           </Field>
@@ -134,7 +134,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
               Session Name
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground">
+                  <button type="button" className="cursor-pointer text-muted-foreground hover:text-foreground">
                     <Info className="size-3.5" />
                     <span className="sr-only">Session name info</span>
                   </button>
@@ -149,7 +149,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
             <Input
               id="intake-label"
               type="text"
-              placeholder="e.g. Session 1, Classroom A"
+              placeholder="e.g. &quot;John&apos;s Test&quot;"
               value={label}
               onChange={(e) => {
                 setLabel(e.target.value);
