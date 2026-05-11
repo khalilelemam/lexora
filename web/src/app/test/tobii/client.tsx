@@ -16,6 +16,7 @@ import {
   TestErrorBoundary,
 } from '@/features/test/components';
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
+import { PreTestIntake } from '@/features/test/components/pre-test-intake';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { SupportedHardware } from '@/features/test/components/supported-hardware';
 import { useTestFlow, useTobiiGazeStream, useTobiiStatus } from '@/features/test/hooks';
@@ -24,7 +25,7 @@ import { submitTobiiTest } from '@/features/test/actions/submit-test';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { TOBII_STEPS, getStepKeyForState } from '@/features/test/lib/constants';
 import { useFullscreen } from '@/features/test/hooks/use-fullscreen';
-import type { TobiiTestFlowState, CalibrationResult } from '@/features/test/types';
+import type { TobiiTestFlowState, CalibrationResult, IntakeData } from '@/features/test/types';
 import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
 import { parseCalibrationMode } from '@/features/test/lib/parse-calibration-mode';
 
@@ -276,6 +277,13 @@ export function TobiiTestClient() {
               startButtonText="Continue to Instructions"
             />
           </div>
+        );
+
+      case 'intake':
+        return (
+          <PreTestIntake
+            onComplete={(data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data })}
+          />
         );
 
       case 'hardware-check':

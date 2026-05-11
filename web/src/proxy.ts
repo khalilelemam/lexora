@@ -1,23 +1,24 @@
+import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
 
 /**
- * Next.js 16 proxy — session-validated auth guard.
+ * Server-side auth guard — protects /test routes.
  *
- * Validates the session token against Better Auth (not just cookie
- * existence) to prevent stale/revoked cookies from bypassing protection.
- * Preserves the full URL (path + query) in the callbackUrl.
+ * Unauthenticated users are redirected to /sign-in with a callbackUrl
+ * pointing back to the original test route so they return after login.
+ *
+ * @see https://github.com/khalilelemam/eglex/issues/46
  */
 export async function proxy(request: NextRequest) {
   const session = await auth.api.getSession({
-    headers: request.headers,
+    headers: await headers(),
   });
 
   if (!session) {
     const signInUrl = new URL('/sign-in', request.url);
-    const callbackUrl = request.nextUrl.pathname + request.nextUrl.search;
-    signInUrl.searchParams.set('callbackUrl', callbackUrl);
+    signInUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
     return NextResponse.redirect(signInUrl);
   }
 
