@@ -6,7 +6,6 @@ import { Monitor, Sun, Star, Shield, ArrowRight, ArrowLeft, ChevronRight } from 
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { StepIndicator } from '@/components/shared';
-import { cn } from '@/lib/utils';
 
 interface PreTestSlidesProps {
   /** Test mode — affects slide content */

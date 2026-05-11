@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
 import { FaWindows, FaApple, FaLinux } from 'react-icons/fa';
@@ -52,19 +52,16 @@ function detectPlatform(): Platform {
   return 'unknown';
 }
 
+/** No-op subscribe — platform never changes after page load. */
+const noop = () => () => {};
+
 /**
  * OS-specific download buttons section.
  * Auto-detects the user's OS and highlights the matching button.
  * Links to GitHub Releases latest assets.
  */
 export function DownloadSection() {
-  const [currentPlatform, setCurrentPlatform] = useState<Platform>('unknown');
-
-  useEffect(() => {
-    // @ts-expect-error - necessary to avoid hydration mismatch
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentPlatform(detectPlatform());
-  }, []);
+  const currentPlatform = useSyncExternalStore(noop, detectPlatform, () => 'unknown' as Platform);
 
   const platformKeys = Object.keys(PLATFORMS) as Array<Exclude<Platform, 'unknown'>>;
 

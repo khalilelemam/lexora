@@ -9,12 +9,46 @@ Both modes guide the user through **calibration → reading task → review → 
 
 ## Getting Started
 
+### Option A — Docker (recommended for quick start)
+
+This is the fastest way to get a working local setup. No Neon account or remote database required.
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy environment file
+cp .env.example .env.local
+
+# 3. Set the Docker DATABASE_URL in .env.local
+#    DATABASE_URL=postgresql://lexora:lexora_dev@localhost:5433/lexora
+#    (DATABASE_ADAPTER will auto-detect as "pg")
+
+# 4. Start the local PostgreSQL database
+docker compose up -d
+
+# 5. Run database migrations
+npx prisma migrate dev
+
+# 6. Start the ML service (in a separate terminal)
+cd ../ml-service
+python server.py
+
+# 7. Start the web app
+npm run dev
+```
+
+### Option B — Neon (production-style)
+
 ```bash
 # Install dependencies
 npm install
 
-# Copy environment file and configure
+# Copy environment file and configure with your Neon DATABASE_URL
 cp .env.example .env.local
+
+# Run database migrations
+npx prisma migrate dev
 
 # Start the ML service (in a separate terminal)
 cd ../ml-service
@@ -70,6 +104,19 @@ Webcam Frame → MediaPipe FaceLandmarker → Iris Landmarks
 ## Environment Variables
 
 Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to the browser.
+
+### Database & Auth
+
+| Variable             | Required | Default                              | Description                                                                                                                    |
+| -------------------- | -------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`       | **Yes**  | —                                    | PostgreSQL connection string. Neon (production) or local Docker.                                                               |
+| `DATABASE_ADAPTER`   | No       | Auto-detected from `DATABASE_URL`    | `neon` (serverless WebSocket) or `pg` (standard TCP). Set explicitly if auto-detection doesn't match your setup.               |
+| `BETTER_AUTH_SECRET` | **Yes**  | —                                    | Secret key for Better Auth (min 32 chars). Generate: `openssl rand -base64 32`                                                 |
+| `BETTER_AUTH_URL`    | No       | `http://localhost:3000`              | Base URL of the app (used for OAuth callbacks, magic link URLs).                                                               |
+| `GOOGLE_CLIENT_ID`   | **Yes**  | —                                    | Google OAuth client ID (from Google Cloud Console).                                                                            |
+| `GOOGLE_CLIENT_SECRET`| **Yes** | —                                    | Google OAuth client secret.                                                                                                    |
+| `RESEND_API_KEY`     | **Yes**  | —                                    | Resend API key for sending magic link emails.                                                                                  |
+| `EMAIL_FROM`         | No       | `Lexora <noreply@lexora.app>`        | Email sender address for magic links.                                                                                          |
 
 ### Backend Services
 
