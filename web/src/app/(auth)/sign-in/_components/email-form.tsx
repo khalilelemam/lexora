@@ -3,9 +3,6 @@
 import { useCallback, useState } from 'react';
 import { Loader2, Mail } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { authClient } from '@/lib/auth-client';
 import { emailSchema } from '@/lib/validators/auth';
 
@@ -80,12 +77,15 @@ export function EmailForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium">
+        <label
+          htmlFor="email"
+          className="text-[10px] font-black tracking-[0.2em] text-[#51513d] uppercase"
+        >
           Email address
-        </Label>
+        </label>
         <div className="relative">
-          <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
+          <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#51513d]/50" />
+          <input
             id="email"
             type="email"
             placeholder="you@example.com"
@@ -94,29 +94,31 @@ export function EmailForm({
               setEmail(e.target.value);
               if (validationError) setValidationError('');
             }}
-            className="h-11 pl-10"
+            className="h-12 w-full border border-[#51513d]/18 bg-[#e3dcc2]/50 pl-10 pr-4 text-sm text-[#1b2021] placeholder:text-[#51513d]/35 focus:border-[#51513d]/40 focus:outline-none focus:ring-2 focus:ring-[#a6a867]/25"
             disabled={disabled || loading}
             autoComplete="email"
           />
         </div>
-        {validationError && <p className="text-destructive text-sm">{validationError}</p>}
+        {validationError && (
+          <p className="text-xs font-medium text-red-600">{validationError}</p>
+        )}
       </div>
 
-      <Button
+      <button
         id="sign-in-email"
         type="submit"
-        className="h-11 w-full bg-[oklch(0.40_0.04_110)] font-medium text-[oklch(0.94_0.02_90)] hover:bg-[oklch(0.35_0.04_110)]"
+        className="flex h-12 w-full items-center justify-center gap-2 bg-[#51513d] text-sm font-black text-[#e3dcc2] transition-all hover:bg-[#1b2021] hover:shadow-[4px_4px_0_rgba(81,81,61,.15)] disabled:cursor-not-allowed disabled:opacity-40"
         disabled={disabled || loading || !email.trim()}
       >
         {loading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
             Sending…
           </>
         ) : (
           'Continue with Email'
         )}
-      </Button>
+      </button>
     </form>
   );
 }

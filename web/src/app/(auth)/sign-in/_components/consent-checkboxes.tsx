@@ -3,8 +3,6 @@
 import { useCallback } from 'react';
 import Link from 'next/link';
 
-import { Label } from '@/components/ui/label';
-
 interface ConsentCheckboxesProps {
   termsAccepted: boolean;
   rawDataOptIn: boolean;
@@ -38,11 +36,11 @@ export function ConsentCheckboxes({
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3.5">
       {/* Terms / Privacy — required */}
-      <Label
+      <label
         htmlFor="consent-terms"
-        className="flex cursor-pointer items-start gap-2.5 text-sm leading-snug font-normal"
+        className="flex cursor-pointer items-start gap-3 text-sm leading-snug"
       >
         <input
           id="consent-terms"
@@ -50,25 +48,25 @@ export function ConsentCheckboxes({
           checked={termsAccepted}
           onChange={handleTerms}
           disabled={disabled}
-          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border accent-[oklch(0.40_0.04_110)]"
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer border-[#51513d]/30 accent-[#51513d]"
         />
-        <span className="text-muted-foreground">
+        <span className="text-[#1b2021]/60">
           I agree to the{' '}
           <Link
             href="/privacy"
             target="_blank"
-            className="text-foreground underline underline-offset-2 hover:no-underline"
+            className="font-black text-[#51513d] underline underline-offset-2 hover:text-[#1b2021] hover:no-underline"
           >
             Terms &amp; Privacy Policy
           </Link>
-          <span className="text-destructive ml-0.5">*</span>
+          <span className="ml-0.5 font-black text-red-500">*</span>
         </span>
-      </Label>
+      </label>
 
       {/* Raw data opt-in — optional, unchecked by default */}
-      <Label
+      <label
         htmlFor="consent-raw-data"
-        className="flex cursor-pointer items-start gap-2.5 text-sm leading-snug font-normal"
+        className="flex cursor-pointer items-start gap-3 text-sm leading-snug"
       >
         <input
           id="consent-raw-data"
@@ -76,13 +74,15 @@ export function ConsentCheckboxes({
           checked={rawDataOptIn}
           onChange={handleRawData}
           disabled={disabled}
-          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border accent-[oklch(0.40_0.04_110)]"
+          className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer border-[#51513d]/30 accent-[#51513d]"
         />
-        <span className="text-muted-foreground">
+        <span className="text-[#1b2021]/60">
           I consent to storing my raw gaze data for research &amp; model improvement{' '}
-          <span className="text-muted-foreground/60 text-xs">(optional)</span>
+          <span className="text-[10px] font-black tracking-[0.15em] text-[#51513d]/40 uppercase">
+            optional
+          </span>
         </span>
-      </Label>
+      </label>
     </div>
   );
 }

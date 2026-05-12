@@ -37,7 +37,7 @@ export function UserNav() {
 
   /* ── Loading skeleton ─────────────────────────────────── */
   if (isPending) {
-    return <div className="bg-muted h-8 w-8 animate-pulse rounded-full" />;
+    return <div className="h-8 w-8 animate-pulse bg-[#51513d]/15" />;
   }
 
   /* ── Guest ────────────────────────────────────────────── */
@@ -47,7 +47,7 @@ export function UserNav() {
         asChild
         variant="outline"
         size="sm"
-        className="border-[oklch(0.70_0.10_115/0.4)] text-[oklch(0.40_0.04_110)] hover:border-[oklch(0.70_0.10_115)] hover:bg-[oklch(0.70_0.10_115/0.1)]"
+        className="border-[#51513d]/30 text-[#51513d] hover:border-[#51513d] hover:bg-[#51513d]/8"
       >
         <Link href="/sign-in">Sign In</Link>
       </Button>
@@ -76,7 +76,7 @@ export function UserNav() {
                 className="rounded-full object-cover"
               />
             ) : (
-              <AvatarFallback className="text-xs font-semibold">
+              <AvatarFallback className="bg-[#51513d] text-xs font-black text-[#e3dcc2]">
                 {initials || <User className="h-4 w-4" />}
               </AvatarFallback>
             )}
