@@ -95,6 +95,7 @@ export const MIN_AUTO_DETECT_SECONDS = 8;
 
 /** Tobii steps for the StepIndicator */
 export const TOBII_STEPS = [
+  { key: 'intake', label: 'Pre-test' },
   { key: 'device-check', label: 'Device' },
   { key: 'calibrating', label: 'Calibration' },
   { key: 'task-syllables', label: 'Syllables' },
@@ -105,6 +106,7 @@ export const TOBII_STEPS = [
 
 /** Webcam steps for the StepIndicator */
 export const WEBCAM_STEPS = [
+  { key: 'intake', label: 'Pre-test' },
   { key: 'camera-setup', label: 'Camera' },
   { key: 'calibrating', label: 'Calibration' },
   { key: 'task-paragraph', label: 'Reading' },

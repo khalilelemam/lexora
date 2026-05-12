@@ -7,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
  * Works even when the repo is private by using a server-side GitHub token.
  */
 
-const GITHUB_OWNER = 'khalilelemam';
-const GITHUB_REPO = 'eglex';
+const GITHUB_OWNER = process.env.NEXT_PUBLIC_GITHUB_OWNER || 'khalilelemam';
+const GITHUB_REPO = process.env.NEXT_PUBLIC_GITHUB_REPO || 'eglex';
 const RELEASES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
 
 // Platform keywords that match our asset naming convention
@@ -37,15 +37,11 @@ export async function GET(req: NextRequest) {
 
   // Determine platform from query param or User-Agent
   const platform =
-    req.nextUrl.searchParams.get('platform') ??
-    detectPlatform(req.headers.get('user-agent') ?? '');
+    req.nextUrl.searchParams.get('platform') ?? detectPlatform(req.headers.get('user-agent') ?? '');
 
   const expectedAsset = PLATFORM_MAP[platform];
   if (!expectedAsset) {
-    return NextResponse.json(
-      { error: `Unsupported platform: ${platform}` },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: `Unsupported platform: ${platform}` }, { status: 400 });
   }
 
   try {
@@ -69,9 +65,7 @@ export async function GET(req: NextRequest) {
     const release = await releaseRes.json();
 
     // Find the matching asset
-    const asset = release.assets?.find(
-      (a: { name: string }) => a.name === expectedAsset,
-    );
+    const asset = release.assets?.find((a: { name: string }) => a.name === expectedAsset);
 
     if (!asset) {
       return NextResponse.json(
@@ -90,10 +84,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!assetRes.ok || !assetRes.body) {
-      return NextResponse.json(
-        { error: 'Failed to download asset from GitHub' },
-        { status: 502 },
-      );
+      return NextResponse.json({ error: 'Failed to download asset from GitHub' }, { status: 502 });
     }
 
     // Stream it back to the user as a file download
@@ -109,9 +100,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     console.error('Download proxy error:', err);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

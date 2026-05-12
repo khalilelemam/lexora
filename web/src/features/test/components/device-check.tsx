@@ -233,6 +233,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               <RefreshCw className="h-8 w-8 animate-spin text-[#51513d]" />
               <p className="text-sm text-[#1b2021]/64">Checking connection...</p>
             </div>
+            </div>
           ) : isConnected && status?.device ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -309,7 +310,7 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
             {isConnected && (
               <button
                 type="button"
-                onClick={() => window.open('http://localhost:28980', '_blank')}
+                onClick={() => (window.location.href = 'lexora://open')}
                 className="border border-[#51513d]/25 bg-[#e3dc95]/40 px-4 py-2.5 text-xs font-black text-[#51513d] transition-colors hover:bg-[#e3dc95]/60"
               >
                 Open Service

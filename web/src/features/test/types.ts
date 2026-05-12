@@ -1,6 +1,12 @@
 // ─── Test Modes ──────────────────────────────────────────
 export type TestMode = 'tobii' | 'webcam';
 
+// ─── Pre-test Intake ─────────────────────────────────────
+export interface IntakeData {
+  age: number;
+  label?: string;
+}
+
 // ─── Task Types ──────────────────────────────────────────
 export type TobiiTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
 export type WebcamTaskType = 'paragraph';
@@ -78,6 +84,8 @@ export interface PredictionResult {
 // ─── Test Flow States ────────────────────────────────────
 export type TobiiTestState =
   | 'idle'
+  | 'intake'
+  | 'hardware-check'
   | 'pre-test-education'
   | 'device-check'
   | 'calibrating'
@@ -93,6 +101,7 @@ export type TobiiTestState =
 
 export type WebcamTestState =
   | 'idle'
+  | 'intake'
   | 'pre-test-education'
   | 'camera-setup'
   | 'calibrating'
@@ -107,6 +116,8 @@ export type TestState = TobiiTestState | WebcamTestState;
 // ─── Test Flow Actions ───────────────────────────────────
 export type TestAction =
   | { type: 'START' }
+  | { type: 'INTAKE_COMPLETE'; data: IntakeData }
+  | { type: 'HARDWARE_CONFIRMED' }
   | { type: 'EDUCATION_COMPLETE' }
   | { type: 'DEVICE_READY' }
   | { type: 'CAMERA_READY' }
@@ -126,6 +137,7 @@ export type TestAction =
 export interface TobiiTestFlowState {
   mode: 'tobii';
   currentState: TobiiTestState;
+  intake: IntakeData | null;
   calibration: CalibrationResult | null;
   taskData: {
     syllables: TobiiGazePoint[];
@@ -139,6 +151,7 @@ export interface TobiiTestFlowState {
 export interface WebcamTestFlowState {
   mode: 'webcam';
   currentState: WebcamTestState;
+  intake: IntakeData | null;
   calibration: CalibrationResult | null;
   taskData: {
     paragraph: WebcamGazePoint[];

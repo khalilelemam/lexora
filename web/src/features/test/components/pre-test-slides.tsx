@@ -2,20 +2,10 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Eye,
-  Monitor,
-  BookOpen,
-  Sun,
-  Star,
-  Shield,
-  ArrowRight,
-  ArrowLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { Monitor, Sun, Star, Shield, ArrowRight, ArrowLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
-import { cn } from '@/lib/utils';
+import { StepIndicator } from '@/components/shared';
 
 interface PreTestSlidesProps {
   /** Test mode — affects slide content */
@@ -403,12 +393,11 @@ export function PreTestSlides({
                 setDirection(idx > currentSlide ? 1 : -1);
                 setCurrentSlide(idx);
               }}
-              className={cn(
-                'h-2 rounded-full transition-all duration-300',
+              className={`h-2 rounded-full transition-all duration-300 ${
                 idx === currentSlide
                   ? 'w-6 bg-[#51513d]'
-                  : 'w-2 bg-[#51513d]/25 hover:bg-[#51513d]/50',
-              )}
+                  : 'w-2 bg-[#51513d]/25 hover:bg-[#51513d]/50'
+              }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
           ))}

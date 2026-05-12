@@ -12,7 +12,6 @@ import {
   useCalibrationEngine,
 } from '../hooks/use-calibration-engine';
 import {
-  CalibrationSetup,
   CalibrationCountdown,
   CalibrationCollecting,
   CalibrationPreValidation,
@@ -58,7 +57,6 @@ export function CalibrationScreen({
   blockOnPoor = false,
 }: CalibrationScreenProps) {
   /* ---- local state ---- */
-  const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(mode);
   const [collectionIssue, setCollectionIssue] = useState<'no-signal' | 'low-samples' | null>(null);
 
   /* ---- engine ---- */
@@ -84,7 +82,7 @@ export function CalibrationScreen({
     readyForPreValidation,
   } = useCalibrationEngine({
     tracker,
-    mode: selectedMode,
+    mode: mode,
     participantAge,
     onGetGazeSample,
     onGetIrisSample,
