@@ -52,17 +52,10 @@ function detectPlatform(): Platform {
   return 'unknown';
 }
 
-/** No-op subscribe — platform never changes after page load. */
 const noop = () => () => {};
 
-/**
- * OS-specific download buttons section.
- * Auto-detects the user's OS and highlights the matching button.
- * Links to GitHub Releases latest assets.
- */
 export function DownloadSection() {
   const currentPlatform = useSyncExternalStore(noop, detectPlatform, () => 'unknown' as Platform);
-
   const platformKeys = Object.keys(PLATFORMS) as Array<Exclude<Platform, 'unknown'>>;
 
   return (
@@ -86,7 +79,7 @@ export function DownloadSection() {
             ? Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="border-border/60 bg-muted/50 flex h-[124px] w-full animate-pulse flex-col items-center justify-center gap-2 rounded-md border py-5"
+                  className="border-[#51513d]/25 bg-[#e3dcc2]/30 flex h-[124px] w-full animate-pulse flex-col items-center justify-center gap-2 rounded-md border py-5"
                 />
               ))
             : platformKeys.map((key) => {
@@ -127,7 +120,7 @@ export function DownloadSection() {
                       <Button
                         variant="outline"
                         disabled
-                        className="flex h-auto w-full cursor-not-allowed flex-col items-center gap-2 py-5 opacity-50"
+                        className="flex h-auto w-full cursor-not-allowed flex-col items-center gap-2 py-5 opacity-50 border-[#51513d]/25 bg-[#e3dcc2]/55 text-[#1b2021]"
                       >
                         {info.icon}
                         <span className="text-sm font-semibold">{info.label}</span>

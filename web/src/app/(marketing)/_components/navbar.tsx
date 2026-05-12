@@ -8,6 +8,7 @@ import { Menu, X } from 'lucide-react';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { UserNav } from '@/components/shared/user-nav';
+import { Button } from '@/components/ui/button';
 
 type NavLink =
   | { label: string; type: 'scroll'; href: string }

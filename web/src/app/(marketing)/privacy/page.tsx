@@ -46,7 +46,7 @@ export default function PrivacyPage() {
         <div className="absolute top-32 right-[11%] hidden h-36 w-36 bg-[#a6a867] shadow-[12px_12px_0_rgba(27,32,33,.18)] md:grid md:place-items-center">
           <ShieldCheck className="h-12 w-12 text-[#51513d]" />
         </div>
-        </div>
+
         <div className="relative mx-auto max-w-7xl">
           <p className="mb-5 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
             Privacy

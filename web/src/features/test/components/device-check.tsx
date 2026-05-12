@@ -233,7 +233,6 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
               <RefreshCw className="h-8 w-8 animate-spin text-[#51513d]" />
               <p className="text-sm text-[#1b2021]/64">Checking connection...</p>
             </div>
-            </div>
           ) : isConnected && status?.device ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3">

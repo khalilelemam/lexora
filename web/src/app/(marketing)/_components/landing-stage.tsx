@@ -205,7 +205,7 @@ export function LandingStage() {
                 top: `${top}%`,
                 width: size,
                 height: size,
-                backgroundColor: color,
+                backgroundColor: color as string,
               }}
               animate={{ scale: [0.86, 1.18, 0.86], opacity: [0.68, 1, 0.68] }}
               transition={{

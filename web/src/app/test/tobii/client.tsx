@@ -40,8 +40,15 @@ export function TobiiTestClient() {
     checkStatus,
   } = useTobiiStatus();
 
+  const TOBII_SERVICE_URL = process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
   const serviceRunning = tobiiStatus?.connected === true;
   const serviceDevice = tobiiStatus?.device;
+
+  const openTobiiService = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const url = serviceRunning ? TOBII_SERVICE_URL : '/api/download/service';
+    window.open(url, '_blank');
+  }, [serviceRunning, TOBII_SERVICE_URL]);
 
   useEffect(() => {
     checkStatus();
@@ -187,6 +194,7 @@ export function TobiiTestClient() {
     switch (tobiiState.currentState) {
       case 'idle':
         return (
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
             {/* Hero heading */}
             <div className="text-center">
               <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
@@ -249,24 +257,13 @@ export function TobiiTestClient() {
                   </div>
                 )}
                 <div className="mt-5 flex flex-wrap gap-3">
-                  {serviceRunning ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        window.location.href = 'lexora://open';
-                      }}
-                      className="bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
-                    >
-                      Open Tobii Service
-                    </button>
-                  ) : (
-                    <a
-                      href="/api/download/service"
-                      className="bg-[#51513d] inline-flex items-center justify-center px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
-                    >
-                      Download Tobii Service
-                    </a>
-                  )}
+                  <button
+                    type="button"
+                    onClick={openTobiiService}
+                    className="bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
+                  >
+                    {serviceRunning ? 'Open Tobii Service' : 'Download Tobii Service'}
+                  </button>
                   <button
                     type="button"
                     onClick={checkStatus}
