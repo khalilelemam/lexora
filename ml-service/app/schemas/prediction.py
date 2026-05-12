@@ -3,7 +3,11 @@ from typing import List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import to_camel
-from .examples import PREDICTION_REQUEST_EXAMPLE, PREDICTION_RESPONSE_EXAMPLE
+from .examples import (
+    PREDICTION_REQUEST_EXAMPLE,
+    PREDICTION_RESPONSE_EXAMPLE,
+    WEBCAM_PREDICTION_RESPONSE_EXAMPLE,
+)
 from .gaze import GazeSequence
 
 
@@ -72,28 +76,34 @@ class PredictionMetadata(BaseModel):
     total_fixations: int
 
 
-class PredictionResponse(BaseModel):
+class PredictionResponseBase(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+        alias_generator=to_camel,
+    )
+
+    dyslexia_probability: float = Field(ge=0.0, le=1.0)
+    risk_level: Literal["low", "medium", "high"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    model_version: str
+    metadata: PredictionMetadata
+
+
+class PredictionResponse(PredictionResponseBase):
     model_config = ConfigDict(
         populate_by_name=True,
         alias_generator=to_camel,
         json_schema_extra={"example": PREDICTION_RESPONSE_EXAMPLE},
     )
 
-    dyslexia_probability: float = Field(ge=0.0, le=1.0)
-    risk_level: Literal["low", "medium", "high"]
-    confidence: float = Field(ge=0.0, le=1.0)
-    metadata: PredictionMetadata
     features: EyeTrackerFeatures
 
 
-class WebcamPredictionResponse(BaseModel):
+class WebcamPredictionResponse(PredictionResponseBase):
     model_config = ConfigDict(
         populate_by_name=True,
         alias_generator=to_camel,
+        json_schema_extra={"example": WEBCAM_PREDICTION_RESPONSE_EXAMPLE},
     )
 
-    dyslexia_probability: float = Field(ge=0.0, le=1.0)
-    risk_level: Literal["low", "medium", "high"]
-    confidence: float = Field(ge=0.0, le=1.0)
-    metadata: PredictionMetadata
     features: List[WebcamFeatureRow]
