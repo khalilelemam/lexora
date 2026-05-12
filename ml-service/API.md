@@ -25,7 +25,7 @@ GET /health
 ```json
 {
   "status": "ok",
-  "version": "1.0.0"
+  "version": "1.2.1"
 }
 ```
 
@@ -109,6 +109,7 @@ POST /v1/eye-tracker/predict
   "dyslexiaProbability": 0.73,
   "riskLevel": "high",
   "confidence": 0.46,
+  "modelVersion": "1.2.1",
   "metadata": {
     "sequencesAnalyzed": 300,
     "totalFixations": 450
@@ -161,6 +162,7 @@ POST /v1/eye-tracker/predict
 | `dyslexiaProbability` | float | Probability of dyslexia (0.0 - 1.0) |
 | `riskLevel` | string | Risk classification: "low", "medium", or "high" |
 | `confidence` | float | Model confidence (0.0 - 1.0) |
+| `modelVersion` | string | Service version that produced the prediction |
 | `metadata.sequencesAnalyzed` | integer | Number of gaze sequences processed |
 | `metadata.totalFixations` | integer | Total fixation count across all tasks |
 | `features` | object | Raw per-fixation feature vectors (model input) per task |
@@ -258,6 +260,7 @@ POST /v1/webcam/predict
   "dyslexiaProbability": 0.58,
   "riskLevel": "medium",
   "confidence": 1.0,
+  "modelVersion": "1.2.1",
   "metadata": {
     "sequencesAnalyzed": 27,
     "totalFixations": 156
@@ -293,6 +296,16 @@ POST /v1/webcam/predict
   ]
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `dyslexiaProbability` | float | Probability of dyslexia (0.0 - 1.0) |
+| `riskLevel` | string | Risk classification: "low", "medium", or "high" |
+| `confidence` | float | Confidence score (currently fixed at `1.0` for webcam predictions) |
+| `modelVersion` | string | Service version that produced the prediction |
+| `metadata.sequencesAnalyzed` | integer | Number of gaze sequences processed |
+| `metadata.totalFixations` | integer | Total valid fixations after processing |
+| `features` | WebcamFeatureRow[] | Raw per-fixation feature vectors used for UI replay and debugging |
 
 **WebcamFeatureRow Schema:**
 
