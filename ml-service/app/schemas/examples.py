@@ -114,6 +114,7 @@ PREDICTION_RESPONSE_EXAMPLE = {
     "dyslexiaProbability": 0.73,
     "riskLevel": "high",
     "confidence": 0.89,
+    "modelVersion": "1.2.1",
     "metadata": {
         "sequencesAnalyzed": 300,
         "totalFixations": 250,
@@ -181,4 +182,35 @@ WEBCAM_PREDICTION_REQUEST_EXAMPLE = {
     "screenHeight": 1080,
     "gazeData": _generate_raw_gaze_points(800),
     "normalizedLineCenters": [0.28, 0.46, 0.64],
+}
+
+WEBCAM_PREDICTION_RESPONSE_EXAMPLE = {
+    "dyslexiaProbability": 0.58,
+    "riskLevel": "medium",
+    "confidence": 1.0,
+    "modelVersion": "1.2.1",
+    "metadata": {
+        "sequencesAnalyzed": 27,
+        "totalFixations": 156,
+    },
+    "features": [
+        {
+            "timestamp": 1000,
+            "durationMs": 180.5,
+            "fixationX": 0.25,
+            "fixationY": 0.35,
+            "saccadeAmplitude": 0.0,
+            "isRegression": False,
+            "isReturnSweep": False,
+        },
+        {
+            "timestamp": 1200,
+            "durationMs": 200.0,
+            "fixationX": 0.38,
+            "fixationY": 0.36,
+            "saccadeAmplitude": 0.13,
+            "isRegression": False,
+            "isReturnSweep": False,
+        },
+    ],
 }

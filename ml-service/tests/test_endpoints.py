@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from unittest.mock import Mock
 
+from app.config import settings
 from app.schemas import PredictionRequest, GazeSequence
 from app.schemas.webcam import WebcamPredictionRequest, RawGazePoint
 from app.services.eye_tracker.features import TaskProcessingResult
@@ -99,6 +100,7 @@ class TestPredictEyeTrackerEndpoint:
         assert response.dyslexia_probability == 0.72
         assert response.confidence == 0.88
         assert response.risk_level == "high"
+        assert response.model_version == settings.APP_VERSION
 
     @pytest.mark.asyncio
     async def test_response_metadata(self, prediction_request_data, mock_request):
@@ -264,6 +266,7 @@ class TestPredictWebcamEndpoint:
         assert response.dyslexia_probability == 0.65
         assert response.risk_level == "medium"
         assert response.confidence == 1.0  # Webcam uses fixed confidence
+        assert response.model_version == settings.APP_VERSION
 
     @pytest.mark.asyncio
     async def test_response_metadata(self, webcam_request_data, mock_request):
