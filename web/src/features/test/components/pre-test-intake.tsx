@@ -67,15 +67,15 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col items-center gap-6 mx-auto w-full max-w-md">
+      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-6">
         <div className="text-center">
-          <h2 className="font-bold text-2xl">Before We Begin</h2>
-          <p className="mt-2 text-muted-foreground text-sm">
+          <h2 className="text-2xl font-bold">Before We Begin</h2>
+          <p className="text-muted-foreground mt-2 text-sm">
             Please provide a few details about the participant.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 w-full">
+        <form onSubmit={handleSubmit} className="w-full space-y-5">
           {/* ── Age ── */}
           <Field data-invalid={!!errors.age || undefined}>
             <FieldLabel htmlFor="intake-age" className="inline-flex items-center gap-1.5">

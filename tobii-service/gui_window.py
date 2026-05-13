@@ -217,6 +217,7 @@ class TobiiServiceGUI:
 
     def setup_ipc_listener(self):
         """Listen on a local port to receive 'wake' signals from secondary instances."""
+
         def listen():
             try:
                 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -23,14 +23,24 @@ logger = logging.getLogger(__name__)
 # ── Configuration ───────────────────────────────────────────────────
 GITHUB_OWNER = "khalilelemam"
 GITHUB_REPO = "lexora"
-RELEASES_API = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
+RELEASES_API = (
+    f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
+)
 CHECK_INTERVAL_MS = 60 * 60 * 1000  # Check every 60 minutes
 
 
 class UpdateInfo:
     """Holds information about an available update."""
 
-    def __init__(self, tag: str, version: str, name: str, body: str, download_url: str, html_url: str):
+    def __init__(
+        self,
+        tag: str,
+        version: str,
+        name: str,
+        body: str,
+        download_url: str,
+        html_url: str,
+    ):
         self.tag = tag
         self.version = version
         self.name = name
@@ -86,7 +96,9 @@ class UpdateChecker:
 
     def _is_newer(self, remote_version: str) -> bool:
         """Return True if remote_version is newer than current."""
-        return self._parse_version(remote_version) > self._parse_version(self.current_version)
+        return self._parse_version(remote_version) > self._parse_version(
+            self.current_version
+        )
 
     def _get_asset_name_pattern(self) -> str:
         """Determine which release asset to download for this platform."""
@@ -110,7 +122,9 @@ class UpdateChecker:
 
             tag = data.get("tag_name", "")
             if not self._is_newer(tag):
-                logger.info(f"Up to date (current={self.current_version}, latest={tag})")
+                logger.info(
+                    f"Up to date (current={self.current_version}, latest={tag})"
+                )
                 return None
 
             # Find the right asset for this platform
@@ -183,7 +197,9 @@ class UpdateChecker:
             headers = {"User-Agent": f"Lexora-Updater/{self.current_version}"}
             if self._github_token:
                 headers["Authorization"] = f"Bearer {self._github_token}"
-                headers["Accept"] = "application/octet-stream"  # Required for private repo asset downloads
+                headers["Accept"] = (
+                    "application/octet-stream"  # Required for private repo asset downloads
+                )
 
             req = request.Request(
                 update.download_url,

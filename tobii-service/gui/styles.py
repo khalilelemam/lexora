@@ -17,44 +17,44 @@ class Styles:
     BRAND_CREAM = "#e3dcc2"
 
     # ── Backgrounds ──────────────────────────────────────────────
-    BG_COLOR = "#eae5d5"           # warm cream
-    CARD_BG = "#f5f1e6"            # lighter warm cream for cards
-    CARD_BG_LIGHT = "#ede8d8"      # mid cream for card containers
+    BG_COLOR = "#eae5d5"  # warm cream
+    CARD_BG = "#f5f1e6"  # lighter warm cream for cards
+    CARD_BG_LIGHT = "#ede8d8"  # mid cream for card containers
 
     # ── Primary Accent ───────────────────────────────────────────
-    ACCENT_COLOR = "#51513d"       # dark olive (header bar, primary)
-    ACCENT_HOVER = "#3e3e2d"       # deeper olive on hover
+    ACCENT_COLOR = "#51513d"  # dark olive (header bar, primary)
+    ACCENT_HOVER = "#3e3e2d"  # deeper olive on hover
 
     # ── Semantic – Success ───────────────────────────────────────
-    SUCCESS_COLOR = "#7a8a50"      # rich sage green
-    SUCCESS_HOVER = "#6a7a42"      # darker sage on hover
-    SUCCESS_LIGHT = "#e8e4c8"      # warm cream tint
-    SUCCESS_DARK = "#4e5e35"       # deep olive for success text
+    SUCCESS_COLOR = "#7a8a50"  # rich sage green
+    SUCCESS_HOVER = "#6a7a42"  # darker sage on hover
+    SUCCESS_LIGHT = "#e8e4c8"  # warm cream tint
+    SUCCESS_DARK = "#4e5e35"  # deep olive for success text
 
     # ── Semantic – Danger ────────────────────────────────────────
-    DANGER_COLOR = "#9e5a5a"       # muted warm red
-    DANGER_HOVER = "#874848"       # deeper muted red
+    DANGER_COLOR = "#9e5a5a"  # muted warm red
+    DANGER_HOVER = "#874848"  # deeper muted red
 
     # ── Semantic – Secondary / Neutral ───────────────────────────
-    SECONDARY_COLOR = "#8a8570"    # warm grey-olive
-    SECONDARY_HOVER = "#736e5b"    # darker warm grey
+    SECONDARY_COLOR = "#8a8570"  # warm grey-olive
+    SECONDARY_HOVER = "#736e5b"  # darker warm grey
 
     # ── Semantic – Warning / Info ────────────────────────────────
-    WARNING_COLOR = "#c9b84d"      # warm gold-olive
-    INFO_LIGHT = "#e3dc95"         # warm khaki
-    INFO_DARK = "#51513d"          # dark olive
+    WARNING_COLOR = "#c9b84d"  # warm gold-olive
+    INFO_LIGHT = "#e3dc95"  # warm khaki
+    INFO_DARK = "#51513d"  # dark olive
 
     # ── Disabled ─────────────────────────────────────────────────
-    BUTTON_DISABLED = "#c4c0ae"    # muted stone
+    BUTTON_DISABLED = "#c4c0ae"  # muted stone
 
     # ── Text ─────────────────────────────────────────────────────
-    TEXT_PRIMARY = "#1b2021"        # dark charcoal
-    TEXT_SECONDARY = "#5c5c47"      # warm olive-grey
-    TEXT_MUTED = "#9e9a8d"          # faded stone
+    TEXT_PRIMARY = "#1b2021"  # dark charcoal
+    TEXT_SECONDARY = "#5c5c47"  # warm olive-grey
+    TEXT_MUTED = "#9e9a8d"  # faded stone
 
     # ── Borders / Dividers ───────────────────────────────────────
-    BORDER_COLOR = "#d5d0be"        # subtle warm border
-    DIVIDER_COLOR = "#cec8b4"       # divider line
+    BORDER_COLOR = "#d5d0be"  # subtle warm border
+    DIVIDER_COLOR = "#cec8b4"  # divider line
 
     # ── Typography ───────────────────────────────────────────────
     FONT_FAMILY = "Segoe UI"

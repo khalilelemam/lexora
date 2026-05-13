@@ -23,7 +23,9 @@ class HeaderWidget:
         inner.pack(expand=True)
 
         # Load the Lexora eye logo
-        logo_path = Path(__file__).parent.parent.parent / "assets" / "lexora_eye_logo.png"
+        logo_path = (
+            Path(__file__).parent.parent.parent / "assets" / "lexora_eye_logo.png"
+        )
         if logo_path.exists():
             logo_img = Image.open(logo_path)
 
