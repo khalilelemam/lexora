@@ -15,7 +15,7 @@ const PRIVACY_SECTIONS = [
         Lexora is a research tool developed at the Faculty of Computing and Data Science. For
         questions about data handling, contact us via the project&apos;s{' '}
         <a
-          href="https://github.com/khalilelemam/eglex"
+          href="https://github.com/khalilelemam/lexora"
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors"
@@ -101,7 +101,7 @@ const PRIVACY_SECTIONS = [
     description: (
       <>
         When using a Tobii eye tracker, gaze data is streamed from the local Tobii desktop service (
-        <code className="bg-muted rounded px-1.5 py-0.5 text-xs">localhost:28980</code>) directly to
+        <code className="bg-muted px-1.5 py-0.5 rounded text-xs">localhost:28980</code>) directly to
         the web application via WebSocket. This communication is entirely local —{' '}
         <strong>no data leaves your computer</strong> during tracking. The Tobii service runs as a
         local process and does not communicate with external servers.
@@ -195,7 +195,7 @@ const PRIVACY_SECTIONS = [
         If you have questions about how Lexora handles your data, please reach out via the
         project&apos;s{' '}
         <a
-          href="https://github.com/khalilelemam/eglex"
+          href="https://github.com/khalilelemam/lexora"
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors"
@@ -210,10 +210,10 @@ const PRIVACY_SECTIONS = [
 
 export default function PrivacyPage() {
   return (
-    <main className="bg-background min-h-screen pt-24 pb-16">
-      <div className="mx-auto max-w-3xl px-6">
-        <h1 className="mb-2 text-4xl font-bold">Privacy Policy</h1>
-        <p className="text-muted-foreground mb-10 text-sm">Last updated: April 2026</p>
+    <main className="bg-background pt-24 pb-16 min-h-screen">
+      <div className="mx-auto px-6 max-w-3xl">
+        <h1 className="mb-2 font-bold text-4xl">Privacy Policy</h1>
+        <p className="mb-10 text-muted-foreground text-sm">Last updated: April 2026</p>
 
         <div className="space-y-10">
           {PRIVACY_SECTIONS.map((section, idx) => (
@@ -222,7 +222,7 @@ export default function PrivacyPage() {
               {section.list && section.list.length > 0 && (
                 <ul
                   className={cn(
-                    'list-inside list-disc space-y-1.5',
+                    'space-y-1.5 list-disc list-inside',
                     section.description ? 'mt-3' : '',
                   )}
                 >
@@ -243,8 +243,8 @@ export default function PrivacyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 text-xl font-semibold">{title}</h2>
-      <div className="text-muted-foreground space-y-2 leading-relaxed">{children}</div>
+      <h2 className="mb-3 font-semibold text-xl">{title}</h2>
+      <div className="space-y-2 text-muted-foreground leading-relaxed">{children}</div>
     </section>
   );
 }

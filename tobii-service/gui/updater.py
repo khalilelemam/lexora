@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # ── Configuration ───────────────────────────────────────────────────
 GITHUB_OWNER = "khalilelemam"
-GITHUB_REPO = "eglex"
+GITHUB_REPO = "lexora"
 RELEASES_API = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
 CHECK_INTERVAL_MS = 60 * 60 * 1000  # Check every 60 minutes
 

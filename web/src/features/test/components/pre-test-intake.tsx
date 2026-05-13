@@ -32,7 +32,7 @@ interface PreTestIntakeProps {
  * Pre-test step — collects the child's age (required) and an optional
  * session name before proceeding to the rest of the test flow.
  *
- * @see https://github.com/khalilelemam/eglex/issues/47
+ * @see https://github.com/khalilelemam/lexora/issues/47
  */
 export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
   const [age, setAge] = useState('');
@@ -67,15 +67,15 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
 
   return (
     <TooltipProvider>
-      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-6 mx-auto w-full max-w-md">
         <div className="text-center">
-          <h2 className="text-2xl font-bold">Before We Begin</h2>
-          <p className="text-muted-foreground mt-2 text-sm">
+          <h2 className="font-bold text-2xl">Before We Begin</h2>
+          <p className="mt-2 text-muted-foreground text-sm">
             Please provide a few details about the participant.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5 w-full">
           {/* ── Age ── */}
           <Field data-invalid={!!errors.age || undefined}>
             <FieldLabel htmlFor="intake-age" className="inline-flex items-center gap-1.5">
