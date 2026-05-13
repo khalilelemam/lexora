@@ -15,7 +15,7 @@ const PRIVACY_SECTIONS = [
         Lexora is a research tool developed at the Faculty of Computing and Data Science. For
         questions about data handling, contact us via the project&apos;s{' '}
         <a
-          href="https://github.com/khalilelemam/eglex"
+          href="https://github.com/khalilelemam/lexora"
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors"
@@ -195,7 +195,7 @@ const PRIVACY_SECTIONS = [
         If you have questions about how Lexora handles your data, please reach out via the
         project&apos;s{' '}
         <a
-          href="https://github.com/khalilelemam/eglex"
+          href="https://github.com/khalilelemam/lexora"
           target="_blank"
           rel="noopener noreferrer"
           className="text-primary hover:text-primary/80 underline underline-offset-4 transition-colors"

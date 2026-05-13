@@ -32,7 +32,7 @@ interface PreTestIntakeProps {
  * Pre-test step — collects the child's age (required) and an optional
  * session name before proceeding to the rest of the test flow.
  *
- * @see https://github.com/khalilelemam/eglex/issues/47
+ * @see https://github.com/khalilelemam/lexora/issues/47
  */
 export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
   const [age, setAge] = useState('');
