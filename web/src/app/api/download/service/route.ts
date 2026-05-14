@@ -26,11 +26,11 @@ function detectPlatform(ua: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  const token = process.env.GITHUB_TOKEN;
+  const token = process.env.LEXORA_RELEASES_TOKEN;
 
   if (!token) {
     return NextResponse.json(
-      { error: 'Server misconfiguration: missing GITHUB_TOKEN' },
+      { error: 'Server misconfiguration: missing LEXORA_RELEASES_TOKEN' },
       { status: 500 },
     );
   }
