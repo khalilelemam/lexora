@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Info } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import type { IntakeData } from '../types';
@@ -14,14 +15,28 @@ import type { IntakeData } from '../types';
 // ─── Validation ──────────────────────────────────────────
 const intakeSchema = z.object({
   age: z
-    .number({ error: 'Please enter a valid age.' })
-    .int({ error: 'Age must be a whole number.' })
-    .min(5, { error: 'Age must be at least 5.' })
-    .max(25, { error: 'Age must be 25 or under.' }),
-  label: z.string().max(100, 'Label must be 100 characters or fewer.').optional(),
+    .string()
+    .trim()
+    .min(1, "Please enter the child's age.")
+    .regex(/^\d+$/, 'Age must contain digits only.')
+    .transform(Number)
+    .pipe(
+      z
+        .number()
+        .int('Age must be a whole number.')
+        .min(5, 'Age must be at least 5.')
+        .max(25, 'Age must be 25 or under.'),
+    ),
+  label: z
+    .string()
+    .trim()
+    .max(100, 'Label must be 100 characters or fewer.')
+    .transform((value) => value || undefined)
+    .optional(),
 });
 
-type FieldErrors = Partial<Record<'age' | 'label', string>>;
+type IntakeFormValues = z.input<typeof intakeSchema>;
+type IntakeFormOutput = z.output<typeof intakeSchema>;
 
 // ─── Component ───────────────────────────────────────────
 interface PreTestIntakeProps {
@@ -35,35 +50,17 @@ interface PreTestIntakeProps {
  * @see https://github.com/khalilelemam/lexora/issues/47
  */
 export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
-  const [age, setAge] = useState('');
-  const [label, setLabel] = useState('');
-  const [errors, setErrors] = useState<FieldErrors>({});
-
-  const handleSubmit = useCallback(
-    (e: React.SubmitEvent) => {
-      e.preventDefault();
-
-      const raw = {
-        age: age === '' ? undefined : Number(age),
-        label: label.trim() || undefined,
-      };
-
-      const result = intakeSchema.safeParse(raw);
-
-      if (!result.success) {
-        const fieldErrors: FieldErrors = {};
-        for (const issue of result.error.issues) {
-          const key = issue.path[0] as keyof FieldErrors;
-          if (!fieldErrors[key]) fieldErrors[key] = issue.message;
-        }
-        setErrors(fieldErrors);
-        return;
-      }
-
-      onComplete(result.data as IntakeData);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<IntakeFormValues, undefined, IntakeFormOutput>({
+    resolver: zodResolver(intakeSchema),
+    defaultValues: {
+      age: '',
+      label: '',
     },
-    [age, label, onComplete],
-  );
+  });
 
   return (
     <TooltipProvider>
@@ -75,9 +72,9 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full space-y-5">
+        <form onSubmit={handleSubmit((data) => onComplete(data))} className="w-full space-y-5">
           {/* ── Age ── */}
-          <Field data-invalid={!!errors.age || undefined}>
+          <Field data-invalid={errors.age ? true : undefined}>
             <FieldLabel htmlFor="intake-age" className="inline-flex items-center gap-1.5">
               Child&apos;s Age <span className="text-destructive">*</span>
               <Tooltip>
@@ -99,21 +96,17 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
 
             <Input
               id="intake-age"
-              type="number"
+              type="text"
               inputMode="numeric"
-              min={1}
-              max={18}
+              autoComplete="off"
+              pattern="[0-9]*"
               placeholder="e.g. 10"
-              value={age}
-              onChange={(e) => {
-                setAge(e.target.value);
-                setErrors((prev) => ({ ...prev, age: undefined }));
-              }}
-              aria-invalid={!!errors.age || undefined}
+              {...register('age')}
+              aria-invalid={errors.age ? true : undefined}
             />
 
-            {errors.age ? (
-              <FieldError>{errors.age}</FieldError>
+            {errors.age?.message ? (
+              <FieldError>{errors.age.message}</FieldError>
             ) : (
               <FieldDescription>
                 Enter the child&apos;s age (5–25). Results are most accurate for ages 9–11.
@@ -122,7 +115,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
           </Field>
 
           {/* ── Session Name ── */}
-          <Field data-invalid={!!errors.label || undefined}>
+          <Field data-invalid={errors.label ? true : undefined}>
             <FieldLabel htmlFor="intake-label" className="inline-flex items-center gap-1.5">
               Session Name
               <Tooltip>
@@ -137,7 +130,8 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-60">
                   Give this test a name so you can find it later. If you leave it blank, we&apos;ll
-                  generate one automatically (e.g. &quot;Test — May 11, 2026&quot;).
+                  generate one automatically (e.g. &quot;Webcam Paragraph - 2026-05-14 18:10
+                  UTC&quot;).
                 </TooltipContent>
               </Tooltip>
             </FieldLabel>
@@ -146,17 +140,13 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
               id="intake-label"
               type="text"
               placeholder='e.g. "John&apos;s Test"'
-              value={label}
-              onChange={(e) => {
-                setLabel(e.target.value);
-                setErrors((prev) => ({ ...prev, label: undefined }));
-              }}
+              {...register('label')}
               maxLength={100}
-              aria-invalid={!!errors.label || undefined}
+              aria-invalid={errors.label ? true : undefined}
             />
 
-            {errors.label ? (
-              <FieldError>{errors.label}</FieldError>
+            {errors.label?.message ? (
+              <FieldError>{errors.label.message}</FieldError>
             ) : (
               <FieldDescription>
                 Optional — a name is generated automatically if left blank.
@@ -164,7 +154,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
             )}
           </Field>
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
             Continue
           </Button>
         </form>

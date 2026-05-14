@@ -32,8 +32,9 @@ const PRIVACY_SECTIONS = [
       <>
         We process limited gaze coordinate data under the legal basis of{' '}
         <strong>legitimate research interest</strong> (GDPR Article 6(1)(f)). This processing is
-        necessary for conducting non-invasive dyslexia screening research. No personal data beyond
-        abstract gaze coordinates is collected or processed.
+        necessary for conducting non-invasive dyslexia screening research. When you create an
+        account, we also process the authentication data needed to sign you in and associate test
+        attempts with the correct user.
       </>
     ),
   },
@@ -73,11 +74,19 @@ const PRIVACY_SECTIONS = [
         <strong>Screen dimensions</strong> — width and height of the display (for coordinate
         normalization)
       </>,
+      <>
+        <strong>Test metadata</strong> — test mode, calibration mode, participant age, optional
+        session label, and the ML outcome returned for the attempt
+      </>,
+      <>
+        <strong>Account identifiers</strong> — the signed-in user account needed to associate saved
+        attempts with the correct session owner
+      </>,
     ],
     afterList: (
       <>
-        This data is abstract, anonymized, and contains{' '}
-        <strong>no personally identifiable information</strong>.
+        Webcam video is not stored. The persisted research record is limited to gaze-derived data,
+        test metadata, and the authenticated account required to manage saved attempts.
       </>
     ),
   },
@@ -85,15 +94,16 @@ const PRIVACY_SECTIONS = [
     title: '5. Data Retention & Storage',
     description: (
       <>
-        Lexora operates on a <strong>session-only</strong> data model:
+        Lexora stores submitted attempts for authenticated users to support research workflows and
+        follow-up review:
       </>
     ),
     list: [
-      'Gaze data exists only in browser memory during the active session',
+      'Webcam video remains in browser memory and is not stored persistently',
       'Data is sent to the ML classification endpoint for real-time analysis',
-      'No gaze data is stored persistently on any server',
-      'No databases, logs, or files retain user data after the session ends',
-      'Closing the browser tab permanently destroys all session data',
+      'The full ML response is saved in Azure Blob Storage under a derived JSON file',
+      'Raw gaze JSON is saved only when the user explicitly opted in to raw-data storage during registration',
+      'Attempt metadata and blob URLs are written to the application database for authenticated users',
     ],
   },
   {
@@ -119,17 +129,21 @@ const PRIVACY_SECTIONS = [
       </>,
       <>
         <strong>Lexora ML Service</strong> — Our classification endpoint receives only abstract gaze
-        feature vectors (fixation durations, saccade amplitudes) for risk assessment. No personal
-        identifiers are attached.
+        coordinates and derived features needed for risk assessment. The resulting ML response is
+        stored alongside the attempt record for research follow-up.
+      </>,
+      <>
+        <strong>Azure Blob Storage</strong> — Persisted raw and derived JSON artifacts for saved
+        attempts are stored in a single container using per-attempt paths.
       </>,
     ],
   },
   {
     title: '8. What We Do NOT Collect',
     list: [
-      'No names, emails, phone numbers, or personal identifiers',
       'No video recordings, camera snapshots, or face images',
-      'No browsing history, device fingerprints, or IP addresses',
+      'No phone numbers or unrelated profile data',
+      'No browsing history or advertising identifiers',
       'No cookies for tracking or advertising purposes',
       'No analytics scripts, ad trackers, or third-party tracking',
       'No health records or medical data',
@@ -144,10 +158,10 @@ const PRIVACY_SECTIONS = [
       </>
     ),
     list: [
-      'No personal information about the child is collected or stored',
-      'Camera feed is processed locally and never transmitted',
+      'Camera feed is processed locally and video is never stored',
+      'Saved attempts store only the participant age, optional label, test metadata, and gaze-derived data needed for research workflows',
       'We recommend that a parent, guardian, or educator supervises any session involving a child',
-      'Results are displayed immediately and not stored — the supervising adult should note them if needed',
+      'Raw gaze JSON is stored only when the account owner explicitly opted in during registration',
     ],
   },
   {
@@ -156,11 +170,10 @@ const PRIVACY_SECTIONS = [
       'Under applicable data protection regulations (including GDPR), you have the right to:',
     list: [
       <>
-        <strong>Access</strong> — request what data we hold (none is persisted)
+        <strong>Access</strong> — request what account-linked attempt data we hold
       </>,
       <>
-        <strong>Erasure</strong> — request deletion (data is automatically deleted after each
-        session)
+        <strong>Erasure</strong> — request deletion of persisted attempts and linked artifacts
       </>,
       <>
         <strong>Objection</strong> — you can stop the test at any time by closing the browser
@@ -170,7 +183,7 @@ const PRIVACY_SECTIONS = [
       </>,
     ],
     afterList:
-      'Since Lexora does not store any personal data beyond the active session, most of these rights are inherently satisfied by design.',
+      'Because Lexora stores authenticated attempt records for research workflows, these rights are handled through the project team rather than by automatic session expiry alone.',
   },
   {
     title: '11. Research Use',
@@ -213,7 +226,7 @@ export default function PrivacyPage() {
     <main className="bg-background min-h-screen pt-24 pb-16">
       <div className="mx-auto max-w-3xl px-6">
         <h1 className="mb-2 text-4xl font-bold">Privacy Policy</h1>
-        <p className="text-muted-foreground mb-10 text-sm">Last updated: April 2026</p>
+        <p className="text-muted-foreground mb-10 text-sm">Last updated: May 2026</p>
 
         <div className="space-y-10">
           {PRIVACY_SECTIONS.map((section, idx) => (

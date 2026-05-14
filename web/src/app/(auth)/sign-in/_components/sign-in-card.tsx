@@ -47,7 +47,7 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
 
   // ── Consent state ───────────────────────────────────────
   const [termsAccepted, setTermsAccepted] = useState(false);
-  const [rawDataOptIn, setRawDataOptIn] = useState(false);
+  const [rawDataOptIn, setRawDataOptIn] = useState(true);
 
   const handleBack = useCallback(() => {
     setSentEmail(null);

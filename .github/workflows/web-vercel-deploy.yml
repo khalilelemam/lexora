@@ -81,6 +81,12 @@ jobs:
         working-directory: web
         run: npm ci
 
+      - name: Apply production database migrations
+        working-directory: web
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: npm run db:migrate:deploy
+
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
@@ -97,6 +103,13 @@ jobs:
         env:
           VARS_JSON: ${{ toJSON(vars) }}
           VERSION: ${{ steps.get_version.outputs.VERSION }}
+          AZURE_BLOB_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_BLOB_STORAGE_CONNECTION_STRING }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          LEXORA_RELEASES_TOKEN: ${{ secrets.LEXORA_RELEASES_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
           bash .github/scripts/web-vercel-sync-env.sh
 
