@@ -113,7 +113,7 @@ export function HeroSection() {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
         >
-          No personal data stored · Research use only · Works offline
+          No video recordings stored · Research use only · Authenticated attempts can be saved
         </motion.p>
       </motion.div>
 

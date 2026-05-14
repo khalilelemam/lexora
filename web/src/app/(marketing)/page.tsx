@@ -97,7 +97,7 @@ export default function HomePage() {
             <FeatureCard
               icon={<Shield className="h-6 w-6" />}
               title="Privacy First"
-              description="All video processing happens in your browser. No recordings stored, no personal data collected. Gaze coordinates are abstract and fully anonymized."
+              description="All video processing happens in your browser. No video recordings are stored, and saved attempts persist only the gaze coordinates and metadata needed for research workflows."
               delay={0.4}
             />
             <FeatureCard
