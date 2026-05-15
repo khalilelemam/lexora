@@ -263,11 +263,11 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
     visual: <PrivacyVisual />,
     title: 'Your Privacy',
     description:
-      'Privacy first. We do not collect personal identifiers, and data exists only during your active session.',
+      'Privacy first. Webcam video stays in your browser, while authenticated test attempts can save gaze coordinates and ML results for research and follow-up.',
     tips: [
       'No video recordings or face images stored',
-      'No names or emails collected',
-      'Closing the browser destroys all data',
+      'Raw gaze JSON is saved only when you explicitly opted in during registration',
+      'Attempt history is linked to your signed-in account',
     ],
   };
 

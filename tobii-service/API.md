@@ -525,8 +525,8 @@ To run the service from source:
 
 ```powershell
 # Clone repository
-git clone https://github.com/khalilelemam/eglex.git
-cd eglex/tobii-service
+git clone https://github.com/khalilelemam/lexora.git
+cd lexora/tobii-service
 
 # Create virtual environment
 python -m venv .venv
@@ -545,7 +545,7 @@ uvicorn main:app --host 127.0.0.1 --port 28980
 ## Support
 
 For issues or questions:
-- **GitHub Issues:** [Report bugs](https://github.com/khalilelemam/eglex/issues)
+- **GitHub Issues:** [Report bugs](https://github.com/khalilelemam/lexora/issues)
 - **API Questions:** Open a discussion in the repository
 
 ---

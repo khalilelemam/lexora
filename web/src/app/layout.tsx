@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://lexora.page'),
   title: {
     default: 'Lexora — Dyslexia Screening Platform',
     template: '%s | Lexora',

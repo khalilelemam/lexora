@@ -17,6 +17,31 @@ enum Role {
   ADMIN
 }
 
+enum TestMode {
+  TOBII
+  WEBCAM
+}
+
+enum AttemptTaskType {
+  FULL_BATTERY
+  PARAGRAPH
+  SYLLABLES
+  PSEUDO_WORDS
+  MEANINGFUL_TEXT
+}
+
+enum AttemptOutcome {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CalibrationMode {
+  GRID
+  STAR
+  STICKMAN
+}
+
 // ── Better Auth core models ─────────────────────────────
 
 model User {
@@ -30,12 +55,12 @@ model User {
   updatedAt     DateTime @updatedAt
 
   // ── Consent ───────────────────────────────
-  // The consent should default to false but I made it true because I'm a demon
   termsAcceptedAt DateTime? // When the user last accepted the Terms and Privacy Policy
   rawDataConsent  Boolean   @default(true) // Opt-in for raw gaze data storage for research and model retraining
 
-  sessions Session[]
-  accounts Account[]
+  sessions     Session[]
+  accounts     Account[]
+  testAttempts TestAttempt[]
 }
 
 model Session {
@@ -75,4 +100,27 @@ model Verification {
   expiresAt  DateTime
   createdAt  DateTime? @default(now())
   updatedAt  DateTime? @updatedAt
+}
+
+model TestAttempt {
+  attemptId        String          @id @db.Uuid
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testType         TestMode
+  taskType         AttemptTaskType
+  outcome          AttemptOutcome
+  modelVersion     String
+  calibrationMode  CalibrationMode
+  age              Int
+  label            String?
+  // Snapshot of the user's consent state when this specific attempt was submitted.
+  rawDataConsented Boolean         @default(false)
+  rawBlobUrl       String?
+  derivedBlobUrl   String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([testType, createdAt])
+  @@index([taskType, createdAt])
 }

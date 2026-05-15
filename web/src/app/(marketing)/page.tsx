@@ -117,6 +117,7 @@ export default function HomePage() {
             </p>
           </div>
 
+<<<<<<< HEAD
           <div className="grid gap-4">
             <div className="border border-[#51513d]/18 bg-[#e3dcc2]/80 p-3 shadow-[12px_12px_0_rgba(81,81,61,.14)]">
               <GazeTrailDemo />
@@ -136,6 +137,45 @@ export default function HomePage() {
                 );
               })}
             </div>
+=======
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <FeatureCard
+              icon={<Eye className="h-6 w-6" />}
+              title="Dual Tracking Modes"
+              description="Use the precision of Tobii eye trackers for clinical accuracy, or the convenience of any webcam with MediaPipe iris detection for broader access."
+              delay={0.1}
+            />
+            <FeatureCard
+              icon={<Sparkles className="h-6 w-6" />}
+              title="Engaging Calibration"
+              description="Three calibration modes — classic grid, action stickman, and gentle star — with shrinking targets that adapt to different age groups."
+              delay={0.2}
+            />
+            <FeatureCard
+              icon={<BarChart3 className="h-6 w-6" />}
+              title="Gaze Analytics"
+              description="Fixation duration, saccade patterns, regression detection, and return sweeps — all the features that research links to reading difficulties."
+              delay={0.3}
+            />
+            <FeatureCard
+              icon={<Shield className="h-6 w-6" />}
+              title="Privacy First"
+              description="All video processing happens in your browser. No video recordings are stored, and saved attempts persist only the gaze coordinates and metadata needed for research workflows."
+              delay={0.4}
+            />
+            <FeatureCard
+              icon={<BookOpen className="h-6 w-6" />}
+              title="Research-Backed"
+              description="Reading tasks designed around established research — syllable decoding, pseudo-word recognition, and meaningful text comprehension for thorough analysis."
+              delay={0.5}
+            />
+            <FeatureCard
+              icon={<Users className="h-6 w-6" />}
+              title="Age-Adaptive"
+              description="From gamified star calibration for young children to precise grid-based calibration for adults. Lexora adapts the experience to each user."
+              delay={0.6}
+            />
+>>>>>>> origin/main
           </div>
         </div>
       </section>

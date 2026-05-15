@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 const GITHUB_OWNER = process.env.NEXT_PUBLIC_GITHUB_OWNER || 'khalilelemam';
-const GITHUB_REPO = process.env.NEXT_PUBLIC_GITHUB_REPO || 'eglex';
+const GITHUB_REPO = process.env.NEXT_PUBLIC_GITHUB_REPO || 'lexora';
 const RELEASES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
 
 // Platform keywords that match our asset naming convention
@@ -26,11 +26,11 @@ function detectPlatform(ua: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  const token = process.env.GITHUB_TOKEN;
+  const token = process.env.LEXORA_RELEASES_TOKEN;
 
   if (!token) {
     return NextResponse.json(
-      { error: 'Server misconfiguration: missing GITHUB_TOKEN' },
+      { error: 'Server misconfiguration: missing LEXORA_RELEASES_TOKEN' },
       { status: 500 },
     );
   }

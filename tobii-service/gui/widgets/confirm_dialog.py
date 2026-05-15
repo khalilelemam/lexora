@@ -24,7 +24,9 @@ class ConfirmDialog(ctk.CTkToplevel):
         y = parent.winfo_y() + (parent.winfo_height() // 2) - (340 // 2)
         self.geometry(f"+{x}+{y}")
 
-        icon_path = str(Path(__file__).parent.parent.parent / "assets" / "lexora_eye.ico")
+        icon_path = str(
+            Path(__file__).parent.parent.parent / "assets" / "lexora_eye.ico"
+        )
 
         # Set icon after a short delay to ensure the window is initialized.
         # This is a bug in customtkinter where setting iconbitmap immediately

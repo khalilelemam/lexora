@@ -9,7 +9,7 @@ import { auth } from '@/lib/auth';
  * Unauthenticated users are redirected to /sign-in with a callbackUrl
  * pointing back to the original test route so they return after login.
  *
- * @see https://github.com/khalilelemam/eglex/issues/46
+ * @see https://github.com/khalilelemam/lexora/issues/46
  */
 export async function proxy(request: NextRequest) {
   const session = await auth.api.getSession({

@@ -41,20 +41,20 @@ class StatusCard:
         self.live_badge.pack(side="right")
 
         # ── Divider ────────────────────────────────────────────
-        divider = ctk.CTkFrame(
-            self.frame, fg_color=Styles.DIVIDER_COLOR, height=1
-        )
+        divider = ctk.CTkFrame(self.frame, fg_color=Styles.DIVIDER_COLOR, height=1)
         divider.pack(fill="x", padx=22, pady=(8, 4))
 
         # ── Status rows ────────────────────────────────────────
         self.service_row, self.service_dot, self.service_label = (
             self._create_status_row(self.frame, "Service", "Stopped", "stopped")
         )
-        self.port_row, self.port_dot, self.port_label = (
-            self._create_status_row(self.frame, "Port", "—", "idle")
+        self.port_row, self.port_dot, self.port_label = self._create_status_row(
+            self.frame, "Port", "—", "idle"
         )
         self.tracker_row, self.tracker_dot, self.tracker_label = (
-            self._create_status_row(self.frame, "Eye Tracker", "Not Connected", "idle", last=True)
+            self._create_status_row(
+                self.frame, "Eye Tracker", "Not Connected", "idle", last=True
+            )
         )
 
     def _create_status_row(self, parent, label_text, value_text, state, last=False):
@@ -103,7 +103,9 @@ class StatusCard:
 
     def update_service_status(self, is_running):
         if is_running:
-            self.service_label.configure(text="Running", text_color=Styles.SUCCESS_COLOR)
+            self.service_label.configure(
+                text="Running", text_color=Styles.SUCCESS_COLOR
+            )
             self.service_dot.configure(text_color=Styles.SUCCESS_COLOR)
             self.live_badge.configure(text="● LIVE", text_color=Styles.SUCCESS_COLOR)
         else:
@@ -121,8 +123,12 @@ class StatusCard:
 
     def update_tracker_status(self, is_connected):
         if is_connected:
-            self.tracker_label.configure(text="Connected", text_color=Styles.SUCCESS_COLOR)
+            self.tracker_label.configure(
+                text="Connected", text_color=Styles.SUCCESS_COLOR
+            )
             self.tracker_dot.configure(text_color=Styles.SUCCESS_COLOR)
         else:
-            self.tracker_label.configure(text="Not Connected", text_color=Styles.TEXT_MUTED)
+            self.tracker_label.configure(
+                text="Not Connected", text_color=Styles.TEXT_MUTED
+            )
             self.tracker_dot.configure(text_color=Styles.TEXT_MUTED)

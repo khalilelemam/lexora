@@ -1,14 +1,20 @@
 {
   "name": "lexora-web",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "postinstall": "npm run prisma:generate",
+    "prebuild": "npm run prisma:generate",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "blobs:export": "node scripts/export-azurite-blobs.mjs"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.31.0",
     "@hookform/resolvers": "^5.2.2",
     "@mediapipe/tasks-vision": "^0.10.32",
     "@neondatabase/serverless": "^1.1.0",

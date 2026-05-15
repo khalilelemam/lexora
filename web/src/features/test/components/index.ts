@@ -6,6 +6,8 @@ export { ReviewPanel } from './review-panel';
 export { ResultsDisplay } from './results-display';
 export { ErrorScreen } from './error-screen';
 export { ScreenGuard } from './screen-guard';
+export { SupportedHardware } from './supported-hardware';
+export { TobiiServiceStatusCard } from './tobii-service-status-card';
 export { GazeReplayViewer } from './gaze-replay-viewer';
 export { FullscreenGazeReplay } from './fullscreen-gaze-replay';
 export { GazeDebugDot } from './gaze-debug-dot';

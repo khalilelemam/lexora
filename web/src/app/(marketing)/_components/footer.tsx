@@ -24,7 +24,7 @@ export function Footer() {
             Privacy
           </Link>
           <a
-            href="https://github.com/khalilelemam/eglex"
+            href="https://github.com/khalilelemam/lexora"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 transition-colors hover:text-[#e3dc95]"

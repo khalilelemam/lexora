@@ -6,12 +6,15 @@ Lexora is a web-based dyslexia screening tool that uses eye tracking to detect r
 - **Tobii Mode** — Connects to a Tobii eye tracker through a local helper service for research-grade accuracy.
 
 Both modes guide the user through **calibration → reading task → review → ML analysis → results**.
+For authenticated users, successful submissions can also persist attempt metadata in Postgres and
+store raw/derived JSON artifacts in Azure Blob Storage.
 
 ## Getting Started
 
 ### Option A — Docker (recommended for quick start)
 
 This is the fastest way to get a working local setup. No Neon account or remote database required.
+It starts both PostgreSQL and Azurite so you can exercise the full web persistence flow locally.
 
 ```bash
 # 1. Install dependencies
@@ -24,8 +27,12 @@ cp .env.example .env.local
 #    DATABASE_URL=postgresql://lexora:lexora_dev@localhost:5433/lexora
 #    (DATABASE_ADAPTER will auto-detect as "pg")
 
-# 4. Start the local PostgreSQL database
+# 4. Start the local PostgreSQL database + Azurite
 docker compose up -d
+
+# 4.5. For full local persistence, keep these defaults in .env.local:
+#      AZURE_BLOB_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true
+#      AZURE_BLOB_STORAGE_CONTAINER=test-attempts
 
 # 5. Run database migrations
 npx prisma migrate dev
@@ -59,6 +66,35 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in a Chromium-based browser (Chrome/Edge recommended for WebGL + MediaPipe support).
+
+### Local Blob Storage
+
+The local Docker stack includes Azurite, the Azure Storage emulator.
+
+- Recommended local connection string: `UseDevelopmentStorage=true`
+- Recommended local container: `test-attempts`
+
+The app creates the container automatically on first successful persisted submission.
+
+### Export Azurite Blobs
+
+If you want to inspect the persisted JSON files locally, use the helper script after Azurite is running:
+
+```bash
+npm run blobs:export -- --output ./tmp/azurite-test-attempts
+```
+
+That command:
+
+- reads `AZURE_BLOB_STORAGE_CONNECTION_STRING` from `.env.local` and falls back to `UseDevelopmentStorage=true`
+- reads `AZURE_BLOB_STORAGE_CONTAINER` from `.env.local` and falls back to `test-attempts`
+- downloads blobs into a normal folder so you can inspect `raw/` and `derived/` files directly
+
+Optional overrides:
+
+```bash
+node scripts/export-azurite-blobs.mjs --container test-attempts --output ./tmp/azurite-export
+```
 
 ## How It Works
 
@@ -107,24 +143,27 @@ Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to
 
 ### Database & Auth
 
-| Variable               | Required | Default                           | Description                                                                                                      |
-| ---------------------- | -------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | **Yes**  | —                                 | PostgreSQL connection string. Neon (production) or local Docker.                                                 |
-| `DATABASE_ADAPTER`     | No       | Auto-detected from `DATABASE_URL` | `neon` (serverless WebSocket) or `pg` (standard TCP). Set explicitly if auto-detection doesn't match your setup. |
-| `BETTER_AUTH_SECRET`   | **Yes**  | —                                 | Secret key for Better Auth (min 32 chars). Generate: `openssl rand -base64 32`                                   |
-| `BETTER_AUTH_URL`      | No       | `http://localhost:3000`           | Base URL of the app (used for OAuth callbacks, magic link URLs).                                                 |
-| `GOOGLE_CLIENT_ID`     | **Yes**  | —                                 | Google OAuth client ID (from Google Cloud Console).                                                              |
-| `GOOGLE_CLIENT_SECRET` | **Yes**  | —                                 | Google OAuth client secret.                                                                                      |
-| `RESEND_API_KEY`       | **Yes**  | —                                 | Resend API key for sending magic link emails.                                                                    |
-| `EMAIL_FROM`           | No       | `Lexora <noreply@lexora.app>`     | Email sender address for magic links.                                                                            |
+| Variable                | Required | Default                           | Description                                                                                                                    |
+| ----------------------- | -------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`          | **Yes**  | —                                 | PostgreSQL connection string. Neon (production) or local Docker.                                                               |
+| `DATABASE_URL_UNPOOLED` | No       | Falls back to `DATABASE_URL`      | Direct / non-pooled PostgreSQL connection string used for production Prisma migrations. Local Docker can reuse `DATABASE_URL`. |
+| `DATABASE_ADAPTER`      | No       | Auto-detected from `DATABASE_URL` | `neon` (serverless WebSocket) or `pg` (standard TCP). Set explicitly if auto-detection doesn't match your setup.               |
+| `BETTER_AUTH_SECRET`    | **Yes**  | —                                 | Secret key for Better Auth (min 32 chars). Generate: `openssl rand -base64 32`                                                 |
+| `BETTER_AUTH_URL`       | No       | `http://localhost:3000`           | Base URL of the app (used for OAuth callbacks, magic link URLs).                                                               |
+| `GOOGLE_CLIENT_ID`      | **Yes**  | —                                 | Google OAuth client ID (from Google Cloud Console).                                                                            |
+| `GOOGLE_CLIENT_SECRET`  | **Yes**  | —                                 | Google OAuth client secret.                                                                                                    |
+| `RESEND_API_KEY`        | **Yes**  | —                                 | Resend API key for sending magic link emails.                                                                                  |
+| `EMAIL_FROM`            | No       | `Lexora <noreply@lexora.page>`    | Email sender address for magic links.                                                                                          |
 
 ### Backend Services
 
-| Variable                              | Default                                     | Description                                                                                               |
-| ------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `ML_SERVICE_URL`                      | Required (example: `http://localhost:8001`) | ML prediction service URL (server-side only, not exposed to browser). App throws `CONFIG_ERROR` if unset. |
-| `NEXT_PUBLIC_TOBII_SERVICE_URL`       | `http://localhost:28980`                    | Tobii helper app WebSocket URL                                                                            |
-| `NEXT_PUBLIC_TOBII_STATUS_TIMEOUT_MS` | `3000`                                      | Timeout (ms) for Tobii connection check                                                                   |
+| Variable                               | Default                                     | Description                                                                                               |
+| -------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `ML_SERVICE_URL`                       | Required (example: `http://localhost:8001`) | ML prediction service URL (server-side only, not exposed to browser). App throws `CONFIG_ERROR` if unset. |
+| `AZURE_BLOB_STORAGE_CONNECTION_STRING` | `UseDevelopmentStorage=true` locally        | Azure Blob Storage connection string used to persist raw/derived test JSON artifacts.                     |
+| `AZURE_BLOB_STORAGE_CONTAINER`         | `test-attempts` locally                     | Single Azure Blob container used for both `raw/{attemptId}.json` and `derived/{attemptId}.json`.          |
+| `NEXT_PUBLIC_TOBII_SERVICE_URL`        | `http://localhost:28980`                    | Tobii helper app WebSocket URL                                                                            |
+| `NEXT_PUBLIC_TOBII_STATUS_TIMEOUT_MS`  | `3000`                                      | Timeout (ms) for Tobii connection check                                                                   |
 
 ### Calibration Engine
 
@@ -168,31 +207,48 @@ These control the calibration collection and validation pipeline. Tweak these to
 
 Production web runtime config is managed through the GitHub environment `web-production`.
 
-The workflow in [`.github/workflows/web-vercel-deploy.yml`](../.github/workflows/web-vercel-deploy.yml) does three things on manual dispatch:
+The workflow in [`.github/workflows/web-vercel-deploy.yml`](../.github/workflows/web-vercel-deploy.yml) does four things on manual dispatch or release tags:
 
-1. Reads the web variables from the GitHub environment `web-production`
-2. Syncs those values into the Vercel production environment
-3. Builds and deploys the web app to Vercel production
+1. Reads the web runtime variables and secrets from the GitHub environment `web-production`
+2. Applies Prisma migrations against the production database using `DATABASE_URL_UNPOOLED`
+3. Syncs the approved runtime config into the Vercel production environment
+4. Builds and deploys the web app to Vercel production
 
 ### Source Of Truth
 
 For production web config, GitHub is the source of truth, not a checked-in `.env` file.
 
 - Put web runtime variables in the GitHub environment `web-production`
+- Put web runtime secrets there as environment secrets
 - Keep the deploy secret `VERCEL_TOKEN` in the same environment
 - Keep `VERCEL_PROJECT_ID` and `VERCEL_ORG_ID` as environment variables there
 
-The workflow syncs only:
+The workflow syncs these non-secret variables:
 
+- `BETTER_AUTH_URL`
+- `EMAIL_FROM`
+- `GOOGLE_CLIENT_ID`
 - `ML_SERVICE_URL`
+- `AZURE_BLOB_STORAGE_CONTAINER`
 - any variable starting with `NEXT_PUBLIC_`
+
+And these secrets:
+
+- `AZURE_BLOB_STORAGE_CONNECTION_STRING`
+- `BETTER_AUTH_SECRET`
+- `DATABASE_URL`
+- `DATABASE_URL_UNPOOLED`
+- `GOOGLE_CLIENT_SECRET`
+- `LEXORA_RELEASES_TOKEN`
+- `RESEND_API_KEY`
 
 ### How To Change A Production Web Variable
 
 1. Open the repository on GitHub
 2. Go to `Settings -> Environments -> web-production`
-3. Update or add the variable there
-4. Run the `Web Deploy (Sync Env + Deploy)` workflow from GitHub Actions
+3. Update or add the variable or secret there
+4. If the change is a sensitive server-only value, store it as an environment secret instead
+5. Run the `Web Deploy (Sync Env + Deploy)` workflow from GitHub Actions
 
 This keeps Vercel production aligned with the GitHub environment.
 
@@ -202,6 +258,7 @@ Use `.env.local` for local development only.
 
 - Local `.env.local` changes affect your machine
 - GitHub `web-production` changes affect deployed production
+- `src/generated/prisma` is generated build output and should not be committed; `npm install` / `npm run build` regenerates it automatically
 
 If a teammate wants to change production behavior, they should update `web-production` and then run the deploy workflow instead of editing local files and expecting production to change.
 

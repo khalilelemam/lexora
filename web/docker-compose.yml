@@ -1,11 +1,11 @@
 # ──────────────────────────────────────────────────────────────
 # Lexora Web — Local Development Stack
 #
-# Spins up a PostgreSQL database so you can run the web app
-# without needing a Neon account or remote database.
+# Spins up PostgreSQL plus Azurite so you can run the web app
+# with local database and Blob Storage dependencies.
 #
 # Usage:
-#   docker compose up -d          # start PostgreSQL
+#   docker compose up -d          # start PostgreSQL + Azurite
 #   npm run dev                   # start the Next.js app
 #   docker compose down           # stop everything
 #   docker compose down -v        # stop + delete data
@@ -30,5 +30,18 @@ services:
       timeout: 3s
       retries: 5
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    container_name: lexora-blob
+    restart: unless-stopped
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --skipApiVersionCheck
+    ports:
+      - '10000:10000'
+      - '10001:10001'
+      - '10002:10002'
+    volumes:
+      - lexora_azurite_data:/data
+
 volumes:
   lexora_pgdata:
+  lexora_azurite_data:

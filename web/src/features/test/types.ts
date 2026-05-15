@@ -1,5 +1,6 @@
 // ─── Test Modes ──────────────────────────────────────────
 export type TestMode = 'tobii' | 'webcam';
+export type CalibrationMode = 'grid' | 'star' | 'stickman';
 
 // ─── Pre-test Intake ─────────────────────────────────────
 export interface IntakeData {
@@ -11,6 +12,7 @@ export interface IntakeData {
 export type TobiiTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
 export type WebcamTaskType = 'paragraph';
 export type TaskType = TobiiTaskType | WebcamTaskType;
+export type AttemptTaskType = TaskType | 'full-battery';
 
 // ─── Calibration ─────────────────────────────────────────
 export type CalibrationQuality = 'good' | 'acceptable' | 'poor';
@@ -79,6 +81,32 @@ export interface PredictionResult {
   metadata: PredictionMetadata;
   /** Per-fixation features for gaze replay visualization */
   features?: GazeFeature[];
+}
+
+export interface AttemptMetadata {
+  attemptId: string;
+  taskType: AttemptTaskType;
+  age: number;
+  label?: string;
+  calibrationMode: CalibrationMode;
+}
+
+export interface TobiiSubmissionInput {
+  attempt: AttemptMetadata;
+  syllables: TobiiGazePoint[];
+  pseudoWords: TobiiGazePoint[];
+  meaningfulText: TobiiGazePoint[];
+  screenWidth: number;
+  screenHeight: number;
+  lineCenters?: Record<string, number[]>;
+}
+
+export interface WebcamSubmissionInput {
+  attempt: AttemptMetadata;
+  gazeData: WebcamGazePoint[];
+  screenWidth: number;
+  screenHeight: number;
+  lineCenters?: number[];
 }
 
 // ─── Test Flow States ────────────────────────────────────
