@@ -13,7 +13,6 @@ import {
   Play,
 } from 'lucide-react';
 import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { cn } from '@/lib/utils';
 import type { PredictionResult, TestMode } from '../types';
@@ -30,8 +29,8 @@ const RISK_CONFIG = {
   low: {
     icon: ShieldCheck,
     label: 'Low Risk',
-    color: 'text-emerald-600',
-    ringColor: '#10b981',
+    color: 'text-[#51513d]',
+    ringColor: '#a6a867',
     description: 'The screening suggests a low likelihood of dyslexia indicators.',
     recommendation:
       'Continue monitoring reading progress. Consider re-screening in 6–12 months to track development.',
@@ -44,8 +43,8 @@ const RISK_CONFIG = {
   medium: {
     icon: ShieldAlert,
     label: 'Possible Indicators',
-    color: 'text-amber-600',
-    ringColor: '#f59e0b',
+    color: 'text-[#8b6f25]',
+    ringColor: '#e3dc95',
     description: 'The screening shows some indicators that may be associated with dyslexia.',
     recommendation: 'Consider scheduling a professional evaluation with a learning specialist.',
     nextSteps: [
@@ -182,7 +181,7 @@ export function ResultsDisplay({ result, mode, onNewTest, readingContent }: Resu
             {/* Disclaimers */}
             <div className="space-y-3">
               {mode === 'webcam' && (
-                <div className="flex items-start gap-3 border border-amber-400/50 bg-amber-100/50 p-4 text-xs leading-relaxed text-amber-800">
+                <div className="flex items-start gap-3 border border-[#e3dc95] bg-[#e3dc95]/25 p-4 text-xs leading-relaxed text-[#51513d]">
                   <Info className="h-4 w-4 shrink-0" />
                   <span>Webcam tracking is less accurate than professional hardware.</span>
                 </div>

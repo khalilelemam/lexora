@@ -1,7 +1,5 @@
 'use client';
 
-import { LucideIcon, Monitor, Download, RefreshCw } from 'lucide-react';
-
 interface TobiiServiceStatusCardProps {
   serviceChecking: boolean;
   serviceRunning: boolean;

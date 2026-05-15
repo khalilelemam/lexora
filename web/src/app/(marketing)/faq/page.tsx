@@ -49,7 +49,6 @@ const faqs: { group: string; items: { question: string; answer: string }[] }[] =
     ],
   },
   {
-<<<<<<< HEAD
     group: 'Privacy',
     items: [
       {
@@ -68,46 +67,6 @@ const faqs: { group: string; items: { question: string; answer: string }[] }[] =
           'Treat it as a signal to follow up, not a label. Share the report with an appropriate professional who can perform a full assessment.',
       },
     ],
-=======
-    question: 'What eye-tracking options are available?',
-    answer:
-      'Lexora supports two modes: (1) Tobii eye trackers for research-grade precision, and (2) webcam-based tracking using MediaPipe FaceLandmarker for accessibility — no special hardware required.',
-  },
-  {
-    question: 'How accurate is webcam-based tracking?',
-    answer:
-      'Webcam tracking is less precise than dedicated eye trackers but still provides useful gaze features. Our calibration pipeline uses polynomial ridge regression with cross-validation to maximize accuracy from webcam data.',
-  },
-  {
-    question: 'What happens to my camera data?',
-    answer:
-      'The camera feed stays in your browser and is processed locally with MediaPipe to extract gaze coordinates. No video recordings, screenshots, or face images are stored. If you are signed in and submit a test, Lexora may persist the derived ML response and, only when you opted in during registration, the raw gaze-coordinate JSON used for research workflows.',
-  },
-  {
-    question: 'Do I need to install anything?',
-    answer:
-      'For webcam mode — no, it works directly in your browser. For Tobii mode, you need to install the Lexora Tobii Service desktop application, which streams gaze data locally to the web app.',
-  },
-  {
-    question: 'What browsers are supported?',
-    answer:
-      'Lexora works best in Chrome and Edge (Chromium-based browsers). Safari and Firefox have limited MediaPipe support which may affect webcam tracking quality.',
-  },
-  {
-    question: 'How long does the screening take?',
-    answer:
-      'The full process takes approximately 5 minutes: calibration (~2 minutes) followed by the reading tasks (~3 minutes).',
-  },
-  {
-    question: 'What reading tasks are included?',
-    answer:
-      'In Tobii mode, there are three tasks: syllable decoding, pseudo-word recognition, and meaningful text comprehension. In webcam mode, a single paragraph reading task is used to optimize for the available tracking precision.',
-  },
-  {
-    question: 'Can I use Lexora on a phone or tablet?',
-    answer:
-      'Lexora requires a desktop or laptop computer with a screen large enough for accurate gaze tracking. Mobile devices are not supported due to screen size and camera positioning limitations.',
->>>>>>> origin/main
   },
 ];
 

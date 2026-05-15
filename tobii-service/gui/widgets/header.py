@@ -1,4 +1,4 @@
-"""Header widget — premium Lexora branded header with logo."""
+"""Lexora branded header widget."""
 
 from pathlib import Path
 
@@ -11,26 +11,33 @@ from gui.styles import Styles
 class HeaderWidget:
     @staticmethod
     def create(parent):
-        # ── Outer header bar ────────────────────────────────────
         frame = ctk.CTkFrame(
-            parent, fg_color=Styles.BRAND_OLIVE, height=100, corner_radius=0
+            parent, fg_color=Styles.BRAND_OLIVE, height=116, corner_radius=0
         )
         frame.pack(fill="x")
         frame.pack_propagate(False)
 
-        # ── Inner centered content ──────────────────────────────
         inner = ctk.CTkFrame(frame, fg_color="transparent")
-        inner.pack(expand=True)
+        inner.pack(fill="both", expand=True, padx=22, pady=18)
 
-        # Load the Lexora eye logo
+        mark = ctk.CTkFrame(
+            inner,
+            width=76,
+            height=76,
+            fg_color=Styles.BRAND_SAGE,
+            corner_radius=Styles.CORNER_RADIUS,
+            border_width=1,
+            border_color=Styles.BRAND_KHAKI,
+        )
+        mark.pack(side="right")
+        mark.pack_propagate(False)
+
         logo_path = (
             Path(__file__).parent.parent.parent / "assets" / "lexora_eye_logo.png"
         )
         if logo_path.exists():
             logo_img = Image.open(logo_path)
-
-            # Fit to 44px tall, keep aspect ratio
-            target_h = 44
+            target_h = 34
             aspect = logo_img.width / logo_img.height
             target_w = int(target_h * aspect)
             logo_img = logo_img.resize((target_w, target_h), Image.LANCZOS)
@@ -41,18 +48,17 @@ class HeaderWidget:
                 size=(target_w, target_h),
             )
 
-            logo_label = ctk.CTkLabel(inner, image=logo_ctk, text="")
-            logo_label.pack(side="left", padx=(0, 14))
+            logo_label = ctk.CTkLabel(mark, image=logo_ctk, text="")
+            logo_label.pack(expand=True)
             logo_label._logo_ref = logo_ctk
 
-        # ── Text block: brand name + tagline ────────────────────
         text_block = ctk.CTkFrame(inner, fg_color="transparent")
-        text_block.pack(side="left")
+        text_block.pack(side="left", fill="both", expand=True)
 
         brand = ctk.CTkLabel(
             text_block,
             text="LEXORA",
-            font=(Styles.FONT_FAMILY, 24, "bold"),
+            font=(Styles.FONT_FAMILY, 27, "bold"),
             text_color=Styles.BRAND_CREAM,
             anchor="w",
         )
@@ -60,11 +66,20 @@ class HeaderWidget:
 
         tagline = ctk.CTkLabel(
             text_block,
-            text="E Y E   T R A C K E R   S E R V I C E",
-            font=(Styles.FONT_FAMILY, 9),
-            text_color=Styles.BRAND_SAGE,
+            text="LOCAL GAZE STREAM",
+            font=(Styles.FONT_FAMILY, 10, "bold"),
+            text_color=Styles.BRAND_KHAKI,
             anchor="w",
         )
-        tagline.pack(anchor="w", pady=(0, 0))
+        tagline.pack(anchor="w", pady=(2, 0))
+
+        subtitle = ctk.CTkLabel(
+            text_block,
+            text="Tobii service bridge",
+            font=(Styles.FONT_FAMILY, 10),
+            text_color=Styles.BRAND_CREAM,
+            anchor="w",
+        )
+        subtitle.pack(anchor="w", pady=(12, 0))
 
         return frame

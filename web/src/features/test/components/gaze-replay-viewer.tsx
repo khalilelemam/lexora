@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo } from 'react';
 import { Play, Pause, RotateCcw, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CALIBRATION_POINTS, AOI_Y_BOUNDS } from '../lib/constants';
 import { useGazeReplay } from '../hooks/use-gaze-replay';

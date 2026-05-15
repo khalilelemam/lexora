@@ -25,22 +25,21 @@ const MODE_CONFIG: Record<
     howTo:
       'Follow each dot with your eyes and hold your gaze steady until the ring fills completely.',
     accentColor: '#51513d',
-    icon: '◉',
+    icon: 'GRID',
   },
   stickman: {
     label: 'Ninja Mode',
     instruction: 'A ninja stickman will appear at random positions.',
-    howTo:
-      'Lock your eyes on the ninja — your gaze is your weapon! Hold steady to capture each one.',
-    accentColor: '#DC2626',
-    icon: '🥷',
+    howTo: 'Lock your eyes on the target. Hold steady to capture each one.',
+    accentColor: '#51513d',
+    icon: 'NIN',
   },
   star: {
     label: 'Star Mode',
     instruction: 'A golden star will twinkle at different positions.',
     howTo: 'Follow the star with your eyes and hold your gaze on it until the ring fills.',
-    accentColor: '#D97706',
-    icon: '⭐',
+    accentColor: '#e3dc95',
+    icon: 'STAR',
   },
 };
 
@@ -59,14 +58,16 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
   return (
     <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#e3dcc2]">
       <div
-        className="flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-[#51513d] bg-white/80 px-10 py-8 shadow-lg backdrop-blur-sm"
+        className="flex max-w-lg flex-col items-center gap-5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-10 py-8 shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm"
         style={{ animation: 'float-up 0.4s ease-out' }}
       >
         <h2 className="text-2xl font-bold tracking-tight text-[#1b2021]">Get Ready</h2>
 
         {/* Mode badge */}
-        <div className="flex items-center gap-2 rounded-full border border-[#51513d] bg-white px-4 py-1.5">
-          <span className="text-lg">{config.icon}</span>
+        <div className="flex items-center gap-2 border border-[#51513d]/18 bg-[#e3dcc2]/70 px-4 py-1.5">
+          <span className="font-mono text-[10px] font-black tracking-[0.18em] text-[#51513d]">
+            {config.icon}
+          </span>
           <span className="text-sm font-medium" style={{ color: config.accentColor }}>
             {config.label}
           </span>
@@ -106,7 +107,7 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
           </span>
         </div>
 
-        <p className="text-xs text-[#1b2021]">Keep your head still — move only your eyes</p>
+        <p className="text-xs text-[#1b2021]">Keep your head still - move only your eyes</p>
       </div>
     </div>
   );

@@ -11,7 +11,6 @@ import {
   Play,
   Pause,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { cn } from '@/lib/utils';
 import { TASK_LABELS } from '../lib/test-content';
@@ -179,7 +178,7 @@ export function ReviewPanel({
         })}
 
         {/* Bottom controls */}
-        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[#51513d] bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
           <button
             type="button"
             onClick={handlePlayPause}
@@ -187,9 +186,9 @@ export function ReviewPanel({
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#51513d]">
+          <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
             <div
-              className="h-full rounded-full bg-[#51513d] transition-all duration-75"
+              className="h-full bg-[#51513d] transition-all duration-75"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -226,13 +225,15 @@ export function ReviewPanel({
             <div
               className={cn(
                 'flex h-12 w-12 shrink-0 items-center justify-center border',
-                hasEnoughData ? 'border-[#a6a867] bg-[#a6a867]/15' : 'border-amber-400 bg-amber-50',
+                hasEnoughData
+                  ? 'border-[#a6a867] bg-[#a6a867]/15'
+                  : 'border-[#e3dc95] bg-[#e3dc95]/25',
               )}
             >
               {hasEnoughData ? (
                 <CheckCircle2 className="h-6 w-6 text-[#51513d]" />
               ) : (
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
+                <AlertTriangle className="h-6 w-6 text-[#8b6f25]" />
               )}
             </div>
             <div className="flex flex-col gap-0.5 pt-0.5">
@@ -251,7 +252,7 @@ export function ReviewPanel({
               'border p-4 text-sm leading-relaxed',
               hasEnoughData
                 ? 'border-[#51513d]/12 bg-[#e3dcc2]/60 text-[#1b2021]'
-                : 'border-amber-200 bg-amber-100/50 text-[#1b2021]',
+                : 'border-[#e3dc95] bg-[#e3dc95]/25 text-[#1b2021]',
             )}
           >
             {hasEnoughData ? (
@@ -261,7 +262,7 @@ export function ReviewPanel({
               </p>
             ) : (
               <p>
-                Only <span className="font-black text-amber-600">{pointCount}</span> points
+                Only <span className="font-black text-[#8b6f25]">{pointCount}</span> points
                 captured. Consider retaking.
               </p>
             )}

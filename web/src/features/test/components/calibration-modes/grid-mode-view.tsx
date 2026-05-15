@@ -8,7 +8,7 @@ import type { CalibrationModeViewProps } from './types';
  * Grid (Default) calibration mode.
  *
  * Research decisions:
- * - Warm cream background (#FDF8F0) matching test environment (PSA prevention)
+ * - Warm cream background (#e3dcc2) matching test environment (PSA prevention)
  * - Sequential point order — builds better regression models than random
  * - Charcoal dot target with sage-green progress ring — clear contrast on cream
  * - Completed points shown as small sage dots (no checkmarks — per UX spec)
@@ -30,14 +30,14 @@ export function GridModeView({
   const activeIndex = collectionStep - 1;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-[#FDF8F0]">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#e3dcc2]">
       {/* Subtle grid pattern for depth — very faint, no distraction */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage:
-            'repeating-linear-gradient(0deg, #2D2A26 0px, #2D2A26 1px, transparent 1px, transparent 40px),' +
-            'repeating-linear-gradient(90deg, #2D2A26 0px, #2D2A26 1px, transparent 1px, transparent 40px)',
+            'repeating-linear-gradient(0deg, #1b2021 0px, #1b2021 1px, transparent 1px, transparent 40px),' +
+            'repeating-linear-gradient(90deg, #1b2021 0px, #1b2021 1px, transparent 1px, transparent 40px)',
         }}
       />
 
@@ -51,7 +51,7 @@ export function GridModeView({
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
               style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
             >
-              <div className="h-2 w-2 rounded-full bg-[#4A7C59]/50" />
+              <div className="h-2 w-2 rounded-full bg-[#a6a867]/50" />
             </div>
           );
         })}
@@ -66,7 +66,7 @@ export function GridModeView({
               className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
               style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}
             >
-              <div className="h-1.5 w-1.5 rounded-full bg-[#C4BDB4]/50" />
+              <div className="h-1.5 w-1.5 rounded-full bg-[#51513d]/50" />
             </div>
           );
         })}
@@ -95,23 +95,23 @@ export function GridModeView({
             className={cn(
               'absolute inset-0 rounded-full',
               isStableFixation
-                ? 'bg-emerald-400/10 shadow-[0_0_28px_rgba(52,211,153,0.22)]'
-                : 'bg-[#4A7C59]/6 shadow-[0_0_18px_rgba(74,124,89,0.18)]',
+                ? 'bg-[#a6a867]/15 shadow-[0_0_28px_rgba(166,168,103,0.26)]'
+                : 'bg-[#a6a867]/6 shadow-[0_0_18px_rgba(166,168,103,0.22)]',
             )}
             animate={{ scale: [1, 1.08, 1] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           />
 
           {/* Outer ring */}
-          <div className="absolute inset-2 rounded-full border-2 border-[#4A7C59]/40 transition-colors duration-200" />
+          <div className="absolute inset-2 rounded-full border-2 border-[#a6a867]/40 transition-colors duration-200" />
 
           {/* Center dot — charcoal on cream */}
           <div
             className={cn(
               'relative z-10 h-4 w-4 rounded-full transition-all duration-200',
               isStableFixation
-                ? 'bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.5)]'
-                : 'bg-[#2D2A26] shadow-sm',
+                ? 'bg-[#a6a867] shadow-[0_0_10px_rgba(166,168,103,0.5)]'
+                : 'bg-[#1b2021] shadow-sm',
             )}
           />
 
@@ -122,7 +122,7 @@ export function GridModeView({
               cy="50"
               r="44"
               fill="none"
-              stroke="rgba(74,124,89,0.10)"
+              stroke="rgba(166,168,103,0.12)"
               strokeWidth="3"
             />
             <motion.circle
@@ -130,7 +130,7 @@ export function GridModeView({
               cy="50"
               r="44"
               fill="none"
-              stroke={isStableFixation ? '#10b981' : '#4A7C59'}
+              stroke={isStableFixation ? '#a6a867' : '#a6a867'}
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray={276.5}
@@ -147,7 +147,7 @@ export function GridModeView({
                 animate={{ scale: 2.2, opacity: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.45, ease: 'easeOut' }}
-                className="absolute inset-0 rounded-full bg-emerald-400/15"
+                className="absolute inset-0 rounded-full bg-[#a6a867]/20"
               />
             )}
           </AnimatePresence>
@@ -157,8 +157,8 @@ export function GridModeView({
       {/* Bottom HUD strip — outside calibration area */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
         {/* Mode label */}
-        <div className="flex items-center gap-1.5 rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
-          <div className="h-1.5 w-1.5 rounded-full bg-[#4A7C59]" />
+        <div className="flex items-center gap-1.5 rounded-lg border border-[#51513d] bg-[#f3edd7]/72 px-3 py-1.5 text-[11px] text-[#51513d] backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-[#a6a867]" />
           Grid Mode
         </div>
 
@@ -170,20 +170,20 @@ export function GridModeView({
               className={cn(
                 'rounded-full transition-all duration-300',
                 idx < activeIndex
-                  ? 'h-2 w-2 bg-[#4A7C59]/70'
+                  ? 'h-2 w-2 bg-[#a6a867]/70'
                   : idx === activeIndex
-                    ? 'h-2.5 w-2.5 bg-[#4A7C59] shadow-[0_0_5px_rgba(74,124,89,0.5)]'
-                    : 'h-1.5 w-1.5 bg-[#D4CBBD]/50',
+                    ? 'h-2.5 w-2.5 bg-[#a6a867] shadow-[0_0_5px_rgba(166,168,103,0.5)]'
+                    : 'h-1.5 w-1.5 bg-[#51513d]/50',
               )}
             />
           ))}
         </div>
 
         {/* Step counter */}
-        <div className="rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] backdrop-blur-sm">
-          <span className="font-semibold text-[#4A7C59]">{collectionStep}</span>
-          <span className="text-[#C4BDB4]"> / </span>
-          <span className="text-[#6B6560]">{collectionTotal}</span>
+        <div className="rounded-lg border border-[#51513d] bg-[#f3edd7]/72 px-3 py-1.5 text-[11px] backdrop-blur-sm">
+          <span className="font-semibold text-[#a6a867]">{collectionStep}</span>
+          <span className="text-[#51513d]"> / </span>
+          <span className="text-[#51513d]">{collectionTotal}</span>
         </div>
       </div>
     </div>

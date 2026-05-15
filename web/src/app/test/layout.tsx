@@ -8,5 +8,5 @@
 export default function TestLayout({ children }: { children: React.ReactNode }) {
   // Previously we forced light mode here for the camera. Now we allow user control via ThemeToggle.
 
-  return <div className="bg-background min-h-screen">{children}</div>;
+  return <div className="min-h-screen bg-[#e3dcc2] text-[#1b2021]">{children}</div>;
 }

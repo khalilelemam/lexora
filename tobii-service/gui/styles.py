@@ -1,70 +1,50 @@
 class Styles:
-    """Color and typography constants for the Lexora brand.
+    """Lexora desktop service visual constants."""
 
-    Official palette (from brand guide):
-        #1b2021  — Dark charcoal (text, darkest)
-        #51513d  — Dark olive   (header, primary accent)
-        #a6a867  — Sage green   (interactive elements)
-        #e3dc95  — Warm khaki   (highlights, info)
-        #e3dcc2  — Cream/sand   (backgrounds)
-    """
-
-    # ── Brand Palette ────────────────────────────────────────────
     BRAND_CHARCOAL = "#1b2021"
     BRAND_OLIVE = "#51513d"
     BRAND_SAGE = "#a6a867"
     BRAND_KHAKI = "#e3dc95"
     BRAND_CREAM = "#e3dcc2"
 
-    # ── Backgrounds ──────────────────────────────────────────────
-    BG_COLOR = "#eae5d5"  # warm cream
-    CARD_BG = "#f5f1e6"  # lighter warm cream for cards
-    CARD_BG_LIGHT = "#ede8d8"  # mid cream for card containers
+    BG_COLOR = BRAND_CREAM
+    CARD_BG = "#f3edd7"
+    CARD_BG_LIGHT = "#ebe3c8"
 
-    # ── Primary Accent ───────────────────────────────────────────
-    ACCENT_COLOR = "#51513d"  # dark olive (header bar, primary)
-    ACCENT_HOVER = "#3e3e2d"  # deeper olive on hover
+    ACCENT_COLOR = BRAND_OLIVE
+    ACCENT_HOVER = BRAND_CHARCOAL
 
-    # ── Semantic – Success ───────────────────────────────────────
-    SUCCESS_COLOR = "#7a8a50"  # rich sage green
-    SUCCESS_HOVER = "#6a7a42"  # darker sage on hover
-    SUCCESS_LIGHT = "#e8e4c8"  # warm cream tint
-    SUCCESS_DARK = "#4e5e35"  # deep olive for success text
+    SUCCESS_COLOR = BRAND_SAGE
+    SUCCESS_HOVER = BRAND_OLIVE
+    SUCCESS_LIGHT = "#edf0c8"
+    SUCCESS_DARK = BRAND_OLIVE
 
-    # ── Semantic – Danger ────────────────────────────────────────
-    DANGER_COLOR = "#9e5a5a"  # muted warm red
-    DANGER_HOVER = "#874848"  # deeper muted red
+    DANGER_COLOR = "#9e5a5a"
+    DANGER_HOVER = "#874848"
 
-    # ── Semantic – Secondary / Neutral ───────────────────────────
-    SECONDARY_COLOR = "#8a8570"  # warm grey-olive
-    SECONDARY_HOVER = "#736e5b"  # darker warm grey
+    SECONDARY_COLOR = "#74745a"
+    SECONDARY_HOVER = BRAND_OLIVE
 
-    # ── Semantic – Warning / Info ────────────────────────────────
-    WARNING_COLOR = "#c9b84d"  # warm gold-olive
-    INFO_LIGHT = "#e3dc95"  # warm khaki
-    INFO_DARK = "#51513d"  # dark olive
+    WARNING_COLOR = "#c0a94f"
+    INFO_LIGHT = BRAND_KHAKI
+    INFO_DARK = BRAND_OLIVE
 
-    # ── Disabled ─────────────────────────────────────────────────
-    BUTTON_DISABLED = "#c4c0ae"  # muted stone
+    BUTTON_DISABLED = "#c8c0aa"
 
-    # ── Text ─────────────────────────────────────────────────────
-    TEXT_PRIMARY = "#1b2021"  # dark charcoal
-    TEXT_SECONDARY = "#5c5c47"  # warm olive-grey
-    TEXT_MUTED = "#9e9a8d"  # faded stone
+    TEXT_PRIMARY = BRAND_CHARCOAL
+    TEXT_SECONDARY = "#51513d"
+    TEXT_MUTED = "#8a846f"
 
-    # ── Borders / Dividers ───────────────────────────────────────
-    BORDER_COLOR = "#d5d0be"  # subtle warm border
-    DIVIDER_COLOR = "#cec8b4"  # divider line
+    BORDER_COLOR = "#c8c0aa"
+    DIVIDER_COLOR = "#d4cbb6"
 
-    # ── Typography ───────────────────────────────────────────────
     FONT_FAMILY = "Segoe UI"
     FONT_FAMILY_MONO = "Consolas"
     FONT_SIZE_LARGE = 20
     FONT_SIZE_MEDIUM = 12
     FONT_SIZE_NORMAL = 10
 
-    # ── Layout ───────────────────────────────────────────────────
-    CORNER_RADIUS = 12
-    CORNER_RADIUS_SM = 8
+    CORNER_RADIUS = 8
+    CORNER_RADIUS_SM = 4
     PADDING = 20
     PADDING_SM = 12

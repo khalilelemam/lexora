@@ -22,7 +22,7 @@ const MODE_INSTRUCTIONS: Record<
     steps: [
       'A dot will appear at different positions on the screen',
       'Look directly at each dot and hold your gaze steady',
-      "The ring around it will fill as we measure — don't look away until it's full",
+      "The ring around it will fill as we measure - don't look away until it's full",
       'This takes about 10 seconds',
     ],
   },
@@ -44,7 +44,7 @@ const MODE_INSTRUCTIONS: Record<
       'Each ninja will appear at a different position',
       'Lock your eyes on the ninja to take them down',
       'The damage ring fills as your gaze holds steady',
-      "Don't let them escape — keep looking!",
+      "Don't let them escape - keep looking!",
     ],
   },
 };
@@ -101,7 +101,7 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
       onClick={onReady}
     >
       <div
-        className="flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-[#51513d] bg-white/80 px-10 py-10 shadow-lg backdrop-blur-sm"
+        className="flex max-w-lg flex-col items-center gap-5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-10 py-10 shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm"
         style={{ animation: 'float-up 0.4s ease-out' }}
       >
         <h2 className="text-2xl font-bold tracking-tight text-[#1b2021]">{instructions.title}</h2>
@@ -109,11 +109,11 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
           {instructions.description}
         </p>
 
-        <div className="w-full rounded-xl border border-[#51513d]/15 bg-[#51513d]/5 p-4">
+        <div className="w-full border border-[#51513d]/15 bg-[#e3dcc2]/55 p-4">
           <ul className="space-y-2 text-[13px] text-[#1b2021]">
             {instructions.steps.map((step, idx) => (
               <li key={idx} className="flex items-start gap-2">
-                <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-[#51513d] text-[10px] font-bold text-white">
+                <span className="mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center bg-[#51513d] text-[10px] font-bold text-[#f3edd7]">
                   {idx + 1}
                 </span>
                 <span>{step}</span>
@@ -144,7 +144,7 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
               <span className="text-lg font-bold text-[#51513d]">{countdown}</span>
             </div>
           </div>
-          <p className="text-[11px] text-[#1b2021]">Starting automatically… or click anywhere</p>
+          <p className="text-[11px] text-[#1b2021]">Starting automatically... or click anywhere</p>
         </div>
       </div>
     </div>

@@ -190,7 +190,7 @@ export function TaskDisplay({
       <div ref={textContentRef}>
         <p
           className={cn(
-            'leading-loose whitespace-pre-line text-[#2D2A26] sm:leading-loose md:leading-loose',
+            'leading-loose whitespace-pre-line text-[#1b2021] sm:leading-loose md:leading-loose',
             'text-left font-normal select-none',
           )}
           style={{
@@ -278,7 +278,7 @@ export function TaskDisplay({
   // ─── Render ─────────────────────────────────────────
 
   return (
-    <div className={cn('fixed inset-0 z-40 bg-[#FDF8F0]', !preview && 'cursor-none')}>
+    <div className={cn('fixed inset-0 z-40 bg-[#e3dcc2]', !preview && 'cursor-none')}>
       {/*
        * Reading zone — text flows naturally from the top.
        * Horizontal bounds: 20%–80% of screen (matches calibration X: 0.2–0.8)
@@ -306,7 +306,7 @@ export function TaskDisplay({
             <div className="flex flex-col items-center justify-center gap-6">
               <pre
                 className={cn(
-                  'text-center font-mono whitespace-pre-wrap text-[#2D2A26]',
+                  'text-center font-mono whitespace-pre-wrap text-[#1b2021]',
                   'text-3xl leading-loose tracking-[0.25em] sm:text-4xl md:text-5xl',
                   'select-none',
                 )}
@@ -326,8 +326,8 @@ export function TaskDisplay({
           className="pointer-events-none fixed left-1/2 z-50 -translate-x-1/2"
           style={{ bottom: '12px' }}
         >
-          <div className="flex items-center gap-1.5 rounded-full border border-[#E8E0D4] bg-white/60 px-3 py-1 text-xs text-[#8B857E] backdrop-blur-sm">
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4A7C59]" />
+          <div className="flex items-center gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/75 px-3 py-1 text-xs text-[#51513d]/70 backdrop-blur-sm">
+            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a6a867]" />
             <span>Tracking</span>
           </div>
         </div>
@@ -336,22 +336,36 @@ export function TaskDisplay({
       {/* ─── "Are you done?" dialog ──────────────────── */}
       {!preview && (
         <Dialog open={showDialog} onOpenChange={(open) => !open && handleContinueReading()}>
-          <DialogContent showCloseButton={false} className="sm:max-w-md">
+          <DialogContent
+            showCloseButton={false}
+            className="border-[#51513d]/18 bg-[#f3edd7] text-[#1b2021] sm:max-w-md"
+          >
             <DialogHeader>
-              <div className="bg-primary/10 mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
-                <BookOpen className="text-primary h-6 w-6" />
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center border border-[#e3dc95] bg-[#e3dc95]/30">
+                <BookOpen className="h-6 w-6 text-[#51513d]" />
               </div>
-              <DialogTitle className="text-center">Has the reader finished?</DialogTitle>
-              <DialogDescription className="text-center">
+              <DialogTitle className="text-center text-[#1b2021]">
+                Has the reader finished?
+              </DialogTitle>
+              <DialogDescription className="text-center text-[#1b2021]/62">
                 It looks like enough time has passed for this passage. Is the child done reading?
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="flex-row justify-center gap-3 sm:justify-center">
-              <Button variant="outline" onClick={handleContinueReading}>
+              <Button
+                variant="outline"
+                onClick={handleContinueReading}
+                className="border-[#51513d]/30 text-[#51513d] hover:bg-[#e3dcc2]"
+              >
                 <Clock className="mr-2 h-4 w-4" />
                 Need more time
               </Button>
-              <Button onClick={handleConfirmDone}>Yes, done reading</Button>
+              <Button
+                onClick={handleConfirmDone}
+                className="bg-[#51513d] text-[#f3edd7] hover:bg-[#1b2021]"
+              >
+                Yes, done reading
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
