@@ -59,9 +59,21 @@ const MODES = [
 
 const WORKFLOW = [
   ['01', 'Set the room', 'Choose Tobii or webcam and run calibration in a calm full-screen flow.'],
-  ['02', 'Read with purpose', 'Use syllables, pseudo-words, and passages to capture different reading behaviors.'],
-  ['03', 'Map the gaze', 'Translate timing, motion, and regression patterns into a structured screening signal.'],
-  ['04', 'Review gently', 'Replay the path and decide what support or professional follow-up should happen next.'],
+  [
+    '02',
+    'Read with purpose',
+    'Use syllables, pseudo-words, and passages to capture different reading behaviors.',
+  ],
+  [
+    '03',
+    'Map the gaze',
+    'Translate timing, motion, and regression patterns into a structured screening signal.',
+  ],
+  [
+    '04',
+    'Review gently',
+    'Replay the path and decide what support or professional follow-up should happen next.',
+  ],
 ];
 
 const BADGES = [
@@ -268,7 +280,7 @@ export default function HomePage() {
       <section className="px-5 py-20 md:px-8 md:py-28">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div className="relative overflow-hidden border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[14px_14px_0_rgba(81,81,61,.12)]">
-            <div className="mb-8 flex items-center justify-between border-b border-[#51513d]/16 pb-4 text-xs font-black tracking-[0.24em] uppercase text-[#51513d]">
+            <div className="mb-8 flex items-center justify-between border-b border-[#51513d]/16 pb-4 text-xs font-black tracking-[0.24em] text-[#51513d] uppercase">
               <span>Future support layer</span>
               <span>Learning + games</span>
             </div>
@@ -305,8 +317,8 @@ export default function HomePage() {
             </h2>
             <p className="mt-6 max-w-lg text-lg leading-8 text-[#1b2021]/68">
               Lexora&apos;s bigger idea is to connect screening with support: reports for guardians,
-              classroom visibility for teachers, and reading activities that adapt to the child&apos;s
-              language and level.
+              classroom visibility for teachers, and reading activities that adapt to the
+              child&apos;s language and level.
             </p>
             <Button
               asChild

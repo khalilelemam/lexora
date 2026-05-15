@@ -16,7 +16,7 @@ interface FullscreenShellProps {
 export function FullscreenShell({ children, onExit, showExit = true }: FullscreenShellProps) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#e3dcc2] text-[#1b2021]">
-      <div className="pointer-events-none absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(81,81,61,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(81,81,61,0.24)_1px,transparent_1px)] [background-size:42px_42px]" />
+      <div className="pointer-events-none absolute inset-0 [background-image:linear-gradient(rgba(81,81,61,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(81,81,61,0.24)_1px,transparent_1px)] [background-size:42px_42px] opacity-[0.18]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#f3edd7] to-transparent" />
       {showExit && onExit && (
         <button

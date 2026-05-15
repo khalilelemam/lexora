@@ -167,7 +167,9 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
               {errors.label?.message ? (
                 <FieldError>{errors.label.message}</FieldError>
               ) : (
-                <FieldDescription>Optional. Useful for reports and attempt history.</FieldDescription>
+                <FieldDescription>
+                  Optional. Useful for reports and attempt history.
+                </FieldDescription>
               )}
             </Field>
           </div>

@@ -56,7 +56,7 @@ export function LandingStage() {
           <LexoraLogo
             size="md"
             showText={false}
-            className="[&_img]:brightness-0 [&_img]:sepia [&_img]:saturate-[.55]"
+            className="[&_img]:brightness-0 [&_img]:saturate-[.55] [&_img]:sepia"
           />
         </div>
         <div className="flex h-full flex-col justify-end p-5 text-[#e3dcc2]">
@@ -64,7 +64,7 @@ export function LandingStage() {
             size="sm"
             className="mb-5 [&_img]:brightness-0 [&_img]:invert [&_span]:text-[#e3dcc2]"
           />
-          <div className="grid grid-cols-2 gap-3 text-[9px] leading-4 tracking-[0.18em] uppercase text-[#e3dcc2]/72">
+          <div className="grid grid-cols-2 gap-3 text-[9px] leading-4 tracking-[0.18em] text-[#e3dcc2]/72 uppercase">
             <span>Lexora Lab</span>
             <span>Map Potential</span>
             <span>Gaze Studio</span>
@@ -94,7 +94,7 @@ export function LandingStage() {
             <h1 className="text-6xl leading-[0.84] font-black tracking-[0.06em] text-balance sm:text-8xl lg:text-[9rem]">
               LEXORA
             </h1>
-            <p className="mt-5 text-xl tracking-[0.34em] uppercase text-[#51513d] sm:text-2xl">
+            <p className="mt-5 text-xl tracking-[0.34em] text-[#51513d] uppercase sm:text-2xl">
               Map your potential
             </p>
           </motion.div>
@@ -143,7 +143,7 @@ export function LandingStage() {
 
       <div className="absolute right-5 bottom-24 hidden w-[32rem] max-w-[42vw] md:block">
         <div className="relative h-80 overflow-hidden border border-[#e3dcc2]/25 bg-[#e3dcc2]/92 p-6 shadow-2xl shadow-[#1b2021]/35">
-          <div className="mb-6 flex items-center justify-between text-xs font-black tracking-[0.22em] uppercase text-[#51513d]">
+          <div className="mb-6 flex items-center justify-between text-xs font-black tracking-[0.22em] text-[#51513d] uppercase">
             <span>Calibration field</span>
             <span>15 points</span>
           </div>

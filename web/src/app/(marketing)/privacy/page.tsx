@@ -7,7 +7,6 @@ export const metadata: Metadata = {
     'How Lexora handles camera access, gaze data, child privacy, and research screening information.',
 };
 
-
 const PROMISES = [
   {
     icon: Camera,
@@ -35,7 +34,10 @@ const DATA_ROWS = [
   ['Gaze samples', 'Screen x/y coordinates and timestamps captured during reading.'],
   ['Screen metadata', 'Display size and normalized coordinates used to interpret gaze correctly.'],
   ['Prediction output', 'Risk level, probability, confidence, and derived fixation context.'],
-  ['Guardian context', 'Profile and supervision information needed to run and review child sessions.'],
+  [
+    'Guardian context',
+    'Profile and supervision information needed to run and review child sessions.',
+  ],
 ];
 
 export default function PrivacyPage() {

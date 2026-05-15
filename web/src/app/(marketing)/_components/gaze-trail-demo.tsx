@@ -149,9 +149,7 @@ export function GazeTrailDemo() {
             top: `${p.y}%`,
             width: dotSizes[i],
             height: dotSizes[i],
-            background: isRegression[i]
-              ? 'rgba(81, 81, 61, 0.72)'
-              : 'rgba(166, 168, 103, 0.72)',
+            background: isRegression[i] ? 'rgba(81, 81, 61, 0.72)' : 'rgba(166, 168, 103, 0.72)',
             x: '-50%',
             y: '-50%',
             boxShadow: isRegression[i]

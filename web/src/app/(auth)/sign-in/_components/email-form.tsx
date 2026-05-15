@@ -94,14 +94,12 @@ export function EmailForm({
               setEmail(e.target.value);
               if (validationError) setValidationError('');
             }}
-            className="h-12 w-full border border-[#51513d]/18 bg-[#e3dcc2]/50 pl-10 pr-4 text-sm text-[#1b2021] placeholder:text-[#51513d]/35 focus:border-[#51513d]/40 focus:outline-none focus:ring-2 focus:ring-[#a6a867]/25"
+            className="h-12 w-full border border-[#51513d]/18 bg-[#e3dcc2]/50 pr-4 pl-10 text-sm text-[#1b2021] placeholder:text-[#51513d]/35 focus:border-[#51513d]/40 focus:ring-2 focus:ring-[#a6a867]/25 focus:outline-none"
             disabled={disabled || loading}
             autoComplete="email"
           />
         </div>
-        {validationError && (
-          <p className="text-xs font-medium text-red-600">{validationError}</p>
-        )}
+        {validationError && <p className="text-xs font-medium text-red-600">{validationError}</p>}
       </div>
 
       <button

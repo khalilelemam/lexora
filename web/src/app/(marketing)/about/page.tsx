@@ -32,7 +32,10 @@ const PRINCIPLES = [
 
 const TIMELINE = [
   ['Calibrate', 'A 15-point map aligns gaze with the reading area before the test begins.'],
-  ['Read', 'Tobii mode uses syllables, pseudo-words, and meaningful text. Webcam mode uses a paragraph task.'],
+  [
+    'Read',
+    'Tobii mode uses syllables, pseudo-words, and meaningful text. Webcam mode uses a paragraph task.',
+  ],
   ['Analyze', 'Gaze samples become fixation features that the prediction service can interpret.'],
   ['Support', 'Reports, learning sessions, exercises, and games turn screening into a next step.'],
 ];
@@ -99,7 +102,10 @@ export default function AboutPage() {
             {PRINCIPLES.map((item) => {
               const Icon = item.icon;
               return (
-                <article key={item.title} className="border border-[#e3dcc2]/16 bg-[#51513d]/34 p-6">
+                <article
+                  key={item.title}
+                  className="border border-[#e3dcc2]/16 bg-[#51513d]/34 p-6"
+                >
                   <Icon className="mb-12 h-8 w-8 text-[#e3dc95]" />
                   <h3 className="text-xl font-black">{item.title}</h3>
                   <p className="mt-4 text-sm leading-6 text-[#e3dcc2]/66">{item.copy}</p>

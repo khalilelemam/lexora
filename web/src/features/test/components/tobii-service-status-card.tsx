@@ -55,9 +55,12 @@ export function TobiiServiceStatusCard({
         <div className="mt-5 space-y-2 border border-[#a6a867]/30 bg-[#a6a867]/8 p-4 text-sm">
           <p className="font-black text-[#1b2021]">Connected to the Tobii helper app.</p>
           <p className="text-[#1b2021]/64">
-            {serviceDevice?.deviceName ?? 'Tobii Pro device'} ({serviceDevice?.model ?? 'Unknown model'})
+            {serviceDevice?.deviceName ?? 'Tobii Pro device'} (
+            {serviceDevice?.model ?? 'Unknown model'})
           </p>
-          <p className="text-xs text-[#1b2021]/50">Serial: {serviceDevice?.serialNumber ?? 'N/A'}</p>
+          <p className="text-xs text-[#1b2021]/50">
+            Serial: {serviceDevice?.serialNumber ?? 'N/A'}
+          </p>
         </div>
       ) : (
         <div className="mt-5 space-y-2 border border-[#e3dc95]/60 bg-[#e3dc95]/15 p-4 text-sm">

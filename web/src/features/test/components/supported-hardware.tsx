@@ -193,10 +193,12 @@ export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
         <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#e3dc95] uppercase">
           Tobii hardware
         </p>
-        <h1 className="text-4xl leading-tight font-black text-balance">Confirm the tracker first.</h1>
+        <h1 className="text-4xl leading-tight font-black text-balance">
+          Confirm the tracker first.
+        </h1>
         <p className="mt-5 leading-7 text-[#e3dcc2]/70">
-          Lexora&apos;s Tobii flow is tuned for screen-based Tobii Pro devices. Consumer and wearable
-          trackers are listed separately so the setup starts with the right expectation.
+          Lexora&apos;s Tobii flow is tuned for screen-based Tobii Pro devices. Consumer and
+          wearable trackers are listed separately so the setup starts with the right expectation.
         </p>
         <div className="mt-8 flex h-16 w-16 items-center justify-center bg-[#a6a867] text-[#1b2021]">
           <Eye className="h-8 w-8" />

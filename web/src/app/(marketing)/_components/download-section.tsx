@@ -79,7 +79,7 @@ export function DownloadSection() {
             ? Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="border-[#51513d]/25 bg-[#e3dcc2]/30 flex h-[124px] w-full animate-pulse flex-col items-center justify-center gap-2 rounded-md border py-5"
+                  className="flex h-[124px] w-full animate-pulse flex-col items-center justify-center gap-2 rounded-md border border-[#51513d]/25 bg-[#e3dcc2]/30 py-5"
                 />
               ))
             : platformKeys.map((key) => {
@@ -120,7 +120,7 @@ export function DownloadSection() {
                       <Button
                         variant="outline"
                         disabled
-                        className="flex h-auto w-full cursor-not-allowed flex-col items-center gap-2 py-5 opacity-50 border-[#51513d]/25 bg-[#e3dcc2]/55 text-[#1b2021]"
+                        className="flex h-auto w-full cursor-not-allowed flex-col items-center gap-2 border-[#51513d]/25 bg-[#e3dcc2]/55 py-5 text-[#1b2021] opacity-50"
                       >
                         {info.icon}
                         <span className="text-sm font-semibold">{info.label}</span>
