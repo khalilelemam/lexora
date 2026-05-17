@@ -127,10 +127,18 @@ export function useTobiiTestController() {
     const result = await submitTobiiTest({
       attempt: {
         attemptId: getOrCreateAttemptId(),
-        taskType: 'full-battery',
         age: tobiiState.intake.age,
         label: tobiiState.intake.label,
         calibrationMode: requestedCalibrationMode,
+        contentSnapshot: {
+          version: 1,
+          primaryTask: 'meaningful-text',
+          tasks: {
+            syllables: taskContent.syllables,
+            'pseudo-words': taskContent['pseudo-words'],
+            'meaningful-text': taskContent['meaningful-text'],
+          },
+        },
       },
       syllables: syllablesRef.current,
       pseudoWords: pseudoWordsRef.current,
@@ -154,6 +162,7 @@ export function useTobiiTestController() {
     pseudoWordsRef,
     requestedCalibrationMode,
     syllablesRef,
+    taskContent,
     tobiiState.intake,
   ]);
 

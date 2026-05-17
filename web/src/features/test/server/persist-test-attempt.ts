@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { AttemptTaskType, CalibrationMode, RiskLevel, TestMode } from '../types';
+import type { AttemptContentSnapshot, CalibrationMode, RiskLevel, TestMode } from '../types';
 import {
   createAttemptBlobContainerClient,
   ensureAttemptBlobContainer,
@@ -15,12 +15,12 @@ export interface PersistTestAttemptParams {
   attemptId: string;
   userId: string;
   testType: TestMode;
-  taskType: AttemptTaskType;
   outcome: RiskLevel;
   modelVersion: string;
   calibrationMode: CalibrationMode;
   age: number;
   label?: string;
+  contentSnapshot?: AttemptContentSnapshot;
   // Snapshot of the user's consent at submission time.
   rawDataConsented: boolean;
   rawPayload?: unknown;
@@ -37,7 +37,7 @@ export async function persistTestAttempt(params: PersistTestAttemptParams): Prom
   const derivedBlobUrl = await uploadAttemptJson(
     containerClient,
     `derived/${params.attemptId}.json`,
-    params.derivedPayload,
+    buildDerivedArtifact(params.derivedPayload, params.contentSnapshot),
   );
 
   let rawBlobUrl: string | null | undefined = null;
@@ -62,12 +62,11 @@ export async function persistTestAttempt(params: PersistTestAttemptParams): Prom
     attemptId: params.attemptId,
     userId: params.userId,
     testType: params.testType,
-    taskType: params.taskType,
     outcome: params.outcome,
     modelVersion: params.modelVersion,
     calibrationMode: params.calibrationMode,
     age: params.age,
-    label: resolveAttemptLabel(params.label, params.taskType, params.testType, submittedAt),
+    label: resolveAttemptLabel(params.label, params.testType, submittedAt),
     rawDataConsented: params.rawDataConsented,
     rawBlobUrl: !params.rawDataConsented ? null : rawBlobUrl,
     derivedBlobUrl,
@@ -90,7 +89,6 @@ function validateAttemptPayload(params: PersistTestAttemptParams) {
 
 function resolveAttemptLabel(
   label: string | undefined,
-  taskType: AttemptTaskType,
   testType: TestMode,
   submittedAt: Date,
 ) {
@@ -99,12 +97,7 @@ function resolveAttemptLabel(
     return normalizedLabel;
   }
 
-  const generatedLabel =
-    taskType === 'full-battery'
-      ? 'Tobii Full Battery'
-      : testType === 'tobii'
-        ? `Tobii ${humanizeTaskType(taskType)}`
-        : `Webcam ${humanizeTaskType(taskType)}`;
+  const generatedLabel = testType === 'tobii' ? 'Tobii Screening' : 'Webcam Screening';
 
   return `${generatedLabel} - ${formatAttemptTimestamp(submittedAt)}`;
 }
@@ -113,25 +106,21 @@ function formatAttemptTimestamp(date: Date) {
   return date.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 }
 
-function humanizeTaskType(taskType: AttemptTaskType) {
-  switch (taskType) {
-    case 'full-battery':
-      return 'Full Battery';
-    case 'paragraph':
-      return 'Paragraph';
-    case 'syllables':
-      return 'Syllables';
-    case 'pseudo-words':
-      return 'Pseudo Words';
-    case 'meaningful-text':
-      return 'Meaningful Text';
-  }
-
-  const exhaustiveCheck: never = taskType;
-  throw new Error(`Unsupported attempt task type: ${exhaustiveCheck}`);
-}
-
 function normalizeOptionalText(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+function buildDerivedArtifact(
+  mlResponse: unknown,
+  contentSnapshot: AttemptContentSnapshot | undefined,
+) {
+  if (!contentSnapshot) {
+    return mlResponse;
+  }
+
+  return {
+    mlResponse,
+    contentSnapshot,
+  };
 }

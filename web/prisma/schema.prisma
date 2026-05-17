@@ -15,31 +15,31 @@ datasource db {
 enum Role {
   USER
   ADMIN
+
+  @@map("role")
 }
 
 enum TestMode {
   TOBII
   WEBCAM
-}
 
-enum AttemptTaskType {
-  FULL_BATTERY
-  PARAGRAPH
-  SYLLABLES
-  PSEUDO_WORDS
-  MEANINGFUL_TEXT
+  @@map("test_mode")
 }
 
 enum AttemptOutcome {
   LOW
   MEDIUM
   HIGH
+
+  @@map("attempt_outcome")
 }
 
 enum CalibrationMode {
   GRID
   STAR
   STICKMAN
+
+  @@map("calibration_mode")
 }
 
 // ── Better Auth core models ─────────────────────────────
@@ -48,79 +48,86 @@ model User {
   id            String   @id
   name          String?
   email         String   @unique
-  emailVerified Boolean  @default(false)
+  emailVerified Boolean  @default(false) @map("email_verified")
   image         String?
   role          Role     @default(USER)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // ── Consent ───────────────────────────────
-  termsAcceptedAt DateTime? // When the user last accepted the Terms and Privacy Policy
-  rawDataConsent  Boolean   @default(true) // Opt-in for raw gaze data storage for research and model retraining
+  termsAcceptedAt DateTime? @map("terms_accepted_at") // When the user last accepted the Terms and Privacy Policy
+  rawDataConsent  Boolean   @default(true) @map("raw_data_consent") // Opt-in for raw gaze data storage for research and model retraining
 
   sessions     Session[]
   accounts     Account[]
   testAttempts TestAttempt[]
+
+  @@map("users")
 }
 
 model Session {
   id        String   @id
-  expiresAt DateTime
+  expiresAt DateTime @map("expires_at")
   token     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
 
-  userId String
+  userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }
 
 model Account {
   id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
   scope                 String?
   password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("accounts")
 }
 
 model Verification {
   id         String    @id
   identifier String
   value      String
-  expiresAt  DateTime
-  createdAt  DateTime? @default(now())
-  updatedAt  DateTime? @updatedAt
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  @@map("verifications")
 }
 
 model TestAttempt {
-  attemptId        String          @id @db.Uuid
-  userId           String
+  attemptId        String          @id @map("attempt_id") @db.Uuid
+  userId           String          @map("user_id")
   user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  testType         TestMode
-  taskType         AttemptTaskType
+  testType         TestMode        @map("test_type")
   outcome          AttemptOutcome
-  modelVersion     String
-  calibrationMode  CalibrationMode
+  modelVersion     String          @map("model_version")
+  calibrationMode  CalibrationMode @map("calibration_mode")
   age              Int
   label            String?
   // Snapshot of the user's consent state when this specific attempt was submitted.
-  rawDataConsented Boolean         @default(false)
-  rawBlobUrl       String?
-  derivedBlobUrl   String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  rawDataConsented Boolean         @default(false) @map("raw_data_consented")
+  rawBlobUrl       String?         @map("raw_blob_url")
+  derivedBlobUrl   String?         @map("derived_blob_url")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
 
   @@index([userId, createdAt])
   @@index([testType, createdAt])
-  @@index([taskType, createdAt])
+  @@map("test_attempts")
 }

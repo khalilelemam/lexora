@@ -12,7 +12,6 @@ export interface IntakeData {
 export type TobiiTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
 export type WebcamTaskType = 'paragraph';
 export type TaskType = TobiiTaskType | WebcamTaskType;
-export type AttemptTaskType = TaskType | 'full-battery';
 
 // ─── Calibration ─────────────────────────────────────────
 export type CalibrationQuality = 'good' | 'acceptable' | 'poor';
@@ -85,10 +84,16 @@ export interface PredictionResult {
 
 export interface AttemptMetadata {
   attemptId: string;
-  taskType: AttemptTaskType;
   age: number;
   label?: string;
   calibrationMode: CalibrationMode;
+  contentSnapshot?: AttemptContentSnapshot;
+}
+
+export interface AttemptContentSnapshot {
+  version: 1;
+  primaryTask: TaskType;
+  tasks: Partial<Record<TaskType, string>>;
 }
 
 export interface TobiiSubmissionInput {
