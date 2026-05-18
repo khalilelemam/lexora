@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { History, LogOut, User } from 'lucide-react';
+import { History, LayoutDashboard, LogOut, User } from 'lucide-react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,7 @@ export function UserNav() {
 
   /* ── Authenticated ────────────────────────────────────── */
   const { user } = session;
+  const isAdmin = (user as { role?: string }).role === 'ADMIN';
   const initials = (user.name || user.email || '?')
     .split(/[\s@]/)
     .slice(0, 2)
@@ -100,6 +101,15 @@ export function UserNav() {
             Test history
           </Link>
         </DropdownMenuItem>
+
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin/dashboard" className="cursor-pointer">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Admin dashboard
+            </Link>
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" />

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function Page() {
-  redirect('/admin/test-attempts');
+  redirect('/admin/dashboard');
 }
