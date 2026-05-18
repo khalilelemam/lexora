@@ -87,11 +87,7 @@ function validateAttemptPayload(params: PersistTestAttemptParams) {
   }
 }
 
-function resolveAttemptLabel(
-  label: string | undefined,
-  testType: TestMode,
-  submittedAt: Date,
-) {
+function resolveAttemptLabel(label: string | undefined, testType: TestMode, submittedAt: Date) {
   const normalizedLabel = normalizeOptionalText(label);
   if (normalizedLabel) {
     return normalizedLabel;

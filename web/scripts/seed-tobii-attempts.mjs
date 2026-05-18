@@ -30,9 +30,10 @@ if (!STORAGE_CONNECTION_STRING) {
 }
 
 const client = new Client({ connectionString: DATABASE_URL });
-const container = BlobServiceClient.fromConnectionString(STORAGE_CONNECTION_STRING).getContainerClient(
-  STORAGE_CONTAINER,
-);
+const container =
+  BlobServiceClient.fromConnectionString(STORAGE_CONNECTION_STRING).getContainerClient(
+    STORAGE_CONTAINER,
+  );
 
 await client.connect();
 await container.createIfNotExists();
@@ -85,7 +86,9 @@ async function resolveSeedUser() {
 }
 
 async function findUserByEmail(email) {
-  const result = await client.query(`SELECT id, email FROM users WHERE email = $1 LIMIT 1`, [email]);
+  const result = await client.query(`SELECT id, email FROM users WHERE email = $1 LIMIT 1`, [
+    email,
+  ]);
   return result.rows[0] ?? null;
 }
 
