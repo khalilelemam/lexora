@@ -7,7 +7,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export class AttemptsAuthError extends Error {
-  constructor(message = 'You must be signed in to view attempts.') {
+  constructor(message = 'You must be signed in to view tests.') {
     super(message);
     this.name = 'AttemptsAuthError';
   }

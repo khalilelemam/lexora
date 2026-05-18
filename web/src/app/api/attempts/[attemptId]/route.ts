@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 
 import { requireAttemptsUser } from '@/features/attempts/server/auth';
-import { getUserAttempt } from '@/features/attempts/server/attempts-repository';
+import {
+  getUserAttempt,
+  softDeleteUserAttempt,
+} from '@/features/attempts/server/attempts-repository';
 import { toAttemptsErrorResponse } from '@/features/attempts/server/http';
 
 interface RouteContext {
@@ -14,10 +17,25 @@ export async function GET(_request: Request, context: RouteContext) {
     const attempt = await getUserAttempt(user.id, attemptId);
 
     if (!attempt) {
-      return NextResponse.json({ error: 'Attempt not found.' }, { status: 404 });
+      return NextResponse.json({ error: 'Test not found.' }, { status: 404 });
     }
 
     return NextResponse.json({ attempt });
+  } catch (error) {
+    return toAttemptsErrorResponse(error);
+  }
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  try {
+    const [{ attemptId }, user] = await Promise.all([context.params, requireAttemptsUser()]);
+    const deleted = await softDeleteUserAttempt(user.id, attemptId);
+
+    if (!deleted) {
+      return NextResponse.json({ error: 'Test not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return toAttemptsErrorResponse(error);
   }

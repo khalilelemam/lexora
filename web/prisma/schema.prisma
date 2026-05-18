@@ -119,15 +119,16 @@ model TestAttempt {
   modelVersion     String          @map("model_version")
   calibrationMode  CalibrationMode @map("calibration_mode")
   age              Int
-  label            String?
+  label            String
   // Snapshot of the user's consent state when this specific attempt was submitted.
   rawDataConsented Boolean         @default(false) @map("raw_data_consented")
   rawBlobUrl       String?         @map("raw_blob_url")
-  derivedBlobUrl   String?         @map("derived_blob_url")
+  derivedBlobUrl   String          @map("derived_blob_url")
+  deletedAt        DateTime?       @map("deleted_at")
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
 
-  @@index([userId, createdAt])
-  @@index([testType, createdAt])
+  @@index([userId, deletedAt, createdAt])
+  @@index([deletedAt, testType, createdAt])
   @@map("test_attempts")
 }

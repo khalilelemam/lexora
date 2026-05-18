@@ -17,6 +17,10 @@ export async function getMyAttempt(attemptId: string) {
   return apiClient.get(`/api/attempts/${attemptId}`).json<AttemptDetailResponse>();
 }
 
+export async function deleteMyAttempt(attemptId: string) {
+  return apiClient.delete(`/api/attempts/${attemptId}`).json<{ ok: true }>();
+}
+
 export async function getAdminAttempts(filters: AttemptFilters) {
   return apiClient
     .get('/api/admin/test-attempts', {
@@ -33,10 +37,12 @@ function toSearchParams(filters: AttemptFilters) {
   const params = new URLSearchParams();
 
   if (filters.testType) params.set('testType', filters.testType);
-  if (filters.outcome) params.set('outcome', filters.outcome);
+  filters.outcomes?.forEach((outcome) => params.append('outcome', outcome));
   if (filters.query) params.set('query', filters.query);
-  if (filters.page) params.set('page', String(filters.page));
-  if (filters.pageSize) params.set('pageSize', String(filters.pageSize));
+  if (filters.createdFrom) params.set('createdFrom', filters.createdFrom);
+  if (filters.createdTo) params.set('createdTo', filters.createdTo);
+  if (filters.cursor) params.set('cursor', filters.cursor);
+  if (filters.limit) params.set('limit', String(filters.limit));
 
   return params;
 }

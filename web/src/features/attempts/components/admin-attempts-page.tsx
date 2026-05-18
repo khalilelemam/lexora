@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { RefreshCcw, Shield } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,17 +11,28 @@ import { useAdminAttempts } from '@/features/attempts/hooks/use-attempts';
 import type { AttemptFilters } from '@/features/attempts/types';
 
 import { AttemptFiltersPanel } from './attempt-filters';
+import { InfiniteScrollSentinel } from './infinite-scroll-sentinel';
 import { AttemptList } from './attempt-list';
-import { AttemptsPagination } from './attempt-pagination';
 
 const DEFAULT_FILTERS: AttemptFilters = {
-  page: 1,
-  pageSize: 10,
+  limit: 12,
 };
 
 export function AdminAttemptsPage() {
   const [filters, setFilters] = useState<AttemptFilters>(DEFAULT_FILTERS);
   const attemptsQuery = useAdminAttempts(filters);
+  const attempts = useMemo(
+    () => attemptsQuery.data?.pages.flatMap((page) => page.attempts) ?? [],
+    [attemptsQuery.data],
+  );
+  const total = attemptsQuery.data?.pages[0]?.total;
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = attemptsQuery;
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      void fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
     <main className="bg-background min-h-screen">
@@ -38,24 +49,24 @@ export function AdminAttemptsPage() {
         <section className="space-y-2">
           <div className="flex items-center gap-2">
             <Shield className="text-primary h-5 w-5" />
-            <h1 className="text-2xl font-semibold tracking-normal">Test Attempts</h1>
+            <h1 className="text-2xl font-semibold tracking-normal">Admin Dashboard</h1>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">
-            Admin view of saved screening attempts across users.
+            Admin view of saved screening tests across users.
           </p>
         </section>
 
         <AttemptFiltersPanel
           filters={filters}
           onChange={setFilters}
-          resultCount={attemptsQuery.data?.pagination.total}
+          resultCount={total}
         />
 
         {attemptsQuery.isPending ? (
           <AttemptListSkeleton />
         ) : attemptsQuery.isError ? (
           <div className="border-destructive/20 bg-card rounded-lg border p-6">
-            <h2 className="font-semibold">Could not load admin attempts</h2>
+            <h2 className="font-semibold">Could not load admin tests</h2>
             <Button
               onClick={() => attemptsQuery.refetch()}
               variant="outline"
@@ -68,10 +79,11 @@ export function AdminAttemptsPage() {
           </div>
         ) : (
           <>
-            <AttemptList attempts={attemptsQuery.data.attempts} scope="admin" />
-            <AttemptsPagination
-              pagination={attemptsQuery.data.pagination}
-              onPageChange={(page) => setFilters((current) => ({ ...current, page }))}
+            <AttemptList attempts={attempts} scope="admin" />
+            <InfiniteScrollSentinel
+              hasNextPage={Boolean(hasNextPage)}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={handleLoadMore}
             />
           </>
         )}

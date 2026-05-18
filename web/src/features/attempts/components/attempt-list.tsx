@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Activity, CalendarClock, Eye, Gauge, Info, Loader2, User } from 'lucide-react';
+import { Activity, CalendarClock, Eye, Gauge, Info, Loader2, Trash2, User } from 'lucide-react';
 
 import {
   Accordion,
@@ -9,18 +9,30 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GazeReplayViewer } from '@/features/test/components/gaze-replay-viewer';
-import { useAdminAttempt, useMyAttempt } from '@/features/attempts/hooks/use-attempts';
-import type { AttemptDetail, AttemptListItem } from '@/features/attempts/types';
+import { FullscreenGazeReplay } from '@/features/test/components/fullscreen-gaze-replay';
+import {
+  useAdminAttempt,
+  useDeleteMyAttempt,
+  useMyAttempt,
+} from '@/features/attempts/hooks/use-attempts';
+import type {
+  AttemptDetail,
+  AttemptListItem,
+  AttemptVisualization,
+} from '@/features/attempts/types';
 import {
   formatAttemptDate,
   OUTCOME_LABELS,
@@ -48,9 +60,9 @@ export function AttemptList({ attempts, scope }: AttemptListProps) {
     return (
       <div className="border-border bg-card flex min-h-64 flex-col items-center justify-center rounded-lg border p-8 text-center">
         <Gauge className="text-muted-foreground mb-3 h-8 w-8" />
-        <h2 className="text-lg font-semibold">No attempts found</h2>
+        <h2 className="text-lg font-semibold">No tests found</h2>
         <p className="text-muted-foreground mt-1 max-w-md text-sm">
-          Try clearing filters, or complete a screening test to create a saved attempt.
+          Try clearing filters, or complete a screening test to create a saved result.
         </p>
       </div>
     );
@@ -100,9 +112,7 @@ function AttemptCard({
           </div>
 
           <div className="grid gap-2">
-            <h2 className="truncate text-base font-semibold">
-              {attempt.label || `${TEST_TYPE_LABELS[attempt.testType]} screening`}
-            </h2>
+            <h2 className="truncate text-base font-semibold">{attempt.label}</h2>
             <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
               <span className="inline-flex items-center gap-1.5">
                 <CalendarClock className="h-3.5 w-3.5" />
@@ -128,7 +138,7 @@ function AttemptCard({
           <AttemptDetailSkeleton />
         ) : detailQuery.isError ? (
           <div className="border-destructive/20 bg-destructive/5 rounded-md border p-4 text-sm">
-            Could not load the saved result for this attempt.
+            Could not load the saved result for this test.
           </div>
         ) : (
           <AttemptSummary detail={detailQuery.data.attempt} scope={scope} />
@@ -140,7 +150,7 @@ function AttemptCard({
 
 function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user' | 'admin' }) {
   const [visualizationOpen, setVisualizationOpen] = useState(false);
-  const replay = useReplayInput(detail);
+  const hasReplay = detail.visualizations.length > 0;
 
   return (
     <div className="grid gap-4 border-t pt-4">
@@ -150,17 +160,23 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
           <p className="text-muted-foreground max-w-2xl text-sm">{OUTCOME_COPY[detail.outcome]}</p>
         </div>
 
-        {replay ? (
-          <Button size="sm" onClick={() => setVisualizationOpen(true)}>
-            <Eye className="h-4 w-4" />
-            Visualization
-          </Button>
-        ) : (
-          <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-            <Info className="h-3.5 w-3.5" />
-            No replay data
-          </div>
-        )}
+        <div className="flex flex-wrap justify-start gap-2 md:justify-end">
+          {hasReplay ? (
+            <Button size="sm" onClick={() => setVisualizationOpen(true)}>
+              <Eye className="h-4 w-4" />
+              Visualization
+            </Button>
+          ) : (
+            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              <Info className="h-3.5 w-3.5" />
+              No replay data
+            </div>
+          )}
+
+          {scope === 'user' && (
+            <DeleteTestAction attemptId={detail.attemptId} label={detail.label} />
+          )}
+        </div>
       </div>
 
       {scope === 'admin' && (
@@ -174,35 +190,129 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
         </div>
       )}
 
-      <Dialog open={visualizationOpen} onOpenChange={setVisualizationOpen}>
-        <DialogContent className="h-[100dvh] w-screen max-w-none overflow-y-auto rounded-none sm:rounded-none">
-          <DialogHeader>
-            <DialogTitle>Gaze Visualization</DialogTitle>
-            <DialogDescription>
-              Replay of the primary reading task stored with this attempt.
-            </DialogDescription>
-          </DialogHeader>
-          {replay && <GazeReplayViewer content={replay.content} features={detail.result.features!} />}
-        </DialogContent>
-      </Dialog>
+      {visualizationOpen && hasReplay ? (
+        <AttemptVisualizationOverlay
+          visualizations={detail.visualizations}
+          onClose={() => setVisualizationOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function useReplayInput(detail: AttemptDetail) {
-  return useMemo(() => {
-    const features = detail.result.features;
-    const snapshot = detail.contentSnapshot;
+function DeleteTestAction({ attemptId, label }: { attemptId: string; label: string }) {
+  const deleteMutation = useDeleteMyAttempt();
 
-    if (!features?.length || !snapshot) {
-      return null;
-    }
+  return (
+    <div className="grid gap-2">
+      <DeleteTestButton
+        label={label}
+        isPending={deleteMutation.isPending}
+        onDelete={() => deleteMutation.mutate(attemptId)}
+      />
+      {deleteMutation.isError && (
+        <p className="text-destructive text-sm">Could not delete this test. Please try again.</p>
+      )}
+    </div>
+  );
+}
 
-    const primaryTask = snapshot.primaryTask as TaskType;
-    const content = snapshot.tasks[primaryTask];
+function DeleteTestButton({
+  label,
+  isPending,
+  onDelete,
+}: {
+  label: string;
+  isPending: boolean;
+  onDelete: () => void;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="text-destructive hover:text-destructive"
+          disabled={isPending}
+        >
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          Delete
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this test?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {label} will be removed from your history. The underlying record stays preserved for
+            audit and research integrity.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onDelete}
+            className="bg-destructive text-white hover:bg-destructive/90"
+          >
+            Delete test
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
-    return content ? { content } : null;
-  }, [detail]);
+function AttemptVisualizationOverlay({
+  visualizations,
+  onClose,
+}: {
+  visualizations: AttemptVisualization[];
+  onClose: () => void;
+}) {
+  const [activeTaskType, setActiveTaskType] = useState<TaskType>(visualizations[0].taskType);
+  const activeVisualization = useMemo(
+    () =>
+      visualizations.find((visualization) => visualization.taskType === activeTaskType) ??
+      visualizations[0],
+    [activeTaskType, visualizations],
+  );
+
+  return (
+    <>
+      <FullscreenGazeReplay
+        key={`${activeVisualization.taskType}-${activeVisualization.features.length}`}
+        taskType={activeVisualization.taskType}
+        content={activeVisualization.content}
+        features={activeVisualization.features}
+        onClose={onClose}
+      />
+
+      {visualizations.length > 1 && (
+        <div className="fixed top-4 left-1/2 z-[80] flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-full border border-[#E8E0D4] bg-white/90 px-3 py-2 shadow-lg backdrop-blur-md">
+          {visualizations.map((visualization) => {
+            const isActive = visualization.taskType === activeVisualization.taskType;
+
+            return (
+              <Button
+                key={visualization.taskType}
+                type="button"
+                size="sm"
+                variant={isActive ? 'default' : 'outline'}
+                className={
+                  isActive
+                    ? 'bg-[#4A7C59] text-white hover:bg-[#3D6A4B]'
+                    : 'border-[#D4CBBD] bg-white/80 text-[#6B6560] hover:bg-[#F5F0E8]'
+                }
+                onClick={() => setActiveTaskType(visualization.taskType)}
+              >
+                {visualization.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
 }
 
 function AdminMetric({ label, value }: { label: string; value: string }) {

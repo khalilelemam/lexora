@@ -8,12 +8,12 @@ import { parseAttemptFilters } from '@/features/attempts/server/filters';
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAttemptsUser();
-    const { attempts, pagination } = await listUserAttempts(
+    const result = await listUserAttempts(
       user.id,
       parseAttemptFilters(request.nextUrl.searchParams),
     );
 
-    return NextResponse.json({ attempts, pagination });
+    return NextResponse.json(result);
   } catch (error) {
     return toAttemptsErrorResponse(error);
   }

@@ -12,5 +12,5 @@ export function toAttemptsErrorResponse(error: unknown) {
   }
 
   console.error('[attempts-api] unexpected error', error);
-  return NextResponse.json({ error: 'Unable to load attempts.' }, { status: 500 });
+  return NextResponse.json({ error: 'Unable to load tests.' }, { status: 500 });
 }

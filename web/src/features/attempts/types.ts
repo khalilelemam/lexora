@@ -1,8 +1,10 @@
 import type {
   AttemptContentSnapshot,
   CalibrationMode,
+  GazeFeature,
   PredictionResult,
   RiskLevel,
+  TaskType,
   TestMode,
 } from '@/features/test/types';
 
@@ -17,7 +19,7 @@ export interface AttemptListItem {
   testType: TestMode;
   outcome: RiskLevel;
   age: number;
-  label: string | null;
+  label: string;
   createdAt: string;
   updatedAt: string;
   user?: AttemptUserSummary;
@@ -28,26 +30,30 @@ export interface AttemptDetail extends AttemptListItem {
   calibrationMode: CalibrationMode;
   result: PredictionResult;
   contentSnapshot: AttemptContentSnapshot | null;
+  visualizations: AttemptVisualization[];
+}
+
+export interface AttemptVisualization {
+  taskType: TaskType;
+  label: string;
+  content: string;
+  features: GazeFeature[];
 }
 
 export interface AttemptFilters {
   testType?: TestMode;
-  outcome?: RiskLevel;
+  outcomes?: RiskLevel[];
   query?: string;
-  page?: number;
-  pageSize?: number;
-}
-
-export interface AttemptsPagination {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
+  createdFrom?: string;
+  createdTo?: string;
+  cursor?: string;
+  limit?: number;
 }
 
 export interface AttemptsListResponse {
   attempts: AttemptListItem[];
-  pagination: AttemptsPagination;
+  nextCursor: string | null;
+  total: number;
 }
 
 export interface AttemptDetailResponse {

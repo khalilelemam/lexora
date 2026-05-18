@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { Buffer } from 'node:buffer';
+
 import {
   AttemptOutcome,
   CalibrationMode as PrismaCalibrationMode,
@@ -11,17 +13,16 @@ import {
   createAttemptBlobContainerClient,
   downloadAttemptJson,
 } from '@/features/test/server/attempt-blob-storage';
-import type {
-  AttemptFilters,
-  AttemptListItem,
-  AttemptsPagination,
-} from '@/features/attempts/types';
+import type { AttemptFilters, AttemptListItem } from '@/features/attempts/types';
 import type { CalibrationMode, RiskLevel, TestMode } from '@/features/test/types';
 
-import { getContentSnapshot, toPredictionResult } from './attempt-result';
+import {
+  getAttemptVisualizations,
+  getContentSnapshot,
+  toPredictionResult,
+} from './attempt-result';
 
-const DEFAULT_PAGE = 1;
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_LIMIT = 12;
 
 const ATTEMPT_SELECT = {
   attemptId: true,
@@ -48,7 +49,7 @@ interface AttemptListRow {
   test_type: PrismaTestMode;
   outcome: AttemptOutcome;
   age: number;
-  label: string | null;
+  label: string;
   created_at: Date | string;
   updated_at: Date | string;
   user_id: string;
@@ -59,7 +60,13 @@ interface AttemptListRow {
 
 interface ListAttemptsResult {
   attempts: AttemptListItem[];
-  pagination: AttemptsPagination;
+  nextCursor: string | null;
+  total: number;
+}
+
+interface AttemptCursor {
+  createdAt: Date;
+  attemptId: string;
 }
 
 export async function listUserAttempts(
@@ -71,11 +78,20 @@ export async function listUserAttempts(
 
 export async function getUserAttempt(userId: string, attemptId: string) {
   const attempt = await prisma.testAttempt.findFirst({
-    where: { attemptId, userId },
+    where: { attemptId, userId, deletedAt: null },
     select: ATTEMPT_SELECT,
   });
 
   return attempt ? toAttemptDetail(attempt, false) : null;
+}
+
+export async function softDeleteUserAttempt(userId: string, attemptId: string) {
+  const result = await prisma.testAttempt.updateMany({
+    where: { attemptId, userId, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+
+  return result.count > 0;
 }
 
 export async function listAdminAttempts(filters: AttemptFilters): Promise<ListAttemptsResult> {
@@ -83,8 +99,8 @@ export async function listAdminAttempts(filters: AttemptFilters): Promise<ListAt
 }
 
 export async function getAdminAttempt(attemptId: string) {
-  const attempt = await prisma.testAttempt.findUnique({
-    where: { attemptId },
+  const attempt = await prisma.testAttempt.findFirst({
+    where: { attemptId, deletedAt: null },
     select: ATTEMPT_SELECT,
   });
 
@@ -100,9 +116,7 @@ async function listAttempts({
   userId?: string;
   includeUser: boolean;
 }): Promise<ListAttemptsResult> {
-  const page = filters.page ?? DEFAULT_PAGE;
-  const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
-  const offset = (page - 1) * pageSize;
+  const limit = filters.limit ?? DEFAULT_LIMIT;
   const whereSql = buildWhereSql(filters, userId);
 
   const rows = await prisma.$queryRaw<AttemptListRow[]>(Prisma.sql`
@@ -121,26 +135,24 @@ async function listAttempts({
     FROM test_attempts a
     INNER JOIN users u ON u.id = a.user_id
     ${whereSql}
-    ORDER BY a.created_at DESC
-    LIMIT ${pageSize}
-    OFFSET ${offset}
+    ORDER BY a.created_at DESC, a.attempt_id DESC
+    LIMIT ${limit + 1}
   `);
 
+  const hasNextPage = rows.length > limit;
+  const visibleRows = hasNextPage ? rows.slice(0, limit) : rows;
   const total = Number(rows[0]?.total_count ?? 0);
 
   return {
-    attempts: rows.map((row) => toAttemptListItemFromRow(row, includeUser)),
-    pagination: {
-      page,
-      pageSize,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / pageSize)),
-    },
+    attempts: visibleRows.map((row) => toAttemptListItemFromRow(row, includeUser)),
+    nextCursor: hasNextPage ? encodeCursor(visibleRows[visibleRows.length - 1]) : null,
+    total,
   };
 }
 
 function buildWhereSql(filters: AttemptFilters, userId?: string) {
-  const conditions: Prisma.Sql[] = [];
+  const conditions: Prisma.Sql[] = [Prisma.sql`a.deleted_at IS NULL`];
+  const cursor = decodeCursor(filters.cursor);
 
   if (userId) {
     conditions.push(Prisma.sql`a.user_id = ${userId}`);
@@ -150,8 +162,17 @@ function buildWhereSql(filters: AttemptFilters, userId?: string) {
     conditions.push(Prisma.sql`a.test_type::text = ${toPrismaTestMode(filters.testType)}`);
   }
 
-  if (filters.outcome) {
-    conditions.push(Prisma.sql`a.outcome::text = ${toPrismaOutcome(filters.outcome)}`);
+  if (filters.outcomes?.length) {
+    const outcomes = filters.outcomes.map(toPrismaOutcome);
+    conditions.push(Prisma.sql`a.outcome::text IN (${Prisma.join(outcomes)})`);
+  }
+
+  if (filters.createdFrom) {
+    conditions.push(Prisma.sql`a.created_at >= ${startOfUtcDay(filters.createdFrom)}`);
+  }
+
+  if (filters.createdTo) {
+    conditions.push(Prisma.sql`a.created_at < ${endExclusiveUtcDay(filters.createdTo)}`);
   }
 
   if (filters.query) {
@@ -160,7 +181,7 @@ function buildWhereSql(filters: AttemptFilters, userId?: string) {
         'simple',
         concat_ws(
           ' ',
-          coalesce(a.label, ''),
+          a.label,
           a.test_type::text,
           a.outcome::text,
           coalesce(u.name, ''),
@@ -170,9 +191,13 @@ function buildWhereSql(filters: AttemptFilters, userId?: string) {
     `);
   }
 
-  return conditions.length > 0
-    ? Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`
-    : Prisma.empty;
+  if (cursor) {
+    conditions.push(Prisma.sql`
+      (a.created_at, a.attempt_id) < (${cursor.createdAt}, CAST(${cursor.attemptId} AS uuid))
+    `);
+  }
+
+  return Prisma.sql`WHERE ${Prisma.join(conditions, ' AND ')}`;
 }
 
 async function toAttemptDetail(
@@ -191,6 +216,7 @@ async function toAttemptDetail(
     calibrationMode: fromPrismaCalibrationMode(attempt.calibrationMode),
     result: toPredictionResult(rawResponse, testType),
     contentSnapshot: getContentSnapshot(rawResponse),
+    visualizations: getAttemptVisualizations(rawResponse, testType),
   };
 }
 
@@ -227,6 +253,52 @@ function toAttemptListItemFromRow(row: AttemptListRow, includeUser: boolean): At
         }
       : undefined,
   };
+}
+
+function encodeCursor(row: AttemptListRow) {
+  return Buffer.from(
+    JSON.stringify({
+      createdAt: new Date(row.created_at).toISOString(),
+      attemptId: row.attempt_id,
+    }),
+    'utf8',
+  ).toString('base64url');
+}
+
+function decodeCursor(cursor?: string): AttemptCursor | null {
+  if (!cursor) {
+    return null;
+  }
+
+  try {
+    const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as {
+      createdAt?: unknown;
+      attemptId?: unknown;
+    };
+    const createdAt = typeof decoded.createdAt === 'string' ? new Date(decoded.createdAt) : null;
+
+    if (
+      !createdAt ||
+      Number.isNaN(createdAt.getTime()) ||
+      typeof decoded.attemptId !== 'string'
+    ) {
+      return null;
+    }
+
+    return { createdAt, attemptId: decoded.attemptId };
+  } catch {
+    return null;
+  }
+}
+
+function startOfUtcDay(value: string) {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+function endExclusiveUtcDay(value: string) {
+  const date = startOfUtcDay(value);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date;
 }
 
 function toPrismaTestMode(testType: TestMode): PrismaTestMode {

@@ -3,26 +3,25 @@ import type { RiskLevel, TestMode } from '@/features/test/types';
 
 const TEST_TYPES = new Set<TestMode>(['tobii', 'webcam']);
 const OUTCOMES = new Set<RiskLevel>(['low', 'medium', 'high']);
-const DEFAULT_PAGE = 1;
-const DEFAULT_PAGE_SIZE = 10;
-const MAX_PAGE_SIZE = 50;
+const DEFAULT_LIMIT = 12;
+const MAX_LIMIT = 50;
 
 export function parseAttemptFilters(searchParams: URLSearchParams): AttemptFilters {
   const testType = searchParams.get('testType');
-  const outcome = searchParams.get('outcome');
+  const outcomes = searchParams
+    .getAll('outcome')
+    .filter((outcome): outcome is RiskLevel => OUTCOMES.has(outcome as RiskLevel));
   const query = normalizeQuery(searchParams.get('query'));
-  const page = parsePositiveInt(searchParams.get('page'), DEFAULT_PAGE);
-  const pageSize = Math.min(
-    parsePositiveInt(searchParams.get('pageSize'), DEFAULT_PAGE_SIZE),
-    MAX_PAGE_SIZE,
-  );
+  const limit = Math.min(parsePositiveInt(searchParams.get('limit'), DEFAULT_LIMIT), MAX_LIMIT);
 
   return {
     testType: TEST_TYPES.has(testType as TestMode) ? (testType as TestMode) : undefined,
-    outcome: OUTCOMES.has(outcome as RiskLevel) ? (outcome as RiskLevel) : undefined,
+    outcomes: outcomes.length > 0 ? outcomes : undefined,
     query,
-    page,
-    pageSize,
+    createdFrom: normalizeDate(searchParams.get('createdFrom')),
+    createdTo: normalizeDate(searchParams.get('createdTo')),
+    cursor: normalizeQuery(searchParams.get('cursor')),
+    limit,
   };
 }
 
@@ -34,4 +33,13 @@ function normalizeQuery(query: string | null) {
 function parsePositiveInt(value: string | null, fallback: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeDate(value: string | null) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) ? undefined : value;
 }

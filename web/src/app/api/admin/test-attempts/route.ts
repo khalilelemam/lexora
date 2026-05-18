@@ -8,11 +8,11 @@ import { toAttemptsErrorResponse } from '@/features/attempts/server/http';
 export async function GET(request: NextRequest) {
   try {
     await requireAdminAttemptsUser();
-    const { attempts, pagination } = await listAdminAttempts(
+    const result = await listAdminAttempts(
       parseAttemptFilters(request.nextUrl.searchParams),
     );
 
-    return NextResponse.json({ attempts, pagination });
+    return NextResponse.json(result);
   } catch (error) {
     return toAttemptsErrorResponse(error);
   }

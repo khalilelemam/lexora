@@ -14,7 +14,7 @@ export async function GET(_request: Request, context: RouteContext) {
     const attempt = await getAdminAttempt(attemptId);
 
     if (!attempt) {
-      return NextResponse.json({ error: 'Attempt not found.' }, { status: 404 });
+      return NextResponse.json({ error: 'Test not found.' }, { status: 404 });
     }
 
     return NextResponse.json({ attempt });
