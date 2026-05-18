@@ -22,6 +22,7 @@ export interface AttemptListItem {
   label: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
   user?: AttemptUserSummary;
 }
 

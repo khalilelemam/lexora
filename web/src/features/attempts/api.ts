@@ -23,14 +23,14 @@ export async function deleteMyAttempt(attemptId: string) {
 
 export async function getAdminAttempts(filters: AttemptFilters) {
   return apiClient
-    .get('/api/admin/test-attempts', {
+    .get('/api/admin/tests', {
       searchParams: toSearchParams(filters),
     })
     .json<AttemptsListResponse>();
 }
 
 export async function getAdminAttempt(attemptId: string) {
-  return apiClient.get(`/api/admin/test-attempts/${attemptId}`).json<AttemptDetailResponse>();
+  return apiClient.get(`/api/admin/tests/${attemptId}`).json<AttemptDetailResponse>();
 }
 
 function toSearchParams(filters: AttemptFilters) {

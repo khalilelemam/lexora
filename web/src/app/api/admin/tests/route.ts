@@ -8,9 +8,7 @@ import { toAttemptsErrorResponse } from '@/features/attempts/server/http';
 export async function GET(request: NextRequest) {
   try {
     await requireAdminAttemptsUser();
-    const result = await listAdminAttempts(
-      parseAttemptFilters(request.nextUrl.searchParams),
-    );
+    const result = await listAdminAttempts(parseAttemptFilters(request.nextUrl.searchParams));
 
     return NextResponse.json(result);
   } catch (error) {

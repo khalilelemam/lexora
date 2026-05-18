@@ -61,11 +61,7 @@ export function HistoryPage() {
           </p>
         </section>
 
-        <AttemptFiltersPanel
-          filters={filters}
-          onChange={setFilters}
-          resultCount={total}
-        />
+        <AttemptFiltersPanel filters={filters} onChange={setFilters} resultCount={total} />
 
         {attemptsQuery.isPending ? (
           <AttemptListSkeleton />

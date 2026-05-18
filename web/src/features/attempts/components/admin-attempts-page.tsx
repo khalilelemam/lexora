@@ -56,11 +56,7 @@ export function AdminAttemptsPage() {
           </p>
         </section>
 
-        <AttemptFiltersPanel
-          filters={filters}
-          onChange={setFilters}
-          resultCount={total}
-        />
+        <AttemptFiltersPanel filters={filters} onChange={setFilters} resultCount={total} />
 
         {attemptsQuery.isPending ? (
           <AttemptListSkeleton />

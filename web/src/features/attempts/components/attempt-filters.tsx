@@ -1,34 +1,22 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { AttemptFilters } from '@/features/attempts/types';
-import {
-  OUTCOME_LABELS,
-  TEST_TYPE_LABELS,
-} from '@/features/attempts/lib/attempt-labels';
-import type { RiskLevel, TestMode } from '@/features/test/types';
+import { TEST_TYPE_LABELS } from '@/features/attempts/lib/attempt-labels';
+import type { TestMode } from '@/features/test/types';
+
+import { DateRangePicker } from './date-range-picker';
+import { FilterSelect } from './filter-select';
+import { OutcomeFilter } from './outcome-filter';
 
 const ALL_VALUE = 'all';
 const SEARCH_DEBOUNCE_MS = 350;
-const OUTCOME_OPTIONS = Object.keys(OUTCOME_LABELS) as RiskLevel[];
 
 interface AttemptFiltersPanelProps {
   filters: AttemptFilters;
@@ -38,13 +26,14 @@ interface AttemptFiltersPanelProps {
 
 export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptFiltersPanelProps) {
   const [queryDraft, setQueryDraft] = useState(filters.query ?? '');
+  const debouncedQuery = useDebounce(queryDraft, SEARCH_DEBOUNCE_MS);
   const selectedOutcomes = useMemo(() => filters.outcomes ?? [], [filters.outcomes]);
   const hasFilters = Boolean(
     filters.query ||
-      filters.testType ||
-      selectedOutcomes.length ||
-      filters.createdFrom ||
-      filters.createdTo,
+    filters.testType ||
+    selectedOutcomes.length ||
+    filters.createdFrom ||
+    filters.createdTo,
   );
 
   const updateFilters = useCallback(
@@ -57,28 +46,13 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
   );
 
   useEffect(() => {
-    const normalizedQuery = queryDraft.trim() || undefined;
+    const normalizedQuery = debouncedQuery.trim() || undefined;
     if ((filters.query ?? undefined) === normalizedQuery) {
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      updateFilters({ ...filters, query: normalizedQuery });
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => window.clearTimeout(timeout);
-  }, [filters, queryDraft, updateFilters]);
-
-  const toggleOutcome = (outcome: RiskLevel) => {
-    const nextOutcomes = selectedOutcomes.includes(outcome)
-      ? selectedOutcomes.filter((value) => value !== outcome)
-      : [...selectedOutcomes, outcome];
-
-    updateFilters({
-      ...filters,
-      outcomes: nextOutcomes.length > 0 ? nextOutcomes : undefined,
-    });
-  };
+    updateFilters({ ...filters, query: normalizedQuery });
+  }, [debouncedQuery, filters, updateFilters]);
 
   return (
     <section className="border-border bg-card rounded-lg border p-4 shadow-sm">
@@ -94,7 +68,7 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
         </div>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(260px,1fr)_170px_190px_1fr_auto] xl:items-end">
+      <div className="grid gap-3 xl:grid-cols-[minmax(260px,1fr)_170px_190px_minmax(260px,1fr)_auto] xl:items-end">
         <div className="grid gap-2">
           <Label htmlFor="test-search" className="text-xs">
             Search
@@ -129,6 +103,7 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
         <FilterSelect
           label="Test type"
           value={filters.testType ?? ALL_VALUE}
+          allValue={ALL_VALUE}
           options={TEST_TYPE_LABELS}
           onChange={(testType) =>
             updateFilters({
@@ -140,64 +115,29 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
 
         <div className="grid gap-2">
           <Label className="text-xs">Outcome</Label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" className="justify-between">
-                <span className="truncate">{formatOutcomeSelection(selectedOutcomes)}</span>
-                <ChevronDown className="h-4 w-4 opacity-60" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {OUTCOME_OPTIONS.map((outcome) => (
-                <DropdownMenuCheckboxItem
-                  key={outcome}
-                  checked={selectedOutcomes.includes(outcome)}
-                  onCheckedChange={() => toggleOutcome(outcome)}
-                  onSelect={(event) => event.preventDefault()}
-                >
-                  {OUTCOME_LABELS[outcome]}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <OutcomeFilter
+            value={selectedOutcomes}
+            onChange={(outcomes) =>
+              updateFilters({
+                ...filters,
+                outcomes: outcomes.length > 0 ? outcomes : undefined,
+              })
+            }
+          />
         </div>
 
         <div className="grid gap-2">
           <Label className="text-xs">Date range</Label>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="relative">
-              <CalendarDays className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                type="date"
-                value={filters.createdFrom ?? ''}
-                max={filters.createdTo}
-                onChange={(event) =>
-                  updateFilters({
-                    ...filters,
-                    createdFrom: event.target.value || undefined,
-                  })
-                }
-                className="pl-9"
-                aria-label="Start date"
-              />
-            </div>
-            <div className="relative">
-              <CalendarDays className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                type="date"
-                value={filters.createdTo ?? ''}
-                min={filters.createdFrom}
-                onChange={(event) =>
-                  updateFilters({
-                    ...filters,
-                    createdTo: event.target.value || undefined,
-                  })
-                }
-                className="pl-9"
-                aria-label="End date"
-              />
-            </div>
-          </div>
+          <DateRangePicker
+            value={{ from: filters.createdFrom, to: filters.createdTo }}
+            onChange={(range) =>
+              updateFilters({
+                ...filters,
+                createdFrom: range.from,
+                createdTo: range.to,
+              })
+            }
+          />
         </div>
 
         <Button
@@ -215,47 +155,4 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
       </div>
     </section>
   );
-}
-
-function FilterSelect<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: Record<T, string>;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label className="text-xs">{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL_VALUE}>All</SelectItem>
-          {Object.entries(options).map(([optionValue, optionLabel]) => (
-            <SelectItem key={optionValue} value={optionValue}>
-              {optionLabel as string}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
-
-function formatOutcomeSelection(outcomes: RiskLevel[]) {
-  if (outcomes.length === 0) {
-    return 'All outcomes';
-  }
-
-  if (outcomes.length === 1) {
-    return OUTCOME_LABELS[outcomes[0]];
-  }
-
-  return `${outcomes.length} outcomes`;
 }
