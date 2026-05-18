@@ -56,7 +56,12 @@ export function AdminAttemptsPage() {
         ) : attemptsQuery.isError ? (
           <div className="border-destructive/20 bg-card rounded-lg border p-6">
             <h2 className="font-semibold">Could not load admin attempts</h2>
-            <Button onClick={() => attemptsQuery.refetch()} variant="outline" size="sm" className="mt-4">
+            <Button
+              onClick={() => attemptsQuery.refetch()}
+              variant="outline"
+              size="sm"
+              className="mt-4"
+            >
               <RefreshCcw className="h-4 w-4" />
               Retry
             </Button>
@@ -87,7 +92,7 @@ function AttemptListSkeleton() {
             </div>
             <div className="space-y-2">
               <Skeleton className="h-5 w-72 max-w-full" />
-              <Skeleton className="h-4 w-[32rem] max-w-full" />
+              <Skeleton className="h-4 w-lg max-w-full" />
             </div>
           </div>
         </div>
