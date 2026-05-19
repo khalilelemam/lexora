@@ -301,6 +301,8 @@ function encodeCursor(row: AttemptListRow) {
   ).toString('base64url');
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function decodeCursor(cursor?: string): AttemptCursor | null {
   if (!cursor) {
     return null;
@@ -313,7 +315,12 @@ function decodeCursor(cursor?: string): AttemptCursor | null {
     };
     const createdAt = typeof decoded.createdAt === 'string' ? new Date(decoded.createdAt) : null;
 
-    if (!createdAt || Number.isNaN(createdAt.getTime()) || typeof decoded.attemptId !== 'string') {
+    if (
+      !createdAt ||
+      Number.isNaN(createdAt.getTime()) ||
+      typeof decoded.attemptId !== 'string' ||
+      !UUID_RE.test(decoded.attemptId)
+    ) {
       return null;
     }
 

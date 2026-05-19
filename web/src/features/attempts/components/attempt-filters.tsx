@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,13 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
     filters.createdTo,
   );
 
+  // Ref keeps the latest filters available to the debounce effect without
+  // re-triggering it when unrelated filters (type, outcome, date) change.
+  const filtersRef = useRef(filters);
+  useEffect(() => {
+    filtersRef.current = filters;
+  });
+
   const updateFilters = useCallback(
     (next: AttemptFilters) => {
       const withoutCursor = { ...next };
@@ -47,12 +54,13 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
 
   useEffect(() => {
     const normalizedQuery = debouncedQuery.trim() || undefined;
-    if ((filters.query ?? undefined) === normalizedQuery) {
+    const current = filtersRef.current;
+    if ((current.query ?? undefined) === normalizedQuery) {
       return;
     }
 
-    updateFilters({ ...filters, query: normalizedQuery });
-  }, [debouncedQuery, filters, updateFilters]);
+    updateFilters({ ...current, query: normalizedQuery });
+  }, [debouncedQuery, updateFilters]);
 
   return (
     <section className="border-border bg-card rounded-lg border p-4 shadow-sm">
@@ -68,7 +76,7 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
         </div>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(260px,1fr)_170px_190px_minmax(260px,1fr)_auto] xl:items-end">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(200px,1fr)_170px_190px_minmax(200px,1fr)_auto] xl:items-end">
         <div className="grid gap-2">
           <Label htmlFor="test-search" className="text-xs">
             Search
@@ -144,6 +152,7 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
           type="button"
           variant="ghost"
           disabled={!hasFilters}
+          className="md:col-span-2 md:justify-self-end xl:col-span-1"
           onClick={() => {
             setQueryDraft('');
             onChange({ limit: filters.limit });

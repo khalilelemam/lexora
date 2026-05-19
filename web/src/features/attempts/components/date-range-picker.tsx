@@ -133,7 +133,7 @@ function MonthCalendar({
   const days = useMemo(() => getCalendarDays(month), [month]);
 
   return (
-    <div className="w-[17.5rem]">
+    <div className="w-70">
       <div className="mb-3 text-center text-sm font-medium">{formatMonthYear(month)}</div>
       <div className="text-muted-foreground grid grid-cols-7 gap-1 text-center text-xs">
         {WEEKDAYS.map((weekday) => (
@@ -185,7 +185,7 @@ function QuickRangeButton({
       variant="outline"
       size="sm"
       onClick={() => {
-        const today = utcToday();
+        const today = localDateAsUtcMidnight();
         onChange({
           from: formatDateKey(addDays(today, -(days - 1))),
           to: formatDateKey(today),
@@ -274,9 +274,16 @@ function addDays(date: Date, days: number) {
   return nextDate;
 }
 
-function utcToday() {
-  const today = new Date();
-  return new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+/**
+ * Returns the user's local "today" as a UTC midnight Date.
+ *
+ * Local-time getters are intentional — using UTC getters would give
+ * "yesterday" for users in positive UTC offsets after local midnight
+ * (e.g., UTC+5 at 2am local → UTC 9pm previous day).
+ */
+function localDateAsUtcMidnight() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 }
 
 function isBeforeDate(date: Date, comparison: Date) {
