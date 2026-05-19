@@ -297,10 +297,11 @@ export function TaskDisplay({
       >
         <div
           className={cn(
-            'min-h-0 w-full flex-1 overflow-y-auto',
+            'min-h-0 w-full flex-1',
+            preview ? 'overflow-hidden' : 'overflow-y-auto',
             isShortContent && 'flex items-center justify-center',
           )}
-          style={{ scrollbarWidth: 'none' }}
+          style={preview ? undefined : { scrollbarWidth: 'none' }}
         >
           {isShortContent ? (
             <div className="flex flex-col items-center justify-center gap-6">

@@ -2,19 +2,17 @@ import 'server-only';
 
 import {
   AttemptOutcome as PrismaAttemptOutcome,
-  AttemptTaskType as PrismaAttemptTaskType,
   CalibrationMode as PrismaCalibrationMode,
   TestMode as PrismaTestMode,
 } from '@/generated/prisma/client';
 import { prisma } from '@/lib/prisma';
 
-import type { AttemptTaskType, CalibrationMode, RiskLevel, TestMode } from '../types';
+import type { CalibrationMode, RiskLevel, TestMode } from '../types';
 
 export interface UpsertTestAttemptRecordParams {
   attemptId: string;
   userId: string;
   testType: TestMode;
-  taskType: AttemptTaskType;
   outcome: RiskLevel;
   modelVersion: string;
   calibrationMode: CalibrationMode;
@@ -34,7 +32,6 @@ export async function upsertTestAttemptRecord(
       attemptId: params.attemptId,
       userId: params.userId,
       testType: mapTestMode(params.testType),
-      taskType: mapAttemptTaskType(params.taskType),
       outcome: mapOutcome(params.outcome),
       modelVersion: params.modelVersion,
       calibrationMode: mapCalibrationMode(params.calibrationMode),
@@ -46,7 +43,6 @@ export async function upsertTestAttemptRecord(
     },
     update: {
       testType: mapTestMode(params.testType),
-      taskType: mapAttemptTaskType(params.taskType),
       outcome: mapOutcome(params.outcome),
       modelVersion: params.modelVersion,
       calibrationMode: mapCalibrationMode(params.calibrationMode),
@@ -61,24 +57,6 @@ export async function upsertTestAttemptRecord(
 
 function mapTestMode(testType: TestMode): PrismaTestMode {
   return testType === 'tobii' ? PrismaTestMode.TOBII : PrismaTestMode.WEBCAM;
-}
-
-function mapAttemptTaskType(taskType: AttemptTaskType): PrismaAttemptTaskType {
-  switch (taskType) {
-    case 'full-battery':
-      return PrismaAttemptTaskType.FULL_BATTERY;
-    case 'paragraph':
-      return PrismaAttemptTaskType.PARAGRAPH;
-    case 'syllables':
-      return PrismaAttemptTaskType.SYLLABLES;
-    case 'pseudo-words':
-      return PrismaAttemptTaskType.PSEUDO_WORDS;
-    case 'meaningful-text':
-      return PrismaAttemptTaskType.MEANINGFUL_TEXT;
-  }
-
-  const exhaustiveCheck: never = taskType;
-  throw new Error(`Unsupported attempt task type: ${exhaustiveCheck}`);
 }
 
 function mapOutcome(outcome: RiskLevel): PrismaAttemptOutcome {

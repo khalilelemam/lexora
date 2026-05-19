@@ -6,6 +6,7 @@ import { defineConfig } from 'prisma/config';
 dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 
 const datasourceUrl = process.env['DATABASE_URL'];
+const shadowDatabaseUrl = process.env['SHADOW_DATABASE_URL'];
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -15,6 +16,7 @@ export default defineConfig({
   datasource: datasourceUrl
     ? {
         url: datasourceUrl,
+        shadowDatabaseUrl,
       }
     : undefined,
 });

@@ -135,10 +135,16 @@ export function useWebcamTestController() {
     const result = await submitWebcamTest({
       attempt: {
         attemptId: getOrCreateAttemptId(),
-        taskType: 'paragraph',
         age: webcamState.intake.age,
         label: webcamState.intake.label,
         calibrationMode: requestedCalibrationMode,
+        contentSnapshot: {
+          version: 1,
+          primaryTask: 'paragraph',
+          tasks: {
+            paragraph: taskContent,
+          },
+        },
       },
       gazeData: gazeDataRef.current,
       screenWidth: window.screen.width,
@@ -152,7 +158,7 @@ export function useWebcamTestController() {
     }
 
     dispatch({ type: 'SUBMIT_ERROR', error: result.error });
-  }, [dispatch, getOrCreateAttemptId, requestedCalibrationMode, webcamState.intake]);
+  }, [dispatch, getOrCreateAttemptId, requestedCalibrationMode, taskContent, webcamState.intake]);
 
   const handleNewTest = useCallback(() => {
     resetAttemptId();

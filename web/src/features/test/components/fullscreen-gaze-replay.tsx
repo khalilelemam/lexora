@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, type ReactNode } from 'react';
 import { X, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CALIBRATION_POINTS, AOI_Y_BOUNDS } from '../lib/constants';
@@ -26,6 +26,7 @@ interface FullscreenGazeReplayProps {
   features: GazeFeature[];
   /** Called when user closes the overlay */
   onClose: () => void;
+  toolbarSlot?: ReactNode;
 }
 
 /**
@@ -40,8 +41,19 @@ export function FullscreenGazeReplay({
   content,
   features,
   onClose,
+  toolbarSlot,
 }: FullscreenGazeReplayProps) {
   const replay = useGazeReplay({ features, active: true });
+
+  // Lock body scroll while the overlay is mounted to prevent
+  // the background page from scrolling behind the fixed overlay.
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
 
   const aoiX = useMemo(() => getAOIXBounds(), []);
   const aoiY = AOI_Y_BOUNDS;
@@ -178,6 +190,13 @@ export function FullscreenGazeReplay({
             </button>
           ))}
         </div>
+
+        {toolbarSlot ? (
+          <>
+            <div className="h-4 w-px bg-[#E8E0D4]" />
+            {toolbarSlot}
+          </>
+        ) : null}
 
         <div className="h-4 w-px bg-[#E8E0D4]" />
 

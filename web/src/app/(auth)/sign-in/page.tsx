@@ -45,7 +45,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   }
 
   return (
-    <div className="relative flex w-full max-w-[420px] flex-col items-center">
+    <div className="relative flex w-full max-w-105 flex-col items-center">
       <FloatingOrbs />
 
       {/* Theme toggle */}

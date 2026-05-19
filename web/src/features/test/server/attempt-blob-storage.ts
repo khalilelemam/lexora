@@ -39,3 +39,10 @@ export async function uploadAttemptJson(
 
   return blobClient.url;
 }
+
+export async function downloadAttemptJson(containerClient: ContainerClient, path: string) {
+  const blobClient = containerClient.getBlockBlobClient(path);
+  const buffer = await blobClient.downloadToBuffer();
+
+  return JSON.parse(buffer.toString('utf8')) as unknown;
+}
