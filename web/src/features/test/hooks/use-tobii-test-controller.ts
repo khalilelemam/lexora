@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { submitTobiiTest } from '@/features/test/actions/submit-tobii-test';
@@ -65,6 +65,13 @@ export function useTobiiTestController() {
     setLineCenters,
     resetAll,
   } = useTobiiTaskBuffers();
+
+  // Screenshots captured from TaskDisplay for export visualizations.
+  const screenshotsRef = useRef<Record<string, string>>({});
+
+  const setScreenshot = useCallback((taskType: string, dataUrl: string) => {
+    screenshotsRef.current[taskType] = dataUrl;
+  }, []);
 
   useEffect(() => {
     checkStatus();
@@ -146,6 +153,8 @@ export function useTobiiTestController() {
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
       lineCenters: lineCentersRef.current,
+      screenshots:
+        Object.keys(screenshotsRef.current).length > 0 ? screenshotsRef.current : undefined,
     });
 
     if (result.success) {
@@ -169,6 +178,7 @@ export function useTobiiTestController() {
   const handleNewTest = useCallback(() => {
     resetAttemptId();
     resetAll();
+    screenshotsRef.current = {};
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
   }, [dispatch, resetAll, resetAttemptId]);
@@ -230,5 +240,6 @@ export function useTobiiTestController() {
     confirmHardware: () => dispatch({ type: 'HARDWARE_CONFIRMED' }),
     completeEducation: () => dispatch({ type: 'EDUCATION_COMPLETE' }),
     startFromIdle: () => dispatch({ type: 'START' }),
+    setScreenshot,
   };
 }

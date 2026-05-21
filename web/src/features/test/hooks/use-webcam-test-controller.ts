@@ -54,6 +54,13 @@ export function useWebcamTestController() {
     null,
   );
 
+  // Screenshot captured from TaskDisplay for export visualizations.
+  const screenshotRef = useRef<string | null>(null);
+
+  const setScreenshot = useCallback((_taskType: string, dataUrl: string) => {
+    screenshotRef.current = dataUrl;
+  }, []);
+
   const webcamGaze = useWebcamGaze({
     enabled: true,
     onGazePoint: useCallback((point: WebcamGazePoint) => {
@@ -150,6 +157,7 @@ export function useWebcamTestController() {
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
       lineCenters: lineCentersRef.current,
+      screenshots: screenshotRef.current ? { paragraph: screenshotRef.current } : undefined,
     });
 
     if (result.success) {
@@ -167,6 +175,7 @@ export function useWebcamTestController() {
     setReviewGazeData([]);
     setLastTaskGazePosition(null);
     setTaskContent('');
+    screenshotRef.current = null;
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
   }, [dispatch, resetAttemptId]);
@@ -231,5 +240,6 @@ export function useWebcamTestController() {
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
     completeEducation: () => dispatch({ type: 'EDUCATION_COMPLETE' }),
     startFromIdle: () => dispatch({ type: 'START' }),
+    setScreenshot,
   };
 }

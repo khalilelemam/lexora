@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 import { BookOpen, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { captureTaskScreenshot } from '@/features/test/lib/capture-task-screenshot';
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,11 @@ export interface TaskDisplayProps {
    * the exact same text layout for gaze overlay.
    */
   preview?: boolean;
+  /**
+   * Optional: called once with a JPEG data URL of the reading surface.
+   * Used to capture the exact visual layout for export visualizations.
+   */
+  onScreenshotReady?: (dataUrl: string) => void;
 }
 
 /**
@@ -69,6 +75,7 @@ export function TaskDisplay({
   isCollecting,
   onDone,
   onLineCentersReady,
+  onScreenshotReady,
   preview = false,
 }: TaskDisplayProps) {
   const [showDialog, setShowDialog] = useState(false);
@@ -82,6 +89,15 @@ export function TaskDisplay({
   const textContentRef = useRef<HTMLDivElement>(null);
   // Ref to the reading zone container for overflow detection
   const readingZoneRef = useRef<HTMLDivElement>(null);
+  // Ref to the root element for screenshot capture
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Track if screenshot was already captured (fire-once)
+  const screenshotCapturedRef = useRef(false);
+  // Stable ref for the screenshot callback to avoid effect re-runs
+  const onScreenshotReadyRef = useRef(onScreenshotReady);
+  useEffect(() => {
+    onScreenshotReadyRef.current = onScreenshotReady;
+  }, [onScreenshotReady]);
 
   // Keep a ref so timers can read the *current* value without stale closures
   const pointCountRef = useRef(pointCount);
@@ -92,6 +108,36 @@ export function TaskDisplay({
   const isSyllables = taskType === 'syllables';
   const isPseudoWords = taskType === 'pseudo-words';
   const isShortContent = isSyllables || isPseudoWords;
+
+  // ─── Screenshot capture ────────────────────────────
+  // Fires once when isCollecting becomes true (text is rendered,
+  // no overlays present). Best-effort — never blocks the test.
+  useEffect(() => {
+    if (
+      !isCollecting ||
+      preview ||
+      screenshotCapturedRef.current ||
+      !rootRef.current ||
+      !onScreenshotReadyRef.current
+    ) {
+      return;
+    }
+
+    screenshotCapturedRef.current = true;
+
+    // Small delay to ensure the browser has fully painted the text.
+    const timer = setTimeout(() => {
+      if (rootRef.current) {
+        void captureTaskScreenshot(rootRef.current).then((dataUrl) => {
+          if (dataUrl) {
+            onScreenshotReadyRef.current?.(dataUrl);
+          }
+        });
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [isCollecting, preview]);
 
   // ─── Trigger the done-reading dialog ────────────────
 
@@ -278,7 +324,7 @@ export function TaskDisplay({
   // ─── Render ─────────────────────────────────────────
 
   return (
-    <div className={cn('fixed inset-0 z-40 bg-[#FDF8F0]', !preview && 'cursor-none')}>
+    <div ref={rootRef} className={cn('fixed inset-0 z-40 bg-[#FDF8F0]', !preview && 'cursor-none')}>
       {/*
        * Reading zone — text flows naturally from the top.
        * Horizontal bounds: 20%–80% of screen (matches calibration X: 0.2–0.8)
