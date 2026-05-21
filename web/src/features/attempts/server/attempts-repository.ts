@@ -2,11 +2,7 @@ import 'server-only';
 
 import { Buffer } from 'node:buffer';
 
-import {
-  AttemptOutcome,
-  Prisma,
-  TestMode as PrismaTestMode,
-} from '@/generated/prisma/client';
+import { AttemptOutcome, Prisma, TestMode as PrismaTestMode } from '@/generated/prisma/client';
 import { prisma } from '@/lib/prisma';
 import {
   createAttemptBlobContainerClient,
@@ -216,4 +212,3 @@ function encodeCursor(row: AttemptListRow) {
     'utf8',
   ).toString('base64url');
 }
-

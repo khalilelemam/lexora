@@ -108,4 +108,3 @@ function toFilterBody(filters: AttemptFilters): Record<string, unknown> {
 
   return body;
 }
-
