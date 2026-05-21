@@ -57,6 +57,7 @@ export function TobiiTestScreen() {
     confirmHardware,
     completeEducation,
     startFromIdle,
+    setScreenshot,
   } = useTobiiTestController();
 
   const visualizations = useMemo(
@@ -136,6 +137,7 @@ export function TobiiTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => setLineCenters('syllables', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('syllables', dataUrl)}
           />
         );
 
@@ -161,6 +163,7 @@ export function TobiiTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => setLineCenters('pseudo-words', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('pseudo-words', dataUrl)}
           />
         );
 
@@ -186,6 +189,7 @@ export function TobiiTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => setLineCenters('meaningful-text', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('meaningful-text', dataUrl)}
           />
         );
 

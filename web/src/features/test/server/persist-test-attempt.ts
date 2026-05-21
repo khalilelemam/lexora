@@ -5,6 +5,7 @@ import {
   createAttemptBlobContainerClient,
   ensureAttemptBlobContainer,
   uploadAttemptJson,
+  uploadAttemptImage,
 } from './attempt-blob-storage';
 import { upsertTestAttemptRecord } from './test-attempt-repository';
 
@@ -25,6 +26,8 @@ export interface PersistTestAttemptParams {
   rawDataConsented: boolean;
   rawPayload?: unknown;
   derivedPayload: unknown;
+  /** Task screenshots captured during the test (taskType → JPEG data URL) */
+  screenshots?: Record<string, string>;
 }
 
 export async function persistTestAttempt(params: PersistTestAttemptParams): Promise<void> {
@@ -56,6 +59,29 @@ export async function persistTestAttempt(params: PersistTestAttemptParams): Prom
         error,
       });
     }
+  }
+
+  // Upload task screenshots (best-effort, non-blocking to persistence).
+  if (params.screenshots) {
+    const screenshotUploads = Object.entries(params.screenshots).map(async ([taskKey, dataUrl]) => {
+      const normalizedKey = normalizeScreenshotKey(taskKey);
+      try {
+        await uploadAttemptImage(
+          containerClient,
+          `screenshots/${params.attemptId}_${normalizedKey}.jpg`,
+          dataUrl,
+        );
+      } catch (error) {
+        console.warn('[persistTestAttempt] screenshot upload failed', {
+          attemptId: params.attemptId,
+          taskKey: normalizedKey,
+          error,
+        });
+      }
+    });
+
+    // Upload all screenshots in parallel.
+    await Promise.all(screenshotUploads);
   }
 
   await upsertTestAttemptRecord({
@@ -105,6 +131,19 @@ function formatAttemptTimestamp(date: Date) {
 function normalizeOptionalText(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+/**
+ * Maps full TaskType names to the short export keys used in blob paths.
+ * e.g. 'pseudo-words' → 'pseudo', 'meaningful-text' → 'meaningful'
+ */
+const SCREENSHOT_KEY_MAP: Record<string, string> = {
+  'pseudo-words': 'pseudo',
+  'meaningful-text': 'meaningful',
+};
+
+function normalizeScreenshotKey(taskKey: string): string {
+  return SCREENSHOT_KEY_MAP[taskKey] ?? taskKey;
 }
 
 function buildDerivedArtifact(

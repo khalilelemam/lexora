@@ -48,6 +48,7 @@ export async function submitTobiiTestAttempt(
         rawDataConsented: user.rawDataConsent,
         rawPayload: mlInput,
         derivedPayload: prediction.rawResponse,
+        screenshots: input.screenshots,
       });
     } catch (persistenceError) {
       logPersistenceFailure(
@@ -92,6 +93,7 @@ export async function submitWebcamTestAttempt(
         rawDataConsented: user.rawDataConsent,
         rawPayload: mlInput,
         derivedPayload: prediction.rawResponse,
+        screenshots: input.screenshots,
       });
     } catch (persistenceError) {
       logPersistenceFailure(

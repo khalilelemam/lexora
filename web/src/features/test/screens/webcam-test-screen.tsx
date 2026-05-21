@@ -47,6 +47,7 @@ export function WebcamTestScreen() {
     completeIntake,
     completeEducation,
     startFromIdle,
+    setScreenshot,
   } = useWebcamTestController();
 
   const renderState = () => {
@@ -122,6 +123,7 @@ export function WebcamTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={handleLineCentersReady}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('paragraph', dataUrl)}
           />
         );
 
