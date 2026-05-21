@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { RefreshCcw, Shield } from 'lucide-react';
+import { Download, RefreshCcw, Shield } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useAdminAttempts } from '@/features/attempts/hooks/use-attempts';
 import type { AttemptFilters } from '@/features/attempts/types';
 
 import { AttemptFiltersPanel } from './attempt-filters';
+import { ExportDialog } from './export-dialog';
 import { InfiniteScrollSentinel } from './infinite-scroll-sentinel';
 import { AttemptList } from './attempt-list';
 
@@ -20,6 +21,7 @@ const DEFAULT_FILTERS: AttemptFilters = {
 
 export function AdminAttemptsPage() {
   const [filters, setFilters] = useState<AttemptFilters>(DEFAULT_FILTERS);
+  const [exportOpen, setExportOpen] = useState(false);
   const attemptsQuery = useAdminAttempts(filters);
   const attempts = useMemo(
     () => attemptsQuery.data?.pages.flatMap((page) => page.attempts) ?? [],
@@ -47,14 +49,22 @@ export function AdminAttemptsPage() {
         </header>
 
         <section className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Shield className="text-primary h-5 w-5" />
-            <h1 className="text-2xl font-semibold tracking-normal">Admin Dashboard</h1>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Shield className="text-primary h-5 w-5" />
+              <h1 className="text-2xl font-semibold tracking-normal">Admin Dashboard</h1>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm">
             Admin view of saved screening tests across users.
           </p>
         </section>
+
+        <ExportDialog open={exportOpen} onOpenChange={setExportOpen} filters={filters} />
 
         <AttemptFiltersPanel filters={filters} onChange={setFilters} resultCount={total} />
 
