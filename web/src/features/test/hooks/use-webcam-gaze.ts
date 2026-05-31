@@ -100,7 +100,9 @@ type VisionTasksModule = {
 };
 
 const MEDIAPIPE_VERSION = process.env.NEXT_PUBLIC_MEDIAPIPE_VERSION ?? '0.10.32';
-const MEDIAPIPE_MODEL_URL = process.env.NEXT_PUBLIC_MEDIAPIPE_MODEL_URL ?? 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+const MEDIAPIPE_MODEL_URL =
+  process.env.NEXT_PUBLIC_MEDIAPIPE_MODEL_URL ??
+  'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 const WEBCAM_WIDTH = Number(process.env.NEXT_PUBLIC_WEBCAM_WIDTH) || 640;
 const WEBCAM_HEIGHT = Number(process.env.NEXT_PUBLIC_WEBCAM_HEIGHT) || 480;
 
@@ -153,7 +155,11 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   const initCamera = useCallback(async (videoElement: HTMLVideoElement) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: WEBCAM_WIDTH }, height: { ideal: WEBCAM_HEIGHT }, facingMode: 'user' },
+        video: {
+          width: { ideal: WEBCAM_WIDTH },
+          height: { ideal: WEBCAM_HEIGHT },
+          facingMode: 'user',
+        },
       });
       videoElement.srcObject = stream;
       await videoElement.play();
@@ -214,7 +220,12 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
       setError(null);
     } catch (err) {
       console.error('MediaPipe Model Error:', err);
-      const message = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Unknown error during initialization';
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'string'
+            ? err
+            : 'Unknown error during initialization';
       setError(`Failed to load face tracking model: ${message}`);
       setModelReady(false);
     }

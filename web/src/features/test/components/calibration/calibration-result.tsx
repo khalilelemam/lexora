@@ -23,7 +23,7 @@ const QUALITY_UI = {
     bg: 'bg-emerald-50',
     border: 'border-emerald-200',
     ringColor: '#10b981',
-    message: 'Your calibration is highly accurate. You\'re ready to start the test.',
+    message: "Your calibration is highly accurate. You're ready to start the test.",
   },
   acceptable: {
     icon: AlertTriangle,
@@ -71,27 +71,39 @@ export function CalibrationResult({
 
   return (
     <div
-      className="flex flex-col items-center gap-6 w-full max-w-3xl mx-auto px-4"
+      className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-4"
       style={{ animation: 'float-up 0.5s ease-out' }}
     >
       {/* Logo */}
       <LexoraLogo size="sm" className="mb-1" />
 
-      <h2 className="font-bold text-2xl tracking-tight text-[#2D2A26]">Calibration Complete</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-[#2D2A26]">Calibration Complete</h2>
 
       {/* Main card — horizontal layout */}
-      <div className={cn(
-        'w-full rounded-2xl border p-6 sm:p-8',
-        'flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10',
-        quality.bg, quality.border,
-      )}>
+      <div
+        className={cn(
+          'w-full rounded-2xl border p-6 sm:p-8',
+          'flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-10',
+          quality.bg,
+          quality.border,
+        )}
+      >
         {/* Left: Accuracy gauge */}
-        <div className="flex flex-col items-center shrink-0">
-          <div className="relative w-32 h-32">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(212,203,189,0.4)" strokeWidth="8" />
+        <div className="flex shrink-0 flex-col items-center">
+          <div className="relative h-32 w-32">
+            <svg className="h-full w-full -rotate-90" viewBox="0 0 120 120">
               <circle
-                cx="60" cy="60" r="52"
+                cx="60"
+                cy="60"
+                r="52"
+                fill="none"
+                stroke="rgba(212,203,189,0.4)"
+                strokeWidth="8"
+              />
+              <circle
+                cx="60"
+                cy="60"
+                r="52"
                 fill="none"
                 stroke={quality.ringColor}
                 strokeWidth="8"
@@ -103,36 +115,33 @@ export function CalibrationResult({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className={cn('text-3xl font-bold', quality.color)}>{displayScore}%</span>
-              <span className="text-[#8B857E] text-[11px]">accuracy</span>
+              <span className="text-[11px] text-[#8B857E]">accuracy</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 mt-3">
-            <Icon className={cn('w-4 h-4', quality.color)} />
-            <span className={cn('font-semibold text-sm', quality.color)}>
-              {quality.label}
-            </span>
+          <div className="mt-3 flex items-center gap-1.5">
+            <Icon className={cn('h-4 w-4', quality.color)} />
+            <span className={cn('text-sm font-semibold', quality.color)}>{quality.label}</span>
           </div>
         </div>
 
         {/* Right: Details + actions */}
-        <div className="flex flex-col gap-4 flex-1 min-w-0 text-center sm:text-left">
-          <p className="text-[#6B6560] text-sm leading-relaxed">
-            {quality.message}
-          </p>
+        <div className="flex min-w-0 flex-1 flex-col gap-4 text-center sm:text-left">
+          <p className="text-sm leading-relaxed text-[#6B6560]">{quality.message}</p>
 
           {/* Validation warning */}
           {quickValidationAccuracy != null && !quickValidationPassed && (
-            <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-700 text-sm leading-relaxed">
-              Validation score is below 70%. The test can still proceed, but retrying is recommended.
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-700">
+              Validation score is below 70%. The test can still proceed, but retrying is
+              recommended.
             </div>
           )}
 
           {/* Tips for poor calibration */}
           {result.quality === 'poor' && (
-            <div className="bg-white/80 border border-[#E8E0D4] p-4 rounded-xl text-[#6B6560] text-sm">
-              <p className="font-semibold text-[#2D2A26] mb-2">Tips for better results:</p>
-              <ul className="space-y-1.5 list-disc list-inside text-[13px]">
+            <div className="rounded-xl border border-[#E8E0D4] bg-white/80 p-4 text-sm text-[#6B6560]">
+              <p className="mb-2 font-semibold text-[#2D2A26]">Tips for better results:</p>
+              <ul className="list-inside list-disc space-y-1.5 text-[13px]">
                 <li>Keep your face centered and stable</li>
                 <li>Use even front lighting — avoid backlighting</li>
                 <li>Use only your eyes to follow the target</li>
@@ -142,19 +151,19 @@ export function CalibrationResult({
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-1 justify-center sm:justify-start">
+          <div className="flex justify-center gap-3 pt-1 sm:justify-start">
             <Button
               variant="outline"
               onClick={onRetry}
               className="border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26]"
             >
-              <RefreshCw className="mr-2 w-4 h-4" />
+              <RefreshCw className="mr-2 h-4 w-4" />
               Retry
             </Button>
             {canProceed && (
               <Button
                 onClick={onContinue}
-                className="px-8 bg-[#4A7C59] hover:bg-[#3D6A4B] text-white"
+                className="bg-[#4A7C59] px-8 text-white hover:bg-[#3D6A4B]"
               >
                 Continue to Test
               </Button>
@@ -162,7 +171,7 @@ export function CalibrationResult({
           </div>
 
           {result.quality === 'poor' && blockOnPoor && (
-            <p className="text-red-600 text-xs">
+            <p className="text-xs text-red-600">
               Calibration quality is too low to proceed. Please retry.
             </p>
           )}

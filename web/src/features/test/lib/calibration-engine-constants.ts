@@ -1,5 +1,3 @@
-
-
 /**
  * Core calibration engine constants.
  *
@@ -94,7 +92,10 @@ export const VALIDATION_HOLD_MS = envNumber('NEXT_PUBLIC_VALIDATION_HOLD_MS', 12
  *
  * Env: NEXT_PUBLIC_VALIDATION_THRESHOLD (default: 0.12)
  */
-export const VALIDATION_THRESHOLD_SCREEN_DIAGONAL = envFloat('NEXT_PUBLIC_VALIDATION_THRESHOLD', 0.12);
+export const VALIDATION_THRESHOLD_SCREEN_DIAGONAL = envFloat(
+  'NEXT_PUBLIC_VALIDATION_THRESHOLD',
+  0.12,
+);
 
 /** Minimum gaze samples required per validation point for a valid score. */
 export const VALIDATION_MIN_SAMPLES_PER_POINT = 10;

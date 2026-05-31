@@ -37,7 +37,8 @@ See [API.md](API.md) for detailed documentation with examples.
 - `POST /v1/eye-tracker/predict` - Analyze eye tracker data from 3 reading tasks
 - `POST /v1/webcam/predict` - Analyze raw webcam gaze data
 
-Both endpoints return dyslexia probability (0.0-1.0), risk level (low/medium/high), and confidence score.
+Both endpoints return dyslexia probability (0.0-1.0), risk level (low/medium/high),
+confidence score, and `modelVersion` sourced from the service version in `pyproject.toml`.
 
 ## Configuration
 
@@ -119,8 +120,8 @@ docker pull ghcr.io/khalil-elemam/lexora-ml:latest
 docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:latest
 
 # Pin to a specific version
-docker pull ghcr.io/khalil-elemam/lexora-ml:1.0.0
-docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:1.0.0
+docker pull ghcr.io/khalil-elemam/lexora-ml:1.2.1
+docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:1.2.1
 
 # Pass environment variables
 docker run -p 8001:8001 \
@@ -134,7 +135,7 @@ docker run -p 8001:8001 \
 ```yaml
 services:
   ml-service:
-    image: ghcr.io/khalil-elemam/lexora-ml:1.0.0
+    image: ghcr.io/khalil-elemam/lexora-ml:1.2.1
     ports:
       - "8001:8001"
     environment:

@@ -65,7 +65,7 @@ async function handleMLError(error: unknown): Promise<never> {
   if (error instanceof MLServiceError) throw error;
 
   if (error instanceof HTTPError) {
-    const errorBody = await error.response.json().catch(() => null) as MLErrorResponse | null;
+    const errorBody = (await error.response.json().catch(() => null)) as MLErrorResponse | null;
     throw new MLServiceError(
       errorBody?.code ?? `HTTP_${error.response.status}`,
       errorBody?.message ?? `ML service returned ${error.response.status}`,
@@ -113,6 +113,7 @@ interface EyeTrackerPredictResponse {
   riskLevel: RiskLevel;
   confidence: number;
   metadata: { sequencesAnalyzed: number; totalFixations: number };
+  modelVersion: string;
   features: {
     syllables: EyeTrackerFeatureRow[];
     meaningful: EyeTrackerFeatureRow[];
@@ -140,6 +141,7 @@ interface WebcamPredictResponse {
   riskLevel: RiskLevel;
   confidence: number;
   metadata: { sequencesAnalyzed: number; totalFixations: number };
+  modelVersion: string;
   features: Array<{
     timestamp: number;
     durationMs: number;
@@ -151,12 +153,27 @@ interface WebcamPredictResponse {
   }>;
 }
 
+export interface DetailedPrediction<TResponse> {
+  result: PredictionResult;
+  rawResponse: TResponse;
+  modelVersion: string;
+}
+
 // ─── Public API ──────────────────────────────────────────
 
 export async function predictEyeTracker(input: EyeTrackerPredictInput): Promise<PredictionResult> {
+  const detailed = await predictEyeTrackerDetailed(input);
+  return detailed.result;
+}
+
+export async function predictEyeTrackerDetailed(
+  input: EyeTrackerPredictInput,
+): Promise<DetailedPrediction<EyeTrackerPredictResponse>> {
   try {
     const client = createMLClient();
-    const response = await client.post('v1/eye-tracker/predict', { json: input }).json<EyeTrackerPredictResponse>();
+    const response = await client
+      .post('v1/eye-tracker/predict', { json: input })
+      .json<EyeTrackerPredictResponse>();
 
     // Use meaningful-text features for the gaze replay (primary reading task).
     // Eye tracker features use saccadeVelocity instead of isRegression/isReturnSweep,
@@ -170,17 +187,23 @@ export async function predictEyeTracker(input: EyeTrackerPredictInput): Promise<
       saccadeAmplitude: f.saccadeAmplitude,
       // Regression = rightward-to-leftward movement in LTR text
       isRegression: i > 0 ? f.fixationX < rawFeatures[i - 1].fixationX : false,
-      isReturnSweep: i > 0
-        ? f.fixationY > rawFeatures[i - 1].fixationY + 0.03 && f.fixationX < rawFeatures[i - 1].fixationX
-        : false,
+      isReturnSweep:
+        i > 0
+          ? f.fixationY > rawFeatures[i - 1].fixationY + 0.03 &&
+            f.fixationX < rawFeatures[i - 1].fixationX
+          : false,
     }));
 
     return {
-      dyslexiaProbability: response.dyslexiaProbability,
-      riskLevel: response.riskLevel,
-      confidence: response.confidence,
-      metadata: response.metadata,
-      features,
+      result: {
+        dyslexiaProbability: response.dyslexiaProbability,
+        riskLevel: response.riskLevel,
+        confidence: response.confidence,
+        metadata: response.metadata,
+        features,
+      },
+      rawResponse: response,
+      modelVersion: response.modelVersion,
     };
   } catch (error) {
     return handleMLError(error);
@@ -188,24 +211,37 @@ export async function predictEyeTracker(input: EyeTrackerPredictInput): Promise<
 }
 
 export async function predictWebcam(input: WebcamPredictInput): Promise<PredictionResult> {
+  const detailed = await predictWebcamDetailed(input);
+  return detailed.result;
+}
+
+export async function predictWebcamDetailed(
+  input: WebcamPredictInput,
+): Promise<DetailedPrediction<WebcamPredictResponse>> {
   try {
     const client = createMLClient();
-    const response = await client.post('v1/webcam/predict', { json: input }).json<WebcamPredictResponse>();
+    const response = await client
+      .post('v1/webcam/predict', { json: input })
+      .json<WebcamPredictResponse>();
 
     return {
-      dyslexiaProbability: response.dyslexiaProbability,
-      riskLevel: response.riskLevel,
-      confidence: response.confidence,
-      metadata: response.metadata,
-      features: response.features.map((f) => ({
-        timestamp: f.timestamp,
-        durationMs: f.durationMs,
-        fixationX: f.fixationX,
-        fixationY: f.fixationY,
-        saccadeAmplitude: f.saccadeAmplitude,
-        isRegression: f.isRegression,
-        isReturnSweep: f.isReturnSweep,
-      })),
+      result: {
+        dyslexiaProbability: response.dyslexiaProbability,
+        riskLevel: response.riskLevel,
+        confidence: response.confidence,
+        metadata: response.metadata,
+        features: response.features.map((f) => ({
+          timestamp: f.timestamp,
+          durationMs: f.durationMs,
+          fixationX: f.fixationX,
+          fixationY: f.fixationY,
+          saccadeAmplitude: f.saccadeAmplitude,
+          isRegression: f.isRegression,
+          isReturnSweep: f.isReturnSweep,
+        })),
+      },
+      rawResponse: response,
+      modelVersion: response.modelVersion,
     };
   } catch (error) {
     return handleMLError(error);

@@ -46,17 +46,19 @@ export function CalibrationValidation({
   }
 
   return (
-    <div className="z-50 fixed inset-0 bg-[#FDF8F0] cursor-none">
+    <div className="fixed inset-0 z-50 cursor-none bg-[#FDF8F0]">
       {/* Bottom HUD — outside calibration area for consistency */}
-      <div className="bottom-0 left-0 right-0 absolute flex items-center justify-center h-16 pointer-events-none">
-        <div className="bg-white/85 backdrop-blur-md px-5 py-2.5 border border-[#E8E0D4] rounded-xl w-[min(420px,85vw)] shadow-sm">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[#8B857E] text-xs">Checking accuracy</span>
-            <span className="font-semibold text-[#2D2A26] text-xs">{currentStep} / {totalSteps}</span>
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-16 items-center justify-center">
+        <div className="w-[min(420px,85vw)] rounded-xl border border-[#E8E0D4] bg-white/85 px-5 py-2.5 shadow-sm backdrop-blur-md">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-xs text-[#8B857E]">Checking accuracy</span>
+            <span className="text-xs font-semibold text-[#2D2A26]">
+              {currentStep} / {totalSteps}
+            </span>
           </div>
-          <div className="bg-[#E8E0D4]/60 rounded-full h-1.5 overflow-hidden">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#E8E0D4]/60">
             <div
-              className="rounded-full h-full transition-all duration-150"
+              className="h-full rounded-full transition-all duration-150"
               style={{
                 width: `${Math.round(holdProgress * 100)}%`,
                 backgroundColor: resolvedMode === 'star' ? '#D97706' : '#4A7C59',
@@ -74,29 +76,29 @@ export function CalibrationValidation({
         >
           {resolvedMode === 'star' ? (
             /* Star mode: golden star target */
-            <div className="relative w-20 h-20 flex items-center justify-center">
+            <div className="relative flex h-20 w-20 items-center justify-center">
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
                   background: `conic-gradient(#D4A017 ${holdProgress * 360}deg, rgba(212,160,23,0.15) 0deg)`,
                 }}
               />
-              <div className="absolute inset-1.5 bg-[#FDF8F0] rounded-full" />
-              <svg className="relative z-10 w-8 h-8" viewBox="0 0 24 24" fill="#D4A017">
+              <div className="absolute inset-1.5 rounded-full bg-[#FDF8F0]" />
+              <svg className="relative z-10 h-8 w-8" viewBox="0 0 24 24" fill="#D4A017">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
             </div>
           ) : (
             /* Grid/default mode: charcoal dot */
-            <div className="relative w-20 h-20 flex items-center justify-center">
+            <div className="relative flex h-20 w-20 items-center justify-center">
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
                   background: `conic-gradient(#4A7C59 ${holdProgress * 360}deg, rgba(74,124,89,0.15) 0deg)`,
                 }}
               />
-              <div className="absolute inset-1.5 bg-[#FDF8F0] rounded-full flex items-center justify-center">
-                <div className="w-5 h-5 rounded-full bg-[#2D2A26] shadow-md" />
+              <div className="absolute inset-1.5 flex items-center justify-center rounded-full bg-[#FDF8F0]">
+                <div className="h-5 w-5 rounded-full bg-[#2D2A26] shadow-md" />
               </div>
             </div>
           )}
@@ -106,7 +108,7 @@ export function CalibrationValidation({
       {/* Gaze cursor — visible for all trackers during validation */}
       {gazeCursor && (
         <div
-          className="absolute bg-[#4A7C59]/80 shadow-[0_0_12px_rgba(74,124,89,0.8)] border border-white/80 rounded-full w-6 h-6 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10"
+          className="pointer-events-none absolute z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-[#4A7C59]/80 shadow-[0_0_12px_rgba(74,124,89,0.8)]"
           style={{ left: gazeCursor.x, top: gazeCursor.y }}
         />
       )}

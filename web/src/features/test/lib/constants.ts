@@ -38,11 +38,11 @@ export const CALIBRATION_POINTS = [
   { x: 0.65, y: 0.15, phase: 'STATIC' as const },
   { x: 0.8, y: 0.15, phase: 'STATIC' as const },
   // Row 2 (upper-mid: 30%)
-  { x: 0.2, y: 0.30, phase: 'STATIC' as const },
-  { x: 0.35, y: 0.30, phase: 'STATIC' as const },
-  { x: 0.5, y: 0.30, phase: 'STATIC' as const },
-  { x: 0.65, y: 0.30, phase: 'STATIC' as const },
-  { x: 0.8, y: 0.30, phase: 'STATIC' as const },
+  { x: 0.2, y: 0.3, phase: 'STATIC' as const },
+  { x: 0.35, y: 0.3, phase: 'STATIC' as const },
+  { x: 0.5, y: 0.3, phase: 'STATIC' as const },
+  { x: 0.65, y: 0.3, phase: 'STATIC' as const },
+  { x: 0.8, y: 0.3, phase: 'STATIC' as const },
   // Row 3 (lower-mid: 45%)
   { x: 0.2, y: 0.45, phase: 'STATIC' as const },
   { x: 0.35, y: 0.45, phase: 'STATIC' as const },
@@ -50,18 +50,18 @@ export const CALIBRATION_POINTS = [
   { x: 0.65, y: 0.45, phase: 'STATIC' as const },
   { x: 0.8, y: 0.45, phase: 'STATIC' as const },
   // Row 4 (bottom-inner: 60%)
-  { x: 0.2, y: 0.60, phase: 'STATIC' as const },
-  { x: 0.35, y: 0.60, phase: 'STATIC' as const },
-  { x: 0.5, y: 0.60, phase: 'STATIC' as const },
-  { x: 0.65, y: 0.60, phase: 'STATIC' as const },
-  { x: 0.8, y: 0.60, phase: 'STATIC' as const },
+  { x: 0.2, y: 0.6, phase: 'STATIC' as const },
+  { x: 0.35, y: 0.6, phase: 'STATIC' as const },
+  { x: 0.5, y: 0.6, phase: 'STATIC' as const },
+  { x: 0.65, y: 0.6, phase: 'STATIC' as const },
+  { x: 0.8, y: 0.6, phase: 'STATIC' as const },
 ] as const;
 
 /** Gaze AOI X bounds (screen-normalized). Matches Phase 1 static-dot bounds. */
-export const AOI_X_BOUNDS = { min: 0.20, max: 0.80 } as const;
+export const AOI_X_BOUNDS = { min: 0.2, max: 0.8 } as const;
 
 /** Gaze AOI Y bounds (screen-normalized). Matches Phase 1 static-dot bounds. */
-export const AOI_Y_BOUNDS = { min: 0.15, max: 0.60 } as const;
+export const AOI_Y_BOUNDS = { min: 0.15, max: 0.6 } as const;
 
 /**
  * Calibration quality thresholds (normalized error).
@@ -99,6 +99,7 @@ export const MIN_AUTO_DETECT_SECONDS = 8;
 
 /** Tobii steps for the StepIndicator */
 export const TOBII_STEPS = [
+  { key: 'intake', label: 'Pre-test' },
   { key: 'device-check', label: 'Device' },
   { key: 'calibrating', label: 'Calibration' },
   { key: 'task-syllables', label: 'Syllables' },
@@ -109,6 +110,7 @@ export const TOBII_STEPS = [
 
 /** Webcam steps for the StepIndicator */
 export const WEBCAM_STEPS = [
+  { key: 'intake', label: 'Pre-test' },
   { key: 'camera-setup', label: 'Camera' },
   { key: 'calibrating', label: 'Calibration' },
   { key: 'task-paragraph', label: 'Reading' },

@@ -1,5 +1,12 @@
 // ─── Test Modes ──────────────────────────────────────────
 export type TestMode = 'tobii' | 'webcam';
+export type CalibrationMode = 'grid' | 'star' | 'stickman';
+
+// ─── Pre-test Intake ─────────────────────────────────────
+export interface IntakeData {
+  age: number;
+  label?: string;
+}
 
 // ─── Task Types ──────────────────────────────────────────
 export type TobiiTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
@@ -79,9 +86,48 @@ export interface PredictionResult {
   features?: GazeFeature[];
 }
 
+export interface AttemptMetadata {
+  attemptId: string;
+  age: number;
+  label?: string;
+  calibrationMode: CalibrationMode;
+  contentSnapshot?: AttemptContentSnapshot;
+}
+
+export interface AttemptContentSnapshot {
+  version: 1;
+  primaryTask: TaskType;
+  tasks: Partial<Record<TaskType, string>>;
+}
+
+export interface TobiiSubmissionInput {
+  attempt: AttemptMetadata;
+  syllables: TobiiGazePoint[];
+  pseudoWords: TobiiGazePoint[];
+  meaningfulText: TobiiGazePoint[];
+  screenWidth: number;
+  screenHeight: number;
+  lineCenters?: Record<string, number[]>;
+  /** Task screenshots captured during the test (taskType → JPEG data URL) */
+  screenshots?: Record<string, string>;
+}
+
+export interface WebcamSubmissionInput {
+  attempt: AttemptMetadata;
+  gazeData: WebcamGazePoint[];
+  screenWidth: number;
+  screenHeight: number;
+  lineCenters?: number[];
+  /** Task screenshots captured during the test (taskType → JPEG data URL) */
+  screenshots?: Record<string, string>;
+}
+
 // ─── Test Flow States ────────────────────────────────────
 export type TobiiTestState =
   | 'idle'
+  | 'intake'
+  | 'hardware-check'
+  | 'pre-test-education'
   | 'device-check'
   | 'calibrating'
   | 'task-syllables'
@@ -96,6 +142,8 @@ export type TobiiTestState =
 
 export type WebcamTestState =
   | 'idle'
+  | 'intake'
+  | 'pre-test-education'
   | 'camera-setup'
   | 'calibrating'
   | 'task-paragraph'
@@ -109,6 +157,9 @@ export type TestState = TobiiTestState | WebcamTestState;
 // ─── Test Flow Actions ───────────────────────────────────
 export type TestAction =
   | { type: 'START' }
+  | { type: 'INTAKE_COMPLETE'; data: IntakeData }
+  | { type: 'HARDWARE_CONFIRMED' }
+  | { type: 'EDUCATION_COMPLETE' }
   | { type: 'DEVICE_READY' }
   | { type: 'CAMERA_READY' }
   | { type: 'CALIBRATION_COMPLETE'; result: CalibrationResult }
@@ -127,6 +178,7 @@ export type TestAction =
 export interface TobiiTestFlowState {
   mode: 'tobii';
   currentState: TobiiTestState;
+  intake: IntakeData | null;
   calibration: CalibrationResult | null;
   taskData: {
     syllables: TobiiGazePoint[];
@@ -140,6 +192,7 @@ export interface TobiiTestFlowState {
 export interface WebcamTestFlowState {
   mode: 'webcam';
   currentState: WebcamTestState;
+  intake: IntakeData | null;
   calibration: CalibrationResult | null;
   taskData: {
     paragraph: WebcamGazePoint[];

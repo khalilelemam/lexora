@@ -24,7 +24,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller      
+          pip install pyinstaller
+
+      - name: Set version and token from tag/secrets
+        shell: pwsh
+        env:
+          RELEASES_TOKEN: ${{ secrets.LEXORA_RELEASES_TOKEN }}
+        run: |
+          $version = "$env:GITHUB_REF_NAME" -replace '^lexora-v', ''
+          (Get-Content app/config.py) -replace 'VERSION: str = ".*"', "VERSION: str = `"$version`"" | Set-Content app/config.py
+          if ($env:RELEASES_TOKEN) {
+            (Get-Content app/config.py) -replace 'GITHUB_TOKEN: str = ".*"', "GITHUB_TOKEN: str = `"$env:RELEASES_TOKEN`"" | Set-Content app/config.py
+            Write-Host "Injected version: $version and GitHub Token"
+          } else {
+            Write-Host "Injected version: $version (No GitHub Token provided)"
+          }
 
       - name: Build executable
         run: pyinstaller lexora-windows.spec
@@ -64,9 +78,16 @@ jobs:
             
             WriteUninstaller "$INSTDIR\Uninstall.exe"
             CreateShortCut "$SMPROGRAMS\Lexora\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
+
+            ; Register lexora:// protocol
+            WriteRegStr HKCR "lexora" "" "URL:Lexora Protocol"
+            WriteRegStr HKCR "lexora" "URL Protocol" ""
+            WriteRegStr HKCR "lexora\shell\open\command" "" '"$INSTDIR\Lexora.exe" "%1"'
           SectionEnd
 
           Section "Uninstall"
+            ; Remove lexora:// protocol
+            DeleteRegKey HKCR "lexora"
             Delete "$INSTDIR\Lexora.exe"
             Delete "$INSTDIR\Uninstall.exe"
             RMDir /r "$INSTDIR"
@@ -108,7 +129,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller      
+          pip install pyinstaller
+
+      - name: Set version and token from tag/secrets
+        env:
+          RELEASES_TOKEN: ${{ secrets.LEXORA_RELEASES_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#lexora-v}"
+          sed -i '' "s/VERSION: str = \".*\"/VERSION: str = \"${VERSION}\"/" app/config.py
+          if [ ! -z "$RELEASES_TOKEN" ]; then
+            sed -i '' "s/GITHUB_TOKEN: str = \".*\"/GITHUB_TOKEN: str = \"${RELEASES_TOKEN}\"/" app/config.py
+            echo "Injected version: $VERSION and GitHub Token"
+          else
+            echo "Injected version: $VERSION (No GitHub Token provided)"
+          fi
 
       - name: Build executable
         run: pyinstaller lexora-macos.spec
@@ -116,7 +150,7 @@ jobs:
       - name: Create PKG Installer Wizard
         run: |
           pkgbuild --root "dist/Lexora.app" \
-                   --identifier "com.eglex.lexora" \
+                   --identifier "page.lexora.desktop" \
                    --version "${GITHUB_REF_NAME#lexora-v}" \
                    --install-location "/Applications/Lexora.app" \
                    "dist/Lexora-macOS-Installer.pkg"
@@ -151,6 +185,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+
+      - name: Set version and token from tag/secrets
+        env:
+          RELEASES_TOKEN: ${{ secrets.LEXORA_RELEASES_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#lexora-v}"
+          sed -i "s/VERSION: str = \".*\"/VERSION: str = \"${VERSION}\"/" app/config.py
+          if [ ! -z "$RELEASES_TOKEN" ]; then
+            sed -i "s/GITHUB_TOKEN: str = \".*\"/GITHUB_TOKEN: str = \"${RELEASES_TOKEN}\"/" app/config.py
+            echo "Injected version: $VERSION and GitHub Token"
+          else
+            echo "Injected version: $VERSION (No GitHub Token provided)"
+          fi
 
       - name: Build executable
         run: pyinstaller lexora-linux.spec
@@ -201,7 +248,7 @@ jobs:
           path: tobii-service/dist/Lexora-Linux-Installer.deb
 
   create-release:
-    needs: [ build-windows, build-macos, build-linux ]
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write

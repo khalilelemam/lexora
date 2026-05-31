@@ -195,6 +195,7 @@ class TestAPIEndpoint:
         assert data["riskLevel"] in ("medium", "high")
         assert data["dyslexiaProbability"] > 0.33
         assert "confidence" in data
+        assert data["modelVersion"] == settings.APP_VERSION
         assert "metadata" in data
         assert "features" in data
         assert "syllables" in data["features"]
@@ -216,6 +217,7 @@ class TestAPIEndpoint:
         data = response.json()
         assert data["riskLevel"] == "low"
         assert data["dyslexiaProbability"] < 0.33
+        assert data["modelVersion"] == settings.APP_VERSION
         assert "features" in data
 
 

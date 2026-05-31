@@ -2,9 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef } from 'react';
 import type { CalibrationResult, CalibrationPhaseType, CalibrationPoint } from '../types';
-import {
-  CALIBRATION_POINTS,
-} from '../lib/constants';
+import { CALIBRATION_POINTS } from '../lib/constants';
 import { fitProductionCalibrationModel, type TrainingSample } from '../lib/calibration-models';
 import {
   type CollectedSample,
@@ -45,21 +43,21 @@ type CalibrationPhase =
   | 'validating'
   | 'complete';
 
-function ensureSampleBucket(
-  buckets: CollectedSample[][],
-  pointIndex: number,
-): CollectedSample[] {
+function ensureSampleBucket(buckets: CollectedSample[][], pointIndex: number): CollectedSample[] {
   while (buckets.length <= pointIndex) buckets.push([]);
   return buckets[pointIndex];
 }
 
 function summarizeCollectedBuckets(buckets: CollectedSample[][]) {
   return buckets.map((bucket, pointIndex) => {
-    const phaseCounts = bucket.reduce((acc, sample) => {
-      const phase = sample.phase ?? 'STATIC';
-      acc[phase] = (acc[phase] ?? 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const phaseCounts = bucket.reduce(
+      (acc, sample) => {
+        const phase = sample.phase ?? 'STATIC';
+        acc[phase] = (acc[phase] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     const weights = bucket.map((sample) => sample.sampleWeight ?? 1.0);
     return {
@@ -193,24 +191,27 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
     [addSampleForPoint, currentPointIndex],
   );
 
-  const advancePoint = useCallback((capturedSamplesThisPoint?: number) => {
-    const currentPointIdx = collectionOrder[collectionCursor] ?? -1;
-    const nextCursor = collectionCursor + 1;
-    const currentPoint = currentPointIdx >= 0 ? fullPointSequence[currentPointIdx] : undefined;
-    const capturedThisPoint =
-      capturedSamplesThisPoint ?? samplesByPointRef.current[currentPointIdx]?.length ?? 0;
-    const isCompletion = collectionCursor >= collectionOrder.length - 1;
+  const advancePoint = useCallback(
+    (capturedSamplesThisPoint?: number) => {
+      const currentPointIdx = collectionOrder[collectionCursor] ?? -1;
+      const nextCursor = collectionCursor + 1;
+      const currentPoint = currentPointIdx >= 0 ? fullPointSequence[currentPointIdx] : undefined;
+      const capturedThisPoint =
+        capturedSamplesThisPoint ?? samplesByPointRef.current[currentPointIdx]?.length ?? 0;
+      const isCompletion = collectionCursor >= collectionOrder.length - 1;
 
-    console.log(
-      `[DONE] cursor=${collectionCursor}/${collectionOrder.length - 1} pointIndex=${currentPointIdx} phase=${currentPoint?.phase} samples=${capturedThisPoint}`,
-    );
+      console.log(
+        `[DONE] cursor=${collectionCursor}/${collectionOrder.length - 1} pointIndex=${currentPointIdx} phase=${currentPoint?.phase} samples=${capturedThisPoint}`,
+      );
 
-    if (!isCompletion) {
-      setCollectionCursor(nextCursor);
-    } else {
-      setPhase(phase === 'collecting' ? 'reading-anchors' : 'validating');
-    }
-  }, [collectionCursor, collectionOrder, fullPointSequence, phase]);
+      if (!isCompletion) {
+        setCollectionCursor(nextCursor);
+      } else {
+        setPhase(phase === 'collecting' ? 'reading-anchors' : 'validating');
+      }
+    },
+    [collectionCursor, collectionOrder, fullPointSequence, phase],
+  );
 
   const startCalibration = useCallback(() => {
     samplesByPointRef.current = Array.from({ length: fullPointSequence.length }, () => []);
@@ -263,7 +264,10 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       needsRecalibration: boolean;
       recalibrationPoints: number[];
     } => {
-      console.log('[CALIBRATION RAW SAMPLES]', summarizeCollectedBuckets(samplesByPointRef.current));
+      console.log(
+        '[CALIBRATION RAW SAMPLES]',
+        summarizeCollectedBuckets(samplesByPointRef.current),
+      );
 
       const cleanedByPoint = samplesByPointRef.current.map((bucket) => filterOutliers(bucket));
       console.log('[CALIBRATION CLEANED SAMPLES]', summarizeCollectedBuckets(cleanedByPoint));
@@ -357,8 +361,11 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         .filter(
           (
             point,
-          ): point is { pointIndex: number; phase: CalibrationPhaseType; normalizedError: number } =>
-            point.phase === 'STATIC' && point.normalizedError !== null,
+          ): point is {
+            pointIndex: number;
+            phase: CalibrationPhaseType;
+            normalizedError: number;
+          } => point.phase === 'STATIC' && point.normalizedError !== null,
         )
         .sort((a, b) => b.normalizedError - a.normalizedError)
         .slice(0, TARGETED_RECALIBRATION_MAX_POINTS);
@@ -367,8 +374,11 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         .filter(
           (
             point,
-          ): point is { pointIndex: number; phase: CalibrationPhaseType; normalizedError: number } =>
-            point.phase === 'STATIC' && point.normalizedError !== null,
+          ): point is {
+            pointIndex: number;
+            phase: CalibrationPhaseType;
+            normalizedError: number;
+          } => point.phase === 'STATIC' && point.normalizedError !== null,
         )
         .map((point) => point.normalizedError);
       const staticMedianError = median(staticErrorValues);

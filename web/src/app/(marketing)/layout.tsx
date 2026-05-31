@@ -8,11 +8,7 @@ import { Footer } from './_components/footer';
  * This layout does NOT apply to /test/* routes, which use their own
  * fullscreen chrome-less shell.
  */
-export default function MarketingLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navbar />

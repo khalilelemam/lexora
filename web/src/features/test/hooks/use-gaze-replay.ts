@@ -27,6 +27,8 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
   const [trail, setTrail] = useState<number[]>([]);
   const rafRef = useRef(0);
   const startTimeRef = useRef(0);
+  const baseElapsedRef = useRef(0);
+  const currentElapsedRef = useRef(0);
 
   // Cumulative timeline offsets (ms)
   const timeline = useMemo(() => {
@@ -52,8 +54,12 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
     if (!isPlaying || !active) return;
 
     const tick = () => {
-      const elapsed = (performance.now() - startTimeRef.current) * speed;
+      const elapsed = baseElapsedRef.current + (performance.now() - startTimeRef.current) * speed;
+      currentElapsedRef.current = elapsed;
+
       if (elapsed >= totalDuration) {
+        currentElapsedRef.current = totalDuration;
+        baseElapsedRef.current = totalDuration;
         setIsPlaying(false);
         setCurrentIndex(features.length - 1);
         setTrail(features.map((_, i) => i));
@@ -62,7 +68,10 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
 
       let idx = 0;
       for (let i = timeline.length - 1; i >= 0; i--) {
-        if (elapsed >= timeline[i]) { idx = i; break; }
+        if (elapsed >= timeline[i]) {
+          idx = i;
+          break;
+        }
       }
 
       setCurrentIndex(idx);
@@ -75,7 +84,10 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
 
     startTimeRef.current = performance.now();
     rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      baseElapsedRef.current = currentElapsedRef.current;
+      cancelAnimationFrame(rafRef.current);
+    };
   }, [isPlaying, speed, totalDuration, features, timeline, active]);
 
   const maxDuration = useMemo(() => Math.max(...features.map((f) => f.durationMs), 1), [features]);
@@ -89,17 +101,22 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
     if (currentIndex >= features.length - 1) {
       setCurrentIndex(-1);
       setTrail([]);
+      baseElapsedRef.current = 0;
+      currentElapsedRef.current = 0;
     }
     startTimeRef.current = performance.now();
     setIsPlaying(true);
   }, [currentIndex, features.length]);
 
   const pause = useCallback(() => {
+    baseElapsedRef.current = currentElapsedRef.current;
     setIsPlaying(false);
     cancelAnimationFrame(rafRef.current);
   }, []);
 
   const reset = useCallback(() => {
+    baseElapsedRef.current = 0;
+    currentElapsedRef.current = 0;
     setIsPlaying(false);
     cancelAnimationFrame(rafRef.current);
     setCurrentIndex(-1);
@@ -111,9 +128,10 @@ export function useGazeReplay({ features, active }: UseGazeReplayOptions) {
     else play();
   }, [isPlaying, play, pause]);
 
-  const progress = features.length > 0 && currentIndex >= 0
-    ? Math.round(((currentIndex + 1) / features.length) * 100)
-    : 0;
+  const progress =
+    features.length > 0 && currentIndex >= 0
+      ? Math.round(((currentIndex + 1) / features.length) * 100)
+      : 0;
 
   return {
     isPlaying,

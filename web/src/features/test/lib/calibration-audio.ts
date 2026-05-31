@@ -158,10 +158,7 @@ function playTone(
   osc.type = type;
   osc.frequency.setValueAtTime(freq, ctx.currentTime);
   if (slideFreq) {
-    osc.frequency.exponentialRampToValueAtTime(
-      Math.max(slideFreq, 20),
-      ctx.currentTime + duration,
-    );
+    osc.frequency.exponentialRampToValueAtTime(Math.max(slideFreq, 20), ctx.currentTime + duration);
   }
 
   gain.gain.setValueAtTime(0, ctx.currentTime);
@@ -199,10 +196,7 @@ function playNoise(
   const filter = ctx.createBiquadFilter();
   filter.type = filterType;
   filter.frequency.setValueAtTime(startFreq, ctx.currentTime);
-  filter.frequency.exponentialRampToValueAtTime(
-    Math.max(endFreq, 20),
-    ctx.currentTime + duration,
-  );
+  filter.frequency.exponentialRampToValueAtTime(Math.max(endFreq, 20), ctx.currentTime + duration);
 
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(volume, ctx.currentTime);
@@ -239,53 +233,83 @@ type SoundHandler = (options?: { progress?: number }) => void;
  * - Consistent with the debounce/cache Maps above
  */
 const soundRegistry = new Map<SoundType, SoundHandler>([
-  ['spawn', () => {
-    playTone(330, 'sine', 0.25, 0.04, 660);
-    playTone(440, 'triangle', 0.2, 0.02, 550);
-  }],
+  [
+    'spawn',
+    () => {
+      playTone(330, 'sine', 0.25, 0.04, 660);
+      playTone(440, 'triangle', 0.2, 0.02, 550);
+    },
+  ],
 
-  ['dash', () => {
-    playNoise(0.12, 0.025, 'highpass', 2500, 600);
-    playTone(500, 'sine', 0.08, 0.015, 800);
-  }],
+  [
+    'dash',
+    () => {
+      playNoise(0.12, 0.025, 'highpass', 2500, 600);
+      playTone(500, 'sine', 0.08, 0.015, 800);
+    },
+  ],
 
-  ['step', () => {
-    playTone(120, 'sine', 0.04, 0.008, 70);
-  }],
+  [
+    'step',
+    () => {
+      playTone(120, 'sine', 0.04, 0.008, 70);
+    },
+  ],
 
-  ['skid', () => {
-    playNoise(0.1, 0.02, 'bandpass', 1800, 600);
-  }],
+  [
+    'skid',
+    () => {
+      playNoise(0.1, 0.02, 'bandpass', 1800, 600);
+    },
+  ],
 
-  ['hit', () => {
-    playTone(600, 'sine', 0.06, 0.02, 300);
-  }],
+  [
+    'hit',
+    () => {
+      playTone(600, 'sine', 0.06, 0.02, 300);
+    },
+  ],
 
-  ['scanTick', (options) => {
-    const progress = options?.progress ?? 0;
-    playTone(440 + progress * 300, 'sine', 0.05, 0.01);
-  }],
+  [
+    'scanTick',
+    (options) => {
+      const progress = options?.progress ?? 0;
+      playTone(440 + progress * 300, 'sine', 0.05, 0.01);
+    },
+  ],
 
-  ['shatter', () => {
-    playNoise(0.25, 0.08, 'lowpass', 500, 80);
-    playTone(110, 'triangle', 0.2, 0.05, 30);
-  }],
+  [
+    'shatter',
+    () => {
+      playNoise(0.25, 0.08, 'lowpass', 500, 80);
+      playTone(110, 'triangle', 0.2, 0.05, 30);
+    },
+  ],
 
-  ['collect', () => {
-    playChord([523, 659, 784], 'sine', 0.25, 0.02);
-  }],
+  [
+    'collect',
+    () => {
+      playChord([523, 659, 784], 'sine', 0.25, 0.02);
+    },
+  ],
 
-  ['magicSparkle', () => {
-    playTone(880, 'sine', 0.15, 0.012, 1320);
-    setTimeout(() => playTone(1100, 'sine', 0.12, 0.01, 1650), 60);
-  }],
+  [
+    'magicSparkle',
+    () => {
+      playTone(880, 'sine', 0.15, 0.012, 1320);
+      setTimeout(() => playTone(1100, 'sine', 0.12, 0.01, 1650), 60);
+    },
+  ],
 
-  ['success', () => {
-    const notes = [523, 659, 784, 1047];
-    notes.forEach((freq, i) => {
-      setTimeout(() => playTone(freq, 'sine', 0.22, 0.02), i * 90);
-    });
-  }],
+  [
+    'success',
+    () => {
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((freq, i) => {
+        setTimeout(() => playTone(freq, 'sine', 0.22, 0.02), i * 90);
+      });
+    },
+  ],
 ]);
 
 /* ── Audio file paths (when available) ───────────────── */

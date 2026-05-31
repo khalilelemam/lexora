@@ -9,24 +9,29 @@ interface CalibrationCountdownProps {
   resolvedMode: CalibrationVisualMode;
 }
 
-const MODE_CONFIG: Record<CalibrationVisualMode, {
-  label: string;
-  instruction: string;
-  howTo: string;
-  accentColor: string;
-  icon: string;
-}> = {
+const MODE_CONFIG: Record<
+  CalibrationVisualMode,
+  {
+    label: string;
+    instruction: string;
+    howTo: string;
+    accentColor: string;
+    icon: string;
+  }
+> = {
   grid: {
     label: 'Grid Mode',
     instruction: 'A dot will appear at different positions on screen.',
-    howTo: 'Follow each dot with your eyes and hold your gaze steady until the ring fills completely.',
+    howTo:
+      'Follow each dot with your eyes and hold your gaze steady until the ring fills completely.',
     accentColor: '#4A7C59',
     icon: '◉',
   },
   stickman: {
     label: 'Ninja Mode',
     instruction: 'A ninja stickman will appear at random positions.',
-    howTo: 'Lock your eyes on the ninja — your gaze is your weapon! Hold steady to capture each one.',
+    howTo:
+      'Lock your eyes on the ninja — your gaze is your weapon! Hold steady to capture each one.',
     accentColor: '#DC2626',
     icon: '🥷',
   },
@@ -48,22 +53,19 @@ const MODE_CONFIG: Record<CalibrationVisualMode, {
  * - Animated mini preview shows what the target looks like (canvas-based)
  * - "Move only your eyes" reminder at the bottom
  */
-export function CalibrationCountdown({
-  countdown,
-  resolvedMode,
-}: CalibrationCountdownProps) {
+export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCountdownProps) {
   const config = MODE_CONFIG[resolvedMode];
 
   return (
-    <div className="z-50 fixed inset-0 flex flex-col justify-center items-center bg-[#FDF8F0] cursor-none">
+    <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#FDF8F0]">
       <div
-        className="flex flex-col items-center gap-5 bg-white/80 backdrop-blur-sm px-10 py-8 border border-[#E8E0D4] rounded-2xl shadow-lg max-w-lg"
+        className="flex max-w-lg flex-col items-center gap-5 rounded-2xl border border-[#E8E0D4] bg-white/80 px-10 py-8 shadow-lg backdrop-blur-sm"
         style={{ animation: 'float-up 0.4s ease-out' }}
       >
-        <h2 className="font-bold text-2xl tracking-tight text-[#2D2A26]">Get Ready</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-[#2D2A26]">Get Ready</h2>
 
         {/* Mode badge */}
-        <div className="flex items-center gap-2 bg-white border border-[#E8E0D4] rounded-full px-4 py-1.5">
+        <div className="flex items-center gap-2 rounded-full border border-[#E8E0D4] bg-white px-4 py-1.5">
           <span className="text-lg">{config.icon}</span>
           <span className="text-sm font-medium" style={{ color: config.accentColor }}>
             {config.label}
@@ -71,12 +73,10 @@ export function CalibrationCountdown({
         </div>
 
         {/* Instructions */}
-        <div className="space-y-2 text-center max-w-sm">
-          <p className="text-[#6B6560] text-sm leading-relaxed">
-            {config.instruction}
-          </p>
-          <p className="text-[#8B857E] text-xs leading-relaxed">
-            <span className="text-[#2D2A26] font-medium">How: </span>
+        <div className="max-w-sm space-y-2 text-center">
+          <p className="text-sm leading-relaxed text-[#6B6560]">{config.instruction}</p>
+          <p className="text-xs leading-relaxed text-[#8B857E]">
+            <span className="font-medium text-[#2D2A26]">How: </span>
             {config.howTo}
           </p>
         </div>
@@ -85,11 +85,13 @@ export function CalibrationCountdown({
         <ModePreview mode={resolvedMode} accentColor={config.accentColor} />
 
         {/* Countdown ring */}
-        <div className="relative flex justify-center items-center w-20 h-20">
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 96 96">
+        <div className="relative flex h-20 w-20 items-center justify-center">
+          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 96 96">
             <circle cx="48" cy="48" r="44" fill="none" stroke="#E8E0D4" strokeWidth="4" />
             <circle
-              cx="48" cy="48" r="44"
+              cx="48"
+              cy="48"
+              r="44"
               fill="none"
               stroke={config.accentColor}
               strokeWidth="4"
@@ -99,12 +101,12 @@ export function CalibrationCountdown({
               className="transition-all duration-700 ease-out"
             />
           </svg>
-          <span className="font-bold text-3xl" style={{ color: config.accentColor }}>
+          <span className="text-3xl font-bold" style={{ color: config.accentColor }}>
             {countdown}
           </span>
         </div>
 
-        <p className="text-[#8B857E] text-xs">Keep your head still — move only your eyes</p>
+        <p className="text-xs text-[#8B857E]">Keep your head still — move only your eyes</p>
       </div>
     </div>
   );
@@ -163,14 +165,20 @@ function ModePreview({ mode, accentColor }: { mode: CalibrationVisualMode; accen
   }, [mode, accentColor]);
 
   return (
-    <div className="bg-[#FDF8F0] border border-[#E8E0D4] rounded-xl overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-[#E8E0D4] bg-[#FDF8F0]">
       <canvas ref={canvasRef} className="block" />
-      <p className="text-center text-[9px] text-[#A09890] pb-1.5">Preview</p>
+      <p className="pb-1.5 text-center text-[9px] text-[#A09890]">Preview</p>
     </div>
   );
 }
 
-function drawGridPreview(ctx: CanvasRenderingContext2D, cx: number, cy: number, t: number, color: string) {
+function drawGridPreview(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  t: number,
+  color: string,
+) {
   // Animated progress ring (loops every 2s)
   const progress = (t % 2) / 2;
   const radius = 20;
