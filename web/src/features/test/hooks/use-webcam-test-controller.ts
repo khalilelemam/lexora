@@ -46,6 +46,7 @@ export function useWebcamTestController() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const gazeDataRef = useRef<WebcamGazePoint[]>([]);
   const lineCentersRef = useRef<number[]>([]);
+  const lastTaskGazePositionRef = useRef<{ x: number; y: number } | null>(null);
 
   const [gazePointCount, setGazePointCount] = useState(0);
   const [reviewGazeData, setReviewGazeData] = useState<WebcamGazePoint[]>([]);
@@ -66,7 +67,15 @@ export function useWebcamTestController() {
     onGazePoint: useCallback((point: WebcamGazePoint) => {
       gazeDataRef.current.push(point);
       setGazePointCount((prev) => prev + 1);
-      setLastTaskGazePosition({ x: point.x, y: point.y });
+
+      const previous = lastTaskGazePositionRef.current;
+      const dx = previous ? point.x - previous.x : Number.POSITIVE_INFINITY;
+      const dy = previous ? point.y - previous.y : Number.POSITIVE_INFINITY;
+      if (!previous || dx * dx + dy * dy > 1) {
+        const next = { x: point.x, y: point.y };
+        lastTaskGazePositionRef.current = next;
+        setLastTaskGazePosition(next);
+      }
     }, []),
   });
 
@@ -100,6 +109,7 @@ export function useWebcamTestController() {
       gazeDataRef.current = [];
       setGazePointCount(0);
       setReviewGazeData([]);
+      lastTaskGazePositionRef.current = null;
       setLastTaskGazePosition(null);
     },
     [dispatch, webcamGaze],
@@ -119,6 +129,7 @@ export function useWebcamTestController() {
     gazeDataRef.current = [];
     setGazePointCount(0);
     setReviewGazeData([]);
+    lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     dispatch({ type: 'RETAKE' });
   }, [dispatch]);
@@ -182,6 +193,7 @@ export function useWebcamTestController() {
     gazeDataRef.current = [];
     setGazePointCount(0);
     setReviewGazeData([]);
+    lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     setTaskContent('');
     screenshotRef.current = null;
