@@ -111,14 +111,10 @@ async function loadVisionTasksModule(): Promise<VisionTasksModule> {
     const mod = (await import('@mediapipe/tasks-vision')) as VisionTasksModule;
     return mod;
   } catch (localErr) {
-    // Fallback: load directly from CDN if Next fails to fetch the split chunk.
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore - dynamic URL import is runtime-only and browser-supported.
-    const cdnMod = (await import(
-      /* webpackIgnore: true */ `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`
-    )) as VisionTasksModule;
+    const cdnUrl = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`;
+    const cdnMod = (await import(/* webpackIgnore: true */ cdnUrl)) as VisionTasksModule;
 
-    console.warn('Falling back to CDN MediaPipe bundle after local chunk-load failure.', localErr);
+    console.warn('[MediaPipe] Falling back to CDN bundle after local chunk-load failure.', localErr);
     return cdnMod;
   }
 }
@@ -268,9 +264,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
 
       // Normalize iris center within the eye bounding box
       const leftMinX = Math.min(leftOuter.x, leftInner.x);
-      const leftMinY = Math.min(leftTop.y, leftBottom.y);
       const rightMinX = Math.min(rightOuter.x, rightInner.x);
-      const rightMinY = Math.min(rightTop.y, rightBottom.y);
 
       // Anchor vertical position to the inner canthus (medial canthi) and
       // normalize by eye width. Inner canthi are cartilage-anchored points
@@ -408,16 +402,16 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
   }, [collecting]);
 
   useEffect(() => {
+    if (!enabled || !cameraReady || !modelReady) return;
+
     const detect = () => {
       if (!enabledRef.current || !cameraReadyRef.current || !modelReadyRef.current) {
-        rafRef.current = requestAnimationFrame(detect);
         return;
       }
 
       const activeVideo = videoRef.current;
       const faceLandmarker = faceLandmarkerRef.current;
       if (!activeVideo || !faceLandmarker) {
-        rafRef.current = requestAnimationFrame(detect);
         return;
       }
 
@@ -486,7 +480,16 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [
+    cameraReady,
+    enabled,
+    extractGlobalIrisPosition,
+    extractHeadPose,
+    extractIrisPosition,
+    extractRawIrisLandmarks,
+    mapToScreen,
+    modelReady,
+  ]);
 
   // ─── Public API ─────────────────────────────────────────
 

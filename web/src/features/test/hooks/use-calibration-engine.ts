@@ -6,6 +6,7 @@ import { CALIBRATION_POINTS } from '../lib/constants';
 import { useCalibration } from './use-calibration';
 import { buildCalibrationResult } from '../lib/calibration-math';
 import type { CollectedSample } from '../lib/calibration-math';
+import { calibrationLogger } from '../lib/debug-config';
 
 import {
   useQuickValidation,
@@ -117,7 +118,7 @@ export function useCalibrationEngine({
     if (loggedOptionBKeyRef.current === logKey) return;
     loggedOptionBKeyRef.current = logKey;
 
-    console.log('[OPTION B CALIBRATION] grid-dot sequence selected', {
+    calibrationLogger.debug('[OPTION B CALIBRATION] grid-dot sequence selected', {
       tracker,
       resolvedMode,
       totalPoints: fullPointSequence.length,
@@ -335,14 +336,13 @@ export function useCalibrationEngine({
       console.warn('[QUICK VALIDATION] missing webcam mapping; validation will fail closed');
     }
 
-    // Log which validation targets are being used
     if (readingValidationTargets.length > 0) {
-      console.log('[QUICK VALIDATION] Starting with reading anchor validation targets', {
+      calibrationLogger.debug('[QUICK VALIDATION] Starting with reading anchor validation targets', {
         count: readingValidationTargets.length,
         targets: readingValidationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
       });
     } else {
-      console.log('[QUICK VALIDATION] No reading targets; using default grid validation points');
+      calibrationLogger.debug('[QUICK VALIDATION] No reading targets; using default grid validation points');
     }
 
     const validation = await runQuickValidation(
@@ -506,9 +506,8 @@ export function useCalibrationEngine({
         currentPointCaptureCountRef.current += 1;
         setCaptureCount((prev) => prev + 1);
 
-        // Log only the first sample per point to avoid spam:
         if (currentPointCaptureCountRef.current === 1) {
-          console.log('[TARGET UNITS]', {
+          calibrationLogger.debug('[TARGET UNITS]', {
             pointIndex,
             phase: 'STATIC',
             targetX_stored: target.x,
@@ -564,12 +563,12 @@ export function useCalibrationEngine({
     (validationTargets: CalibrationPoint[] = []) => {
       setReadingValidationTargets(validationTargets);
       if (validationTargets.length > 0) {
-        console.log('[READING ANCHORS COMPLETE] Stored validation targets in engine', {
+        calibrationLogger.debug('[READING ANCHORS COMPLETE] Stored validation targets in engine', {
           count: validationTargets.length,
           targets: validationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
         });
       } else {
-        console.warn('[READING ANCHORS COMPLETE] No validation targets received');
+        calibrationLogger.warn('[READING ANCHORS COMPLETE] No validation targets received');
       }
       completeReadingAnchors();
     },

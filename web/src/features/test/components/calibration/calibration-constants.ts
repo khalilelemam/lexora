@@ -97,7 +97,7 @@ export const MODE_OPTIONS: CalibrationModeOption[] = [
   {
     key: 'grid',
     label: 'Classic Grid',
-    description: 'Follow a simple dot across 15 calibration points. Fast and precise.',
+    description: 'Follow a simple dot across 20 calibration points. Fast and precise.',
     ageHint: 'Best for adults & older children',
     image: '/images/calibration/default-mode.svg',
   },

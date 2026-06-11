@@ -8,6 +8,8 @@ import {
   STABLE_VELOCITY_NORM_PER_SEC,
 } from '../../lib/calibration-engine-constants';
 import { AOI_X_BOUNDS, AOI_Y_BOUNDS } from '../../lib/constants';
+import { calibrationLogger } from '../../lib/debug-config';
+import { readingAnchorPointIndex } from '../../lib/reading-anchor-constants';
 import type { WebcamCalibrationSample } from '../../hooks/use-calibration-engine';
 
 interface PursuitDotPoint {
@@ -17,6 +19,7 @@ interface PursuitDotPoint {
 }
 
 interface PursuitCalibrationViewProps {
+  gridPointCount: number;
   aoiBounds?: {
     x: { min: number; max: number };
     y: { min: number; max: number };
@@ -38,7 +41,6 @@ interface PursuitCalibrationViewProps {
 type PursuitStage = 'instruction' | 'sweeping' | 'line-pause' | 'complete';
 
 const LINE_COUNT = 5;
-const BASE_POINT_INDEX = 15;
 const SWEEP_DURATION_MS = 4000;
 const LINE_PAUSE_MS = 600;
 const INSTRUCTION_MS = 3000;
@@ -71,6 +73,7 @@ function interpolateLaggedPoint(buffer: PursuitDotPoint[], targetTs: number): Pu
 }
 
 export function PursuitCalibrationView({
+  gridPointCount,
   aoiBounds,
   irisStream,
   headPoseStream,
@@ -78,7 +81,10 @@ export function PursuitCalibrationView({
   onComplete,
   onCancel,
 }: PursuitCalibrationViewProps) {
-  const bounds = aoiBounds ?? { x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS };
+  const bounds = useMemo(
+    () => aoiBounds ?? { x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS },
+    [aoiBounds],
+  );
   const lineYs = useMemo(() => {
     const span = bounds.y.max - bounds.y.min;
     return Array.from({ length: LINE_COUNT }, (_, i) => bounds.y.min + (i * span) / (LINE_COUNT - 1));
@@ -145,6 +151,7 @@ export function PursuitCalibrationView({
       const shouldTrySample = now - lastSampleTsRef.current >= SAMPLE_INTERVAL_MS;
       if (shouldTrySample) {
         lastSampleTsRef.current = now;
+        const pointIndex = readingAnchorPointIndex(lineIndex, gridPointCount);
 
         const lagged = interpolateLaggedPoint(lagBufferRef.current, now - PURSUIT_LAG_MS);
         const iris = irisStream();
@@ -161,9 +168,9 @@ export function PursuitCalibrationView({
           }
 
           if (rejectByVelocity) {
-            console.log('[PURSUIT REJECT] reason: velocity', {
+            calibrationLogger.debug('[PURSUIT REJECT] reason: velocity', {
               lineIndex,
-              pointIndex: BASE_POINT_INDEX + lineIndex,
+              pointIndex,
             });
           } else {
             const headPose = headPoseStream?.() ?? {
@@ -178,7 +185,7 @@ export function PursuitCalibrationView({
             if (lineIndex === 0 && debugSampleCountRef.current < 5) {
               const screenW = window.innerWidth;
               const currentDotX = lagBufferRef.current[lagBufferRef.current.length - 1]?.x ?? 0;
-              console.log('[PURSUIT LAG DEBUG]', {
+              calibrationLogger.debug('[PURSUIT LAG DEBUG]', {
                 dotNow_x: currentDotX.toFixed(4),
                 dotLagged_x: lagged.x.toFixed(4),
                 xDiffPx: ((currentDotX - lagged.x) * screenW).toFixed(1),
@@ -189,7 +196,7 @@ export function PursuitCalibrationView({
             }
 
             onSampleReady({
-              pointIndex: BASE_POINT_INDEX + lineIndex,
+              pointIndex,
               observedX: observed.x,
               observedY: observed.y,
               targetX: lagged.x,
@@ -211,9 +218,9 @@ export function PursuitCalibrationView({
       }
 
       if (progress >= 1) {
-        console.log('[PURSUIT LINE DONE]', {
+        calibrationLogger.debug('[PURSUIT LINE DONE]', {
           lineIndex,
-          pointIndex: BASE_POINT_INDEX + lineIndex,
+          pointIndex: readingAnchorPointIndex(lineIndex, gridPointCount),
           samples: sampleCountsRef.current[lineIndex] ?? 0,
         });
         setStage('line-pause');
@@ -235,6 +242,7 @@ export function PursuitCalibrationView({
     bounds.x.min,
     bounds.y.min,
     headPoseStream,
+    gridPointCount,
     irisStream,
     lineIndex,
     lineYs,
@@ -249,10 +257,10 @@ export function PursuitCalibrationView({
       const nextLine = lineIndex + 1;
       if (nextLine >= LINE_COUNT) {
         setStage('complete');
-        console.log('[PURSUIT COMPLETE]', {
+        calibrationLogger.debug('[PURSUIT COMPLETE]', {
           sampleCountsByLine: sampleCountsRef.current.map((samples, idx) => ({
             lineIndex: idx,
-            pointIndex: BASE_POINT_INDEX + idx,
+            pointIndex: readingAnchorPointIndex(idx, gridPointCount),
             samples,
           })),
         });
@@ -271,7 +279,7 @@ export function PursuitCalibrationView({
     }, LINE_PAUSE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [bounds.x.min, bounds.y.min, lineIndex, lineYs, onComplete, stage, validationTargets]);
+  }, [bounds.x.min, bounds.y.min, gridPointCount, lineIndex, lineYs, onComplete, stage, validationTargets]);
 
   const overallProgress =
     stage === 'instruction'

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Button } from '@/components/ui/button';
 import type { CalibrationPoint } from '../../types';
 import {
-  READING_ANCHOR_COLLECT_MS,
   READING_ANCHOR_LINES,
   READING_ANCHOR_MIN_SAMPLES,
   READING_ANCHOR_SETTLE_MS,
@@ -16,6 +15,7 @@ import {
   readingAnchorPointIndex,
 } from '../../lib/reading-anchor-constants';
 import { getScreenInfo } from '../../lib/calibration-engine-constants';
+import { DEBUG_GAZE_OVERLAY, calibrationLogger } from '../../lib/debug-config';
 
 type ReadingAnchorStage = 'settling' | 'waiting-for-stability' | 'collecting' | 'skipped' | 'complete';
 
@@ -23,7 +23,6 @@ interface ReadingAnchorPhaseProps {
   gridPointCount: number;
   gazeCursor: { x: number; y: number } | null;
   tracker: 'tobii' | 'webcam';
-  fixationProgress: number;
   isStableFixation: boolean;
   captureCount: number;
   onTargetChange: () => void;
@@ -50,7 +49,6 @@ export function ReadingAnchorPhase({
   gridPointCount,
   gazeCursor,
   tracker,
-  fixationProgress,
   isStableFixation,
   captureCount,
   onTargetChange,
@@ -110,9 +108,41 @@ export function ReadingAnchorPhase({
     return () => window.removeEventListener('resize', measureTargets);
   }, [measureTargets]);
 
+  const advanceToNextWord = useCallback(
+    (fromStage: 'collecting' | 'skipped') => {
+      if (completedRef.current) return;
+
+      if (activeLineIndex >= READING_ANCHOR_TARGET_COUNT - 1) {
+        completedRef.current = true;
+        setStage('complete');
+
+        if (validationTargetsRef.current.length > 0) {
+          calibrationLogger.debug(
+            `[READING ANCHORS] Passing ${validationTargetsRef.current.length} validation targets to calibration engine`,
+            validationTargetsRef.current.map((t) => ({
+              x: t.x.toFixed(3),
+              y: t.y.toFixed(3),
+              phase: t.phase,
+              label: t.label,
+            })),
+          );
+        } else {
+          calibrationLogger.warn('[READING ANCHORS] No validation targets created');
+        }
+
+        onComplete(validationTargetsRef.current);
+        return;
+      }
+
+      lastStageRef.current = fromStage === 'skipped' ? 'skipped' : 'collecting';
+      setStage('settling');
+      setActiveLineIndex((current) => current + 1);
+    },
+    [activeLineIndex, onComplete],
+  );
+
   /* ---- Validate point index integrity at mount ---- */
   useEffect(() => {
-    // Ensure reading anchor indices don't collide with grid indices
     const firstAnchorIndex = readingAnchorPointIndex(0, gridPointCount);
     const lastAnchorIndex = readingAnchorPointIndex(READING_ANCHOR_TARGET_COUNT - 1, gridPointCount);
     const gridIndicesEnd = gridPointCount - 1;
@@ -124,7 +154,7 @@ export function ReadingAnchorPhase({
         `IDW centroid builder will merge samples from different screen positions!`,
       );
     } else {
-      console.log(
+      calibrationLogger.debug(
         `[READING ANCHORS] Using point indices ${firstAnchorIndex}-${lastAnchorIndex} (grid uses 0-${gridIndicesEnd})`,
       );
     }
@@ -145,7 +175,6 @@ export function ReadingAnchorPhase({
     }, READING_ANCHOR_SETTLE_MS);
 
     return () => clearTimeout(settleTimer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeLineIndex, onTargetChange, stage]);
 
   /* ---- Waiting-for-stability phase: wait for isStableFixation to become true ---- */
@@ -154,11 +183,10 @@ export function ReadingAnchorPhase({
 
     const target = anchorTargetsRef.current[activeLineIndex];
     if (!target) {
-      // No valid target for this line — skip it
-      console.warn(
+      calibrationLogger.warn(
         `[READING ANCHOR] Skipped line ${activeLineIndex} — no valid word target found`,
       );
-      advanceToNextWord('skipped');
+      queueMicrotask(() => advanceToNextWord('skipped'));
       return;
     }
 
@@ -175,10 +203,9 @@ export function ReadingAnchorPhase({
       // If stable fixation achieved, move to collecting
       if (isStableFixation) {
         advanced = true;
-        // Reset capture count at the START of collection (now that we're stable)
         wordStartCaptureCountRef.current = captureCount;
-        wordStartedAtRef.current = performance.now(); // Reset timer for overall timeout
-        console.log(
+        wordStartedAtRef.current = performance.now();
+        calibrationLogger.debug(
           `[READING ANCHOR] Line ${activeLineIndex} — stable fixation detected, starting collection`,
         );
         setStage('collecting');
@@ -188,7 +215,7 @@ export function ReadingAnchorPhase({
       // Timeout: no stable fixation within READING_ANCHOR_TIMEOUT_MS
       if (elapsedMs >= READING_ANCHOR_TIMEOUT_MS) {
         advanced = true;
-        console.warn(
+        calibrationLogger.warn(
           `[READING ANCHOR] Skipped line ${activeLineIndex} — no stable fixation achieved within ${Math.round(elapsedMs)}ms`,
         );
         advanceToNextWord('skipped');
@@ -202,8 +229,7 @@ export function ReadingAnchorPhase({
     rafId = requestAnimationFrame(checkStability);
 
     return () => cancelAnimationFrame(rafId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLineIndex, isStableFixation, onComplete, stage, captureCount]);
+  }, [activeLineIndex, advanceToNextWord, captureCount, isStableFixation, stage]);
 
   /* ---- Collect phase: only ingest samples while stable, advance when enough collected ---- */
   useEffect(() => {
@@ -211,23 +237,21 @@ export function ReadingAnchorPhase({
 
     const target = anchorTargetsRef.current[activeLineIndex];
     if (!target) {
-      // No valid target for this line — skip it
-      console.warn(
+      calibrationLogger.warn(
         `[READING ANCHOR] Skipped line ${activeLineIndex} — no valid word target found`,
       );
-      advanceToNextWord('skipped');
+      queueMicrotask(() => advanceToNextWord('skipped'));
       return;
     }
 
     const pointIndex = readingAnchorPointIndex(activeLineIndex, gridPointCount);
     let advanced = false;
     let animationFrame = 0;
-    // Max time from start of settling to ensure we don't hang
     const maxCollectionTimeMs = READING_ANCHOR_SETTLE_MS + READING_ANCHOR_TIMEOUT_MS + 1000;
 
     const loop = () => {
       if (advanced) return;
-      const elapsedMs = performance.now() - wordStartedAtRef.current; // Measured from settling start
+      const elapsedMs = performance.now() - wordStartedAtRef.current;
       const samplesThisWord = captureCount - wordStartCaptureCountRef.current;
 
       // Condition 1: Enough samples collected → check quality before advancing
@@ -236,18 +260,15 @@ export function ReadingAnchorPhase({
 
         // Quality gate: only ingest if >= 15 samples collected
         if (samplesThisWord >= 15) {
-          console.log(
+          calibrationLogger.debug(
             `[READING ANCHOR] Line ${activeLineIndex} — collected ${samplesThisWord} stable samples, advancing`,
           );
-          // Ingest this anchor since quality is good
           onIngestTarget(pointIndex, target);
           advanceToNextWord('collecting');
         } else {
-          // Low quality: discard and warn
-          console.warn(
+          calibrationLogger.warn(
             `[READING ANCHOR] Low quality: line ${activeLineIndex} only got ${samplesThisWord} samples, discarding`,
           );
-          // Do NOT call onIngestTarget - these samples are discarded
           advanceToNextWord('collecting');
         }
         return;
@@ -256,60 +277,25 @@ export function ReadingAnchorPhase({
       // Condition 2: Overall timeout exceeded → skip this word
       if (elapsedMs >= maxCollectionTimeMs) {
         advanced = true;
-        console.warn(
+        calibrationLogger.warn(
           `[READING ANCHOR] Skipped line ${activeLineIndex} — no stable fixation (samples=${samplesThisWord}, elapsed=${Math.round(elapsedMs)}ms)`,
         );
         advanceToNextWord('skipped');
         return;
       }
 
-      // Keep checking - don't ingest yet until we validate quality
       animationFrame = requestAnimationFrame(loop);
     };
 
     animationFrame = requestAnimationFrame(loop);
 
     return () => cancelAnimationFrame(animationFrame);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLineIndex, gridPointCount, onComplete, onIngestTarget, stage, captureCount]);
-
-  function advanceToNextWord(fromStage: 'collecting' | 'skipped') {
-    if (completedRef.current) return;
-
-    if (activeLineIndex >= READING_ANCHOR_TARGET_COUNT - 1) {
-      // Last word — finish
-      completedRef.current = true;
-      setStage('complete');
-
-      // Verify validation targets before passing to callback
-      if (validationTargetsRef.current.length > 0) {
-        console.log(
-          `[READING ANCHORS] Passing ${validationTargetsRef.current.length} validation targets to calibration engine`,
-          validationTargetsRef.current.map((t) => ({
-            x: t.x.toFixed(3),
-            y: t.y.toFixed(3),
-            phase: t.phase,
-            label: t.label,
-          })),
-        );
-      } else {
-        console.warn('[READING ANCHORS] No validation targets created');
-      }
-      onComplete(validationTargetsRef.current);
-      return;
-    }
-
-    lastStageRef.current = fromStage === 'skipped' ? 'skipped' : 'collecting';
-    setStage('settling');
-    setActiveLineIndex((current) => current + 1);
-  }
+  }, [activeLineIndex, advanceToNextWord, captureCount, gridPointCount, onIngestTarget, stage]);
 
   const wordsCompleted = activeLineIndex + (stage === 'settling' || stage === 'waiting-for-stability' || stage === 'collecting' ? 0 : 1);
   const totalTargets = READING_ANCHOR_TARGET_COUNT;
   const progress = Math.min(1, wordsCompleted / totalTargets);
   const showFaceLost = tracker === 'webcam' && !gazeCursor;
-
-  const DEBUG_GAZE_OVERLAY = process.env.NEXT_PUBLIC_DEBUG_GAZE_OVERLAY === 'true';
 
   return (
     <div className="fixed inset-0 z-50 cursor-none overflow-hidden bg-[#FDF8F0]">

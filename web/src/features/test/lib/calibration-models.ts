@@ -1,4 +1,5 @@
 import type { CalibrationPhaseType } from '../types';
+import { calibrationLogger } from './debug-config';
 
 export interface TrainingSample {
   ix: number;
@@ -125,12 +126,14 @@ function summarizeSamplesByPoint(samples: TrainingSample[]) {
 }
 
 function logSampleSummary(label: string, samples: TrainingSample[]) {
+  if (!calibrationLogger.enabled) return;
+
   const phaseCounts = samples.reduce((acc, sample) => {
     acc[sample.phase] = (acc[sample.phase] ?? 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  console.log(`[CALIBRATION DATASET] ${label}`, {
+  calibrationLogger.debug(`[CALIBRATION DATASET] ${label}`, {
     totalSamples: samples.length,
     uniquePoints: new Set(samples.map((sample) => sample.pointIndex)).size,
     phaseCounts,
@@ -139,9 +142,11 @@ function logSampleSummary(label: string, samples: TrainingSample[]) {
 }
 
 function logStaticIyDiagnostics(samples: TrainingSample[]) {
+  if (!calibrationLogger.enabled) return;
+
   const staticSamples = samples.filter((sample) => sample.phase === 'STATIC');
   if (staticSamples.length === 0) {
-    console.log('[STATIC IY DIAG] No STATIC samples');
+    calibrationLogger.debug('[STATIC IY DIAG] No STATIC samples');
     return;
   }
 
@@ -196,7 +201,7 @@ function logStaticIyDiagnostics(samples: TrainingSample[]) {
   const topMidDiff = topRow && midRow ? Math.abs(topRow.meanIy - midRow.meanIy) : null;
   const saturated = topMidDiff !== null && topMidDiff < 0.01;
 
-  console.log('[STATIC IY DIAG] mean(iy) for static points', {
+  calibrationLogger.debug('[STATIC IY DIAG] mean(iy) for static points', {
     perPoint,
     rows,
     topMidDiff: topMidDiff !== null ? Number(topMidDiff.toFixed(5)) : null,
@@ -208,6 +213,8 @@ function logStaticIyDiagnostics(samples: TrainingSample[]) {
 }
 
 function logCoefficientSummary(label: string, axis: 'x' | 'y', coeffs: number[]) {
+  if (!calibrationLogger.enabled) return;
+
   const formatted = coeffs.map((value, index) => ({
     feature: index,
     weight: Number(value.toFixed(5)),
@@ -217,7 +224,7 @@ function logCoefficientSummary(label: string, axis: 'x' | 'y', coeffs: number[])
     .sort((a, b) => b.absWeight - a.absWeight)
     .slice(0, Math.min(8, formatted.length));
 
-  console.log(`[RIDGE COEFFS] ${label} axis=${axis}`, {
+  calibrationLogger.debug(`[RIDGE COEFFS] ${label} axis=${axis}`, {
     allWeights: formatted,
     topWeights,
   });
@@ -278,7 +285,7 @@ export function expandFeaturesX(
 /**
  * Feature builder for the Y-axis (vertical) polynomial ridge model.
  *
- * 13 features total — excludes horizontal-only head features (yaw, yaw*ix)
+ * 12 features total — excludes horizontal-only head features (yaw, yaw*ix)
  * to prevent spurious vertical predictions from horizontal head turns.
  *
  *   [0]    1.0            (bias / intercept)
@@ -345,11 +352,11 @@ function fitScaler(matrix: number[][]): FeatureScaler {
     stds[col] = Math.max(1e-6, Math.sqrt(stds[col] / matrix.length));
   }
 
-  // Log columns with near-zero standard deviation (for debugging stability)
-  const nearZeroStdCols = stds
-    .map((s, i) => ({ col: i, std: s }))
-    .filter(({ std }) => std < 0.01);
-  console.log('[STD CHECK] Near-zero std columns:', nearZeroStdCols);
+  calibrationLogger.debug('[STD CHECK] Near-zero std columns:', () =>
+    stds
+      .map((s, i) => ({ col: i, std: s }))
+      .filter(({ std }) => std < 0.01),
+  );
 
   return { means, stds };
 }
@@ -457,6 +464,20 @@ function meanSquaredError(errors: number[]): number {
   return errors.reduce((sum, value) => sum + value * value, 0) / errors.length;
 }
 
+function weightedMeanSquaredError(errors: number[], weights?: number[]): number {
+  if (errors.length === 0) return Number.POSITIVE_INFINITY;
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  for (let i = 0; i < errors.length; i += 1) {
+    const weight = weights?.[i] ?? 1.0;
+    weightedSum += weight * errors[i] * errors[i];
+    totalWeight += weight;
+  }
+
+  return totalWeight > 0 ? weightedSum / totalWeight : Number.POSITIVE_INFINITY;
+}
+
 /**
  * Weighted leave-one-out cross-validation MSE.
  * @param features Feature matrix [n × p]
@@ -512,13 +533,13 @@ function selectBestAxisCoefficients(
     const coeffs = solveRidgeWeighted(trainFeatures, trainTargets, lambda, weights, 1);
     const mse = useLeaveOneOut
       ? leaveOneOutMseWeighted(trainFeatures, trainTargets, weights, lambda)
-      : meanSquaredError(
+      : weightedMeanSquaredError(
         selectorFeatures.map((row, index) => {
           const predicted = predictLinear(coeffs, row);
           const target = selectorTargets[index];
-          const residual = predicted - target;
-          return (selectorWeights?.[index] ?? 1.0) * residual;
+          return predicted - target;
         }),
+        selectorWeights,
       );
 
     if (!best || mse < best.mse) {
@@ -874,21 +895,23 @@ export function fitIdwModel(
   const screenXValues = centroids.map((centroid) => centroid.meanScreenX);
   const screenYValues = centroids.map((centroid) => centroid.meanScreenY);
 
-  console.log('[IDW CENTROIDS]', centroids.map((centroid) => ({
-    point: centroid.pointIndex,
-    phase: centroid.phase,
-    ix: Number(centroid.meanIx.toFixed(5)),
-    iy: Number(centroid.meanIy.toFixed(5)),
-    pitch: Number(centroid.meanPitch.toFixed(5)),
-    screenX: Number(centroid.meanScreenX.toFixed(2)),
-    screenY: Number(centroid.meanScreenY.toFixed(2)),
-    samples: centroid.sampleCount,
-  })));
+  calibrationLogger.debug('[IDW CENTROIDS]', () =>
+    centroids.map((centroid) => ({
+      point: centroid.pointIndex,
+      phase: centroid.phase,
+      ix: Number(centroid.meanIx.toFixed(5)),
+      iy: Number(centroid.meanIy.toFixed(5)),
+      pitch: Number(centroid.meanPitch.toFixed(5)),
+      screenX: Number(centroid.meanScreenX.toFixed(2)),
+      screenY: Number(centroid.meanScreenY.toFixed(2)),
+      samples: centroid.sampleCount,
+    })),
+  );
 
   const gridCentroids = centroids.filter((centroid) => centroid.phase === 'STATIC').length;
   const readingCentroids = centroids.filter((centroid) => centroid.phase === 'READING_ANCHOR').length;
 
-  console.log('[IDW FIT]', {
+  calibrationLogger.debug('[IDW FIT]', {
     rawSamples: trainSamples.length,
     gridCentroids,
     readingCentroids,
@@ -944,15 +967,15 @@ function fitPolynomialRidge(
       `selectorErr=${selectedModel.error.toFixed(2)}px)`,
   };
 
-  console.log('[MODEL INFO]', model.info);
-  console.log('[POLY MODEL]', {
-    selectedLabel: selectedModel.label,
-    lambdaX: selectedModel.lambdaX,
-    lambdaY: selectedModel.lambdaY,
-    selectorErrorPx: Number(selectedModel.error.toFixed(2)),
-    trainingErrorPx: Number(selectedModel.trainingError.toFixed(2)),
-    coeffsX: selectedModel.coeffsX.map((value) => Number(value.toFixed(5))),
-    coeffsY: selectedModel.coeffsY.map((value) => Number(value.toFixed(5))),
+  calibrationLogger.debug('[MODEL INFO]', model.info);
+  calibrationLogger.debug('[POLY MODEL]', {
+      selectedLabel: selectedModel.label,
+      lambdaX: selectedModel.lambdaX,
+      lambdaY: selectedModel.lambdaY,
+      selectorErrorPx: Number(selectedModel.error.toFixed(2)),
+      trainingErrorPx: Number(selectedModel.trainingError.toFixed(2)),
+      coeffsX: selectedModel.coeffsX.map((value) => Number(value.toFixed(5))),
+      coeffsY: selectedModel.coeffsY.map((value) => Number(value.toFixed(5))),
   });
   return model;
 }
@@ -974,7 +997,7 @@ export function fitProductionCalibrationModel(
   const screenW = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const screenH = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
-  console.log('[FEATURE SET] calibration models — separate X/Y feature builders', {
+  calibrationLogger.debug('[FEATURE SET] calibration models - separate X/Y feature builders', {
     xAxisFeatures: NUM_FEATURES_X,
     yAxisFeatures: NUM_FEATURES_Y,
     xFeatures: [
@@ -1047,29 +1070,29 @@ export function fitProductionCalibrationModel(
 
   const selectedModel = selectedCandidate.model;
 
-  console.log('[MODEL CANDIDATES]', {
-    idw: {
-      kind: idwModel.kind,
-      selectorErrorPx: Number(idwSelectorError.toFixed(2)),
-      trainingErrorPx: Number(idwModel.trainingError.toFixed(2)),
-      maxCentroidErrorPx: Number(idwMaxCentroidError.toFixed(2)),
-      sanityPassed: idwCandidate.sanityPassed,
-      info: idwModel.info,
-    },
-    polynomial: {
-      kind: polynomialModel.kind,
-      selectorErrorPx: Number(polynomialSelectorError.toFixed(2)),
-      trainingErrorPx: Number(polynomialModel.trainingError.toFixed(2)),
-      info: polynomialModel.info,
-    },
+  calibrationLogger.debug('[MODEL CANDIDATES]', {
+      idw: {
+        kind: idwModel.kind,
+        selectorErrorPx: Number(idwSelectorError.toFixed(2)),
+        trainingErrorPx: Number(idwModel.trainingError.toFixed(2)),
+        maxCentroidErrorPx: Number(idwMaxCentroidError.toFixed(2)),
+        sanityPassed: idwCandidate.sanityPassed,
+        info: idwModel.info,
+      },
+      polynomial: {
+        kind: polynomialModel.kind,
+        selectorErrorPx: Number(polynomialSelectorError.toFixed(2)),
+        trainingErrorPx: Number(polynomialModel.trainingError.toFixed(2)),
+        info: polynomialModel.info,
+      },
   });
 
-  console.log('[MODEL SELECTED]', {
-    kind: selectedModel.kind,
-    reason,
-    selectorErrorPx: Number(selectedCandidate.selectorErrorPx.toFixed(2)),
-    trainingErrorPx: Number(selectedModel.trainingError.toFixed(2)),
-    info: selectedModel.info,
+  calibrationLogger.debug('[MODEL SELECTED]', {
+      kind: selectedModel.kind,
+      reason,
+      selectorErrorPx: Number(selectedCandidate.selectorErrorPx.toFixed(2)),
+      trainingErrorPx: Number(selectedModel.trainingError.toFixed(2)),
+      info: selectedModel.info,
   });
 
   if (typeof window !== 'undefined') {

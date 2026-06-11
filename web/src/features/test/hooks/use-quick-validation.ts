@@ -15,6 +15,7 @@ import {
   nextAnimationFrame,
   getScreenInfo,
 } from '../lib/calibration-engine-constants';
+import { calibrationLogger } from '../lib/debug-config';
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -103,12 +104,12 @@ export function useQuickValidation(
       const { width, height, diagonal } = getScreenInfo();
       const usingOverride = targetOverride.length > 0;
       if (usingOverride) {
-        console.log('[QUICK VALIDATION RUN] Using reading anchor override targets', {
+        calibrationLogger.debug('[QUICK VALIDATION RUN] Using reading anchor override targets', {
           count: targetOverride.length,
           phases: targetOverride.map((t) => t.phase),
         });
       } else {
-        console.log('[QUICK VALIDATION RUN] Using default grid VALIDATION_POINT_INDICES');
+        calibrationLogger.debug('[QUICK VALIDATION RUN] Using default grid VALIDATION_POINT_INDICES');
       }
       const validationTargets =
         targetOverride.length > 0
@@ -200,7 +201,7 @@ export function useQuickValidation(
         // If we did not observe enough valid prediction samples, skip this
         // point so transient camera loss does not force a false 0% verdict.
         if (distances.length < VALIDATION_MIN_SAMPLES_PER_POINT) {
-          console.warn('[QUICK VALIDATION] skipped point', {
+          calibrationLogger.warn('[QUICK VALIDATION] skipped point', {
             step: index + 1,
             pointIndex: shuffledTargets[index].pointIndex,
             label: target.label,
@@ -244,7 +245,7 @@ export function useQuickValidation(
           verticalErrorPx,
         });
 
-        console.log('[QUICK VALIDATION] point result', {
+        calibrationLogger.debug('[QUICK VALIDATION] point result', {
           step: index + 1,
           pointIndex: shuffledTargets[index].pointIndex,
           label: target.label,
@@ -291,7 +292,7 @@ export function useQuickValidation(
         meanVerticalErrorPx: meanVerticalError,
         meanHorizontalErrorPx: meanHorizontalError,
       };
-      console.log('[QUICK VALIDATION] finished', JSON.stringify({
+      calibrationLogger.debug('[QUICK VALIDATION] finished', {
         accuracy: result.accuracy,
         scores: result.scores,
         totalPoints: result.totalPoints,
@@ -303,7 +304,7 @@ export function useQuickValidation(
           horizontalErrorPx: Number(p.horizontalErrorPx.toFixed(2)),
           verticalErrorPx: Number(p.verticalErrorPx.toFixed(2))
         }))
-      }));
+      });
       setState((prev) => ({
         ...prev,
         phase: 'done',

@@ -83,14 +83,6 @@ export const CALIBRATION_THRESHOLDS = {
  */
 export const MIN_GAZE_POINTS = envNumber('NEXT_PUBLIC_MIN_GAZE_POINTS', 20);
 
-/**
- * EMA smoothing factor for webcam gaze coordinates.
- * Lower α = heavier smoothing.
- *
- * Env: NEXT_PUBLIC_WEBCAM_EMA_ALPHA (default: 0.3)
- */
-export const WEBCAM_GAZE_EMA_ALPHA = envFloat('NEXT_PUBLIC_WEBCAM_EMA_ALPHA', 0.3);
-
 /** Estimated reading speed for children / dyslexia screening (words per minute) */
 export const ESTIMATED_READING_WPM = 60;
 

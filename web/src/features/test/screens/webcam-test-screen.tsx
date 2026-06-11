@@ -189,11 +189,9 @@ export default function WebcamTestScreen() {
           )}
 
           {renderState()}
-          {DEBUG_GAZE_OVERLAY &&
-            (state.currentState === 'task-paragraph' ||
-              state.currentState === 'review-paragraph') && (
-              <GazeDebugDot active getPosition={() => lastTaskGazePosition} />
-            )}
+          {DEBUG_GAZE_OVERLAY && state.currentState === 'task-paragraph' && (
+            <GazeDebugDot active={webcamGaze.collecting} getPosition={() => lastTaskGazePosition} />
+          )}
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

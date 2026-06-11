@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import type { CalibrationResult, CalibrationPhaseType, CalibrationPoint } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
 import { fitProductionCalibrationModel, type TrainingSample } from '../lib/calibration-models';
+import { calibrationLogger } from '../lib/debug-config';
 import {
   type CollectedSample,
   buildSerpentineOrder,
@@ -200,7 +201,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         capturedSamplesThisPoint ?? samplesByPointRef.current[currentPointIdx]?.length ?? 0;
       const isCompletion = collectionCursor >= collectionOrder.length - 1;
 
-      console.log(
+      calibrationLogger.debug(
         `[DONE] cursor=${collectionCursor}/${collectionOrder.length - 1} pointIndex=${currentPointIdx} phase=${currentPoint?.phase} samples=${capturedThisPoint}`,
       );
 
@@ -264,13 +265,13 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       needsRecalibration: boolean;
       recalibrationPoints: number[];
     } => {
-      console.log(
+      calibrationLogger.debug(
         '[CALIBRATION RAW SAMPLES]',
         summarizeCollectedBuckets(samplesByPointRef.current),
       );
 
       const cleanedByPoint = samplesByPointRef.current.map((bucket) => filterOutliers(bucket));
-      console.log('[CALIBRATION CLEANED SAMPLES]', summarizeCollectedBuckets(cleanedByPoint));
+      calibrationLogger.debug('[CALIBRATION CLEANED SAMPLES]', summarizeCollectedBuckets(cleanedByPoint));
 
       const trainingSamples: TrainingSample[] = [];
       const heldOutSamples: TrainingSample[] = [];
@@ -290,7 +291,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         0,
       );
 
-      console.log('[CALIBRATION FIT INPUT]', {
+      calibrationLogger.debug('[CALIBRATION FIT INPUT]', {
         coveredPoints,
         minCoveredPointsRequired: MIN_WEBCAM_POINTS_WITH_SAMPLES,
         trainingSamples: trainingSamples.length,
@@ -302,7 +303,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         trainingSamples.length < MIN_WEBCAM_SAMPLES ||
         coveredPoints < MIN_WEBCAM_POINTS_WITH_SAMPLES
       ) {
-        console.warn('[CALIBRATION FIT SKIPPED] insufficient data', {
+        calibrationLogger.warn('[CALIBRATION FIT SKIPPED] insufficient data', {
           coveredPoints,
           trainingSamples: trainingSamples.length,
         });
@@ -353,7 +354,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         normalizedError: error != null ? Number(error.toFixed(4)) : null,
       }));
 
-      console.log('[CALIBRATION POINT ERRORS]', calibrationPointErrors);
+      calibrationLogger.debug('[CALIBRATION POINT ERRORS]', calibrationPointErrors);
 
       // Only STATIC points can be flagged for recalibration.
       // Sweep phase errors are expected to be high while head position changes.
@@ -390,7 +391,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         .filter((point) => point.normalizedError > targetedRecalibrationThreshold)
         .map((point) => point.pointIndex);
 
-      console.log('[TARGETED RECALIBRATION CHECK]', {
+      calibrationLogger.debug('[TARGETED RECALIBRATION CHECK]', {
         staticMedianError: Number(staticMedianError.toFixed(4)),
         baseThreshold: TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD,
         effectiveThreshold: Number(targetedRecalibrationThreshold.toFixed(4)),
@@ -405,7 +406,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         flaggedPointCandidates.length > 0 &&
         recalibrationRound < TARGETED_RECALIBRATION_MAX_ROUNDS
       ) {
-        console.warn('[TARGETED RECALIBRATION]', {
+        calibrationLogger.warn('[TARGETED RECALIBRATION]', {
           recalibrationRound,
           flaggedPointCandidates,
         });
@@ -442,7 +443,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       }
 
       const calibResult = buildCalibrationResult(pointAccuracies);
-      console.log('[CALIBRATION RESULT]', {
+      calibrationLogger.debug('[CALIBRATION RESULT]', {
         quality: calibResult.quality,
         averageError: Number(calibResult.averageError.toFixed(4)),
         pointAccuracies: pointAccuracies.map((value) => Number(value.toFixed(4))),

@@ -334,6 +334,7 @@ export function CalibrationScreen({
 
     return (
       <PursuitCalibrationView
+        gridPointCount={calibration.totalPoints}
         aoiBounds={{ x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS }}
         irisStream={onGetIrisSample}
         headPoseStream={onGetHeadPoseSample}
