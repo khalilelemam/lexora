@@ -16,7 +16,7 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
 | Adaptive Kalman smoothing | Keep | Replaced stale EMA docs/env references so the code and docs agree. |
 | IQR outlier filtering | Fixed/keep | Kept the approach and fixed the small-bucket floor edge case. |
 | IDW fallback | Keep for now | It is heavier than ideal, but it is now isolated behind `fitIdwModel()`. Evaluate with real sessions before replacing it. |
-| Complexity increase | In progress | Model types, feature builders, ridge math, metrics, diagnostics, IDW, and polynomial ridge fitting are now behind focused modules while the public facade stays stable. |
+| Complexity increase | Mostly addressed | Model fitting, webcam adapters, sample conversion, recalibration selection, and fixation stability are now behind focused modules while public facades stay stable. |
 | Hardcoded magic numbers | Defer | Keep defaults hardcoded until we have data. Expose only operational debug envs for now. |
 | Missing empirical validation | Still needed | Needs before/after session metrics. This is not a code-only task. |
 
@@ -39,6 +39,10 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
 | 13 | Production console logging | Fixed | Verbose logs go through `calibrationLogger`; production requires `NEXT_PUBLIC_DEBUG_CALIBRATION_LOG=true`. |
 
 ## What Remains
+
+- Empirical validation with real calibration sessions.
+- Optional deeper extraction only when the remaining lifecycle/model-selection code starts changing again.
+- Delete this tracker before the branch is merged.
 
 ## Refactor Work Completed This Pass
 
@@ -81,9 +85,9 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
    - Files: `calibration-models.ts`, potential `lib/calibration-models/model-selection.ts`.
    - Why: Today the facade is small enough to keep selection visible. Split it only when the selection policy grows or needs direct unit tests.
 
-2. Continue splitting `use-webcam-gaze.ts` only if the lifecycle code keeps changing.
+2. Stop splitting `use-webcam-gaze.ts` for now.
    - Proposed next seam: a dedicated detection-loop hook that owns rAF scheduling and frame processing.
-   - Why later: That seam has more React lifecycle risk than the pure landmark/camera/MediaPipe extractions completed here.
+   - Why later: The user asked to pause this area, and that seam has more React lifecycle risk than the pure landmark/camera/MediaPipe extractions completed here.
 
 3. Consider extracting webcam model-fit orchestration from `use-calibration.ts` only if it needs direct tests.
    - Files: `use-calibration.ts`, potential `lib/calibration-fit-flow.ts`.
@@ -95,10 +99,7 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
    - Completed now: camera adapter, MediaPipe adapter, landmark/head-pose extraction.
    - Possible next module: detection-loop hook that owns rAF scheduling and frame processing.
 
-2. Extract stability detection from `use-calibration-engine.ts`.
-   - Status: Done for the pure stability calculation. The engine still owns React state and lifecycle transitions.
-
-3. Split calibration sample storage from model fitting in `use-calibration.ts`.
+2. Split calibration sample storage from model fitting in `use-calibration.ts`.
    - Status: Partially done. Sample shape/conversion and recalibration selection are now separate modules.
    - Why: Storage/order/recalibration and fitting are different responsibilities.
 
@@ -124,3 +125,7 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
 - `npm run build` passed after the calibration model refactor.
 - `npm run lint` passed after the webcam gaze refactor.
 - `npm run build` passed after the webcam gaze refactor.
+- `npm run lint` passed after the sample/recalibration module refactor.
+- `npm run build` passed after the sample/recalibration module refactor.
+- `npm run lint` passed after the fixation stability refactor.
+- `npm run build` passed after the fixation stability refactor.
