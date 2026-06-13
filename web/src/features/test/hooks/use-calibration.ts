@@ -158,40 +158,6 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
     [phase],
   );
 
-  const addSample = useCallback(
-    (
-      observedX: number,
-      observedY: number,
-      targetX: number,
-      targetY: number,
-      yaw = 0,
-      pitch = 0,
-      roll = 0,
-      headX = 0,
-      headY = 0,
-      headZ = 0.65,
-      sampleWeight?: number,
-      samplePhase?: CalibrationPhaseType,
-    ) => {
-      addSampleForPoint(
-        currentPointIndex,
-        observedX,
-        observedY,
-        targetX,
-        targetY,
-        yaw,
-        pitch,
-        roll,
-        headX,
-        headY,
-        headZ,
-        sampleWeight,
-        samplePhase,
-      );
-    },
-    [addSampleForPoint, currentPointIndex],
-  );
-
   const advancePoint = useCallback(
     (capturedSamplesThisPoint?: number) => {
       const currentPointIdx = collectionOrder[collectionCursor] ?? -1;
@@ -484,7 +450,6 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
     activePointIndices: collectionOrder,
     result,
     startCalibration,
-    addSample,
     addSampleForPoint,
     advancePoint,
     completeReadingAnchors,

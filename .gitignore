@@ -12,6 +12,7 @@ Icon?
 *.swp
 *~
 *.tmp
+web/tmp/
 *.pid
 *.seed
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useCallback, type ReactNode } from 'react';
 import { X, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CALIBRATION_POINTS, AOI_Y_BOUNDS } from '../lib/constants';
+import { CALIBRATION_POINTS, AOI_Y_BOUNDS, READING_ZONE_BOUNDS } from '../lib/constants';
 import { TaskDisplay } from './task-display';
 import { useGazeReplay } from '../hooks/use-gaze-replay';
 import type { GazeFeature } from '../types';
@@ -33,8 +33,7 @@ interface FullscreenGazeReplayProps {
  * Fullscreen overlay that renders TaskDisplay in preview mode
  * with ML fixation bubbles + saccade lines on top.
  *
- * Uses the exact same reading zone as the live test (20%–80% X, 10%–95% Y)
- * so fixation positions map correctly — zero perspective mismatch.
+ * Uses the same reading zone as the live test so fixation positions map correctly.
  */
 export function FullscreenGazeReplay({
   taskType,
@@ -63,10 +62,10 @@ export function FullscreenGazeReplay({
   // Reading zone pixel bounds (must match TaskDisplay layout)
   const screenW = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const screenH = typeof window !== 'undefined' ? window.innerHeight : 1080;
-  const zoneLeft = screenW * 0.2;
-  const zoneTop = screenH * 0.1;
-  const zoneW = screenW * 0.6; // 20%–80%
-  const zoneH = screenH * 0.85; // 10%–95%
+  const zoneLeft = screenW * READING_ZONE_BOUNDS.left;
+  const zoneTop = screenH * READING_ZONE_BOUNDS.top;
+  const zoneW = screenW * (1 - READING_ZONE_BOUNDS.left - READING_ZONE_BOUNDS.right);
+  const zoneH = screenH * (1 - READING_ZONE_BOUNDS.top - READING_ZONE_BOUNDS.bottom);
 
   return (
     <div className="fixed inset-0 z-50">

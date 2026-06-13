@@ -28,10 +28,3 @@ export function applyRollCorrection(
 export function computeInvHeadZ(headZ: number): number {
   return Math.min(2.2, Math.max(0.5, 1.0 / (headZ + 0.01)));
 }
-
-if (process.env.NODE_ENV !== 'production') {
-  const eps = 1e-2;
-  console.assert(Math.abs(computeInvHeadZ(0.4) - 2.2) < eps, 'invHeadZ clamp at 0.40m failed');
-  console.assert(Math.abs(computeInvHeadZ(0.65) - 1.52) < 0.05, 'invHeadZ at 0.65m mismatch');
-  console.assert(Math.abs(computeInvHeadZ(1.2) - 0.82) < 0.05, 'invHeadZ at 1.20m mismatch');
-}

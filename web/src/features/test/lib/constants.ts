@@ -63,6 +63,14 @@ export const AOI_X_BOUNDS = { min: 0.2, max: 0.8 } as const;
 /** Gaze AOI Y bounds (screen-normalized). Matches Phase 1 static-dot bounds. */
 export const AOI_Y_BOUNDS = { min: 0.15, max: 0.6 } as const;
 
+/** Reading zone bounds used by live rendering, replay overlays, and exports. */
+export const READING_ZONE_BOUNDS = {
+  top: 0.18,
+  left: 0.25,
+  right: 0.25,
+  bottom: 0.38,
+} as const;
+
 /**
  * Calibration quality thresholds (normalized error).
  * Webcam iris tracking is noisier than dedicated hardware, so thresholds

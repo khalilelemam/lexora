@@ -13,7 +13,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { MIN_GAZE_POINTS, ESTIMATED_READING_WPM, MIN_AUTO_DETECT_SECONDS } from '../lib/constants';
+import {
+  MIN_GAZE_POINTS,
+  ESTIMATED_READING_WPM,
+  MIN_AUTO_DETECT_SECONDS,
+  READING_ZONE_BOUNDS,
+} from '../lib/constants';
 
 /* ── Public types ──────────────────────────────────────── */
 
@@ -326,18 +331,18 @@ export function TaskDisplay({
   return (
     <div ref={rootRef} className={cn('fixed inset-0 z-40 bg-[#FDF8F0]', !preview && 'cursor-none')}>
       {/*
-       * Reading zone — text flows naturally within calibration space.
+       * Reading zone — text flows within the replay/export bounds.
        * Horizontal bounds: 25%–75% of screen (within calibration X: 0.2–0.8)
-       * Vertical bounds: 15%–60% of screen (within calibration Y: 0.1–0.65)
+       * Vertical bounds: 18%–62% of screen (within calibration Y: 0.15–0.60)
        */}
       <div
         ref={readingZoneRef}
         className="absolute flex flex-col"
         style={{
-          top: '18%',
-          left: '25%',
-          right: '25%',
-          bottom: '38%', /* should be 43% */
+          top: `${READING_ZONE_BOUNDS.top * 100}%`,
+          left: `${READING_ZONE_BOUNDS.left * 100}%`,
+          right: `${READING_ZONE_BOUNDS.right * 100}%`,
+          bottom: `${READING_ZONE_BOUNDS.bottom * 100}%`,
         }}
         dir="ltr"
       >

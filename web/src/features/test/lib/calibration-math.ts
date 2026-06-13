@@ -103,15 +103,15 @@ export function mean(values: number[]): number {
  * @param samples  Collected samples from ONE calibration point
  * @param kSigma   Rejection multiplier (default 2.5). Equivalent to ~2σ
  *                 for Gaussian data but robust to contamination.
- * @returns        Filtered subset, never fewer than MIN_RETAINED samples
+ * @returns        Filtered subset, or the original samples when there are
+ *                 too few points to enforce the MIN_RETAINED floor.
  */
-export function filterOutliers(
-  samples: CollectedSample[],
-  kSigma = 2.5,
-): CollectedSample[] {
+export function filterOutliers(samples: CollectedSample[], kSigma = 2.5): CollectedSample[] {
   const MIN_RETAINED = 8; // Hard floor — must keep at least the minSamples threshold
 
-  if (samples.length < 4) return samples; // Too few to compute quartiles
+  // Below the retained floor we cannot reject samples without undercutting the
+  // minimum data needed by downstream calibration fitting.
+  if (samples.length < MIN_RETAINED) return samples;
 
   const xs = samples.map((s) => s.observedX);
   const ys = samples.map((s) => s.observedY);
@@ -129,9 +129,7 @@ export function filterOutliers(
 
   // Filter: keep samples within thresholds on both axes
   const filtered = samples.filter(
-    (s) =>
-      Math.abs(s.observedX - medianX) <= threshX &&
-      Math.abs(s.observedY - medianY) <= threshY,
+    (s) => Math.abs(s.observedX - medianX) <= threshX && Math.abs(s.observedY - medianY) <= threshY,
   );
 
   // Safety floor: if filter is too aggressive, fall back to closest-to-median
@@ -139,14 +137,8 @@ export function filterOutliers(
     return samples
       .slice()
       .sort((a, b) => {
-        const dA = Math.hypot(
-          a.observedX - medianX,
-          a.observedY - medianY,
-        );
-        const dB = Math.hypot(
-          b.observedX - medianX,
-          b.observedY - medianY,
-        );
+        const dA = Math.hypot(a.observedX - medianX, a.observedY - medianY);
+        const dB = Math.hypot(b.observedX - medianX, b.observedY - medianY);
         return dA - dB;
       })
       .slice(0, MIN_RETAINED);

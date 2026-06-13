@@ -6,8 +6,7 @@ export const DEBUG_GAZE_OVERLAY = process.env.NEXT_PUBLIC_DEBUG_GAZE_OVERLAY ===
  * production builds require NEXT_PUBLIC_DEBUG_CALIBRATION_LOG=true.
  */
 export const DEBUG_CALIBRATION_LOG =
-  process.env.NEXT_PUBLIC_DEBUG_CALIBRATION_LOG === 'true' ||
-  process.env.NODE_ENV !== 'production';
+  process.env.NEXT_PUBLIC_DEBUG_CALIBRATION_LOG === 'true' || process.env.NODE_ENV !== 'production';
 
 type LogArg = unknown | (() => unknown);
 type LogMethod = 'debug' | 'info' | 'warn' | 'error';

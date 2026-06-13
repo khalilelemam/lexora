@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CalibrationPoint, CalibrationResult, CalibrationPhaseType } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
+import {
+  resolveCalibrationMode,
+  type CalibrationVisualMode,
+} from '../lib/calibration-mode';
 import { useCalibration } from './use-calibration';
 import { buildCalibrationResult } from '../lib/calibration-math';
 import type { CollectedSample } from '../lib/calibration-math';
@@ -26,7 +30,8 @@ const FULL_POINT_SEQUENCE = CALIBRATION_POINTS;
 
 /* ── Public types ───────────────────────────────────────── */
 
-export type CalibrationVisualMode = 'grid' | 'stickman' | 'star';
+export { resolveCalibrationMode };
+export type { CalibrationVisualMode };
 
 export interface RawIrisLandmark {
   x: number;
@@ -72,26 +77,6 @@ interface UseCalibrationEngineOptions {
     headY: number;
     headZ: number;
   } | null;
-}
-
-/* ── Helpers ────────────────────────────────────────────── */
-
-export function resolveCalibrationMode(
-  requestedMode?: CalibrationVisualMode,
-  participantAge?: number,
-): CalibrationVisualMode {
-  if (requestedMode === 'grid' || requestedMode === 'star') return requestedMode;
-  if (requestedMode === 'stickman') {
-    // Stickman mode is temporarily disabled until stabilization is complete.
-    return 'grid';
-  }
-
-  if (typeof participantAge === 'number' && Number.isFinite(participantAge)) {
-    if (participantAge >= 7 && participantAge <= 9) return 'star';
-    if (participantAge >= 10) return 'grid';
-  }
-
-  return 'grid';
 }
 
 /* ── Main hook ──────────────────────────────────────────── */
@@ -333,7 +318,7 @@ export function useCalibrationEngine({
     if (quickValidation.phase !== 'idle') return;
     const mapping = mappingRef.current;
     if (tracker === 'webcam' && !mapping) {
-      console.warn('[QUICK VALIDATION] missing webcam mapping; validation will fail closed');
+      calibrationLogger.warn('[QUICK VALIDATION] missing webcam mapping; validation will fail closed');
     }
 
     if (readingValidationTargets.length > 0) {
