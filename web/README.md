@@ -178,6 +178,12 @@ These control the calibration collection and validation pipeline. Tweak these to
 | `NEXT_PUBLIC_VALIDATION_SETTLE_MS`          | `450`   | 200–1000  | Time to let gaze settle before measuring each validation point.                                                                                                                               |
 | `NEXT_PUBLIC_VALIDATION_HOLD_MS`            | `1200`  | 500–3000  | Duration to hold fixation during validation measurement.                                                                                                                                      |
 | `NEXT_PUBLIC_VALIDATION_THRESHOLD`          | `0.12`  | 0.05–0.25 | Accuracy threshold as fraction of screen diagonal. Distance ≤ this = 100% score. **Smaller = stricter**.                                                                                      |
+| `NEXT_PUBLIC_CALIBRATION_IDW_MAX_CENTROID_ERROR_PX` | `100` | 50–250 | Reject IDW as a sane candidate when its static centroids reconstruct worse than this. **Higher = more permissive fallback selection**. |
+| `NEXT_PUBLIC_CALIBRATION_POLY_MAX_TRAINING_ERROR_PX` | `200` | 100–400 | Fall back to IDW when polynomial training error exceeds this. **Higher = more permissive polynomial selection**. |
+| `NEXT_PUBLIC_TARGETED_RECALIBRATION_MAX_ROUNDS` | `1` | 0–3 | Max targeted recalibration passes after a poor static calibration. |
+| `NEXT_PUBLIC_TARGETED_RECALIBRATION_MAX_POINTS` | `6` | 0–20 | Max worst static points selected for targeted recalibration. |
+| `NEXT_PUBLIC_TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD` | `0.2` | 0.05–0.4 | Base normalized error threshold for marking a static point as a recalibration candidate. |
+| `NEXT_PUBLIC_TARGETED_RECALIBRATION_MEDIAN_MARGIN` | `0.025` | 0–0.1 | Extra margin above the static median error before a point is targeted. |
 
 ### Test Screen & Gaze
 
@@ -296,7 +302,7 @@ These live in the source code and are **not** configurable via env vars. They ra
 | `AOI_Y_BOUNDS`                     | `{ min: 0.15, max: 0.60 }` | `constants.ts`                    | Area of Interest Y-axis bounds for calibration and gaze replay mapping |
 | `ESTIMATED_READING_WPM`            | `60`                       | `constants.ts`                    | Used to estimate when to ask "are you done reading?"                  |
 | `MIN_AUTO_DETECT_SECONDS`          | `8`                        | `constants.ts`                    | Minimum wait before the done-reading dialog can appear                |
-| `VALIDATION_POINT_INDICES`         | `[0, 4, 7, 10, 14]`        | `calibration-engine-constants.ts` | Fallback grid points used for quick validation when reading targets are unavailable |
+| `VALIDATION_POINT_INDICES`         | `[12, 8, 6, 16, 18]`       | `calibration-engine-constants.ts` | Fallback grid points used for quick validation when reading targets are unavailable |
 | `VALIDATION_MIN_SAMPLES_PER_POINT` | `10`                       | `calibration-engine-constants.ts` | Min gaze samples per validation point for a valid score               |
 
 ### Calibration Mode Timing Constants

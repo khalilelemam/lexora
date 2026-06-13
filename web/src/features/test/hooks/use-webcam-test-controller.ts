@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { submitWebcamTest } from '@/features/test/actions/submit-webcam-test';
-import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '@/features/test/lib/calibration-mode';
 import type {
   CalibrationResult,
   IntakeData,
@@ -88,16 +88,7 @@ export function useWebcamTestController() {
     (
       result: CalibrationResult,
       mapping?: {
-        predict: (
-          ix: number,
-          iy: number,
-          yaw: number,
-          pitch: number,
-          roll: number,
-          headX: number,
-          headY: number,
-          invHeadZ: number,
-        ) => { x: number; y: number };
+        predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
       },
     ) => {
       if (mapping) {

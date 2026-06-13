@@ -5,10 +5,6 @@ export interface TrainingSample {
   iy: number;
   yaw: number;
   pitch: number;
-  roll: number;
-  headX: number;
-  headY: number;
-  invHeadZ: number;
   targetX: number;
   targetY: number;
   pointIndex: number;
@@ -25,10 +21,6 @@ export interface CalibrationModel {
     irisY: number,
     yaw: number,
     pitch: number,
-    roll: number,
-    headX: number,
-    headY: number,
-    invHeadZ: number,
   ) => { x: number; y: number };
   trainingError: number;
   maxCentroidErrorPx?: number;

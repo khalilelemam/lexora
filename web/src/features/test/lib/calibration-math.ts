@@ -9,8 +9,6 @@ import type { CalibrationResult, CalibrationQuality } from '../types';
 import { CALIBRATION_THRESHOLDS } from './constants';
 import type { CollectedSample } from './calibration-samples';
 
-export type { CollectedSample } from './calibration-samples';
-
 /* ── Grid traversal ─────────────────────────────────────── */
 
 /**
@@ -162,10 +160,6 @@ export function normalizedError(
     iy: number,
     yaw: number,
     pitch: number,
-    roll: number,
-    headX: number,
-    headY: number,
-    invHeadZ: number,
   ) => { x: number; y: number },
   screenWidth: number,
   screenHeight: number,
@@ -175,10 +169,6 @@ export function normalizedError(
     sample.observedY,
     sample.yaw,
     sample.pitch,
-    sample.roll ?? 0,
-    sample.headX ?? 0,
-    sample.headY ?? 0,
-    sample.headZ != null && sample.headZ > 0 ? 1 / sample.headZ : 0,
   );
   const targetX = sample.targetX * screenWidth;
   const targetY = sample.targetY * screenHeight;
@@ -211,12 +201,6 @@ export function buildCalibrationResult(pointAccuracies: number[]): CalibrationRe
     averageError,
   };
 }
-
-/* ── Recalibration thresholds ───────────────────────────── */
-
-export const TARGETED_RECALIBRATION_MAX_ROUNDS = 1;
-export const TARGETED_RECALIBRATION_MAX_POINTS = 6;
-export const TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD = 0.2;
 
 /* ── Webcam sample requirements ─────────────────────────── */
 

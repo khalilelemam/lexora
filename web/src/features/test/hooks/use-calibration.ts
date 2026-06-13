@@ -3,7 +3,8 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import type { CalibrationResult, CalibrationPhaseType, CalibrationPoint } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
-import { fitProductionCalibrationModel, type TrainingSample } from '../lib/calibration-models';
+import { fitProductionCalibrationModel } from '../lib/calibration-models';
+import type { TrainingSample } from '../lib/calibration-models/types';
 import { calibrationLogger } from '../lib/debug-config';
 import {
   type CalibrationMappingResult,
@@ -16,6 +17,7 @@ import {
 import {
   buildCalibrationPointErrors,
   selectTargetedRecalibrationPoints,
+  TARGETED_RECALIBRATION_MAX_ROUNDS,
 } from '../lib/calibration-recalibration';
 import {
   buildSerpentineOrder,
@@ -28,7 +30,6 @@ import {
   MIN_WEBCAM_SAMPLES,
   MIN_WEBCAM_POINTS_WITH_SAMPLES,
   MIN_WEBCAM_SAMPLES_PER_POINT,
-  TARGETED_RECALIBRATION_MAX_ROUNDS,
 } from '../lib/calibration-math';
 
 type CalibrationPhase =
@@ -66,10 +67,6 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       targetY: number,
       yaw = 0,
       pitch = 0,
-      roll = 0,
-      headX = 0,
-      headY = 0,
-      headZ = 0.65,
       sampleWeight?: number,
       samplePhase?: CalibrationPhaseType,
     ) => {
@@ -86,10 +83,6 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         targetY,
         yaw,
         pitch,
-        roll,
-        headX,
-        headY,
-        headZ,
         sampleWeight,
         phase: samplePhase,
       });
@@ -242,11 +235,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
         iy: number,
         yaw: number,
         pitch: number,
-        roll: number,
-        headX: number,
-        headY: number,
-        invHeadZ: number,
-      ) => model.predict(ix, iy, yaw, pitch, roll, headX, headY, invHeadZ);
+      ) => model.predict(ix, iy, yaw, pitch);
 
       const pointErrorsOrNull = cleanedByPoint.map((bucket) => {
         if (bucket.length === 0) return null;

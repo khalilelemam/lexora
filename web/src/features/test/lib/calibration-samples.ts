@@ -1,5 +1,5 @@
 import type { CalibrationPhaseType } from '../types';
-import type { TrainingSample } from './calibration-models';
+import type { TrainingSample } from './calibration-models/types';
 
 export interface CollectedSample {
   pointIndex: number;
@@ -9,10 +9,6 @@ export interface CollectedSample {
   targetY: number;
   yaw: number;
   pitch: number;
-  roll?: number;
-  headX?: number;
-  headY?: number;
-  headZ?: number;
   /** Weight applied during model training. Defaults to 1.0 if not set. */
   sampleWeight?: number;
   /** The calibration phase this sample was collected during. */
@@ -25,10 +21,6 @@ export interface CalibrationMappingResult {
     irisY: number,
     yaw: number,
     pitch: number,
-    roll: number,
-    headX: number,
-    headY: number,
-    invHeadZ: number,
   ) => { x: number; y: number };
 }
 
@@ -75,10 +67,6 @@ export function toTrainingSample(
     iy: sample.observedY,
     yaw: sample.yaw,
     pitch: sample.pitch,
-    roll: sample.roll ?? 0,
-    headX: sample.headX ?? 0,
-    headY: sample.headY ?? 0,
-    invHeadZ: sample.headZ != null && sample.headZ > 0 ? 1 / sample.headZ : 0,
     targetX: sample.targetX * screenWidth,
     targetY: sample.targetY * screenHeight,
     pointIndex: sample.pointIndex,

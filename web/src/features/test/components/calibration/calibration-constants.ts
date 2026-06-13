@@ -1,6 +1,6 @@
 import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import type { CalibrationQuality } from '../../types';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 
 /**
  * Mode-specific calibration timing constants.

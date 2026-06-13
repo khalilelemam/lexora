@@ -43,7 +43,7 @@ export function drawStickman(
   const t = time * 0.05;
   let hipY = 0;
   let spineAngle = 0;
-  const headY = -35;
+  const headOffsetY = -35;
   let arm1: number[] = [];
   let arm2: number[] = [];
   let leg1: number[] = [];
@@ -114,7 +114,7 @@ export function drawStickman(
   ctx.stroke();
 
   // ─── Head (white fill + dark stroke) ────────────────────
-  const headCenterY = hipY + headY;
+  const headCenterY = hipY + headOffsetY;
   ctx.beginPath();
   ctx.arc(0, headCenterY, 12, 0, Math.PI * 2);
   ctx.fillStyle = '#fff';

@@ -1,7 +1,7 @@
 'use client';
 
 import { StickmanValidationCanvas } from '../calibration-modes/stickman/stickman-validation-canvas';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 
 interface CalibrationValidationProps {
   currentStep: number;

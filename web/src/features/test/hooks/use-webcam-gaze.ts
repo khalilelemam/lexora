@@ -120,14 +120,10 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     const ix = (iris.leftX + iris.rightX) / 2;
     const iy = (iris.leftY + iris.rightY) / 2;
 
-    // Keep the legacy call shape; calibrated models now use pitch for vertical correction.
     const hp = lastHeadPoseRef.current;
     const yaw = hp?.yaw ?? 0;
     const pitch = hp?.pitch ?? 0;
-    const roll = hp?.roll ?? 0;
-    const headX = hp?.headX ?? 0;
-    const headY = hp?.headY ?? 0;
-    return cal.predict(ix, iy, yaw, pitch, roll, headX, headY, 0);
+    return cal.predict(ix, iy, yaw, pitch);
   }, []);
 
   // ─── Detection Loop ─────────────────────────────────────

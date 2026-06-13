@@ -87,21 +87,7 @@ function fitCandidateModel(
   logCoefficientSummary(label, 'x', bestX.coeffs);
   logCoefficientSummary(label, 'y', bestY.coeffs);
 
-  const predict: CalibrationModel['predict'] = (
-    ix: number,
-    iy: number,
-    yaw: number,
-    pitch: number,
-    roll: number,
-    headX: number,
-    headY: number,
-    invHeadZ: number,
-  ) => {
-    void roll;
-    void headX;
-    void headY;
-    void invHeadZ;
-
+  const predict: CalibrationModel['predict'] = (ix: number, iy: number, yaw: number, pitch: number) => {
     const standardizeFeatures = (rawFeatures: number[], scaler: FeatureScaler): number[] =>
       rawFeatures.map((val, col) => {
         if (col === 0) return 1;
@@ -123,28 +109,10 @@ function fitCandidateModel(
   };
 
   const error = meanEuclideanError(selector, (sample) =>
-    predict(
-      sample.ix,
-      sample.iy,
-      sample.yaw,
-      sample.pitch,
-      sample.roll,
-      sample.headX,
-      sample.headY,
-      sample.invHeadZ,
-    ),
+    predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
   );
   const trainingError = meanEuclideanError(train, (sample) =>
-    predict(
-      sample.ix,
-      sample.iy,
-      sample.yaw,
-      sample.pitch,
-      sample.roll,
-      sample.headX,
-      sample.headY,
-      sample.invHeadZ,
-    ),
+    predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
   );
 
   return {

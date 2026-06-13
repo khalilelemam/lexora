@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { submitTobiiTest } from '@/features/test/actions/submit-tobii-test';
-import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '@/features/test/lib/calibration-mode';
 import type { CalibrationResult, IntakeData, TobiiTestFlowState } from '@/features/test/types';
 
 import { useCalibrationQueryParams } from './use-calibration-query-params';

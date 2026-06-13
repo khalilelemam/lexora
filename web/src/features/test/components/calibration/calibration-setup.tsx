@@ -5,7 +5,7 @@ import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 import { MODE_OPTIONS } from './calibration-constants';
 
 interface CalibrationSetupProps {

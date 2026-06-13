@@ -68,21 +68,8 @@ function buildCentroids(trainSamples: TrainingSample[]): Centroid[] {
 }
 
 function buildIdwPredictor(centroids: Centroid[], pitchScale: number): CalibrationModel['predict'] {
-  return (
-    ix: number,
-    iy: number,
-    yaw: number,
-    pitch: number,
-    roll: number,
-    headX: number,
-    headY: number,
-    invHeadZ: number,
-  ) => {
+  return (ix: number, iy: number, yaw: number, pitch: number) => {
     void yaw;
-    void roll;
-    void headX;
-    void headY;
-    void invHeadZ;
 
     let weightedX = 0;
     let weightedY = 0;
@@ -127,16 +114,7 @@ function meanExtremeRowVerticalError(
 
   let totalVerticalError = 0;
   for (const sample of extremeSamples) {
-    const predicted = predict(
-      sample.ix,
-      sample.iy,
-      sample.yaw,
-      sample.pitch,
-      sample.roll,
-      sample.headX,
-      sample.headY,
-      sample.invHeadZ,
-    );
+    const predicted = predict(sample.ix, sample.iy, sample.yaw, sample.pitch);
     totalVerticalError += Math.abs(predicted.y - sample.targetY);
   }
 
@@ -172,28 +150,10 @@ export function fitIdwModel(
     const predict = buildIdwPredictor(centroids, pitchScale);
     const topBottomVerticalError = meanExtremeRowVerticalError(evaluationSamples, predict);
     const selectorError = meanEuclideanError(evaluationSamples, (sample) =>
-      predict(
-        sample.ix,
-        sample.iy,
-        sample.yaw,
-        sample.pitch,
-        sample.roll,
-        sample.headX,
-        sample.headY,
-        sample.invHeadZ,
-      ),
+      predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
     );
     const trainingError = meanEuclideanError(trainSamples, (sample) =>
-      predict(
-        sample.ix,
-        sample.iy,
-        sample.yaw,
-        sample.pitch,
-        sample.roll,
-        sample.headX,
-        sample.headY,
-        sample.invHeadZ,
-      ),
+      predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
     );
 
     return {
@@ -218,7 +178,7 @@ export function fitIdwModel(
 
   const trainingError = bestCandidate.trainingError;
   const centroidErrors = centroids.map((centroid) => {
-    const predicted = predict(centroid.meanIx, centroid.meanIy, 0, centroid.meanPitch, 0, 0, 0, 0);
+    const predicted = predict(centroid.meanIx, centroid.meanIy, 0, centroid.meanPitch);
     return Math.hypot(predicted.x - centroid.meanScreenX, predicted.y - centroid.meanScreenY);
   });
   const meanCentroidError =

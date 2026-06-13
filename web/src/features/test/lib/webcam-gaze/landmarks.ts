@@ -92,22 +92,8 @@ export function extractHeadPose(landmarks: FaceLandmark[]): HeadPose | null {
   const faceCenterY = (forehead.y + chin.y) / 2;
   const pitch = faceHeight > 0.001 ? (noseTip.y - faceCenterY) / faceHeight : 0;
 
-  const leftEye = landmarks[33];
-  const rightEye = landmarks[263];
-  const rollRaw = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x);
-
-  const iod = Math.hypot(rightEye.x - leftEye.x, rightEye.y - leftEye.y);
-  const headZApprox = (0.065 / Math.max(iod, 0.001)) * 0.65;
-
-  const headXRaw = (faceCenterX - 0.5) * headZApprox;
-  const headYRaw = (faceCenterY - 0.5) * headZApprox;
-
   return {
     yaw,
     pitch,
-    roll: Number.isFinite(rollRaw) ? rollRaw : 0,
-    headX: Number.isFinite(headXRaw) ? headXRaw : 0,
-    headY: Number.isFinite(headYRaw) ? headYRaw : 0,
-    headZ: Number.isFinite(headZApprox) && headZApprox > 0.1 ? headZApprox : 0.65,
   };
 }

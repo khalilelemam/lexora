@@ -28,10 +28,6 @@ interface PursuitCalibrationViewProps {
   headPoseStream?: () => {
     yaw: number;
     pitch: number;
-    roll: number;
-    headX: number;
-    headY: number;
-    headZ: number;
   } | null;
   onSampleReady: (sample: CollectedSample) => void;
   onComplete: (validationTargets: CalibrationPoint[]) => void;
@@ -176,10 +172,6 @@ export function PursuitCalibrationView({
             const headPose = headPoseStream?.() ?? {
               yaw: 0,
               pitch: 0,
-              roll: iris.roll ?? 0,
-              headX: iris.headX ?? 0,
-              headY: iris.headY ?? 0,
-              headZ: iris.headZ ?? 0.65,
             };
 
             if (lineIndex === 0 && debugSampleCountRef.current < 5) {
@@ -203,10 +195,6 @@ export function PursuitCalibrationView({
               targetY: lagged.y,
               yaw: headPose.yaw,
               pitch: headPose.pitch,
-              roll: headPose.roll,
-              headX: headPose.headX,
-              headY: headPose.headY,
-              headZ: headPose.headZ,
               sampleWeight: PURSUIT_SAMPLE_WEIGHT,
               phase: 'READING_ANCHOR',
             });

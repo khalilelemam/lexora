@@ -2,8 +2,6 @@ import { calibrationLogger } from './debug-config';
 import {
   NUM_FEATURES_X,
   NUM_FEATURES_Y,
-  expandFeaturesX,
-  expandFeaturesY,
 } from './calibration-models/feature-builders';
 import { fitIdwModel } from './calibration-models/idw-model';
 import { meanEuclideanError } from './calibration-models/metrics';
@@ -12,10 +10,16 @@ import type {
   CalibrationModel,
   TrainingSample,
 } from './calibration-models/types';
+import { envNumber } from './env';
 
-export { NUM_FEATURES_X, NUM_FEATURES_Y, expandFeaturesX, expandFeaturesY };
-export { fitIdwModel };
-export type { CalibrationModel, ModelKind, TrainingSample } from './calibration-models/types';
+const IDW_MAX_CENTROID_ERROR_PX = envNumber(
+  'NEXT_PUBLIC_CALIBRATION_IDW_MAX_CENTROID_ERROR_PX',
+  100,
+);
+const POLYNOMIAL_MAX_TRAINING_ERROR_PX = envNumber(
+  'NEXT_PUBLIC_CALIBRATION_POLY_MAX_TRAINING_ERROR_PX',
+  200,
+);
 
 /**
  * Production calibration model selection.
@@ -57,14 +61,14 @@ export function fitProductionCalibrationModel(
       'pitch*iy',
     ],
     excludedFromY: ['yaw', 'yaw*ix'],
-    excludedFromBoth: ['invHeadZ', 'invHeadZ*ix', 'headY*iy'],
+    poseFeatures: ['yaw', 'pitch'],
   });
 
   const idwModel = fitIdwModel(samples, selector, screenW, screenH);
   const polynomialModel = fitPolynomialRidge(samples, validationSamples);
 
   const idwSelectorError = meanEuclideanError(selector, (sample) =>
-    idwModel.predict(sample.ix, sample.iy, 0, sample.pitch, 0, 0, 0, 0),
+    idwModel.predict(sample.ix, sample.iy, 0, sample.pitch),
   );
   const idwMaxCentroidError = idwModel.maxCentroidErrorPx ?? Number.POSITIVE_INFINITY;
   const polynomialSelectorError = meanEuclideanError(selector, (sample) =>
@@ -73,10 +77,6 @@ export function fitProductionCalibrationModel(
       sample.iy,
       sample.yaw,
       sample.pitch,
-      sample.roll ?? 0,
-      sample.headX ?? 0,
-      sample.headY ?? 0,
-      sample.invHeadZ ?? 0,
     ),
   );
 
@@ -86,7 +86,7 @@ export function fitProductionCalibrationModel(
     selectorErrorPx: idwSelectorError,
     trainingErrorPx: idwModel.trainingError,
     maxCentroidErrorPx: idwMaxCentroidError,
-    sanityPassed: idwMaxCentroidError <= 100,
+    sanityPassed: idwMaxCentroidError <= IDW_MAX_CENTROID_ERROR_PX,
   };
   const polynomialCandidate = {
     kind: 'polynomial-ridge' as const,
@@ -105,11 +105,14 @@ export function fitProductionCalibrationModel(
     ? 'IDW had lower selector error'
     : 'Polynomial ridge had lower selector error';
 
-  if (selectedCandidate.kind === 'polynomial-ridge' && selectedCandidate.trainingErrorPx > 200) {
+  if (
+    selectedCandidate.kind === 'polynomial-ridge' &&
+    selectedCandidate.trainingErrorPx > POLYNOMIAL_MAX_TRAINING_ERROR_PX
+  ) {
     selectedCandidate = idwCandidate;
-    reason = 'Polynomial training error > 200px, falling back to IDW';
+    reason = `Polynomial training error > ${POLYNOMIAL_MAX_TRAINING_ERROR_PX}px, falling back to IDW`;
   } else if (!idwCandidate.sanityPassed) {
-    reason = 'IDW max centroid error exceeded 100px sanity threshold';
+    reason = `IDW max centroid error exceeded ${IDW_MAX_CENTROID_ERROR_PX}px sanity threshold`;
   }
 
   const selectedModel = selectedCandidate.model;
@@ -120,6 +123,7 @@ export function fitProductionCalibrationModel(
       selectorErrorPx: Number(idwSelectorError.toFixed(2)),
       trainingErrorPx: Number(idwModel.trainingError.toFixed(2)),
       maxCentroidErrorPx: Number(idwMaxCentroidError.toFixed(2)),
+      maxCentroidErrorThresholdPx: IDW_MAX_CENTROID_ERROR_PX,
       sanityPassed: idwCandidate.sanityPassed,
       info: idwModel.info,
     },
@@ -127,6 +131,7 @@ export function fitProductionCalibrationModel(
       kind: polynomialModel.kind,
       selectorErrorPx: Number(polynomialSelectorError.toFixed(2)),
       trainingErrorPx: Number(polynomialModel.trainingError.toFixed(2)),
+      maxTrainingErrorThresholdPx: POLYNOMIAL_MAX_TRAINING_ERROR_PX,
       info: polynomialModel.info,
     },
   });

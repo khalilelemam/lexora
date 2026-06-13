@@ -14,23 +14,7 @@
  * - Nyström & Holmqvist (2010): Adaptive algorithm for fixation detection
  */
 
-/* ── Helper to read numeric env vars ────────────────────── */
-
-function envNumber(key: string, fallback: number): number {
-  if (typeof process === 'undefined') return fallback;
-  const raw = process.env[key];
-  if (!raw) return fallback;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function envFloat(key: string, fallback: number): number {
-  if (typeof process === 'undefined') return fallback;
-  const raw = process.env[key];
-  if (!raw) return fallback;
-  const parsed = parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { envFloat, envNumber } from './env';
 
 /**
  * Seconds of countdown before collection starts.
@@ -114,12 +98,6 @@ export const VALIDATION_MIN_SAMPLES_PER_POINT = 10;
  * to prevent anticipatory saccades; subjects can learn fixed sequences.
  */
 export const VALIDATION_POINT_INDICES = [12, 8, 6, 16, 18];
-
-/* ── Calibration phase type ─────────────────────────────── */
-
-// Re-export CalibrationPhaseType from types for convenience
-// (Defined in ../types.ts)
-export type { CalibrationPhaseType } from '../types';
 
 /**
  * Shuffle an array in-place using Fisher–Yates algorithm.

@@ -6,9 +6,9 @@ import { AOI_X_BOUNDS, AOI_Y_BOUNDS, CALIBRATION_POINTS } from '../lib/constants
 import { GridModeView, StickmanCanvas, StarCanvas } from './calibration-modes';
 import { getCalibrationAudio } from '../lib/calibration-audio';
 import { playSoftSound } from '../lib/ui-audio';
+import type { CalibrationVisualMode } from '../lib/calibration-mode';
 import type { CollectedSample } from '../lib/calibration-samples';
 import {
-  type CalibrationVisualMode,
   type WebcamCalibrationSample,
   useCalibrationEngine,
 } from '../hooks/use-calibration-engine';
@@ -37,10 +37,6 @@ interface CalibrationScreenProps {
   onGetHeadPoseSample?: () => {
     yaw: number;
     pitch: number;
-    roll: number;
-    headX: number;
-    headY: number;
-    headZ: number;
   } | null;
   onComplete: (
     result: CalibrationResult,
@@ -50,10 +46,6 @@ interface CalibrationScreenProps {
         iy: number,
         yaw: number,
         pitch: number,
-        roll: number,
-        headX: number,
-        headY: number,
-        invHeadZ: number,
       ) => { x: number; y: number };
     },
   ) => void;

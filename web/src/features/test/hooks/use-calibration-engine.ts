@@ -18,7 +18,6 @@ import { calibrationLogger } from '../lib/debug-config';
 
 import {
   useQuickValidation,
-  type QuickValidationState,
   type MappingFn,
 } from './use-quick-validation';
 import {
@@ -34,9 +33,6 @@ const FULL_POINT_SEQUENCE = CALIBRATION_POINTS;
 
 /* ── Public types ───────────────────────────────────────── */
 
-export { resolveCalibrationMode };
-export type { CalibrationVisualMode };
-
 export interface RawIrisLandmark {
   x: number;
   y: number;
@@ -46,10 +42,6 @@ export interface RawIrisLandmark {
 export interface WebcamCalibrationSample {
   x: number;
   y: number;
-  roll?: number;
-  headX?: number;
-  headY?: number;
-  headZ?: number;
   rawIrisLandmarks?: RawIrisLandmark[] | null;
   /** Screen-space hint used for live feedback and stability velocity. */
   screenHint?: { x: number; y: number } | null;
@@ -62,9 +54,6 @@ export interface StoredCalibrationSample {
   timestamp: number;
 }
 
-// Re-export for consumers that imported from this module
-export type { QuickValidationState };
-
 /* ── Options ────────────────────────────────────────────── */
 
 interface UseCalibrationEngineOptions {
@@ -76,10 +65,6 @@ interface UseCalibrationEngineOptions {
   onGetHeadPoseSample?: () => {
     yaw: number;
     pitch: number;
-    roll: number;
-    headX: number;
-    headY: number;
-    headZ: number;
   } | null;
 }
 
@@ -168,21 +153,8 @@ export function useCalibrationEngine({
       const headPose = onGetHeadPoseSample?.() ?? {
         yaw: 0,
         pitch: 0,
-        roll: sample.roll ?? 0,
-        headX: sample.headX ?? 0,
-        headY: sample.headY ?? 0,
-        headZ: sample.headZ ?? 0.65,
       };
-      return mapping.predict(
-        sample.x,
-        sample.y,
-        headPose.yaw,
-        headPose.pitch,
-        headPose.roll ?? sample.roll ?? 0,
-        headPose.headX ?? sample.headX ?? 0,
-        headPose.headY ?? sample.headY ?? 0,
-        0,
-      );
+      return mapping.predict(sample.x, sample.y, headPose.yaw, headPose.pitch);
     },
     [tracker, onGetGazeSample, onGetIrisSample, onGetHeadPoseSample],
   );
@@ -371,10 +343,6 @@ export function useCalibrationEngine({
       const headPose = onGetHeadPoseSample?.() ?? {
         yaw: 0,
         pitch: 0,
-        roll: 0,
-        headX: 0,
-        headY: 0,
-        headZ: 0.65,
       };
 
       if (tracker === 'tobii') {
@@ -469,10 +437,6 @@ export function useCalibrationEngine({
             target.y,
             headPose.yaw,
             headPose.pitch,
-            headPose.roll,
-            headPose.headX,
-            headPose.headY,
-            headPose.headZ,
             1.0,
             'STATIC',
           );
@@ -528,10 +492,6 @@ export function useCalibrationEngine({
         sample.targetY,
         sample.yaw,
         sample.pitch,
-        sample.roll ?? 0,
-        sample.headX ?? 0,
-        sample.headY ?? 0,
-        sample.headZ ?? 0.65,
         sample.sampleWeight ?? 0.7,
         sample.phase ?? 'READING_ANCHOR',
       );

@@ -46,16 +46,7 @@ export interface QuickValidationRunResult {
 }
 
 export type MappingFn = {
-  predict: (
-    ix: number,
-    iy: number,
-    yaw: number,
-    pitch: number,
-    roll: number,
-    headX: number,
-    headY: number,
-    invHeadZ: number,
-  ) => { x: number; y: number };
+  predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
 } | null;
 
 type PredictionReader = (mapping: MappingFn) => { x: number; y: number } | null;

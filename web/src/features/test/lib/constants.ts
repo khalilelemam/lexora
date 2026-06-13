@@ -4,21 +4,7 @@
  * Tunable values read from NEXT_PUBLIC_ env vars with sensible defaults.
  */
 
-function envNumber(key: string, fallback: number): number {
-  if (typeof process === 'undefined') return fallback;
-  const raw = process.env[key];
-  if (!raw) return fallback;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function envFloat(key: string, fallback: number): number {
-  if (typeof process === 'undefined') return fallback;
-  const raw = process.env[key];
-  if (!raw) return fallback;
-  const parsed = parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+import { envFloat, envNumber } from './env';
 
 /**
  * 20-point calibration pattern focused on the top-anchored reading container (4x5 grid).
