@@ -10,6 +10,10 @@ import {
 import { useCalibration } from './use-calibration';
 import { buildCalibrationResult } from '../lib/calibration-math';
 import type { CollectedSample } from '../lib/calibration-samples';
+import {
+  evaluateFixationStability,
+  type StabilityPoint,
+} from '../lib/calibration-stability';
 import { calibrationLogger } from '../lib/debug-config';
 
 import {
@@ -140,7 +144,7 @@ export function useCalibrationEngine({
 
   /* ---- refs ---- */
   const mappingRef = useRef<MappingFn>(null);
-  const lastStabilityPointRef = useRef<{ x: number; y: number; timestamp: number } | null>(null);
+  const lastStabilityPointRef = useRef<StabilityPoint | null>(null);
   const stableSinceRef = useRef<number | null>(null);
   const lastCaptureAtRef = useRef(0);
   const finalizationStartedRef = useRef(false);
@@ -432,36 +436,28 @@ export function useCalibrationEngine({
 
       setGazeCursor({ x: cursorX, y: cursorY });
 
-      const previous = lastStabilityPointRef.current;
-      if (!previous) {
-        lastStabilityPointRef.current = { x: stabilityX, y: stabilityY, timestamp: now };
+      const currentStabilityPoint = { x: stabilityX, y: stabilityY, timestamp: now };
+      const previousStabilityPoint = lastStabilityPointRef.current;
+      if (!previousStabilityPoint) {
+        lastStabilityPointRef.current = currentStabilityPoint;
         return;
       }
 
-      const dtMs = Math.max(1, now - previous.timestamp);
-      const motionDistance = Math.hypot(stabilityX - previous.x, stabilityY - previous.y);
+      const stability = evaluateFixationStability({
+        previousPoint: previousStabilityPoint,
+        currentPoint: currentStabilityPoint,
+        stableSince: stableSinceRef.current,
+        screenDiagonal: diagonal,
+        stableVelocityThreshold,
+        requiredStableFixationMs,
+        lastCaptureAt: lastCaptureAtRef.current,
+        captureCooldownMs: CAPTURE_COOLDOWN_MS,
+      });
+      stableSinceRef.current = stability.stableSince;
+      setIsStableFixation(stability.isStableFixation);
+      setFixationProgress(stability.fixationProgress);
 
-      // Calculate velocity as fraction of screen diagonal per second
-      // This normalizes across different screen sizes
-      const velocityNormPerSecond = motionDistance / diagonal / (dtMs / 1000);
-
-      // Velocity in normalized screen-diagonal units per second
-      const stable = velocityNormPerSecond < stableVelocityThreshold;
-      if (stable) {
-        if (stableSinceRef.current == null) stableSinceRef.current = now;
-      } else {
-        stableSinceRef.current = null;
-      }
-
-      const stableMs = stableSinceRef.current == null ? 0 : now - stableSinceRef.current;
-      setIsStableFixation(stableMs >= requiredStableFixationMs);
-      setFixationProgress(clamp01(stableMs / requiredStableFixationMs));
-
-      const shouldCollect =
-        stableMs >= requiredStableFixationMs &&
-        now - lastCaptureAtRef.current >= CAPTURE_COOLDOWN_MS;
-
-      if (shouldCollect) {
+      if (stability.shouldCollect) {
         const pointIndex = fullPointSequence.findIndex((p) => p.x === target.x && p.y === target.y);
 
         if (pointIndex >= 0) {
@@ -505,7 +501,7 @@ export function useCalibrationEngine({
         }
       }
 
-      lastStabilityPointRef.current = { x: stabilityX, y: stabilityY, timestamp: now };
+      lastStabilityPointRef.current = currentStabilityPoint;
     },
     [
       calibrationPhase,

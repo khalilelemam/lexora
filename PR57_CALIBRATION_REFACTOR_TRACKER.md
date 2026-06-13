@@ -71,6 +71,10 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
    - Added `web/src/features/test/lib/calibration-recalibration.ts` for point-error records and targeted recalibration candidate selection.
    - Reduced `use-calibration.ts` to lifecycle/state orchestration plus model-fit flow.
 
+6. Extracted fixation stability evaluation from the calibration engine.
+   - Added `web/src/features/test/lib/calibration-stability.ts`.
+   - `use-calibration-engine.ts` still owns state transitions and sample ingestion, while the stability module owns velocity normalization, stable-duration tracking, progress, and capture readiness.
+
 ### Do Next
 
 1. Consider extracting production model selection if more models or thresholds are added.
@@ -92,7 +96,7 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
    - Possible next module: detection-loop hook that owns rAF scheduling and frame processing.
 
 2. Extract stability detection from `use-calibration-engine.ts`.
-   - Why: The engine currently owns countdown, phase transitions, sample ingestion, and fixation stability. A stability module would improve locality.
+   - Status: Done for the pure stability calculation. The engine still owns React state and lifecycle transitions.
 
 3. Split calibration sample storage from model fitting in `use-calibration.ts`.
    - Status: Partially done. Sample shape/conversion and recalibration selection are now separate modules.
