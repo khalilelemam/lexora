@@ -66,6 +66,11 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
    - Kept the hook's public return shape stable.
    - Moved MediaPipe fallback/GPU fallback diagnostics through `calibrationLogger`.
 
+5. Extracted shared calibration sample and recalibration policy modules.
+   - Added `web/src/features/test/lib/calibration-samples.ts` for collected sample shape, bucket helpers, diagnostics summary, and training-sample conversion.
+   - Added `web/src/features/test/lib/calibration-recalibration.ts` for point-error records and targeted recalibration candidate selection.
+   - Reduced `use-calibration.ts` to lifecycle/state orchestration plus model-fit flow.
+
 ### Do Next
 
 1. Consider extracting production model selection if more models or thresholds are added.
@@ -76,9 +81,9 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
    - Proposed next seam: a dedicated detection-loop hook that owns rAF scheduling and frame processing.
    - Why later: That seam has more React lifecycle risk than the pure landmark/camera/MediaPipe extractions completed here.
 
-3. Extract shared calibration sample types.
-   - Files: `calibration-math.ts`, `calibration-models.ts`, `use-calibration.ts`.
-   - Why: `CollectedSample` and `TrainingSample` are related but live in separate modules; this makes the training interface harder to understand.
+3. Consider extracting webcam model-fit orchestration from `use-calibration.ts` only if it needs direct tests.
+   - Files: `use-calibration.ts`, potential `lib/calibration-fit-flow.ts`.
+   - Why: Sample conversion and recalibration policy are now separate. The remaining flow still mutates React state, so extracting it now would create a shallow Interface unless we also move state ownership.
 
 ### Do Later
 
@@ -90,6 +95,7 @@ Temporary working note. Delete this once the PR57 calibration cleanup/refactor i
    - Why: The engine currently owns countdown, phase transitions, sample ingestion, and fixation stability. A stability module would improve locality.
 
 3. Split calibration sample storage from model fitting in `use-calibration.ts`.
+   - Status: Partially done. Sample shape/conversion and recalibration selection are now separate modules.
    - Why: Storage/order/recalibration and fitting are different responsibilities.
 
 ### Do Not Do Yet

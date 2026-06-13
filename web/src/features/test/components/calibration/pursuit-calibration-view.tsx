@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { CalibrationPoint } from '../../types';
-import type { CollectedSample } from '../../lib/calibration-math';
+import type { CollectedSample } from '../../lib/calibration-samples';
 import {
   STABLE_VELOCITY_NORM_PER_SEC,
 } from '../../lib/calibration-engine-constants';

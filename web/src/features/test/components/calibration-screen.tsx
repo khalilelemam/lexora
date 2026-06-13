@@ -6,7 +6,7 @@ import { AOI_X_BOUNDS, AOI_Y_BOUNDS, CALIBRATION_POINTS } from '../lib/constants
 import { GridModeView, StickmanCanvas, StarCanvas } from './calibration-modes';
 import { getCalibrationAudio } from '../lib/calibration-audio';
 import { playSoftSound } from '../lib/ui-audio';
-import type { CollectedSample } from '../lib/calibration-math';
+import type { CollectedSample } from '../lib/calibration-samples';
 import {
   type CalibrationVisualMode,
   type WebcamCalibrationSample,

@@ -7,28 +7,9 @@
 
 import type { CalibrationResult, CalibrationQuality } from '../types';
 import { CALIBRATION_THRESHOLDS } from './constants';
+import type { CollectedSample } from './calibration-samples';
 
-/* ── Collected sample shape ─────────────────────────────── */
-
-import type { CalibrationPhaseType } from '../types';
-
-export interface CollectedSample {
-  pointIndex: number;
-  observedX: number;
-  observedY: number;
-  targetX: number;
-  targetY: number;
-  yaw: number;
-  pitch: number;
-  roll?: number;
-  headX?: number;
-  headY?: number;
-  headZ?: number;
-  /** Weight applied during model training. Defaults to 1.0 if not set. */
-  sampleWeight?: number;
-  /** The calibration phase this sample was collected during. */
-  phase?: CalibrationPhaseType;
-}
+export type { CollectedSample } from './calibration-samples';
 
 /* ── Grid traversal ─────────────────────────────────────── */
 

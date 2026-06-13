@@ -9,7 +9,7 @@ import {
 } from '../lib/calibration-mode';
 import { useCalibration } from './use-calibration';
 import { buildCalibrationResult } from '../lib/calibration-math';
-import type { CollectedSample } from '../lib/calibration-math';
+import type { CollectedSample } from '../lib/calibration-samples';
 import { calibrationLogger } from '../lib/debug-config';
 
 import {
