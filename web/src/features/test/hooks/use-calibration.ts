@@ -40,7 +40,7 @@ type CalibrationPhase =
   | 'idle'
   | 'collecting'
   | 'recalibrating'
-  | 'reading-anchors'
+  | 'pursuit'
   | 'validating'
   | 'complete';
 
@@ -74,7 +74,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       sampleWeight?: number,
       samplePhase?: CalibrationPhaseType,
     ) => {
-      if (phase !== 'collecting' && phase !== 'recalibrating' && phase !== 'reading-anchors') {
+      if (phase !== 'collecting' && phase !== 'recalibrating' && phase !== 'pursuit') {
         return;
       }
 
@@ -117,7 +117,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       if (!isCompletion) {
         setCollectionCursor(nextCursor);
       } else {
-        setPhase(phase === 'collecting' ? 'reading-anchors' : 'validating');
+        setPhase(phase === 'collecting' ? 'pursuit' : 'validating');
       }
     },
     [collectionCursor, collectionOrder, fullPointSequence, phase],
@@ -133,7 +133,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
     setPhase('collecting');
   }, [defaultOrder, fullPointSequence.length]);
 
-  const completeReadingAnchors = useCallback(() => {
+  const completePursuit = useCallback(() => {
     setPhase('validating');
   }, []);
 
@@ -361,7 +361,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
     startCalibration,
     addSampleForPoint,
     advancePoint,
-    completeReadingAnchors,
+    completePursuit,
     computeTobiiCalibration,
     computeWebcamCalibration,
     resetCalibration,

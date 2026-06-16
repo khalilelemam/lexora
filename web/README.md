@@ -245,7 +245,7 @@ If a teammate wants to change production behavior, they should update `web-produ
 ### "The calibration keeps failing"
 
 - Review `STABLE_FIXATION_MS` and `VALIDATION_THRESHOLD_SCREEN_DIAGONAL` in `calibration-engine-constants.ts`
-- Enable `NEXT_PUBLIC_DEBUG_CALIBRATION_LOG=true` locally to inspect whether failures are from missing samples, bad anchors, or model selection
+- Enable `NEXT_PUBLIC_DEBUG_CALIBRATION_LOG=true` locally to inspect whether failures are from missing samples, pursuit sampling, or model selection
 
 ### "Not enough gaze points collected"
 

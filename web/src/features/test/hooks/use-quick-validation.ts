@@ -95,7 +95,7 @@ export function useQuickValidation(
       const { width, height, diagonal } = getScreenInfo();
       const usingOverride = targetOverride.length > 0;
       if (usingOverride) {
-        calibrationLogger.debug('[QUICK VALIDATION RUN] Using reading anchor override targets', {
+        calibrationLogger.debug('[QUICK VALIDATION RUN] Using pursuit override targets', {
           count: targetOverride.length,
           phases: targetOverride.map((t) => t.phase),
         });

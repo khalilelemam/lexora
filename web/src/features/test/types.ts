@@ -16,7 +16,7 @@ export type TaskType = TobiiTaskType | WebcamTaskType;
 // ─── Calibration ─────────────────────────────────────────
 export type CalibrationQuality = 'good' | 'acceptable' | 'poor';
 
-export type CalibrationPhaseType = 'STATIC' | 'READING_ANCHOR' | 'READING_VALIDATION';
+export type CalibrationPhaseType = 'STATIC' | 'PURSUIT_SAMPLE' | 'PURSUIT_VALIDATION';
 
 export interface CalibrationPoint {
   x: number; // normalized 0–1

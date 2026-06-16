@@ -86,8 +86,8 @@ export function CalibrationScreen({
     beginCalibration,
     resetEngine,
     ingestSampleForTarget,
-    ingestReadingAnchorSample,
-    finishReadingAnchors,
+    ingestPursuitSample,
+    finishPursuit,
     resetFixationState,
     skipCalibration,
     startValidation,
@@ -134,10 +134,10 @@ export function CalibrationScreen({
   }, [isStableFixation]);
 
   useEffect(() => {
-    if (phase === 'reading-anchors' && tracker !== 'webcam') {
-      finishReadingAnchors([]);
+    if (phase === 'pursuit' && tracker !== 'webcam') {
+      finishPursuit([]);
     }
-  }, [finishReadingAnchors, phase, tracker]);
+  }, [finishPursuit, phase, tracker]);
 
   /* ---- audio sync (calibration-audio engine mute is independent of voice now) ---- */
   useEffect(() => {
@@ -308,7 +308,7 @@ export function CalibrationScreen({
     );
   }
 
-  if (phase === 'reading-anchors') {
+  if (phase === 'pursuit') {
     if (tracker !== 'webcam' || !onGetIrisSample) {
       return (
         <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#FDF8F0]">
@@ -321,7 +321,7 @@ export function CalibrationScreen({
     }
 
     const handlePursuitSample = (sample: CollectedSample) => {
-      ingestReadingAnchorSample(sample);
+      ingestPursuitSample(sample);
     };
 
     return (
@@ -331,8 +331,8 @@ export function CalibrationScreen({
         irisStream={onGetIrisSample}
         headPoseStream={onGetHeadPoseSample}
         onSampleReady={handlePursuitSample}
-        onComplete={finishReadingAnchors}
-        onCancel={() => finishReadingAnchors([])}
+        onComplete={finishPursuit}
+        onCancel={() => finishPursuit([])}
       />
     );
   }

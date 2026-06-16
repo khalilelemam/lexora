@@ -94,8 +94,8 @@ export function PursuitCalibrationView({
       lineYs.map((y, index) => ({
         x: 0.5,
         y,
-        phase: 'READING_VALIDATION' as const,
-        label: `reading-line-${index + 1}`,
+        phase: 'PURSUIT_VALIDATION' as const,
+        label: `pursuit-line-${index + 1}`,
       })),
     [lineYs],
   );
@@ -201,7 +201,7 @@ export function PursuitCalibrationView({
               yaw: headPose.yaw,
               pitch: headPose.pitch,
               sampleWeight: PURSUIT_SAMPLE_WEIGHT,
-              phase: 'READING_ANCHOR',
+              phase: 'PURSUIT_SAMPLE',
             });
             sampleCountsRef.current[lineIndex] += 1;
           }

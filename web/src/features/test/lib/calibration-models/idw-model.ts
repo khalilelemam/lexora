@@ -123,9 +123,9 @@ function meanExtremeRowVerticalError(
 
 /**
  * IDW is the fallback adapter for noisy sessions where the polynomial model is
- * unsafe. It intentionally fits only STATIC grid centroids: reading anchors are
- * behaviorally closer to the task, but they are not spatially complete enough
- * to serve as nearest-neighbor anchors.
+ * unsafe. It intentionally fits only STATIC grid centroids: pursuit samples
+ * are behaviorally closer to the task, but they are not spatially complete
+ * enough to serve as nearest-neighbor centroids.
  */
 export function fitIdwModel(
   trainSamples: TrainingSample[],

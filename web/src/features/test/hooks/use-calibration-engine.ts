@@ -83,7 +83,7 @@ export function useCalibrationEngine({
     [mode, participantAge],
   );
 
-  /** Reading-augmented calibration: grid anchors first, reading anchors second. */
+  /** Pursuit-augmented calibration: static grid samples first, pursuit samples second. */
   const fullPointSequence = FULL_POINT_SEQUENCE;
   const loggedOptionBKeyRef = useRef<string | null>(null);
 
@@ -106,7 +106,7 @@ export function useCalibrationEngine({
     startCalibration,
     resetCalibration,
     addSampleForPoint,
-    completeReadingAnchors,
+    completePursuit,
     computeTobiiCalibration,
     computeWebcamCalibration,
   } = calibration;
@@ -123,7 +123,7 @@ export function useCalibrationEngine({
   const [gazeCursor, setGazeCursor] = useState<{ x: number; y: number } | null>(null);
   const [finalResult, setFinalResult] = useState<CalibrationResult | null>(null);
   const [activeMapping, setActiveMapping] = useState<MappingFn>(null);
-  const [readingValidationTargets, setReadingValidationTargets] = useState<CalibrationPoint[]>([]);
+  const [pursuitValidationTargets, setPursuitValidationTargets] = useState<CalibrationPoint[]>([]);
   // Gate for pre-validation UI (recalibration currently disabled)
   const [readyForPreValidation, setReadyForPreValidation] = useState(false);
 
@@ -188,7 +188,7 @@ export function useCalibrationEngine({
     setGazeCursor(null);
     setFinalResult(null);
     setActiveMapping(null);
-    setReadingValidationTargets([]);
+    setPursuitValidationTargets([]);
     setReadyForPreValidation(false);
     resetQuickValidation();
     resetFixationState();
@@ -297,18 +297,18 @@ export function useCalibrationEngine({
       calibrationLogger.warn('[QUICK VALIDATION] missing webcam mapping; validation will fail closed');
     }
 
-    if (readingValidationTargets.length > 0) {
-      calibrationLogger.debug('[QUICK VALIDATION] Starting with reading anchor validation targets', {
-        count: readingValidationTargets.length,
-        targets: readingValidationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
+    if (pursuitValidationTargets.length > 0) {
+      calibrationLogger.debug('[QUICK VALIDATION] Starting with pursuit validation targets', {
+        count: pursuitValidationTargets.length,
+        targets: pursuitValidationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
       });
     } else {
-      calibrationLogger.debug('[QUICK VALIDATION] No reading targets; using default grid validation points');
+      calibrationLogger.debug('[QUICK VALIDATION] No pursuit targets; using default grid validation points');
     }
 
     const validation = await runQuickValidation(
       tracker === 'tobii' ? null : mapping,
-      readingValidationTargets,
+      pursuitValidationTargets,
     );
     if (!validation) return;
 
@@ -321,7 +321,7 @@ export function useCalibrationEngine({
           averageError: 1,
         };
     setFinalResult(validationResult);
-  }, [quickValidation.phase, tracker, runQuickValidation, readingValidationTargets]);
+  }, [quickValidation.phase, tracker, runQuickValidation, pursuitValidationTargets]);
 
   /* ---- sample ingestion ---- */
   const ingestSampleForTarget = useCallback(
@@ -481,9 +481,9 @@ export function useCalibrationEngine({
     ],
   );
 
-  const ingestReadingAnchorSample = useCallback(
+  const ingestPursuitSample = useCallback(
     (sample: CollectedSample) => {
-      if (calibrationPhase !== 'reading-anchors') return;
+      if (calibrationPhase !== 'pursuit') return;
       addSampleForPoint(
         sample.pointIndex,
         sample.observedX,
@@ -493,27 +493,27 @@ export function useCalibrationEngine({
         sample.yaw,
         sample.pitch,
         sample.sampleWeight ?? 0.7,
-        sample.phase ?? 'READING_ANCHOR',
+        sample.phase ?? 'PURSUIT_SAMPLE',
       );
       setCaptureCount((prev) => prev + 1);
     },
     [addSampleForPoint, calibrationPhase],
   );
 
-  const finishReadingAnchors = useCallback(
+  const finishPursuit = useCallback(
     (validationTargets: CalibrationPoint[] = []) => {
-      setReadingValidationTargets(validationTargets);
+      setPursuitValidationTargets(validationTargets);
       if (validationTargets.length > 0) {
-        calibrationLogger.debug('[READING ANCHORS COMPLETE] Stored validation targets in engine', {
+        calibrationLogger.debug('[PURSUIT COMPLETE] Stored validation targets in engine', {
           count: validationTargets.length,
           targets: validationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
         });
       } else {
-        calibrationLogger.warn('[READING ANCHORS COMPLETE] No validation targets received');
+        calibrationLogger.warn('[PURSUIT COMPLETE] No validation targets received');
       }
-      completeReadingAnchors();
+      completePursuit();
     },
-    [completeReadingAnchors],
+    [completePursuit],
   );
 
   const skipCalibration = useCallback(() => {
@@ -566,8 +566,8 @@ export function useCalibrationEngine({
     ingestSampleForTarget,
     resetFixationState,
     skipCalibration,
-    ingestReadingAnchorSample,
-    finishReadingAnchors,
+    ingestPursuitSample,
+    finishPursuit,
     startValidation,
   };
 }
