@@ -201,12 +201,3 @@ export function buildCalibrationResult(pointAccuracies: number[]): CalibrationRe
     averageError,
   };
 }
-
-/* ── Webcam sample requirements ─────────────────────────── */
-
-export const MIN_WEBCAM_SAMPLES = 30;
-export const MIN_WEBCAM_POINTS_WITH_SAMPLES = 8;
-export const MIN_WEBCAM_SAMPLES_PER_POINT = 2;
-
-/** Number of columns in the calibration grid (for serpentine order). */
-export const GRID_COLUMNS = 5;

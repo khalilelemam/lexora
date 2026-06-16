@@ -60,19 +60,8 @@ export function getModeTiming(mode: CalibrationVisualMode): ModeTimingConfig {
   return MODE_TIMING[mode];
 }
 
-// Export individual constants for backward compatibility
-// These are the grid-mode defaults (most common)
-export const MOTION_DURATION_MS = MODE_TIMING.grid.motionDurationMs;
-export const HOLD_DURATION_MS = MODE_TIMING.grid.holdDurationMs;
 export const SAMPLE_INTERVAL_MS = 33;
-export const GRID_MIN_SAMPLES_WEBCAM = MODE_TIMING.grid.gridMinSamplesWebcam;
-export const GRID_MIN_SAMPLES_TOBII = MODE_TIMING.grid.gridMinSamplesTobii;
-export const GRID_MIN_DWELL_MS = MODE_TIMING.grid.gridMinDwellMs;
-export const GRID_MAX_DWELL_MS = MODE_TIMING.grid.gridMaxDwellMs;
-export const GRID_FORCE_ADVANCE_MS = MODE_TIMING.grid.gridForceAdvanceMs;
 export const GRID_TIMEOUT_MIN_SAMPLES_WEBCAM = 2;
-export const POINT_SAMPLES_GOAL_WEBCAM = 3;
-export const POINT_SAMPLES_GOAL_TOBII = 3;
 
 export const QUALITY_CONFIG: Record<
   CalibrationQuality,

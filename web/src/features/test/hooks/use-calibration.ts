@@ -26,11 +26,14 @@ import {
   mean,
   normalizedError,
   buildCalibrationResult,
-  GRID_COLUMNS,
-  MIN_WEBCAM_SAMPLES,
-  MIN_WEBCAM_POINTS_WITH_SAMPLES,
-  MIN_WEBCAM_SAMPLES_PER_POINT,
 } from '../lib/calibration-math';
+
+const GRID_COLUMNS = 5;
+// Minimum data required before webcam model fitting is allowed. These are
+// fitting eligibility guards, not per-point UI advance thresholds.
+const MIN_WEBCAM_SAMPLES = 30;
+const MIN_WEBCAM_POINTS_WITH_SAMPLES = 8;
+const MIN_WEBCAM_SAMPLES_PER_POINT = 2;
 
 type CalibrationPhase =
   | 'idle'
