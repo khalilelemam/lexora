@@ -2,6 +2,9 @@ import type { CalibrationPhaseType, CalibrationPoint } from '../types';
 import type { CollectedSample } from './calibration-samples';
 import { median } from './calibration-math';
 
+// Keep the recalibration implementation available, but do not enter the
+// recalibrating phase while the flow is being stabilized.
+export const TARGETED_RECALIBRATION_ENABLED = false;
 export const TARGETED_RECALIBRATION_MAX_ROUNDS = 1;
 export const TARGETED_RECALIBRATION_MAX_POINTS = 6;
 export const TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD = 0.2;

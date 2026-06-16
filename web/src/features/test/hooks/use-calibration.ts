@@ -17,6 +17,7 @@ import {
 import {
   buildCalibrationPointErrors,
   selectTargetedRecalibrationPoints,
+  TARGETED_RECALIBRATION_ENABLED,
   TARGETED_RECALIBRATION_MAX_ROUNDS,
 } from '../lib/calibration-recalibration';
 import {
@@ -264,6 +265,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       const { flaggedPointCandidates } = recalibrationSelection;
 
       calibrationLogger.debug('[TARGETED RECALIBRATION CHECK]', {
+        enabled: TARGETED_RECALIBRATION_ENABLED,
         staticMedianError: Number(recalibrationSelection.staticMedianError.toFixed(4)),
         baseThreshold: recalibrationSelection.baseThreshold,
         effectiveThreshold: Number(recalibrationSelection.effectiveThreshold.toFixed(4)),
@@ -275,6 +277,7 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       });
 
       if (
+        TARGETED_RECALIBRATION_ENABLED &&
         flaggedPointCandidates.length > 0 &&
         recalibrationRound < TARGETED_RECALIBRATION_MAX_ROUNDS
       ) {

@@ -284,6 +284,7 @@ These live in the source code and are **not** configurable via env vars. They ra
 | `VALIDATION_THRESHOLD_SCREEN_DIAGONAL` | `0.12`                  | `calibration-engine-constants.ts` | Validation scoring threshold as fraction of screen diagonal            |
 | `VALIDATION_POINT_INDICES`         | `[12, 8, 6, 16, 18]`       | `calibration-engine-constants.ts` | Fallback grid points used for quick validation when reading targets are unavailable |
 | `VALIDATION_MIN_SAMPLES_PER_POINT` | `10`                       | `calibration-engine-constants.ts` | Min gaze samples per validation point for a valid score               |
+| `TARGETED_RECALIBRATION_ENABLED`   | `false`                    | `calibration-recalibration.ts`    | Keeps targeted recalibration code present but prevents entering the recalibrating phase |
 
 ### Calibration Mode Timing Constants
 
