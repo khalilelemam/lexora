@@ -30,7 +30,7 @@ const faqs: { question: string; answer: string }[] = [
   {
     question: 'What happens to my camera data?',
     answer:
-      'Nothing leaves your browser. The camera feed is processed locally using MediaPipe to extract iris coordinates. No video is recorded, stored, or transmitted. See our Privacy page for full details.',
+      'The camera feed stays in your browser and is processed locally with MediaPipe to extract gaze coordinates. No video recordings, screenshots, or face images are stored. If you are signed in and submit a test, Lexora may persist the derived ML response and, only when you opted in during registration, the raw gaze-coordinate JSON used for research workflows.',
   },
   {
     question: 'Do I need to install anything?',

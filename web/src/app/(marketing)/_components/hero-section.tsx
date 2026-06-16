@@ -9,8 +9,8 @@ import { AnimatedEye } from './animated-eye';
 import { FloatingParticles } from './floating-particles';
 
 /**
- * Full-viewport hero section with parallax scrolling, animated eye,
- * floating particles, and dual CTA buttons.
+ * Full-viewport hero section with parallax scrolling, abstract brand iris,
+ * floating particles, and dual CTA buttons — all in Lexora brand palette.
  */
 export function HeroSection() {
   const router = useRouter();
@@ -31,11 +31,18 @@ export function HeroSection() {
 
       {/* Gradient decorations */}
       <div
-        className="bg-accent/10 absolute top-20 left-10 h-72 w-72 rounded-full blur-3xl"
+        className="absolute top-20 left-10 h-80 w-80 rounded-full blur-3xl"
+        style={{ background: 'oklch(0.70 0.10 115 / 0.08)' }}
         aria-hidden="true"
       />
       <div
-        className="bg-primary/5 absolute right-10 bottom-20 h-96 w-96 rounded-full blur-3xl"
+        className="absolute right-10 bottom-20 h-96 w-96 rounded-full blur-3xl"
+        style={{ background: 'oklch(0.78 0.10 90 / 0.06)' }}
+        aria-hidden="true"
+      />
+      <div
+        className="absolute top-1/3 right-1/4 h-64 w-64 rounded-full blur-3xl"
+        style={{ background: 'oklch(0.40 0.04 110 / 0.04)' }}
         aria-hidden="true"
       />
 
@@ -69,7 +76,8 @@ export function HeroSection() {
           transition={{ duration: 0.6, delay: 0.5 }}
         >
           Lexora uses eye-tracking technology to provide non-invasive dyslexia screening.
-          Research-backed gaze analysis helps identify reading difficulties early.
+          Research-backed gaze analysis helps identify reading difficulties early — so every child
+          gets the support they need.
         </motion.p>
 
         <motion.div
@@ -78,7 +86,11 @@ export function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
         >
-          <Button size="lg" className="group gap-2 px-8" onClick={() => router.push('/test/tobii')}>
+          <Button
+            size="lg"
+            className="group gap-2 bg-[oklch(0.40_0.04_110)] px-8 text-[oklch(0.94_0.02_90)] shadow-md transition-all hover:bg-[oklch(0.35_0.04_110)] hover:shadow-lg"
+            onClick={() => router.push('/test/tobii')}
+          >
             <Monitor className="h-4 w-4" />
             Start with Tobii
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -86,7 +98,7 @@ export function HeroSection() {
           <Button
             size="lg"
             variant="outline"
-            className="group gap-2 px-8"
+            className="group gap-2 border-[oklch(0.70_0.10_115/0.5)] px-8 text-[oklch(0.40_0.04_110)] transition-all hover:border-[oklch(0.70_0.10_115)] hover:bg-[oklch(0.70_0.10_115/0.1)]"
             onClick={() => router.push('/test/webcam')}
           >
             <Camera className="h-4 w-4" />
@@ -101,7 +113,7 @@ export function HeroSection() {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2 }}
         >
-          No personal data stored • Research use only • Works offline
+          No video recordings stored · Research use only · Authenticated attempts can be saved
         </motion.p>
       </motion.div>
 

@@ -17,15 +17,20 @@ import { Button } from '@/components/ui/button';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { cn } from '@/lib/utils';
 import type { PredictionResult, TestMode, CalibrationQuality } from '../types';
+import type { AttemptVisualization } from '@/features/attempts/types';
 import { FullscreenGazeReplay } from './fullscreen-gaze-replay';
+import { AttemptVisualizationOverlay } from '@/features/attempts/components/attempt-visualization-overlay';
 
 interface ResultsDisplayProps {
   result: PredictionResult;
   mode: TestMode;
   onNewTest: () => void;
+  /** Single reading content — used for webcam gaze replay */
   readingContent?: string;
-  /** Calibration validation quality — used for the data quality badge */
+  /** Calibration validation quality - used for the data quality badge */
   calibrationQuality?: CalibrationQuality;
+  /** Multi-task visualizations - used for Tobii gaze replay with task switching */
+  visualizations?: AttemptVisualization[];
 }
 
 const DATA_QUALITY_CONFIG = {
@@ -102,18 +107,28 @@ export function ResultsDisplay({
   onNewTest,
   readingContent,
   calibrationQuality,
+  visualizations,
 }: ResultsDisplayProps) {
   const config = RISK_CONFIG[result.riskLevel];
   const Icon = config.icon;
   const [showTechnical, setShowTechnical] = useState(false);
   const [showGazeReplay, setShowGazeReplay] = useState(false);
   const probability = Math.round(result.dyslexiaProbability * 100);
-  const hasReplay = result.features && result.features.length > 0 && readingContent;
+
+  const hasWebcamReplay = result.features && result.features.length > 0 && readingContent;
+  const hasTobiiReplay = visualizations && visualizations.length > 0;
+  const hasReplay = hasTobiiReplay || hasWebcamReplay;
 
   const handleCloseReplay = useCallback(() => setShowGazeReplay(false), []);
 
   // ── Fullscreen gaze replay overlay ──
   if (showGazeReplay && hasReplay) {
+    if (hasTobiiReplay) {
+      return (
+        <AttemptVisualizationOverlay visualizations={visualizations} onClose={handleCloseReplay} />
+      );
+    }
+
     return (
       <FullscreenGazeReplay
         taskType="paragraph"

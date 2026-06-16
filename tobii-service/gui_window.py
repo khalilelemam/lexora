@@ -1,5 +1,7 @@
 import multiprocessing
 import threading
+import socket
+import webbrowser
 from pathlib import Path
 
 import customtkinter as ctk
@@ -68,13 +70,14 @@ class TobiiServiceGUI:
             on_start=self.start_service,
             on_stop=self.stop_service,
             on_restart=self.restart_service,
+            on_open_web=self.open_web_test,
         )
         ExitButton.create(content_frame, on_exit=self.on_exit)
 
         # ── Version footer ──────────────────────────────────────
         footer = ctk.CTkLabel(
             self.root,
-            text=f"v{settings.VERSION}  ·  {settings.HOST}:{settings.PORT}",
+            text=f"v{settings.VERSION}  ·  Port {settings.PORT}",
             font=(Styles.FONT_FAMILY, 10),
             text_color=Styles.TEXT_MUTED,
         )
@@ -158,14 +161,16 @@ class TobiiServiceGUI:
         if self.service_manager.restart():
             self.update_status()
 
+    def open_web_test(self):
+        """Open the Lexora web test in the default browser."""
+        webbrowser.open("https://lexora.page/test/tobii")
+
     def on_exit(self):
-        if self.service_manager.is_running():
-            self.service_manager.stop()
+        """Minimize to tray — service keeps running in the background."""
         self.minimize_to_tray()
 
     def on_close_window(self):
-        if self.service_manager.is_running():
-            self.service_manager.stop()
+        """Window close (X button) — minimize to tray, keep service running."""
         self.minimize_to_tray()
 
     def show_window(self):
@@ -210,7 +215,28 @@ class TobiiServiceGUI:
         tray_thread = threading.Thread(target=run_tray, daemon=True)
         tray_thread.start()
 
+    def setup_ipc_listener(self):
+        """Listen on a local port to receive 'wake' signals from secondary instances."""
+
+        def listen():
+            try:
+                server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                server.bind(("127.0.0.1", 28981))
+                server.listen(1)
+                while True:
+                    conn, _ = server.accept()
+                    data = conn.recv(1024).decode("utf-8")
+                    if data == "wake":
+                        self.root.after(0, self.show_window)
+                    conn.close()
+            except Exception as e:
+                print(f"IPC listener error: {e}")
+
+        ipc_thread = threading.Thread(target=listen, daemon=True)
+        ipc_thread.start()
+
     def run(self, start_minimized=False):
+        self.setup_ipc_listener()
         if start_minimized:
             self.root.withdraw()
             self.is_minimized_to_tray = True
@@ -221,6 +247,22 @@ if __name__ == "__main__":
     import sys
 
     multiprocessing.freeze_support()
+
+    # Check for single instance BEFORE starting GUI
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(("127.0.0.1", 28981))
+        s.close()
+    except socket.error:
+        # Another instance is already running
+        try:
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.connect(("127.0.0.1", 28981))
+            client.sendall(b"wake")
+            client.close()
+        except Exception:
+            pass
+        sys.exit(0)
 
     start_minimized = "--minimized" in sys.argv
 

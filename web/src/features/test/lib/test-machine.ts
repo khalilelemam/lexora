@@ -6,6 +6,7 @@ export function createTobiiInitialState(): TobiiTestFlowState {
   return {
     mode: 'tobii',
     currentState: 'idle',
+    intake: null,
     calibration: null,
     taskData: {
       syllables: [],
@@ -21,6 +22,7 @@ export function createWebcamInitialState(): WebcamTestFlowState {
   return {
     mode: 'webcam',
     currentState: 'idle',
+    intake: null,
     calibration: null,
     taskData: {
       paragraph: [],
@@ -35,7 +37,16 @@ export function createWebcamInitialState(): WebcamTestFlowState {
 function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestFlowState {
   switch (action.type) {
     case 'START':
-      return { ...state, currentState: 'device-check', error: null };
+      return { ...state, currentState: 'intake', error: null };
+
+    case 'INTAKE_COMPLETE':
+      return { ...state, currentState: 'hardware-check', intake: action.data };
+
+    case 'HARDWARE_CONFIRMED':
+      return { ...state, currentState: 'pre-test-education' };
+
+    case 'EDUCATION_COMPLETE':
+      return { ...state, currentState: 'device-check' };
 
     case 'DEVICE_READY':
       return { ...state, currentState: 'calibrating' };
@@ -123,7 +134,13 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
 function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTestFlowState {
   switch (action.type) {
     case 'START':
-      return { ...state, currentState: 'camera-setup', error: null };
+      return { ...state, currentState: 'intake', error: null };
+
+    case 'INTAKE_COMPLETE':
+      return { ...state, currentState: 'pre-test-education', intake: action.data };
+
+    case 'EDUCATION_COMPLETE':
+      return { ...state, currentState: 'camera-setup' };
 
     case 'CAMERA_READY':
       return { ...state, currentState: 'calibrating' };

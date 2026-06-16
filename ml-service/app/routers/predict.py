@@ -2,6 +2,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request, status
 
+from app.config import settings
 from app.schemas import (
     EyeTrackerFeatureRow,
     EyeTrackerFeatures,
@@ -89,6 +90,7 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
             dyslexia_probability=result["dyslexia_probability"],
             risk_level=result["risk_level"],
             confidence=result["confidence"],
+            model_version=settings.APP_VERSION,
             metadata=PredictionMetadata(
                 sequences_analyzed=sequences_analyzed,
                 total_fixations=(
@@ -136,6 +138,7 @@ async def predict_webcam(request: WebcamPredictionRequest, http_request: Request
             dyslexia_probability=result["dyslexia_probability"],
             risk_level=result["risk_level"],
             confidence=1.0,
+            model_version=settings.APP_VERSION,
             metadata=PredictionMetadata(
                 sequences_analyzed=processing.sequences_analyzed,
                 total_fixations=processing.total_fixations,

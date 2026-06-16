@@ -1,0 +1,47 @@
+# ──────────────────────────────────────────────────────────────
+# Lexora Web — Local Development Stack
+#
+# Spins up PostgreSQL plus Azurite so you can run the web app
+# with local database and Blob Storage dependencies.
+#
+# Usage:
+#   docker compose up -d          # start PostgreSQL + Azurite
+#   npm run dev                   # start the Next.js app
+#   docker compose down           # stop everything
+#   docker compose down -v        # stop + delete data
+# ──────────────────────────────────────────────────────────────
+
+services:
+  db:
+    image: postgres:17.6
+    container_name: lexora-db
+    restart: unless-stopped
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: lexora
+      POSTGRES_PASSWORD: lexora_dev
+      POSTGRES_DB: lexora
+    volumes:
+      - lexora_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U lexora']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    container_name: lexora-blob
+    restart: unless-stopped
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --skipApiVersionCheck
+    ports:
+      - '10000:10000'
+      - '10001:10001'
+      - '10002:10002'
+    volumes:
+      - lexora_azurite_data:/data
+
+volumes:
+  lexora_pgdata:
+  lexora_azurite_data:

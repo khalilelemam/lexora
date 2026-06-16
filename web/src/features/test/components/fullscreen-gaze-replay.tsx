@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, type ReactNode } from 'react';
 import { X, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskDisplay } from './task-display';
@@ -16,6 +16,7 @@ interface FullscreenGazeReplayProps {
   features: GazeFeature[];
   /** Called when user closes the overlay */
   onClose: () => void;
+  toolbarSlot?: ReactNode;
 }
 
 /**
@@ -32,11 +33,23 @@ export function FullscreenGazeReplay({
   content,
   features,
   onClose,
+  toolbarSlot,
 }: FullscreenGazeReplayProps) {
   const replay = useGazeReplay({ features, active: true });
 
   // Fixation coords are already screen-normalized [0, 1].
   // Convert directly to pixel positions on screen.
+
+  // Lock body scroll while the overlay is mounted to prevent
+  // the background page from scrolling behind the fixed overlay.
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
   const screenW = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const screenH = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
@@ -166,6 +179,12 @@ export function FullscreenGazeReplay({
           ))}
         </div>
 
+        {toolbarSlot ? (
+          <>
+            <div className="h-4 w-px bg-[#E8E0D4]" />
+            {toolbarSlot}
+          </>
+        ) : null}
         <div className="h-4 w-px bg-[#E8E0D4]" />
 
         <button type="button" onClick={onClose} className="text-[#8B857E] hover:text-[#2D2A26]">
