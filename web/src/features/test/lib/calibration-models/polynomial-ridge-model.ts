@@ -59,11 +59,8 @@ function fitCandidateModel(
 
   // X allows lower regularization so yaw correction can contribute. Y stays
   // conservative to reduce vertical overfitting from polynomial cross-terms.
-  // const lambdasX = [0.05, 0.1, 0.25, 0.5, 1, 2, 3];
-  // const lambdasY = [2.0, 3.0, 5, 10];
-
   const lambdasX = [0.05];
-  const lambdasY = [0.75];
+  const lambdasY = [2.0];
 
   const bestX = selectBestAxisCoefficients(
     trainX,
