@@ -98,3 +98,6 @@ cache/
 
 # testing
 .pytest_cache/
+
+# notes folder
+dev-notes

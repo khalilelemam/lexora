@@ -4,7 +4,6 @@ export { CalibrationCollecting } from './calibration-collecting';
 export { CalibrationPreValidation } from './calibration-pre-validation';
 export { CalibrationValidation } from './calibration-validation';
 export { CalibrationResult } from './calibration-result';
-export { ReadingAnchorPhase } from './reading-anchor-phase';
 export { PursuitCalibrationView } from './pursuit-calibration-view';
 export {
   MOTION_DURATION_MS,

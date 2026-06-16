@@ -4,12 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { CalibrationPoint } from '../../types';
 import type { CollectedSample } from '../../lib/calibration-samples';
-import {
-  STABLE_VELOCITY_NORM_PER_SEC,
-} from '../../lib/calibration-engine-constants';
+import { STABLE_VELOCITY_NORM_PER_SEC } from '../../lib/calibration-engine-constants';
 import { AOI_X_BOUNDS, AOI_Y_BOUNDS } from '../../lib/constants';
 import { calibrationLogger } from '../../lib/debug-config';
-import { readingAnchorPointIndex } from '../../lib/reading-anchor-constants';
 import type { WebcamCalibrationSample } from '../../hooks/use-calibration-engine';
 
 interface PursuitDotPoint {
@@ -45,7 +42,14 @@ const PURSUIT_LAG_MS = 130;
 const PURSUIT_SAMPLE_WEIGHT = 0.7;
 const PURSUIT_VELOCITY_REJECT_THRESHOLD = STABLE_VELOCITY_NORM_PER_SEC * 2.5;
 
-function interpolateLaggedPoint(buffer: PursuitDotPoint[], targetTs: number): PursuitDotPoint | null {
+function pursuitPointIndex(lineIndex: number, gridPointCount: number): number {
+  return gridPointCount + lineIndex;
+}
+
+function interpolateLaggedPoint(
+  buffer: PursuitDotPoint[],
+  targetTs: number,
+): PursuitDotPoint | null {
   if (buffer.length < 2) return null;
   if (buffer[0].timestamp > targetTs) return null;
 
@@ -77,13 +81,13 @@ export function PursuitCalibrationView({
   onComplete,
   onCancel,
 }: PursuitCalibrationViewProps) {
-  const bounds = useMemo(
-    () => aoiBounds ?? { x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS },
-    [aoiBounds],
-  );
+  const bounds = useMemo(() => aoiBounds ?? { x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS }, [aoiBounds]);
   const lineYs = useMemo(() => {
     const span = bounds.y.max - bounds.y.min;
-    return Array.from({ length: LINE_COUNT }, (_, i) => bounds.y.min + (i * span) / (LINE_COUNT - 1));
+    return Array.from(
+      { length: LINE_COUNT },
+      (_, i) => bounds.y.min + (i * span) / (LINE_COUNT - 1),
+    );
   }, [bounds]);
   const validationTargets = useMemo(
     () =>
@@ -108,6 +112,8 @@ export function PursuitCalibrationView({
   const lastSampleTsRef = useRef(0);
   const debugSampleCountRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+
+  const pointIndex = pursuitPointIndex(lineIndex, gridPointCount);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -147,7 +153,6 @@ export function PursuitCalibrationView({
       const shouldTrySample = now - lastSampleTsRef.current >= SAMPLE_INTERVAL_MS;
       if (shouldTrySample) {
         lastSampleTsRef.current = now;
-        const pointIndex = readingAnchorPointIndex(lineIndex, gridPointCount);
 
         const lagged = interpolateLaggedPoint(lagBufferRef.current, now - PURSUIT_LAG_MS);
         const iris = irisStream();
@@ -208,7 +213,7 @@ export function PursuitCalibrationView({
       if (progress >= 1) {
         calibrationLogger.debug('[PURSUIT LINE DONE]', {
           lineIndex,
-          pointIndex: readingAnchorPointIndex(lineIndex, gridPointCount),
+          pointIndex,
           samples: sampleCountsRef.current[lineIndex] ?? 0,
         });
         setStage('line-pause');
@@ -231,6 +236,7 @@ export function PursuitCalibrationView({
     bounds.y.min,
     headPoseStream,
     gridPointCount,
+    pointIndex,
     irisStream,
     lineIndex,
     lineYs,
@@ -248,7 +254,7 @@ export function PursuitCalibrationView({
         calibrationLogger.debug('[PURSUIT COMPLETE]', {
           sampleCountsByLine: sampleCountsRef.current.map((samples, idx) => ({
             lineIndex: idx,
-            pointIndex: readingAnchorPointIndex(idx, gridPointCount),
+            pointIndex: pursuitPointIndex(idx, gridPointCount),
             samples,
           })),
         });
@@ -267,12 +273,25 @@ export function PursuitCalibrationView({
     }, LINE_PAUSE_MS);
 
     return () => window.clearTimeout(timer);
-  }, [bounds.x.min, bounds.y.min, gridPointCount, lineIndex, lineYs, onComplete, stage, validationTargets]);
+  }, [
+    bounds.x.min,
+    bounds.y.min,
+    gridPointCount,
+    lineIndex,
+    pointIndex,
+    lineYs,
+    onComplete,
+    stage,
+    validationTargets,
+  ]);
 
   const overallProgress =
     stage === 'instruction'
       ? 0
-      : Math.min(1, ((stage === 'line-pause' ? lineIndex + 1 : lineIndex + lineProgress) / LINE_COUNT));
+      : Math.min(
+          1,
+          (stage === 'line-pause' ? lineIndex + 1 : lineIndex + lineProgress) / LINE_COUNT,
+        );
 
   return (
     <div className="fixed inset-0 z-50 cursor-none overflow-hidden bg-[#FDF8F0]">
@@ -284,7 +303,9 @@ export function PursuitCalibrationView({
           {stage === 'instruction' ? (
             <p className="mt-1 text-xs text-[#8B857E]">Starting shortly…</p>
           ) : (
-            <p className="mt-1 text-xs text-[#8B857E]">Line {Math.min(lineIndex + 1, LINE_COUNT)} of {LINE_COUNT}</p>
+            <p className="mt-1 text-xs text-[#8B857E]">
+              Line {Math.min(lineIndex + 1, LINE_COUNT)} of {LINE_COUNT}
+            </p>
           )}
         </div>
       </div>
@@ -299,7 +320,7 @@ export function PursuitCalibrationView({
         />
       )}
 
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex h-12 items-center justify-center px-6">
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-12 items-center justify-center px-6">
         <div className="w-[min(520px,90vw)]">
           <div className="h-1 overflow-hidden rounded-full bg-[#E8E0D4]/80">
             <div
@@ -310,7 +331,7 @@ export function PursuitCalibrationView({
         </div>
       </div>
 
-      <div className="absolute bottom-16 right-4 z-30">
+      <div className="absolute right-4 bottom-16 z-30">
         <Button
           variant="outline"
           size="sm"
