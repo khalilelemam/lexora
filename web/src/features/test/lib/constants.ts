@@ -1,10 +1,6 @@
 /**
  * Constants for the test system — calibration, gaze, and thresholds.
- *
- * Tunable values read from NEXT_PUBLIC_ env vars with sensible defaults.
  */
-
-import { envFloat, envNumber } from './env';
 
 /**
  * 20-point calibration pattern focused on the top-anchored reading container (4x5 grid).
@@ -54,28 +50,23 @@ export const READING_ZONE_BOUNDS = {
   top: 0.18,
   left: 0.25,
   right: 0.25,
-  bottom: 0.38,
+  bottom: 0.42,
 } as const;
 
 /**
  * Calibration quality thresholds (normalized error).
  * Webcam iris tracking is noisier than dedicated hardware, so thresholds
  * are appropriate for that level of precision.
- *
- * Env: NEXT_PUBLIC_CALIBRATION_THRESHOLD_GOOD (default: 0.04)
- * Env: NEXT_PUBLIC_CALIBRATION_THRESHOLD_ACCEPTABLE (default: 0.08)
  */
 export const CALIBRATION_THRESHOLDS = {
-  good: envFloat('NEXT_PUBLIC_CALIBRATION_THRESHOLD_GOOD', 0.04),
-  acceptable: envFloat('NEXT_PUBLIC_CALIBRATION_THRESHOLD_ACCEPTABLE', 0.08),
+  good: 0.04,
+  acceptable: 0.08,
 } as const;
 
 /**
  * Minimum gaze points required per task (ML service minimum).
- *
- * Env: NEXT_PUBLIC_MIN_GAZE_POINTS (default: 20)
  */
-export const MIN_GAZE_POINTS = envNumber('NEXT_PUBLIC_MIN_GAZE_POINTS', 20);
+export const MIN_GAZE_POINTS = 20;
 
 /** Estimated reading speed for children / dyslexia screening (words per minute) */
 export const ESTIMATED_READING_WPM = 60;

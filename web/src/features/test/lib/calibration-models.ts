@@ -10,16 +10,9 @@ import type {
   CalibrationModel,
   TrainingSample,
 } from './calibration-models/types';
-import { envNumber } from './env';
 
-const IDW_MAX_CENTROID_ERROR_PX = envNumber(
-  'NEXT_PUBLIC_CALIBRATION_IDW_MAX_CENTROID_ERROR_PX',
-  100,
-);
-const POLYNOMIAL_MAX_TRAINING_ERROR_PX = envNumber(
-  'NEXT_PUBLIC_CALIBRATION_POLY_MAX_TRAINING_ERROR_PX',
-  200,
-);
+const IDW_MAX_CENTROID_ERROR_PX = 100;
+const POLYNOMIAL_MAX_TRAINING_ERROR_PX = 200;
 
 /**
  * Production calibration model selection.

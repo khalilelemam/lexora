@@ -5,8 +5,8 @@
  * collection & validation pipeline. Changes here directly affect
  * gaze-mapping accuracy and user experience.
  *
- * All tunable values are configurable via NEXT_PUBLIC_ env vars
- * so researchers/deployers can adjust without code changes.
+ * These values are hardcoded intentionally. They describe the tested
+ * calibration behavior for the current UX rather than deployment config.
  *
  * References:
  * - Rayner (2009): Fixation durations during reading
@@ -14,16 +14,12 @@
  * - Nyström & Holmqvist (2010): Adaptive algorithm for fixation detection
  */
 
-import { envFloat, envNumber } from './env';
-
 /**
  * Seconds of countdown before collection starts.
  * 5 seconds gives children adequate time to read instructions
  * and mentally prepare. 3 seconds is too rushed for ages 7-10.
- *
- * Env: NEXT_PUBLIC_CALIBRATION_COUNTDOWN_SECONDS (default: 5)
  */
-export const COUNTDOWN_SECONDS = envNumber('NEXT_PUBLIC_CALIBRATION_COUNTDOWN_SECONDS', 5);
+export const COUNTDOWN_SECONDS = 5;
 
 /**
  * Minimum stable fixation duration (ms) before accepting a sample.
@@ -31,10 +27,8 @@ export const COUNTDOWN_SECONDS = envNumber('NEXT_PUBLIC_CALIBRATION_COUNTDOWN_SE
  * Research consensus (Rayner 2009, Holmqvist 2017) recommends 250-350ms
  * for reliable fixation detection. 200ms is too short — allows samples
  * during microsaccades. 300ms filters these while remaining responsive.
- *
- * Env: NEXT_PUBLIC_STABLE_FIXATION_MS (default: 300)
  */
-export const STABLE_FIXATION_MS = envNumber('NEXT_PUBLIC_STABLE_FIXATION_MS', 300);
+export const STABLE_FIXATION_MS = 300;
 
 /**
  * Maximum velocity (normalized to screen diagonal per second) at which
@@ -42,44 +36,31 @@ export const STABLE_FIXATION_MS = envNumber('NEXT_PUBLIC_STABLE_FIXATION_MS', 30
  * as fixation; above indicates saccade movement.
  *
  * 0.55 = movement < 55% of screen diagonal per second.
- *
- * Env: NEXT_PUBLIC_STABLE_VELOCITY_THRESHOLD (default: 0.55)
  */
-export const STABLE_VELOCITY_NORM_PER_SEC = envFloat('NEXT_PUBLIC_STABLE_VELOCITY_THRESHOLD', 0.55);
+export const STABLE_VELOCITY_NORM_PER_SEC = 0.55;
 
 /**
  * Minimum cooldown (ms) between successive sample captures.
  * Prevents over-sampling during a single fixation.
- *
- * Env: NEXT_PUBLIC_CAPTURE_COOLDOWN_MS (default: 45)
  */
-export const CAPTURE_COOLDOWN_MS = envNumber('NEXT_PUBLIC_CAPTURE_COOLDOWN_MS', 45);
+export const CAPTURE_COOLDOWN_MS = 45;
 
 /**
  * Time (ms) to let gaze settle before measuring a validation point.
- *
- * Env: NEXT_PUBLIC_VALIDATION_SETTLE_MS (default: 450)
  */
-export const VALIDATION_SETTLE_MS = envNumber('NEXT_PUBLIC_VALIDATION_SETTLE_MS', 450);
+export const VALIDATION_SETTLE_MS = 450;
 
 /**
  * Duration (ms) to hold fixation during validation measurement.
- *
- * Env: NEXT_PUBLIC_VALIDATION_HOLD_MS (default: 1200)
  */
-export const VALIDATION_HOLD_MS = envNumber('NEXT_PUBLIC_VALIDATION_HOLD_MS', 1200);
+export const VALIDATION_HOLD_MS = 1200;
 
 /**
  * Validation accuracy threshold expressed as a fraction of screen
  * diagonal. A distance <= this fraction scores 100%; distances beyond
  * this score 0%.
- *
- * Env: NEXT_PUBLIC_VALIDATION_THRESHOLD (default: 0.12)
  */
-export const VALIDATION_THRESHOLD_SCREEN_DIAGONAL = envFloat(
-  'NEXT_PUBLIC_VALIDATION_THRESHOLD',
-  0.12,
-);
+export const VALIDATION_THRESHOLD_SCREEN_DIAGONAL = 0.12;
 
 /** Minimum gaze samples required per validation point for a valid score. */
 export const VALIDATION_MIN_SAMPLES_PER_POINT = 10;

@@ -3,98 +3,16 @@
 import { motion } from 'framer-motion';
 import { Monitor, CheckCircle2, XCircle, Clock, ArrowRight, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  INCOMPATIBLE_DEVICES,
+  LEGACY_DEVICES,
+  SUPPORTED_DEVICES,
+  type DeviceInfo,
+} from '../lib/hardware';
 
 interface SupportedHardwareProps {
   onContinue: () => void;
 }
-
-interface DeviceInfo {
-  name: string;
-  type: 'screen-based' | 'portable';
-  status: 'supported' | 'legacy' | 'incompatible';
-  hz?: string;
-  note?: string;
-}
-
-const parseEnvList = (envValue: string | undefined, fallback: DeviceInfo[]): DeviceInfo[] => {
-  if (!envValue) return fallback;
-  try {
-    return JSON.parse(envValue);
-  } catch (e) {
-    console.error('Failed to parse device list from env', e);
-    return fallback;
-  }
-};
-
-const SUPPORTED_DEVICES_FALLBACK: DeviceInfo[] = [
-  { name: 'Tobii Pro Spectrum', type: 'screen-based', status: 'supported', hz: 'Up to 1200 Hz' },
-  { name: 'Tobii Pro Fusion', type: 'screen-based', status: 'supported', hz: 'Up to 250 Hz' },
-  { name: 'Tobii Pro Spark', type: 'screen-based', status: 'supported', hz: '60 Hz' },
-  { name: 'Tobii Pro Nano', type: 'screen-based', status: 'supported', hz: '60 Hz' },
-];
-
-const LEGACY_DEVICES_FALLBACK: DeviceInfo[] = [
-  { name: 'Tobii Pro X3-120', type: 'screen-based', status: 'legacy', hz: '120 Hz' },
-  { name: 'Tobii Pro X2-60', type: 'screen-based', status: 'legacy', hz: '60 Hz' },
-  { name: 'Tobii Pro X2-30', type: 'screen-based', status: 'legacy', hz: '30 Hz' },
-  {
-    name: 'Tobii Pro TX300',
-    type: 'screen-based',
-    status: 'legacy',
-    hz: '300 Hz',
-    note: 'Firmware ≥ 1.0.0',
-  },
-  { name: 'Tobii Pro T60 XL', type: 'screen-based', status: 'legacy', note: 'Firmware ≥ 2.0.0' },
-  { name: 'Tobii T60 / T120', type: 'screen-based', status: 'legacy', note: 'Firmware ≥ 2.0.0' },
-  { name: 'Tobii X60 / X120', type: 'screen-based', status: 'legacy', note: 'Firmware ≥ 2.0.0' },
-];
-
-const INCOMPATIBLE_DEVICES_FALLBACK: DeviceInfo[] = [
-  {
-    name: 'Tobii Eye Tracker 5',
-    type: 'screen-based',
-    status: 'incompatible',
-    note: 'Consumer / gaming device',
-  },
-  {
-    name: 'Tobii Eye Tracker 5L',
-    type: 'screen-based',
-    status: 'incompatible',
-    note: 'Consumer / gaming device',
-  },
-  {
-    name: 'Tobii Eye Tracker 4C',
-    type: 'screen-based',
-    status: 'incompatible',
-    note: 'Consumer / gaming device',
-  },
-  {
-    name: 'Tobii Pro Glasses 2',
-    type: 'portable',
-    status: 'incompatible',
-    note: 'Wearable – not supported',
-  },
-  {
-    name: 'Tobii Pro Glasses 3',
-    type: 'portable',
-    status: 'incompatible',
-    note: 'Wearable – not supported',
-  },
-  { name: 'VR Headsets (all)', type: 'portable', status: 'incompatible', note: 'Not supported' },
-];
-
-const SUPPORTED_DEVICES = parseEnvList(
-  process.env.NEXT_PUBLIC_SUPPORTED_DEVICES,
-  SUPPORTED_DEVICES_FALLBACK,
-);
-const LEGACY_DEVICES = parseEnvList(
-  process.env.NEXT_PUBLIC_LEGACY_DEVICES,
-  LEGACY_DEVICES_FALLBACK,
-);
-const INCOMPATIBLE_DEVICES = parseEnvList(
-  process.env.NEXT_PUBLIC_INCOMPATIBLE_DEVICES,
-  INCOMPATIBLE_DEVICES_FALLBACK,
-);
 
 function StatusBadge({ status }: { status: DeviceInfo['status'] }) {
   if (status === 'supported') {

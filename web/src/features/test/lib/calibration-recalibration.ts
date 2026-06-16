@@ -1,24 +1,11 @@
 import type { CalibrationPhaseType, CalibrationPoint } from '../types';
 import type { CollectedSample } from './calibration-samples';
 import { median } from './calibration-math';
-import { envFloat, envNumber } from './env';
 
-export const TARGETED_RECALIBRATION_MAX_ROUNDS = Math.max(
-  0,
-  Math.floor(envNumber('NEXT_PUBLIC_TARGETED_RECALIBRATION_MAX_ROUNDS', 1)),
-);
-export const TARGETED_RECALIBRATION_MAX_POINTS = Math.max(
-  0,
-  Math.floor(envNumber('NEXT_PUBLIC_TARGETED_RECALIBRATION_MAX_POINTS', 6)),
-);
-export const TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD = envFloat(
-  'NEXT_PUBLIC_TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD',
-  0.2,
-);
-const TARGETED_RECALIBRATION_MEDIAN_MARGIN = envFloat(
-  'NEXT_PUBLIC_TARGETED_RECALIBRATION_MEDIAN_MARGIN',
-  0.025,
-);
+export const TARGETED_RECALIBRATION_MAX_ROUNDS = 1;
+export const TARGETED_RECALIBRATION_MAX_POINTS = 6;
+export const TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD = 0.2;
+const TARGETED_RECALIBRATION_MEDIAN_MARGIN = 0.025;
 
 export interface CalibrationPointError {
   pointIndex: number;
