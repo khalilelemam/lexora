@@ -16,12 +16,7 @@ export interface CollectedSample {
 }
 
 export interface CalibrationMappingResult {
-  predict: (
-    irisX: number,
-    irisY: number,
-    yaw: number,
-    pitch: number,
-  ) => { x: number; y: number };
+  predict: (irisX: number, irisY: number, yaw: number, pitch: number) => { x: number; y: number };
 }
 
 export function createSampleBuckets(pointCount: number): CollectedSample[][] {

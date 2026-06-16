@@ -155,21 +155,11 @@ function iqrToSigma(values: number[]): number {
  */
 export function normalizedError(
   sample: CollectedSample,
-  predict: (
-    ix: number,
-    iy: number,
-    yaw: number,
-    pitch: number,
-  ) => { x: number; y: number },
+  predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number },
   screenWidth: number,
   screenHeight: number,
 ): number {
-  const pred = predict(
-    sample.observedX,
-    sample.observedY,
-    sample.yaw,
-    sample.pitch,
-  );
+  const pred = predict(sample.observedX, sample.observedY, sample.yaw, sample.pitch);
   const targetX = sample.targetX * screenWidth;
   const targetY = sample.targetY * screenHeight;
   const dx = (pred.x - targetX) / screenWidth;

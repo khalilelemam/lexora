@@ -198,7 +198,7 @@ export function selectBestAxisCoefficients(
             return predicted - selectorTargets[index];
           }),
           selectorWeights,
-    );
+        );
 
     if (!best || mse < best.mse) {
       calibrationLogger.debug('[RIDGE LAMBDA]', {

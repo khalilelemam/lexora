@@ -4,20 +4,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { WebcamGazePoint } from '../types';
 import { GazeKalman } from '../lib/gaze-kalman';
 import { calibrationLogger } from '../lib/debug-config';
-import {
-  cameraErrorMessage,
-  startWebcamStream,
-  stopWebcamStream,
-} from '../lib/webcam-gaze/camera';
+import { cameraErrorMessage, startWebcamStream, stopWebcamStream } from '../lib/webcam-gaze/camera';
 import {
   extractGlobalIrisPosition,
   extractHeadPose,
   extractIrisPosition,
   extractRawIrisLandmarks,
 } from '../lib/webcam-gaze/landmarks';
-import {
-  createFaceLandmarker,
-} from '../lib/webcam-gaze/mediapipe';
+import { createFaceLandmarker } from '../lib/webcam-gaze/mediapipe';
 import type {
   CalibrationMapping,
   FaceLandmarker,
@@ -166,7 +160,10 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
         return;
       }
 
-      if (activeVideo.readyState >= 2 && activeVideo.currentTime !== detectLastTimestampRef.current) {
+      if (
+        activeVideo.readyState >= 2 &&
+        activeVideo.currentTime !== detectLastTimestampRef.current
+      ) {
         detectLastTimestampRef.current = activeVideo.currentTime;
         const results = faceLandmarker.detectForVideo(activeVideo, performance.now());
 
@@ -231,12 +228,7 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [
-    cameraReady,
-    enabled,
-    mapToScreen,
-    modelReady,
-  ]);
+  }, [cameraReady, enabled, mapToScreen, modelReady]);
 
   // ─── Public API ─────────────────────────────────────────
 

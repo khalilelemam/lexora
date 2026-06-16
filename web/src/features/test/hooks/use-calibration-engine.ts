@@ -3,23 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CalibrationPoint, CalibrationResult, CalibrationPhaseType } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
-import {
-  resolveCalibrationMode,
-  type CalibrationVisualMode,
-} from '../lib/calibration-mode';
+import { resolveCalibrationMode, type CalibrationVisualMode } from '../lib/calibration-mode';
 import { useCalibration } from './use-calibration';
 import { buildCalibrationResult } from '../lib/calibration-math';
 import type { CollectedSample } from '../lib/calibration-samples';
-import {
-  evaluateFixationStability,
-  type StabilityPoint,
-} from '../lib/calibration-stability';
+import { evaluateFixationStability, type StabilityPoint } from '../lib/calibration-stability';
 import { calibrationLogger } from '../lib/debug-config';
 
-import {
-  useQuickValidation,
-  type MappingFn,
-} from './use-quick-validation';
+import { useQuickValidation, type MappingFn } from './use-quick-validation';
 import {
   COUNTDOWN_SECONDS,
   STABLE_FIXATION_MS,
@@ -294,16 +285,24 @@ export function useCalibrationEngine({
     if (quickValidation.phase !== 'idle') return;
     const mapping = mappingRef.current;
     if (tracker === 'webcam' && !mapping) {
-      calibrationLogger.warn('[QUICK VALIDATION] missing webcam mapping; validation will fail closed');
+      calibrationLogger.warn(
+        '[QUICK VALIDATION] missing webcam mapping; validation will fail closed',
+      );
     }
 
     if (pursuitValidationTargets.length > 0) {
       calibrationLogger.debug('[QUICK VALIDATION] Starting with pursuit validation targets', {
         count: pursuitValidationTargets.length,
-        targets: pursuitValidationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
+        targets: pursuitValidationTargets.map((t) => ({
+          x: t.x.toFixed(3),
+          y: t.y.toFixed(3),
+          phase: t.phase,
+        })),
       });
     } else {
-      calibrationLogger.debug('[QUICK VALIDATION] No pursuit targets; using default grid validation points');
+      calibrationLogger.debug(
+        '[QUICK VALIDATION] No pursuit targets; using default grid validation points',
+      );
     }
 
     const validation = await runQuickValidation(
@@ -316,10 +315,10 @@ export function useCalibrationEngine({
       validation.normalizedErrors.length > 0
         ? buildCalibrationResult(validation.normalizedErrors)
         : {
-          quality: 'poor' as const,
-          pointAccuracies: CALIBRATION_POINTS.map(() => 1),
-          averageError: 1,
-        };
+            quality: 'poor' as const,
+            pointAccuracies: CALIBRATION_POINTS.map(() => 1),
+            averageError: 1,
+          };
     setFinalResult(validationResult);
   }, [quickValidation.phase, tracker, runQuickValidation, pursuitValidationTargets]);
 
@@ -506,7 +505,11 @@ export function useCalibrationEngine({
       if (validationTargets.length > 0) {
         calibrationLogger.debug('[PURSUIT COMPLETE] Stored validation targets in engine', {
           count: validationTargets.length,
-          targets: validationTargets.map((t) => ({ x: t.x.toFixed(3), y: t.y.toFixed(3), phase: t.phase })),
+          targets: validationTargets.map((t) => ({
+            x: t.x.toFixed(3),
+            y: t.y.toFixed(3),
+            phase: t.phase,
+          })),
         });
       } else {
         calibrationLogger.warn('[PURSUIT COMPLETE] No validation targets received');

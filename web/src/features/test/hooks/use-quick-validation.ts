@@ -100,20 +100,27 @@ export function useQuickValidation(
           phases: targetOverride.map((t) => t.phase),
         });
       } else {
-        calibrationLogger.debug('[QUICK VALIDATION RUN] Using default grid VALIDATION_POINT_INDICES');
+        calibrationLogger.debug(
+          '[QUICK VALIDATION RUN] Using default grid VALIDATION_POINT_INDICES',
+        );
       }
       const validationTargets =
         targetOverride.length > 0
           ? targetOverride.map((target, index) => ({ target, pointIndex: index }))
           : VALIDATION_POINT_INDICES.map((pointIndex) => ({
-            target: CALIBRATION_POINTS[pointIndex],
-            pointIndex,
-          }));
+              target: CALIBRATION_POINTS[pointIndex],
+              pointIndex,
+            }));
       const shuffledTargets = shuffleArray(validationTargets);
       const validationPoints = shuffledTargets.map((entry) => entry.target);
       const scores: number[] = [];
       const normalizedErrors: number[] = [];
-      const perPointResults: Array<{ pointIndex: number; meanDistancePx: number; verticalErrorPx: number; horizontalErrorPx: number }> = [];
+      const perPointResults: Array<{
+        pointIndex: number;
+        meanDistancePx: number;
+        verticalErrorPx: number;
+        horizontalErrorPx: number;
+      }> = [];
 
       setState({
         phase: 'running',
@@ -268,12 +275,15 @@ export function useQuickValidation(
       const accuracy = scores.length > 0 ? Math.round(mean(scores)) : null;
 
       // Calculate mean vertical and horizontal errors across all points
-      const meanVerticalError = perPointResults.length > 0
-        ? perPointResults.reduce((sum, p) => sum + p.verticalErrorPx, 0) / perPointResults.length
-        : 0;
-      const meanHorizontalError = perPointResults.length > 0
-        ? perPointResults.reduce((sum, p) => sum + p.horizontalErrorPx, 0) / perPointResults.length
-        : 0;
+      const meanVerticalError =
+        perPointResults.length > 0
+          ? perPointResults.reduce((sum, p) => sum + p.verticalErrorPx, 0) / perPointResults.length
+          : 0;
+      const meanHorizontalError =
+        perPointResults.length > 0
+          ? perPointResults.reduce((sum, p) => sum + p.horizontalErrorPx, 0) /
+            perPointResults.length
+          : 0;
 
       const result = {
         accuracy,
@@ -289,12 +299,12 @@ export function useQuickValidation(
         totalPoints: result.totalPoints,
         meanVerticalErrorPx: Number(result.meanVerticalErrorPx.toFixed(2)),
         meanHorizontalErrorPx: Number(result.meanHorizontalErrorPx.toFixed(2)),
-        perPointDistances: result.perPointResults?.map(p => ({
+        perPointDistances: result.perPointResults?.map((p) => ({
           pointIndex: p.pointIndex,
           meanDistancePx: Math.round(p.meanDistancePx),
           horizontalErrorPx: Number(p.horizontalErrorPx.toFixed(2)),
-          verticalErrorPx: Number(p.verticalErrorPx.toFixed(2))
-        }))
+          verticalErrorPx: Number(p.verticalErrorPx.toFixed(2)),
+        })),
       });
       setState((prev) => ({
         ...prev,

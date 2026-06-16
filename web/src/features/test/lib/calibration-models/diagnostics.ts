@@ -2,11 +2,14 @@ import { calibrationLogger } from '../debug-config';
 import type { TrainingSample } from './types';
 
 function summarizeSamplesByPoint(samples: TrainingSample[]) {
-  const byPoint = new Map<number, {
-    count: number;
-    totalWeight: number;
-    phases: Record<string, number>;
-  }>();
+  const byPoint = new Map<
+    number,
+    {
+      count: number;
+      totalWeight: number;
+      phases: Record<string, number>;
+    }
+  >();
 
   for (const sample of samples) {
     const entry = byPoint.get(sample.pointIndex) ?? {
@@ -33,10 +36,13 @@ function summarizeSamplesByPoint(samples: TrainingSample[]) {
 export function logSampleSummary(label: string, samples: TrainingSample[]) {
   if (!calibrationLogger.enabled) return;
 
-  const phaseCounts = samples.reduce((acc, sample) => {
-    acc[sample.phase] = (acc[sample.phase] ?? 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const phaseCounts = samples.reduce(
+    (acc, sample) => {
+      acc[sample.phase] = (acc[sample.phase] ?? 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   calibrationLogger.debug(`[CALIBRATION DATASET] ${label}`, {
     totalSamples: samples.length,
@@ -55,12 +61,15 @@ export function logStaticIyDiagnostics(samples: TrainingSample[]) {
     return;
   }
 
-  const byPoint = new Map<number, {
-    sumIy: number;
-    count: number;
-    targetX: number;
-    targetY: number;
-  }>();
+  const byPoint = new Map<
+    number,
+    {
+      sumIy: number;
+      count: number;
+      targetX: number;
+      targetY: number;
+    }
+  >();
 
   for (const sample of staticSamples) {
     const entry = byPoint.get(sample.pointIndex) ?? {

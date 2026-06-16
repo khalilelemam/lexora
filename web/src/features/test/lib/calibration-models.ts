@@ -1,15 +1,9 @@
 import { calibrationLogger } from './debug-config';
-import {
-  NUM_FEATURES_X,
-  NUM_FEATURES_Y,
-} from './calibration-models/feature-builders';
+import { NUM_FEATURES_X, NUM_FEATURES_Y } from './calibration-models/feature-builders';
 import { fitIdwModel } from './calibration-models/idw-model';
 import { meanEuclideanError } from './calibration-models/metrics';
 import { fitPolynomialRidge } from './calibration-models/polynomial-ridge-model';
-import type {
-  CalibrationModel,
-  TrainingSample,
-} from './calibration-models/types';
+import type { CalibrationModel, TrainingSample } from './calibration-models/types';
 
 const IDW_MAX_CENTROID_ERROR_PX = 100;
 const POLYNOMIAL_MAX_TRAINING_ERROR_PX = 200;
@@ -42,15 +36,33 @@ export function fitProductionCalibrationModel(
     xAxisFeatures: NUM_FEATURES_X,
     yAxisFeatures: NUM_FEATURES_Y,
     xFeatures: [
-      '1', 'ix', 'iy', 'pitch',
-      'ix^2', 'iy^2', 'ix*iy',
-      'ix^3', 'iy^3', 'ix^2*iy', 'ix*iy^2',
-      'yaw', 'yaw*ix', 'pitch*iy',
+      '1',
+      'ix',
+      'iy',
+      'pitch',
+      'ix^2',
+      'iy^2',
+      'ix*iy',
+      'ix^3',
+      'iy^3',
+      'ix^2*iy',
+      'ix*iy^2',
+      'yaw',
+      'yaw*ix',
+      'pitch*iy',
     ],
     yFeatures: [
-      '1', 'ix', 'iy', 'pitch',
-      'ix^2', 'iy^2', 'ix*iy',
-      'ix^3', 'iy^3', 'ix^2*iy', 'ix*iy^2',
+      '1',
+      'ix',
+      'iy',
+      'pitch',
+      'ix^2',
+      'iy^2',
+      'ix*iy',
+      'ix^3',
+      'iy^3',
+      'ix^2*iy',
+      'ix*iy^2',
       'pitch*iy',
     ],
     excludedFromY: ['yaw', 'yaw*ix'],
@@ -65,12 +77,7 @@ export function fitProductionCalibrationModel(
   );
   const idwMaxCentroidError = idwModel.maxCentroidErrorPx ?? Number.POSITIVE_INFINITY;
   const polynomialSelectorError = meanEuclideanError(selector, (sample) =>
-    polynomialModel.predict(
-      sample.ix,
-      sample.iy,
-      sample.yaw,
-      sample.pitch,
-    ),
+    polynomialModel.predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
   );
 
   const idwCandidate = {
@@ -94,9 +101,10 @@ export function fitProductionCalibrationModel(
     .sort((a, b) => a.selectorErrorPx - b.selectorErrorPx);
 
   let selectedCandidate = candidates[0] ?? idwCandidate;
-  let reason = selectedCandidate.kind === 'idw'
-    ? 'IDW had lower selector error'
-    : 'Polynomial ridge had lower selector error';
+  let reason =
+    selectedCandidate.kind === 'idw'
+      ? 'IDW had lower selector error'
+      : 'Polynomial ridge had lower selector error';
 
   if (
     selectedCandidate.kind === 'polynomial-ridge' &&
@@ -138,9 +146,11 @@ export function fitProductionCalibrationModel(
   });
 
   if (typeof window !== 'undefined') {
-    (window as typeof window & {
-      __lexoraCalibrationModel?: { predict: CalibrationModel['predict'] };
-    }).__lexoraCalibrationModel = { predict: selectedModel.predict };
+    (
+      window as typeof window & {
+        __lexoraCalibrationModel?: { predict: CalibrationModel['predict'] };
+      }
+    ).__lexoraCalibrationModel = { predict: selectedModel.predict };
   }
 
   return selectedModel;

@@ -16,12 +16,7 @@ export type ModelKind = 'idw' | 'polynomial-ridge';
 
 export interface CalibrationModel {
   kind: ModelKind;
-  predict: (
-    irisX: number,
-    irisY: number,
-    yaw: number,
-    pitch: number,
-  ) => { x: number; y: number };
+  predict: (irisX: number, irisY: number, yaw: number, pitch: number) => { x: number; y: number };
   trainingError: number;
   maxCentroidErrorPx?: number;
   info: string;

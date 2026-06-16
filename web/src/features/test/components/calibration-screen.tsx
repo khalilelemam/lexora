@@ -41,12 +41,7 @@ interface CalibrationScreenProps {
   onComplete: (
     result: CalibrationResult,
     mapping?: {
-      predict: (
-        ix: number,
-        iy: number,
-        yaw: number,
-        pitch: number,
-      ) => { x: number; y: number };
+      predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
     },
   ) => void;
   blockOnPoor?: boolean;
@@ -201,8 +196,7 @@ export function CalibrationScreen({
           tracker === 'webcam'
             ? elapsedMs >= timing.gridMaxDwellMs && canForceAdvance
             : elapsedMs >= timing.gridMaxDwellMs;
-        const forceAdvance =
-          tracker === 'webcam' && elapsedMs >= timing.gridForceAdvanceMs;
+        const forceAdvance = tracker === 'webcam' && elapsedMs >= timing.gridForceAdvanceMs;
 
         if (shouldAdvance || mustAdvanceByTimeout || forceAdvance) {
           pushIssue(null);

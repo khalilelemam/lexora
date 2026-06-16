@@ -63,18 +63,18 @@ export async function createFaceLandmarker(): Promise<FaceLandmarker> {
   );
 
   try {
-    return await FL.createFromOptions(
+    return (await FL.createFromOptions(
       filesetResolver,
       faceLandmarkerOptions('GPU'),
-    ) as FaceLandmarker;
+    )) as FaceLandmarker;
   } catch (gpuErr) {
     calibrationLogger.warn(
       'GPU acceleration failed for FaceLandmarker, falling back to CPU.',
       gpuErr,
     );
-    return await FL.createFromOptions(
+    return (await FL.createFromOptions(
       filesetResolver,
       faceLandmarkerOptions('CPU'),
-    ) as FaceLandmarker;
+    )) as FaceLandmarker;
   }
 }

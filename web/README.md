@@ -176,10 +176,10 @@ Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to
 
 ### Debug
 
-| Variable                            | Default               | What It Does                                                                                                                         |
-| ----------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `NEXT_PUBLIC_DEBUG_GAZE_OVERLAY`    | `false`               | Set to `"true"` to show a real-time gaze dot during the webcam reading task.                                                         |
-| `NEXT_PUBLIC_DEBUG_CALIBRATION_LOG` | `false` in production | Set to `"true"` to enable verbose calibration, pursuit, and validation diagnostics in the browser. Development builds enable it.     |
+| Variable                            | Default               | What It Does                                                                                                                     |
+| ----------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_DEBUG_GAZE_OVERLAY`    | `false`               | Set to `"true"` to show a real-time gaze dot during the webcam reading task.                                                     |
+| `NEXT_PUBLIC_DEBUG_CALIBRATION_LOG` | `false` in production | Set to `"true"` to enable verbose calibration, pursuit, and validation diagnostics in the browser. Development builds enable it. |
 
 ## Production Config And Deploy
 
@@ -265,26 +265,26 @@ If a teammate wants to change production behavior, they should update `web-produ
 
 These live in the source code and are **not** configurable via env vars. They rarely need changing.
 
-| Constant                           | Value                      | File                              | Purpose                                                               |
-| ---------------------------------- | -------------------------- | --------------------------------- | --------------------------------------------------------------------- |
-| `CALIBRATION_POINTS`               | 20-point grid              | `constants.ts`                    | 4×5 grid at X: [0.2, 0.35, 0.5, 0.65, 0.8], Y: [0.15, 0.30, 0.45, 0.60] |
-| `AOI_X_BOUNDS`                     | `{ min: 0.20, max: 0.80 }` | `constants.ts`                    | Area of Interest X-axis bounds for calibration and gaze replay mapping |
-| `AOI_Y_BOUNDS`                     | `{ min: 0.15, max: 0.60 }` | `constants.ts`                    | Area of Interest Y-axis bounds for calibration and gaze replay mapping |
-| `READING_ZONE_BOUNDS`              | `{ top: 0.18, left: 0.25, right: 0.25, bottom: 0.42 }` | `constants.ts` | Live reading, replay, and export text bounds |
-| `CALIBRATION_THRESHOLDS`           | good `0.04`, acceptable `0.08` | `constants.ts` | Normalized error thresholds for calibration quality labels |
-| `MIN_GAZE_POINTS`                  | `20`                       | `constants.ts`                    | Minimum gaze points per task before submission is allowed              |
-| `ESTIMATED_READING_WPM`            | `60`                       | `constants.ts`                    | Used to estimate when to ask "are you done reading?"                  |
-| `MIN_AUTO_DETECT_SECONDS`          | `8`                        | `constants.ts`                    | Minimum wait before the done-reading dialog can appear                |
-| `COUNTDOWN_SECONDS`                | `5`                        | `calibration-engine-constants.ts` | Countdown before calibration collection starts                         |
-| `STABLE_FIXATION_MS`               | `300`                      | `calibration-engine-constants.ts` | Minimum stable fixation duration before accepting a sample             |
-| `STABLE_VELOCITY_NORM_PER_SEC`     | `0.55`                     | `calibration-engine-constants.ts` | Max normalized gaze velocity considered stable                         |
-| `CAPTURE_COOLDOWN_MS`              | `45`                       | `calibration-engine-constants.ts` | Minimum gap between accepted samples                                   |
-| `VALIDATION_SETTLE_MS`             | `450`                      | `calibration-engine-constants.ts` | Settle time before measuring validation points                         |
-| `VALIDATION_HOLD_MS`               | `1200`                     | `calibration-engine-constants.ts` | Validation measurement hold duration                                   |
-| `VALIDATION_THRESHOLD_SCREEN_DIAGONAL` | `0.12`                  | `calibration-engine-constants.ts` | Validation scoring threshold as fraction of screen diagonal            |
-| `VALIDATION_POINT_INDICES`         | `[12, 8, 6, 16, 18]`       | `calibration-engine-constants.ts` | Fallback grid points used for quick validation when reading targets are unavailable |
-| `VALIDATION_MIN_SAMPLES_PER_POINT` | `10`                       | `calibration-engine-constants.ts` | Min gaze samples per validation point for a valid score               |
-| `TARGETED_RECALIBRATION_ENABLED`   | `false`                    | `calibration-recalibration.ts`    | Keeps targeted recalibration code present but prevents entering the recalibrating phase |
+| Constant                               | Value                                                  | File                              | Purpose                                                                                 |
+| -------------------------------------- | ------------------------------------------------------ | --------------------------------- | --------------------------------------------------------------------------------------- |
+| `CALIBRATION_POINTS`                   | 20-point grid                                          | `constants.ts`                    | 4×5 grid at X: [0.2, 0.35, 0.5, 0.65, 0.8], Y: [0.15, 0.30, 0.45, 0.60]                 |
+| `AOI_X_BOUNDS`                         | `{ min: 0.20, max: 0.80 }`                             | `constants.ts`                    | Area of Interest X-axis bounds for calibration and gaze replay mapping                  |
+| `AOI_Y_BOUNDS`                         | `{ min: 0.15, max: 0.60 }`                             | `constants.ts`                    | Area of Interest Y-axis bounds for calibration and gaze replay mapping                  |
+| `READING_ZONE_BOUNDS`                  | `{ top: 0.18, left: 0.25, right: 0.25, bottom: 0.42 }` | `constants.ts`                    | Live reading, replay, and export text bounds                                            |
+| `CALIBRATION_THRESHOLDS`               | good `0.04`, acceptable `0.08`                         | `constants.ts`                    | Normalized error thresholds for calibration quality labels                              |
+| `MIN_GAZE_POINTS`                      | `20`                                                   | `constants.ts`                    | Minimum gaze points per task before submission is allowed                               |
+| `ESTIMATED_READING_WPM`                | `60`                                                   | `constants.ts`                    | Used to estimate when to ask "are you done reading?"                                    |
+| `MIN_AUTO_DETECT_SECONDS`              | `8`                                                    | `constants.ts`                    | Minimum wait before the done-reading dialog can appear                                  |
+| `COUNTDOWN_SECONDS`                    | `5`                                                    | `calibration-engine-constants.ts` | Countdown before calibration collection starts                                          |
+| `STABLE_FIXATION_MS`                   | `300`                                                  | `calibration-engine-constants.ts` | Minimum stable fixation duration before accepting a sample                              |
+| `STABLE_VELOCITY_NORM_PER_SEC`         | `0.55`                                                 | `calibration-engine-constants.ts` | Max normalized gaze velocity considered stable                                          |
+| `CAPTURE_COOLDOWN_MS`                  | `45`                                                   | `calibration-engine-constants.ts` | Minimum gap between accepted samples                                                    |
+| `VALIDATION_SETTLE_MS`                 | `450`                                                  | `calibration-engine-constants.ts` | Settle time before measuring validation points                                          |
+| `VALIDATION_HOLD_MS`                   | `1200`                                                 | `calibration-engine-constants.ts` | Validation measurement hold duration                                                    |
+| `VALIDATION_THRESHOLD_SCREEN_DIAGONAL` | `0.12`                                                 | `calibration-engine-constants.ts` | Validation scoring threshold as fraction of screen diagonal                             |
+| `VALIDATION_POINT_INDICES`             | `[12, 8, 6, 16, 18]`                                   | `calibration-engine-constants.ts` | Fallback grid points used for quick validation when reading targets are unavailable     |
+| `VALIDATION_MIN_SAMPLES_PER_POINT`     | `10`                                                   | `calibration-engine-constants.ts` | Min gaze samples per validation point for a valid score                                 |
+| `TARGETED_RECALIBRATION_ENABLED`       | `false`                                                | `calibration-recalibration.ts`    | Keeps targeted recalibration code present but prevents entering the recalibrating phase |
 
 ### Calibration Mode Timing Constants
 

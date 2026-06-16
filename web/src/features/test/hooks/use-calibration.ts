@@ -58,7 +58,9 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
     Array.from({ length: fullPointSequence.length }, () => 0),
   );
   const [recalibrationRound, setRecalibrationRound] = useState(0);
-  const samplesByPointRef = useRef<CollectedSample[][]>(createSampleBuckets(fullPointSequence.length));
+  const samplesByPointRef = useRef<CollectedSample[][]>(
+    createSampleBuckets(fullPointSequence.length),
+  );
 
   const currentPointIndex = collectionOrder[collectionCursor] ?? 0;
 
@@ -180,7 +182,10 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       );
 
       const cleanedByPoint = samplesByPointRef.current.map((bucket) => filterOutliers(bucket));
-      calibrationLogger.debug('[CALIBRATION CLEANED SAMPLES]', summarizeCollectedBuckets(cleanedByPoint));
+      calibrationLogger.debug(
+        '[CALIBRATION CLEANED SAMPLES]',
+        summarizeCollectedBuckets(cleanedByPoint),
+      );
 
       const trainingSamples: TrainingSample[] = [];
       const heldOutSamples: TrainingSample[] = [];
@@ -234,12 +239,8 @@ export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
       }
 
       const model = fitProductionCalibrationModel(trainingSamples, heldOutSamples);
-      const predictModel = (
-        ix: number,
-        iy: number,
-        yaw: number,
-        pitch: number,
-      ) => model.predict(ix, iy, yaw, pitch);
+      const predictModel = (ix: number, iy: number, yaw: number, pitch: number) =>
+        model.predict(ix, iy, yaw, pitch);
 
       const pointErrorsOrNull = cleanedByPoint.map((bucket) => {
         if (bucket.length === 0) return null;

@@ -38,12 +38,7 @@ function assertFeatureCount(label: string, actual: number, expected: number) {
  *   [12]   yaw * ix       head turn x horizontal iris gain
  *   [13]   pitch * iy     head nod x vertical iris minor X cross-term
  */
-export function expandFeaturesX(
-  ix: number,
-  iy: number,
-  yaw: number,
-  pitch: number,
-): number[] {
+export function expandFeaturesX(ix: number, iy: number, yaw: number, pitch: number): number[] {
   const features = [
     1.0,
     ix,
@@ -72,11 +67,7 @@ export function expandFeaturesX(
  * intentionally excluded to avoid spurious vertical predictions from
  * horizontal head turns.
  */
-export function expandFeaturesY(
-  ix: number,
-  iy: number,
-  pitch: number,
-): number[] {
+export function expandFeaturesY(ix: number, iy: number, pitch: number): number[] {
   const features = [
     1.0,
     ix,
