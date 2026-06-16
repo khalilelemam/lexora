@@ -103,7 +103,24 @@ export function TaskDisplay({
     setShowDialog(true);
   }, [preview]);
 
+  // ─── Auto-scale font if text overflows the reading zone ───
+  // (Runs BEFORE line-center measurement so centers reflect final layout)
+
+  useLayoutEffect(() => {
+    if (isShortContent || !readingZoneRef.current) return;
+
+    const zone = readingZoneRef.current;
+    const availableHeight = zone.clientHeight;
+    const contentHeight = zone.scrollHeight;
+
+    if (contentHeight > availableHeight && fontScale > 0.7) {
+      const ratio = availableHeight / contentHeight;
+      setFontScale(Math.max(0.7, ratio * fontScale));
+    }
+  }, [isShortContent, content, fontScale]);
+
   // ─── Measure line centers for Y-axis snapping ──────
+  // Depends on fontScale so centers are recomputed after any font scaling.
 
   useLayoutEffect(() => {
     if (isShortContent || !textContentRef.current || !onLineCentersReady) {
@@ -154,21 +171,6 @@ export function TaskDisplay({
 
     onLineCentersReady(lineCenters);
   }, [isShortContent, onLineCentersReady, content, fontScale]);
-
-  // ─── Auto-scale font if text overflows the reading zone ───
-
-  useLayoutEffect(() => {
-    if (isShortContent || !readingZoneRef.current) return;
-
-    const zone = readingZoneRef.current;
-    const availableHeight = zone.clientHeight;
-    const contentHeight = zone.scrollHeight;
-
-    if (contentHeight > availableHeight && fontScale > 0.7) {
-      const ratio = availableHeight / contentHeight;
-      setFontScale(Math.max(0.7, ratio * fontScale));
-    }
-  }, [isShortContent, content, fontScale]);
 
   // ─── Compute estimated reading time ─────────────────
 
