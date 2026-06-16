@@ -87,7 +87,12 @@ function fitCandidateModel(
   logCoefficientSummary(label, 'x', bestX.coeffs);
   logCoefficientSummary(label, 'y', bestY.coeffs);
 
-  const predict: CalibrationModel['predict'] = (ix: number, iy: number, yaw: number, pitch: number) => {
+  const predict: CalibrationModel['predict'] = (
+    ix: number,
+    iy: number,
+    yaw: number,
+    pitch: number,
+  ) => {
     const standardizeFeatures = (rawFeatures: number[], scaler: FeatureScaler): number[] =>
       rawFeatures.map((val, col) => {
         if (col === 0) return 1;

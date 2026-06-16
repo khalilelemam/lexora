@@ -36,6 +36,7 @@ const MODE_TIMING: Record<CalibrationVisualMode, ModeTimingConfig> = {
     gridMinSamplesWebcam: 60,
     gridMinSamplesTobii: 6,
   },
+  // TODO: Update values for star mode once it's fully implemented.
   star: {
     motionDurationMs: 550, // Slightly longer — star scales in with animation
     holdDurationMs: 1100, // Longer hold — animated target needs settle time
@@ -45,6 +46,7 @@ const MODE_TIMING: Record<CalibrationVisualMode, ModeTimingConfig> = {
     gridMinSamplesWebcam: 7,
     gridMinSamplesTobii: 5,
   },
+  // TODO: Update values for stickman mode once it's fully implemented.
   stickman: {
     motionDurationMs: 600, // Longest — ninja runs/teleports to position
     holdDurationMs: 1200, // Longest hold — child shifts from tracking to fixating
