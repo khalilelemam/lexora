@@ -80,7 +80,7 @@ export default function FaqPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: faqs.map((faq) => ({
+    mainEntity: faqs.flatMap(group => group.items).map((faq) => ({
       '@type': 'Question',
       name: faq.question,
       acceptedAnswer: {
