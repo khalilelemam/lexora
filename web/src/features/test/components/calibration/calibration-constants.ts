@@ -1,6 +1,6 @@
 import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import type { CalibrationQuality } from '../../types';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 
 /**
  * Mode-specific calibration timing constants.
@@ -33,9 +33,10 @@ const MODE_TIMING: Record<CalibrationVisualMode, ModeTimingConfig> = {
     gridMinDwellMs: 1000, // Min time before quality-based advance
     gridMaxDwellMs: 3200, // Max time before timeout advance
     gridForceAdvanceMs: 5000, // Force advance even with poor signal
-    gridMinSamplesWebcam: 8,
+    gridMinSamplesWebcam: 60,
     gridMinSamplesTobii: 6,
   },
+  // TODO: Update values for star mode once it's fully implemented.
   star: {
     motionDurationMs: 550, // Slightly longer — star scales in with animation
     holdDurationMs: 1100, // Longer hold — animated target needs settle time
@@ -45,6 +46,7 @@ const MODE_TIMING: Record<CalibrationVisualMode, ModeTimingConfig> = {
     gridMinSamplesWebcam: 7,
     gridMinSamplesTobii: 5,
   },
+  // TODO: Update values for stickman mode once it's fully implemented.
   stickman: {
     motionDurationMs: 600, // Longest — ninja runs/teleports to position
     holdDurationMs: 1200, // Longest hold — child shifts from tracking to fixating
@@ -60,19 +62,8 @@ export function getModeTiming(mode: CalibrationVisualMode): ModeTimingConfig {
   return MODE_TIMING[mode];
 }
 
-// Export individual constants for backward compatibility
-// These are the grid-mode defaults (most common)
-export const MOTION_DURATION_MS = MODE_TIMING.grid.motionDurationMs;
-export const HOLD_DURATION_MS = MODE_TIMING.grid.holdDurationMs;
 export const SAMPLE_INTERVAL_MS = 33;
-export const GRID_MIN_SAMPLES_WEBCAM = MODE_TIMING.grid.gridMinSamplesWebcam;
-export const GRID_MIN_SAMPLES_TOBII = MODE_TIMING.grid.gridMinSamplesTobii;
-export const GRID_MIN_DWELL_MS = MODE_TIMING.grid.gridMinDwellMs;
-export const GRID_MAX_DWELL_MS = MODE_TIMING.grid.gridMaxDwellMs;
-export const GRID_FORCE_ADVANCE_MS = MODE_TIMING.grid.gridForceAdvanceMs;
 export const GRID_TIMEOUT_MIN_SAMPLES_WEBCAM = 2;
-export const POINT_SAMPLES_GOAL_WEBCAM = 3;
-export const POINT_SAMPLES_GOAL_TOBII = 3;
 
 export const QUALITY_CONFIG: Record<
   CalibrationQuality,
@@ -97,7 +88,7 @@ export const MODE_OPTIONS: CalibrationModeOption[] = [
   {
     key: 'grid',
     label: 'Classic Grid',
-    description: 'Follow a simple dot across 15 calibration points. Fast and precise.',
+    description: 'Follow a simple dot across 20 calibration points. Fast and precise.',
     ageHint: 'Best for adults & older children',
     image: '/images/calibration/default-mode.svg',
   },

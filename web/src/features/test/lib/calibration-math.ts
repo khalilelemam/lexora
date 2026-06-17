@@ -7,18 +7,7 @@
 
 import type { CalibrationResult, CalibrationQuality } from '../types';
 import { CALIBRATION_THRESHOLDS } from './constants';
-
-/* ── Collected sample shape ─────────────────────────────── */
-
-export interface CollectedSample {
-  pointIndex: number;
-  observedX: number;
-  observedY: number;
-  targetX: number;
-  targetY: number;
-  yaw: number;
-  pitch: number;
-}
+import type { CollectedSample } from './calibration-samples';
 
 /* ── Grid traversal ─────────────────────────────────────── */
 
@@ -26,11 +15,12 @@ export interface CollectedSample {
  * Build a serpentine (boustrophedon) traversal order for a grid.
  * Even rows go left→right, odd rows go right→left.
  * This minimizes large saccades between consecutive calibration points.
+ *
  */
 export function buildSerpentineOrder(total: number, columns: number): number[] {
   const order: number[] = [];
-  const rows = Math.ceil(total / columns);
 
+  const rows = Math.ceil(total / columns);
   for (let row = 0; row < rows; row++) {
     const start = row * columns;
     const end = Math.min(total, start + columns);
@@ -84,31 +74,77 @@ export function mean(values: number[]): number {
 /* ── Outlier filtering ──────────────────────────────────── */
 
 /**
- * MAD-based outlier rejection — filters samples whose z-score
- * (computed via Median Absolute Deviation) exceeds the threshold.
+ * IQR-based outlier rejection — filters samples using median + IQR
+ * robust statistics. Unlike mean+stddev (or even MAD), the IQR-derived
+ * threshold is truly unaffected by the outliers being removed, so blink
+ * artifacts and tracking losses are reliably rejected.
  *
- * MAD is preferred over standard deviation here because it is
- * robust to the very outliers we want to remove.
+ * @param samples  Collected samples from ONE calibration point
+ * @param kSigma   Rejection multiplier (default 2.5). Equivalent to ~2σ
+ *                 for Gaussian data but robust to contamination.
+ * @returns        Filtered subset, or the original samples when there are
+ *                 too few points to enforce the MIN_RETAINED floor.
  */
-const OUTLIER_Z_THRESHOLD = 3;
+export function filterOutliers(samples: CollectedSample[], kSigma = 2.5): CollectedSample[] {
+  const MIN_RETAINED = 8; // Hard floor — must keep at least the minSamples threshold
 
-export function filterOutliers(samples: CollectedSample[]): CollectedSample[] {
-  if (samples.length < 8) return samples;
+  // Below the retained floor we cannot reject samples without undercutting the
+  // minimum data needed by downstream calibration fitting.
+  if (samples.length < MIN_RETAINED) return samples;
 
   const xs = samples.map((s) => s.observedX);
   const ys = samples.map((s) => s.observedY);
 
-  const mx = median(xs);
-  const my = median(ys);
+  // Compute median and IQR-derived sigma for each axis
+  const medianX = median(xs);
+  const medianY = median(ys);
 
-  const madX = median(xs.map((x) => Math.abs(x - mx))) * 1.4826 + 1e-6;
-  const madY = median(ys.map((y) => Math.abs(y - my))) * 1.4826 + 1e-6;
+  const sigmaX = iqrToSigma(xs);
+  const sigmaY = iqrToSigma(ys);
 
-  return samples.filter((s) => {
-    const zx = Math.abs(s.observedX - mx) / madX;
-    const zy = Math.abs(s.observedY - my) / madY;
-    return zx <= OUTLIER_Z_THRESHOLD && zy <= OUTLIER_Z_THRESHOLD;
-  });
+  // Thresholds: if sigma is near-zero (all samples identical), keep everything
+  const threshX = sigmaX > 1e-6 ? kSigma * sigmaX : Infinity;
+  const threshY = sigmaY > 1e-6 ? kSigma * sigmaY : Infinity;
+
+  // Filter: keep samples within thresholds on both axes
+  const filtered = samples.filter(
+    (s) => Math.abs(s.observedX - medianX) <= threshX && Math.abs(s.observedY - medianY) <= threshY,
+  );
+
+  // Safety floor: if filter is too aggressive, fall back to closest-to-median
+  if (filtered.length < MIN_RETAINED) {
+    return samples
+      .slice()
+      .sort((a, b) => {
+        const dA = Math.hypot(a.observedX - medianX, a.observedY - medianY);
+        const dB = Math.hypot(b.observedX - medianX, b.observedY - medianY);
+        return dA - dB;
+      })
+      .slice(0, MIN_RETAINED);
+  }
+
+  return filtered;
+}
+
+/**
+ * Convert IQR (Interquartile Range) to σ-equivalent (standard deviation).
+ * For normal distributions: IQR = 1.349σ, so σ = IQR / 1.349
+ *
+ * This allows thresholds like 2.5σ to be directly computed from quartiles,
+ * which are unaffected by the outliers we want to remove.
+ */
+function iqrToSigma(values: number[]): number {
+  if (values.length < 4) return 1; // Not enough for quartiles
+
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+
+  // Q1 ≈ value at 25th percentile, Q3 ≈ value at 75th percentile
+  const q1 = sorted[Math.floor(n * 0.25)];
+  const q3 = sorted[Math.floor(n * 0.75)];
+
+  // 1.349 converts IQR to σ for Gaussian distributions
+  return (q3 - q1) / 1.349;
 }
 
 /* ── Error computation ──────────────────────────────────── */
@@ -155,18 +191,3 @@ export function buildCalibrationResult(pointAccuracies: number[]): CalibrationRe
     averageError,
   };
 }
-
-/* ── Recalibration thresholds ───────────────────────────── */
-
-export const TARGETED_RECALIBRATION_MAX_ROUNDS = 1;
-export const TARGETED_RECALIBRATION_MAX_POINTS = 6;
-export const TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD = 0.09;
-
-/* ── Webcam sample requirements ─────────────────────────── */
-
-export const MIN_WEBCAM_SAMPLES = 30;
-export const MIN_WEBCAM_POINTS_WITH_SAMPLES = 8;
-export const MIN_WEBCAM_SAMPLES_PER_POINT = 2;
-
-/** Number of columns in the calibration grid (for serpentine order). */
-export const GRID_COLUMNS = 5;

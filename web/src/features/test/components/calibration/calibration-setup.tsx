@@ -5,7 +5,7 @@ import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 import { MODE_OPTIONS } from './calibration-constants';
 
 interface CalibrationSetupProps {
@@ -41,8 +41,8 @@ export function CalibrationSetup({
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-[#2D2A26]">Calibration</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#6B6560]">
-              We need to calibrate the eye tracker before the test. Follow the target with your eyes
-              — it only takes about 30–60 seconds.
+              We need to calibrate the eye tracker before the test. First, follow the target with
+              your eyes. Then, read a short paragraph so we can fine-tune accuracy for reading.
             </p>
           </div>
 
@@ -53,7 +53,7 @@ export function CalibrationSetup({
               <li>Sit at a comfortable distance (about arm&apos;s length)</li>
               <li>Keep your head still — move only your eyes</li>
               <li>Make sure your face is well-lit</li>
-              <li>The calibration takes about 30–60 seconds</li>
+              <li>The reading check takes about 15–25 seconds</li>
             </ul>
           </div>
 

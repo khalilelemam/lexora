@@ -1,4 +1,4 @@
-import type { CalibrationVisualMode } from '../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from './calibration-mode';
 
 /**
  * Parse a URL query parameter into a CalibrationVisualMode.

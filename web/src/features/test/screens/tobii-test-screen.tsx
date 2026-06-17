@@ -23,7 +23,7 @@ import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { buildTobiiResultVisualizations } from '@/features/test/lib/build-tobii-visualizations';
 import type { IntakeData } from '@/features/test/types';
 
-export function TobiiTestScreen() {
+export default function TobiiTestScreen() {
   const {
     state,
     connected,

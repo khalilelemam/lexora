@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 import { COUNTDOWN_SECONDS } from '../../lib/calibration-engine-constants';
 
 interface CalibrationCountdownProps {

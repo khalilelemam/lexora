@@ -1,107 +1,149 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef } from 'react';
-import type { CalibrationResult } from '../types';
+import type { CalibrationResult, CalibrationPhaseType, CalibrationPoint } from '../types';
 import { CALIBRATION_POINTS } from '../lib/constants';
-import { fitProductionCalibrationModel, type TrainingSample } from '../lib/calibration-models';
+import { fitProductionCalibrationModel } from '../lib/calibration-models';
+import type { TrainingSample } from '../lib/calibration-models/types';
+import { calibrationLogger } from '../lib/debug-config';
 import {
+  type CalibrationMappingResult,
   type CollectedSample,
+  createSampleBuckets,
+  ensureSampleBucket,
+  summarizeCollectedBuckets,
+  toTrainingSample,
+} from '../lib/calibration-samples';
+import {
+  buildCalibrationPointErrors,
+  selectTargetedRecalibrationPoints,
+  TARGETED_RECALIBRATION_ENABLED,
+  TARGETED_RECALIBRATION_MAX_ROUNDS,
+} from '../lib/calibration-recalibration';
+import {
   buildSerpentineOrder,
   splitDeterministic,
   filterOutliers,
   mean,
   normalizedError,
   buildCalibrationResult,
-  GRID_COLUMNS,
-  MIN_WEBCAM_SAMPLES,
-  MIN_WEBCAM_POINTS_WITH_SAMPLES,
-  MIN_WEBCAM_SAMPLES_PER_POINT,
-  TARGETED_RECALIBRATION_MAX_ROUNDS,
-  TARGETED_RECALIBRATION_MAX_POINTS,
-  TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD,
 } from '../lib/calibration-math';
 
-interface CalibrationMappingResult {
-  predict: (irisX: number, irisY: number, yaw: number, pitch: number) => { x: number; y: number };
-}
+const GRID_COLUMNS = 5;
+// Minimum data required before webcam model fitting is allowed. These are
+// fitting eligibility guards, not per-point UI advance thresholds.
+const MIN_WEBCAM_SAMPLES = 30;
+const MIN_WEBCAM_POINTS_WITH_SAMPLES = 8;
+const MIN_WEBCAM_SAMPLES_PER_POINT = 2;
 
-type CalibrationPhase = 'idle' | 'collecting' | 'recalibrating' | 'validating' | 'complete';
+type CalibrationPhase =
+  | 'idle'
+  | 'collecting'
+  | 'recalibrating'
+  | 'pursuit'
+  | 'validating'
+  | 'complete';
 
-export function useCalibration() {
-  const points = CALIBRATION_POINTS;
+export function useCalibration(pointsOverride?: readonly CalibrationPoint[]) {
+  const fullPointSequence = pointsOverride ?? CALIBRATION_POINTS;
   const defaultOrder = useMemo(() => {
-    // Pure serpentine order — 15 points, no boss/duplicate
-    return buildSerpentineOrder(points.length, GRID_COLUMNS);
-  }, [points]);
+    return buildSerpentineOrder(fullPointSequence.length, GRID_COLUMNS);
+  }, [fullPointSequence]);
 
   const [phase, setPhase] = useState<CalibrationPhase>('idle');
   const [collectionOrder, setCollectionOrder] = useState<number[]>(defaultOrder);
   const [collectionCursor, setCollectionCursor] = useState(0);
   const [result, setResult] = useState<CalibrationResult | null>(null);
   const [pointSampleCounts, setPointSampleCounts] = useState<number[]>(() =>
-    Array.from({ length: points.length }, () => 0),
+    Array.from({ length: fullPointSequence.length }, () => 0),
   );
   const [recalibrationRound, setRecalibrationRound] = useState(0);
   const samplesByPointRef = useRef<CollectedSample[][]>(
-    Array.from({ length: points.length }, () => []),
+    createSampleBuckets(fullPointSequence.length),
   );
 
   const currentPointIndex = collectionOrder[collectionCursor] ?? 0;
 
-  const addSample = useCallback(
+  const addSampleForPoint = useCallback(
     (
+      pointIndex: number,
       observedX: number,
       observedY: number,
       targetX: number,
       targetY: number,
       yaw = 0,
       pitch = 0,
+      sampleWeight?: number,
+      samplePhase?: CalibrationPhaseType,
     ) => {
-      if (phase !== 'collecting' && phase !== 'recalibrating') return;
-      const pointBucket = samplesByPointRef.current[currentPointIndex];
-      if (!pointBucket) return;
+      if (phase !== 'collecting' && phase !== 'recalibrating' && phase !== 'pursuit') {
+        return;
+      }
+
+      const pointBucket = ensureSampleBucket(samplesByPointRef.current, pointIndex);
       pointBucket.push({
-        pointIndex: currentPointIndex,
+        pointIndex,
         observedX,
         observedY,
         targetX,
         targetY,
         yaw,
         pitch,
+        sampleWeight,
+        phase: samplePhase,
       });
 
       setPointSampleCounts((prev) => {
         const next = [...prev];
-        next[currentPointIndex] = (next[currentPointIndex] ?? 0) + 1;
+        while (next.length <= pointIndex) next.push(0);
+        next[pointIndex] = (next[pointIndex] ?? 0) + 1;
         return next;
       });
     },
-    [phase, currentPointIndex],
+    [phase],
   );
 
-  const advancePoint = useCallback(() => {
-    if (collectionCursor < collectionOrder.length - 1) {
-      setCollectionCursor((prev) => prev + 1);
-    } else {
-      setPhase('validating');
-    }
-  }, [collectionCursor, collectionOrder.length]);
+  const advancePoint = useCallback(
+    (capturedSamplesThisPoint?: number) => {
+      const currentPointIdx = collectionOrder[collectionCursor] ?? -1;
+      const nextCursor = collectionCursor + 1;
+      const currentPoint = currentPointIdx >= 0 ? fullPointSequence[currentPointIdx] : undefined;
+      const capturedThisPoint =
+        capturedSamplesThisPoint ?? samplesByPointRef.current[currentPointIdx]?.length ?? 0;
+      const isCompletion = collectionCursor >= collectionOrder.length - 1;
+
+      calibrationLogger.debug(
+        `[DONE] cursor=${collectionCursor}/${collectionOrder.length - 1} pointIndex=${currentPointIdx} phase=${currentPoint?.phase} samples=${capturedThisPoint}`,
+      );
+
+      if (!isCompletion) {
+        setCollectionCursor(nextCursor);
+      } else {
+        setPhase(phase === 'collecting' ? 'pursuit' : 'validating');
+      }
+    },
+    [collectionCursor, collectionOrder, fullPointSequence, phase],
+  );
 
   const startCalibration = useCallback(() => {
-    samplesByPointRef.current = Array.from({ length: points.length }, () => []);
+    samplesByPointRef.current = createSampleBuckets(fullPointSequence.length);
     setCollectionOrder(defaultOrder);
     setCollectionCursor(0);
-    setPointSampleCounts(Array.from({ length: points.length }, () => 0));
+    setPointSampleCounts(Array.from({ length: fullPointSequence.length }, () => 0));
     setRecalibrationRound(0);
     setResult(null);
     setPhase('collecting');
-  }, [defaultOrder, points.length]);
+  }, [defaultOrder, fullPointSequence.length]);
+
+  const completePursuit = useCallback(() => {
+    setPhase('validating');
+  }, []);
 
   const computeTobiiCalibration = useCallback((): CalibrationResult => {
     const samples = samplesByPointRef.current.flat();
     const pointAccuracies: number[] = [];
 
-    for (let i = 0; i < points.length; i++) {
+    for (let i = 0; i < samplesByPointRef.current.length; i++) {
       const pointSamples = samples.filter((s) => s.pointIndex === i);
       if (pointSamples.length === 0) {
         pointAccuracies.push(1.0);
@@ -121,7 +163,7 @@ export function useCalibration() {
     // Phase is NOT advanced here — the engine manages the lifecycle:
     // validating → pre-validation card → quick validation → finalResult → canFinalize
     return calibResult;
-  }, [points]);
+  }, []);
 
   const computeWebcamCalibration = useCallback(
     (
@@ -130,36 +172,31 @@ export function useCalibration() {
     ): {
       result: CalibrationResult | null;
       mapping: CalibrationMappingResult;
+      mappingIsFallback: boolean;
       needsRecalibration: boolean;
       recalibrationPoints: number[];
     } => {
+      calibrationLogger.debug(
+        '[CALIBRATION RAW SAMPLES]',
+        summarizeCollectedBuckets(samplesByPointRef.current),
+      );
+
       const cleanedByPoint = samplesByPointRef.current.map((bucket) => filterOutliers(bucket));
+      calibrationLogger.debug(
+        '[CALIBRATION CLEANED SAMPLES]',
+        summarizeCollectedBuckets(cleanedByPoint),
+      );
+
       const trainingSamples: TrainingSample[] = [];
       const heldOutSamples: TrainingSample[] = [];
 
-      for (let i = 0; i < points.length; i++) {
+      for (let i = 0; i < cleanedByPoint.length; i++) {
         const { train, held } = splitDeterministic(cleanedByPoint[i]);
         for (const s of train) {
-          trainingSamples.push({
-            ix: s.observedX,
-            iy: s.observedY,
-            yaw: s.yaw,
-            pitch: s.pitch,
-            targetX: s.targetX * screenWidth,
-            targetY: s.targetY * screenHeight,
-            pointIndex: s.pointIndex,
-          });
+          trainingSamples.push(toTrainingSample(s, screenWidth, screenHeight));
         }
         for (const s of held) {
-          heldOutSamples.push({
-            ix: s.observedX,
-            iy: s.observedY,
-            yaw: s.yaw,
-            pitch: s.pitch,
-            targetX: s.targetX * screenWidth,
-            targetY: s.targetY * screenHeight,
-            pointIndex: s.pointIndex,
-          });
+          heldOutSamples.push(toTrainingSample(s, screenWidth, screenHeight));
         }
       }
 
@@ -168,36 +205,47 @@ export function useCalibration() {
         0,
       );
 
+      calibrationLogger.debug('[CALIBRATION FIT INPUT]', {
+        coveredPoints,
+        minCoveredPointsRequired: MIN_WEBCAM_POINTS_WITH_SAMPLES,
+        trainingSamples: trainingSamples.length,
+        heldOutSamples: heldOutSamples.length,
+        minTrainingSamplesRequired: MIN_WEBCAM_SAMPLES,
+      });
+
       if (
         trainingSamples.length < MIN_WEBCAM_SAMPLES ||
         coveredPoints < MIN_WEBCAM_POINTS_WITH_SAMPLES
       ) {
-        const poorResult = buildCalibrationResult(points.map(() => 1.0));
+        calibrationLogger.warn('[CALIBRATION FIT SKIPPED] insufficient data', {
+          coveredPoints,
+          trainingSamples: trainingSamples.length,
+        });
+        const poorResult = buildCalibrationResult(cleanedByPoint.map(() => 1.0));
         setResult(poorResult);
         // Phase stays 'validating' — engine manages lifecycle
         return {
           result: poorResult,
           mapping: {
-            predict: () => ({ x: screenWidth * 0.5, y: screenHeight * 0.5 }),
+            predict: () => ({
+              x: screenWidth * 0.5,
+              y: screenHeight * 0.5,
+            }),
           },
+          mappingIsFallback: true,
           needsRecalibration: false,
           recalibrationPoints: [],
         };
       }
 
       const model = fitProductionCalibrationModel(trainingSamples, heldOutSamples);
-      const predictClamped = (ix: number, iy: number, yaw: number, pitch: number) => {
-        const predicted = model.predict(ix, iy, yaw, pitch);
-        return {
-          x: Math.max(0, Math.min(screenWidth, predicted.x)),
-          y: Math.max(0, Math.min(screenHeight, predicted.y)),
-        };
-      };
+      const predictModel = (ix: number, iy: number, yaw: number, pitch: number) =>
+        model.predict(ix, iy, yaw, pitch);
 
       const pointErrorsOrNull = cleanedByPoint.map((bucket) => {
         if (bucket.length === 0) return null;
         const errs = bucket.map((sample) =>
-          normalizedError(sample, predictClamped, screenWidth, screenHeight),
+          normalizedError(sample, predictModel, screenWidth, screenHeight),
         );
         return mean(errs);
       });
@@ -206,20 +254,38 @@ export function useCalibration() {
       const fallbackPointError = observedErrors.length > 0 ? mean(observedErrors) : 0.35;
       const pointAccuracies = pointErrorsOrNull.map((value) => value ?? fallbackPointError);
 
-      const flaggedPointCandidates = pointErrorsOrNull
-        .map((error, index) => ({ error, index }))
-        .filter(
-          (item): item is { error: number; index: number } =>
-            item.error != null && item.error > TARGETED_RECALIBRATION_POINT_ERROR_THRESHOLD,
-        )
-        .sort((a, b) => b.error - a.error)
-        .slice(0, TARGETED_RECALIBRATION_MAX_POINTS)
-        .map((item) => item.index);
+      const calibrationPointErrors = buildCalibrationPointErrors(
+        pointErrorsOrNull,
+        cleanedByPoint,
+        fullPointSequence,
+      );
+
+      calibrationLogger.debug('[CALIBRATION POINT ERRORS]', calibrationPointErrors);
+
+      const recalibrationSelection = selectTargetedRecalibrationPoints(calibrationPointErrors);
+      const { flaggedPointCandidates } = recalibrationSelection;
+
+      calibrationLogger.debug('[TARGETED RECALIBRATION CHECK]', {
+        enabled: TARGETED_RECALIBRATION_ENABLED,
+        staticMedianError: Number(recalibrationSelection.staticMedianError.toFixed(4)),
+        baseThreshold: recalibrationSelection.baseThreshold,
+        effectiveThreshold: Number(recalibrationSelection.effectiveThreshold.toFixed(4)),
+        candidates: recalibrationSelection.candidates.map((point) => ({
+          pointIndex: point.pointIndex,
+          normalizedError: Number(point.normalizedError.toFixed(4)),
+        })),
+        flaggedPointCandidates,
+      });
 
       if (
+        TARGETED_RECALIBRATION_ENABLED &&
         flaggedPointCandidates.length > 0 &&
         recalibrationRound < TARGETED_RECALIBRATION_MAX_ROUNDS
       ) {
+        calibrationLogger.warn('[TARGETED RECALIBRATION]', {
+          recalibrationRound,
+          flaggedPointCandidates,
+        });
         for (const pointIndex of flaggedPointCandidates) {
           samplesByPointRef.current[pointIndex] = [];
         }
@@ -241,42 +307,52 @@ export function useCalibration() {
         return {
           result: null,
           mapping: {
-            predict: () => ({ x: screenWidth * 0.5, y: screenHeight * 0.5 }),
+            predict: () => ({
+              x: screenWidth * 0.5,
+              y: screenHeight * 0.5,
+            }),
           },
+          mappingIsFallback: true,
           needsRecalibration: true,
           recalibrationPoints: flaggedPointCandidates,
         };
       }
 
       const calibResult = buildCalibrationResult(pointAccuracies);
+      calibrationLogger.debug('[CALIBRATION RESULT]', {
+        quality: calibResult.quality,
+        averageError: Number(calibResult.averageError.toFixed(4)),
+        pointAccuracies: pointAccuracies.map((value) => Number(value.toFixed(4))),
+      });
       setResult(calibResult);
       // Phase stays 'validating' — engine manages: pre-validation → quick validation → canFinalize
 
       return {
         result: calibResult,
-        mapping: { predict: predictClamped },
+        mapping: { predict: predictModel },
+        mappingIsFallback: false,
         needsRecalibration: false,
         recalibrationPoints: [],
       };
     },
-    [points, recalibrationRound],
+    [fullPointSequence, recalibrationRound],
   );
 
   const resetCalibration = useCallback(() => {
-    samplesByPointRef.current = Array.from({ length: points.length }, () => []);
+    samplesByPointRef.current = createSampleBuckets(fullPointSequence.length);
     setCollectionOrder(defaultOrder);
     setCollectionCursor(0);
-    setPointSampleCounts(Array.from({ length: points.length }, () => 0));
+    setPointSampleCounts(Array.from({ length: fullPointSequence.length }, () => 0));
     setRecalibrationRound(0);
     setResult(null);
     setPhase('idle');
-  }, [defaultOrder, points.length]);
+  }, [defaultOrder, fullPointSequence.length]);
 
   return {
     phase,
     currentPointIndex,
-    currentPoint: points[currentPointIndex] ?? points[0],
-    totalPoints: points.length,
+    currentPoint: fullPointSequence[currentPointIndex] ?? fullPointSequence[0],
+    totalPoints: fullPointSequence.length,
     collectionStep: collectionCursor + 1,
     collectionTotal: collectionOrder.length,
     recalibrationRound,
@@ -284,8 +360,9 @@ export function useCalibration() {
     activePointIndices: collectionOrder,
     result,
     startCalibration,
-    addSample,
+    addSampleForPoint,
     advancePoint,
+    completePursuit,
     computeTobiiCalibration,
     computeWebcamCalibration,
     resetCalibration,

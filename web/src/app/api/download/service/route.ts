@@ -7,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
  * Works even when the repo is private by using a server-side GitHub token.
  */
 
-const GITHUB_OWNER = process.env.NEXT_PUBLIC_GITHUB_OWNER || 'khalilelemam';
-const GITHUB_REPO = process.env.NEXT_PUBLIC_GITHUB_REPO || 'lexora';
+const GITHUB_OWNER = 'khalilelemam';
+const GITHUB_REPO = 'lexora';
 const RELEASES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
 
 // Platform keywords that match our asset naming convention

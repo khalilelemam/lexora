@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { WebcamTestScreen } from '@/features/test/screens/webcam-test-screen';
+import WebcamTestScreen from '@/features/test/screens/webcam-test-screen';
 
 export const metadata: Metadata = {
   title: 'Webcam Dyslexia Screening Test',

@@ -1,7 +1,7 @@
 'use client';
 
 import { StickmanValidationCanvas } from '../calibration-modes/stickman/stickman-validation-canvas';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 
 interface CalibrationValidationProps {
   currentStep: number;
@@ -105,10 +105,10 @@ export function CalibrationValidation({
         </div>
       )}
 
-      {/* Gaze cursor */}
+      {/* Gaze cursor — visible for all trackers during validation */}
       {gazeCursor && (
         <div
-          className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-[#4A7C59]/50 shadow-[0_0_12px_rgba(74,124,89,0.6)]"
+          className="pointer-events-none absolute z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-[#4A7C59]/80 shadow-[0_0_12px_rgba(74,124,89,0.8)]"
           style={{ left: gazeCursor.x, top: gazeCursor.y }}
         />
       )}
