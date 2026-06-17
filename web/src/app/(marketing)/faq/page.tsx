@@ -77,8 +77,25 @@ const HIGHLIGHTS = [
 ];
 
 export default function FaqPage() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+
   return (
     <main className="min-h-screen bg-[#e3dcc2] text-[#1b2021]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="relative overflow-hidden px-5 pt-32 pb-16 md:px-8 md:pt-40">
         <div className="absolute right-0 bottom-0 h-72 w-72 translate-x-20 translate-y-20 rounded-full bg-[#a6a867]/45" />
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">

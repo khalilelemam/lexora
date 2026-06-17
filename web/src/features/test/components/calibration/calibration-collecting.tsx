@@ -99,8 +99,8 @@ export function CalibrationCollecting({
         </div>
       )}
 
-      {/* Gaze dot for Tobii — shows operator where gaze is landing */}
-      {tracker === 'tobii' && gazeCursor && (
+      {/* Gaze dot — shows where gaze is landing for both Tobii and webcam */}
+      {gazeCursor && (
         <div
           className="pointer-events-none absolute z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f3edd7]/80 bg-[#a6a867]/60 shadow-[0_0_12px_rgba(166,168,103,0.55)]"
           style={{ left: gazeCursor.x, top: gazeCursor.y }}

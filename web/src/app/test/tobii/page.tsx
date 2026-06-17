@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { TobiiTestScreen } from '@/features/test/screens/tobii-test-screen';
+import TobiiTestScreen from '@/features/test/screens/tobii-test-screen';
 
 export const metadata: Metadata = {
   title: 'Tobii Dyslexia Screening Test',

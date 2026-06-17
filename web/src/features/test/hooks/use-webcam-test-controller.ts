@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { submitWebcamTest } from '@/features/test/actions/submit-webcam-test';
-import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '@/features/test/lib/calibration-mode';
 import type {
   CalibrationResult,
   IntakeData,
@@ -46,6 +46,7 @@ export function useWebcamTestController() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const gazeDataRef = useRef<WebcamGazePoint[]>([]);
   const lineCentersRef = useRef<number[]>([]);
+  const lastTaskGazePositionRef = useRef<{ x: number; y: number } | null>(null);
 
   const [gazePointCount, setGazePointCount] = useState(0);
   const [reviewGazeData, setReviewGazeData] = useState<WebcamGazePoint[]>([]);
@@ -54,12 +55,27 @@ export function useWebcamTestController() {
     null,
   );
 
+  // Screenshot captured from TaskDisplay for export visualizations.
+  const screenshotRef = useRef<string | null>(null);
+
+  const setScreenshot = useCallback((_taskType: string, dataUrl: string) => {
+    screenshotRef.current = dataUrl;
+  }, []);
+
   const webcamGaze = useWebcamGaze({
     enabled: true,
     onGazePoint: useCallback((point: WebcamGazePoint) => {
       gazeDataRef.current.push(point);
       setGazePointCount((prev) => prev + 1);
-      setLastTaskGazePosition({ x: point.x, y: point.y });
+
+      const previous = lastTaskGazePositionRef.current;
+      const dx = previous ? point.x - previous.x : Number.POSITIVE_INFINITY;
+      const dy = previous ? point.y - previous.y : Number.POSITIVE_INFINITY;
+      if (!previous || dx * dx + dy * dy > 1) {
+        const next = { x: point.x, y: point.y };
+        lastTaskGazePositionRef.current = next;
+        setLastTaskGazePosition(next);
+      }
     }, []),
   });
 
@@ -84,6 +100,7 @@ export function useWebcamTestController() {
       gazeDataRef.current = [];
       setGazePointCount(0);
       setReviewGazeData([]);
+      lastTaskGazePositionRef.current = null;
       setLastTaskGazePosition(null);
     },
     [dispatch, webcamGaze],
@@ -103,6 +120,7 @@ export function useWebcamTestController() {
     gazeDataRef.current = [];
     setGazePointCount(0);
     setReviewGazeData([]);
+    lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     dispatch({ type: 'RETAKE' });
   }, [dispatch]);
@@ -135,15 +153,22 @@ export function useWebcamTestController() {
     const result = await submitWebcamTest({
       attempt: {
         attemptId: getOrCreateAttemptId(),
-        taskType: 'paragraph',
         age: webcamState.intake.age,
         label: webcamState.intake.label,
         calibrationMode: requestedCalibrationMode,
+        contentSnapshot: {
+          version: 1,
+          primaryTask: 'paragraph',
+          tasks: {
+            paragraph: taskContent,
+          },
+        },
       },
       gazeData: gazeDataRef.current,
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
       lineCenters: lineCentersRef.current,
+      screenshots: screenshotRef.current ? { paragraph: screenshotRef.current } : undefined,
     });
 
     if (result.success) {
@@ -152,15 +177,17 @@ export function useWebcamTestController() {
     }
 
     dispatch({ type: 'SUBMIT_ERROR', error: result.error });
-  }, [dispatch, getOrCreateAttemptId, requestedCalibrationMode, webcamState.intake]);
+  }, [dispatch, getOrCreateAttemptId, requestedCalibrationMode, taskContent, webcamState.intake]);
 
   const handleNewTest = useCallback(() => {
     resetAttemptId();
     gazeDataRef.current = [];
     setGazePointCount(0);
     setReviewGazeData([]);
+    lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     setTaskContent('');
+    screenshotRef.current = null;
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
   }, [dispatch, resetAttemptId]);
@@ -225,5 +252,6 @@ export function useWebcamTestController() {
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
     completeEducation: () => dispatch({ type: 'EDUCATION_COMPLETE' }),
     startFromIdle: () => dispatch({ type: 'START' }),
+    setScreenshot,
   };
 }

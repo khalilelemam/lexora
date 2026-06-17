@@ -16,13 +16,18 @@ import { useState, useCallback } from 'react';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { cn } from '@/lib/utils';
 import type { PredictionResult, TestMode } from '../types';
+import type { AttemptVisualization } from '@/features/attempts/types';
 import { FullscreenGazeReplay } from './fullscreen-gaze-replay';
+import { AttemptVisualizationOverlay } from '@/features/attempts/components/attempt-visualization-overlay';
 
 interface ResultsDisplayProps {
   result: PredictionResult;
   mode: TestMode;
   onNewTest: () => void;
+  /** Single reading content — used for webcam gaze replay */
   readingContent?: string;
+  /** Multi-task visualizations — used for Tobii gaze replay with task switching */
+  visualizations?: AttemptVisualization[];
 }
 
 const RISK_CONFIG = {
@@ -69,18 +74,33 @@ const RISK_CONFIG = {
   },
 } as const;
 
-export function ResultsDisplay({ result, mode, onNewTest, readingContent }: ResultsDisplayProps) {
+export function ResultsDisplay({
+  result,
+  mode,
+  onNewTest,
+  readingContent,
+  visualizations,
+}: ResultsDisplayProps) {
   const config = RISK_CONFIG[result.riskLevel];
   const Icon = config.icon;
   const [showTechnical, setShowTechnical] = useState(false);
   const [showGazeReplay, setShowGazeReplay] = useState(false);
   const probability = Math.round(result.dyslexiaProbability * 100);
-  const hasReplay = result.features && result.features.length > 0 && readingContent;
+
+  const hasWebcamReplay = result.features && result.features.length > 0 && readingContent;
+  const hasTobiiReplay = visualizations && visualizations.length > 0;
+  const hasReplay = hasTobiiReplay || hasWebcamReplay;
 
   const handleCloseReplay = useCallback(() => setShowGazeReplay(false), []);
 
   // ── Fullscreen gaze replay overlay ──
   if (showGazeReplay && hasReplay) {
+    if (hasTobiiReplay) {
+      return (
+        <AttemptVisualizationOverlay visualizations={visualizations} onClose={handleCloseReplay} />
+      );
+    }
+
     return (
       <FullscreenGazeReplay
         taskType="paragraph"

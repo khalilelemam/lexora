@@ -12,14 +12,17 @@ export interface IntakeData {
 export type TobiiTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
 export type WebcamTaskType = 'paragraph';
 export type TaskType = TobiiTaskType | WebcamTaskType;
-export type AttemptTaskType = TaskType | 'full-battery';
 
 // ─── Calibration ─────────────────────────────────────────
 export type CalibrationQuality = 'good' | 'acceptable' | 'poor';
 
+export type CalibrationPhaseType = 'STATIC' | 'PURSUIT_SAMPLE' | 'PURSUIT_VALIDATION';
+
 export interface CalibrationPoint {
-  x: number;
-  y: number;
+  x: number; // normalized 0–1
+  y: number; // normalized 0–1
+  phase: CalibrationPhaseType;
+  label?: string; // optional human-readable label for debugging
 }
 
 export interface CalibrationResult {
@@ -85,10 +88,16 @@ export interface PredictionResult {
 
 export interface AttemptMetadata {
   attemptId: string;
-  taskType: AttemptTaskType;
   age: number;
   label?: string;
   calibrationMode: CalibrationMode;
+  contentSnapshot?: AttemptContentSnapshot;
+}
+
+export interface AttemptContentSnapshot {
+  version: 1;
+  primaryTask: TaskType;
+  tasks: Partial<Record<TaskType, string>>;
 }
 
 export interface TobiiSubmissionInput {
@@ -99,6 +108,8 @@ export interface TobiiSubmissionInput {
   screenWidth: number;
   screenHeight: number;
   lineCenters?: Record<string, number[]>;
+  /** Task screenshots captured during the test (taskType → JPEG data URL) */
+  screenshots?: Record<string, string>;
 }
 
 export interface WebcamSubmissionInput {
@@ -107,6 +118,8 @@ export interface WebcamSubmissionInput {
   screenWidth: number;
   screenHeight: number;
   lineCenters?: number[];
+  /** Task screenshots captured during the test (taskType → JPEG data URL) */
+  screenshots?: Record<string, string>;
 }
 
 // ─── Test Flow States ────────────────────────────────────

@@ -16,10 +16,11 @@ import { CalibrationSetup } from '@/features/test/components/calibration/calibra
 import { PreTestIntake } from '@/features/test/components/pre-test-intake';
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useWebcamTestController } from '@/features/test/hooks';
+import { DEBUG_GAZE_OVERLAY } from '@/features/test/lib/debug-config';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
 import type { IntakeData } from '@/features/test/types';
 
-export function WebcamTestScreen() {
+export default function WebcamTestScreen() {
   const {
     state,
     videoRef,
@@ -47,6 +48,7 @@ export function WebcamTestScreen() {
     completeIntake,
     completeEducation,
     startFromIdle,
+    setScreenshot,
   } = useWebcamTestController();
 
   const renderState = () => {
@@ -138,6 +140,7 @@ export function WebcamTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={handleLineCentersReady}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('paragraph', dataUrl)}
           />
         );
 
@@ -202,8 +205,9 @@ export function WebcamTestScreen() {
           )}
 
           {renderState()}
-
-          <GazeDebugDot active={false} getPosition={() => lastTaskGazePosition} />
+          {DEBUG_GAZE_OVERLAY && state.currentState === 'task-paragraph' && (
+            <GazeDebugDot active={webcamGaze.collecting} getPosition={() => lastTaskGazePosition} />
+          )}
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

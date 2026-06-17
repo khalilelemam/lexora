@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { CalibrationVisualMode } from '../../hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 
 interface CalibrationPreValidationProps {
   resolvedMode: CalibrationVisualMode;

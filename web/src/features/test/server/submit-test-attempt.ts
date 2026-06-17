@@ -39,15 +39,16 @@ export async function submitTobiiTestAttempt(
         attemptId: input.attempt.attemptId,
         userId: user.id,
         testType: 'tobii',
-        taskType: input.attempt.taskType,
         outcome: prediction.result.riskLevel,
         modelVersion: prediction.modelVersion,
         calibrationMode: input.attempt.calibrationMode,
         age: input.attempt.age,
         label: input.attempt.label,
+        contentSnapshot: input.attempt.contentSnapshot,
         rawDataConsented: user.rawDataConsent,
         rawPayload: mlInput,
         derivedPayload: prediction.rawResponse,
+        screenshots: input.screenshots,
       });
     } catch (persistenceError) {
       logPersistenceFailure(
@@ -83,15 +84,16 @@ export async function submitWebcamTestAttempt(
         attemptId: input.attempt.attemptId,
         userId: user.id,
         testType: 'webcam',
-        taskType: input.attempt.taskType,
         outcome: prediction.result.riskLevel,
         modelVersion: prediction.modelVersion,
         calibrationMode: input.attempt.calibrationMode,
         age: input.attempt.age,
         label: input.attempt.label,
+        contentSnapshot: input.attempt.contentSnapshot,
         rawDataConsented: user.rawDataConsent,
         rawPayload: mlInput,
         derivedPayload: prediction.rawResponse,
+        screenshots: input.screenshots,
       });
     } catch (persistenceError) {
       logPersistenceFailure(

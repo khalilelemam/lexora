@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+
 import { FullscreenShell, LoadingScreen, StepIndicator } from '@/components/shared';
 import {
   CalibrationScreen,
@@ -18,9 +20,10 @@ import { PreTestIntake } from '@/features/test/components/pre-test-intake';
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useTobiiTestController } from '@/features/test/hooks';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
+import { buildTobiiResultVisualizations } from '@/features/test/lib/build-tobii-visualizations';
 import type { IntakeData } from '@/features/test/types';
 
-export function TobiiTestScreen() {
+export default function TobiiTestScreen() {
   const {
     state,
     connected,
@@ -54,7 +57,16 @@ export function TobiiTestScreen() {
     confirmHardware,
     completeEducation,
     startFromIdle,
+    setScreenshot,
   } = useTobiiTestController();
+
+  const visualizations = useMemo(
+    () =>
+      state.currentState === 'results' && state.results
+        ? buildTobiiResultVisualizations(state.results, taskContent)
+        : [],
+    [state.currentState, state.results, taskContent],
+  );
 
   const renderState = () => {
     switch (state.currentState) {
@@ -160,6 +172,7 @@ export function TobiiTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => setLineCenters('syllables', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('syllables', dataUrl)}
           />
         );
 
@@ -185,6 +198,7 @@ export function TobiiTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => setLineCenters('pseudo-words', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('pseudo-words', dataUrl)}
           />
         );
 
@@ -210,6 +224,7 @@ export function TobiiTestScreen() {
             onDone={handleTaskDone}
             onLineCentersReady={(centers) => setLineCenters('meaningful-text', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('meaningful-text', dataUrl)}
           />
         );
 
@@ -243,6 +258,7 @@ export function TobiiTestScreen() {
             readingContent={
               taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')
             }
+            visualizations={visualizations}
           />
         );
 

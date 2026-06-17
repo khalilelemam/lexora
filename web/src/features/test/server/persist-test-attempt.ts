@@ -1,10 +1,11 @@
 import 'server-only';
 
-import type { AttemptTaskType, CalibrationMode, RiskLevel, TestMode } from '../types';
+import type { AttemptContentSnapshot, CalibrationMode, RiskLevel, TestMode } from '../types';
 import {
   createAttemptBlobContainerClient,
   ensureAttemptBlobContainer,
   uploadAttemptJson,
+  uploadAttemptImage,
 } from './attempt-blob-storage';
 import { upsertTestAttemptRecord } from './test-attempt-repository';
 
@@ -15,16 +16,18 @@ export interface PersistTestAttemptParams {
   attemptId: string;
   userId: string;
   testType: TestMode;
-  taskType: AttemptTaskType;
   outcome: RiskLevel;
   modelVersion: string;
   calibrationMode: CalibrationMode;
   age: number;
   label?: string;
+  contentSnapshot?: AttemptContentSnapshot;
   // Snapshot of the user's consent at submission time.
   rawDataConsented: boolean;
   rawPayload?: unknown;
   derivedPayload: unknown;
+  /** Task screenshots captured during the test (taskType → JPEG data URL) */
+  screenshots?: Record<string, string>;
 }
 
 export async function persistTestAttempt(params: PersistTestAttemptParams): Promise<void> {
@@ -37,7 +40,7 @@ export async function persistTestAttempt(params: PersistTestAttemptParams): Prom
   const derivedBlobUrl = await uploadAttemptJson(
     containerClient,
     `derived/${params.attemptId}.json`,
-    params.derivedPayload,
+    buildDerivedArtifact(params.derivedPayload, params.contentSnapshot),
   );
 
   let rawBlobUrl: string | null | undefined = null;
@@ -58,16 +61,38 @@ export async function persistTestAttempt(params: PersistTestAttemptParams): Prom
     }
   }
 
+  // Upload task screenshots (best-effort, non-blocking to persistence).
+  if (params.screenshots) {
+    const screenshotUploads = Object.entries(params.screenshots).map(async ([taskKey, dataUrl]) => {
+      const normalizedKey = normalizeScreenshotKey(taskKey);
+      try {
+        await uploadAttemptImage(
+          containerClient,
+          `screenshots/${params.attemptId}_${normalizedKey}.jpg`,
+          dataUrl,
+        );
+      } catch (error) {
+        console.warn('[persistTestAttempt] screenshot upload failed', {
+          attemptId: params.attemptId,
+          taskKey: normalizedKey,
+          error,
+        });
+      }
+    });
+
+    // Upload all screenshots in parallel.
+    await Promise.all(screenshotUploads);
+  }
+
   await upsertTestAttemptRecord({
     attemptId: params.attemptId,
     userId: params.userId,
     testType: params.testType,
-    taskType: params.taskType,
     outcome: params.outcome,
     modelVersion: params.modelVersion,
     calibrationMode: params.calibrationMode,
     age: params.age,
-    label: resolveAttemptLabel(params.label, params.taskType, params.testType, submittedAt),
+    label: resolveAttemptLabel(params.label, params.testType, submittedAt),
     rawDataConsented: params.rawDataConsented,
     rawBlobUrl: !params.rawDataConsented ? null : rawBlobUrl,
     derivedBlobUrl,
@@ -88,23 +113,13 @@ function validateAttemptPayload(params: PersistTestAttemptParams) {
   }
 }
 
-function resolveAttemptLabel(
-  label: string | undefined,
-  taskType: AttemptTaskType,
-  testType: TestMode,
-  submittedAt: Date,
-) {
+function resolveAttemptLabel(label: string | undefined, testType: TestMode, submittedAt: Date) {
   const normalizedLabel = normalizeOptionalText(label);
   if (normalizedLabel) {
     return normalizedLabel;
   }
 
-  const generatedLabel =
-    taskType === 'full-battery'
-      ? 'Tobii Full Battery'
-      : testType === 'tobii'
-        ? `Tobii ${humanizeTaskType(taskType)}`
-        : `Webcam ${humanizeTaskType(taskType)}`;
+  const generatedLabel = testType === 'tobii' ? 'Tobii Screening' : 'Webcam Screening';
 
   return `${generatedLabel} - ${formatAttemptTimestamp(submittedAt)}`;
 }
@@ -113,25 +128,34 @@ function formatAttemptTimestamp(date: Date) {
   return date.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 }
 
-function humanizeTaskType(taskType: AttemptTaskType) {
-  switch (taskType) {
-    case 'full-battery':
-      return 'Full Battery';
-    case 'paragraph':
-      return 'Paragraph';
-    case 'syllables':
-      return 'Syllables';
-    case 'pseudo-words':
-      return 'Pseudo Words';
-    case 'meaningful-text':
-      return 'Meaningful Text';
-  }
-
-  const exhaustiveCheck: never = taskType;
-  throw new Error(`Unsupported attempt task type: ${exhaustiveCheck}`);
-}
-
 function normalizeOptionalText(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+/**
+ * Maps full TaskType names to the short export keys used in blob paths.
+ * e.g. 'pseudo-words' → 'pseudo', 'meaningful-text' → 'meaningful'
+ */
+const SCREENSHOT_KEY_MAP: Record<string, string> = {
+  'pseudo-words': 'pseudo',
+  'meaningful-text': 'meaningful',
+};
+
+function normalizeScreenshotKey(taskKey: string): string {
+  return SCREENSHOT_KEY_MAP[taskKey] ?? taskKey;
+}
+
+function buildDerivedArtifact(
+  mlResponse: unknown,
+  contentSnapshot: AttemptContentSnapshot | undefined,
+) {
+  if (!contentSnapshot) {
+    return mlResponse;
+  }
+
+  return {
+    mlResponse,
+    contentSnapshot,
+  };
 }
