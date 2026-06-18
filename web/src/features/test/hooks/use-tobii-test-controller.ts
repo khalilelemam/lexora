@@ -233,7 +233,7 @@ export function useTobiiTestController() {
     handleExit,
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
     confirmHardware: () => dispatch({ type: 'HARDWARE_CONFIRMED' }),
-    completeEducation: () => dispatch({ type: 'EDUCATION_COMPLETE' }),
+    completeSetup: () => dispatch({ type: 'SETUP_COMPLETE' }),
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
   };
