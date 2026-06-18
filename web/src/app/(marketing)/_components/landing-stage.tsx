@@ -147,9 +147,9 @@ export function LandingStage() {
             <span>Calibration field</span>
             <span>20 points</span>
           </div>
-          <div className="relative z-10 space-y-2 font-serif text-lg leading-none tracking-[0.18em] text-[#1b2021]/24">
+          <div className="relative z-10 space-y-4 font-serif text-2xl leading-none tracking-widest text-[#1b2021]/24">
             {WORDS.map((word, index) => (
-              <div key={word} className="flex justify-between">
+              <div key={word} className="flex justify-around">
                 <span>{word}</span>
                 <span>{WORDS[(index + 2) % WORDS.length]}</span>
                 <span>{WORDS[(index + 4) % WORDS.length]}</span>
@@ -157,66 +157,68 @@ export function LandingStage() {
             ))}
           </div>
 
-          <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
-            <motion.path
-              d="M 42 92 C 126 68, 202 114, 294 82 S 430 96, 488 128 C 378 178, 214 118, 92 180 S 328 236, 462 212 C 346 280, 184 238, 56 302"
-              fill="none"
-              stroke="#51513d"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeDasharray="8 11"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                repeatType: 'mirror',
-                ease: 'easeInOut',
-              }}
-            />
-            <motion.path
-              d="M 58 126 C 156 102, 260 144, 390 110"
-              fill="none"
-              stroke="#a6a867"
-              strokeWidth="10"
-              strokeLinecap="round"
-              opacity=".42"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          </svg>
+          <div className="pointer-events-none absolute inset-0 origin-center scale-[0.8]">
+            <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
+              <motion.path
+                d="M 42 92 C 126 68, 202 114, 294 82 S 430 96, 488 128 C 378 178, 214 118, 92 180 S 328 236, 462 212 C 346 280, 184 238, 56 302"
+                fill="none"
+                stroke="#51513d"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeDasharray="8 11"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  repeatType: 'mirror',
+                  ease: 'easeInOut',
+                }}
+              />
+              <motion.path
+                d="M 58 126 C 156 102, 260 144, 390 110"
+                fill="none"
+                stroke="#a6a867"
+                strokeWidth="10"
+                strokeLinecap="round"
+                opacity=".42"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </svg>
 
-          {[
-            [14, 25, 17, '#a6a867'],
-            [34, 29, 12, '#e3dc95'],
-            [52, 27, 21, '#51513d'],
-            [73, 38, 14, '#a6a867'],
-            [28, 58, 24, '#51513d'],
-            [50, 66, 13, '#1b2021'],
-            [76, 75, 19, '#a6a867'],
-            [16, 82, 15, '#e3dc95'],
-          ].map(([left, top, size, color], index) => (
-            <motion.span
-              key={`${left}-${top}`}
-              className="absolute rounded-full border-2 border-[#e3dcc2]/80 mix-blend-multiply"
-              style={{
-                left: `${left}%`,
-                top: `${top}%`,
-                width: size,
-                height: size,
-                backgroundColor: color as string,
-              }}
-              animate={{ scale: [0.86, 1.18, 0.86], opacity: [0.68, 1, 0.68] }}
-              transition={{
-                duration: 1.9 + index * 0.12,
-                repeat: Infinity,
-                delay: index * 0.12,
-              }}
-            />
-          ))}
+            {[
+              [14, 25, 17, '#a6a867'],
+              [34, 29, 12, '#e3dc95'],
+              [52, 27, 21, '#51513d'],
+              [73, 38, 14, '#a6a867'],
+              [28, 58, 24, '#51513d'],
+              [50, 66, 13, '#1b2021'],
+              [76, 75, 19, '#a6a867'],
+              [16, 82, 15, '#e3dc95'],
+            ].map(([left, top, size, color], index) => (
+              <motion.span
+                key={`${left}-${top}`}
+                className="absolute rounded-full border-2 border-[#e3dcc2]/80 mix-blend-multiply"
+                style={{
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  width: size,
+                  height: size,
+                  backgroundColor: color as string,
+                }}
+                animate={{ scale: [0.86, 1.18, 0.86], opacity: [0.68, 1, 0.68] }}
+                transition={{
+                  duration: 1.9 + index * 0.12,
+                  repeat: Infinity,
+                  delay: index * 0.12,
+                }}
+              />
+            ))}
+          </div>
 
-          <div className="absolute right-5 bottom-5 left-5 grid grid-cols-3 gap-2 text-[10px] font-black tracking-[0.18em] uppercase">
+          <div className="absolute right-5 bottom-5 left-5 z-20 grid grid-cols-3 gap-2 text-[10px] font-black tracking-[0.18em] uppercase">
             <div className="bg-[#1b2021] px-3 py-3 text-[#e3dcc2]">Syllables</div>
             <div className="bg-[#51513d] px-3 py-3 text-[#e3dcc2]">Pseudo-words</div>
             <div className="bg-[#a6a867] px-3 py-3 text-[#1b2021]">Meaningful text</div>
