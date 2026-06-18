@@ -44,7 +44,7 @@ export function LandingStage() {
         }}
       />
 
-      <div className="absolute bottom-0 left-0 h-28 w-full bg-gradient-to-t from-[#e3dcc2] to-transparent" />
+      <div className="absolute bottom-0 left-0 h-28 w-full bg-linear-to-t from-[#e3dcc2] to-transparent" />
 
       <div className="absolute top-28 left-5 hidden h-24 w-24 border-8 border-[#1b2021] md:block" />
       <motion.div
@@ -141,7 +141,7 @@ export function LandingStage() {
         </motion.div>
       </div>
 
-      <div className="absolute right-5 bottom-24 hidden w-[32rem] max-w-[42vw] md:block">
+      <div className="absolute right-5 bottom-24 hidden w-lg max-w-[42vw] md:block">
         <div className="relative h-80 overflow-hidden border border-[#e3dcc2]/25 bg-[#e3dcc2]/92 p-6 shadow-2xl shadow-[#1b2021]/35">
           <div className="mb-6 flex items-center justify-between text-xs font-black tracking-[0.22em] text-[#51513d] uppercase">
             <span>Calibration field</span>
