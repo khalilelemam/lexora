@@ -85,33 +85,39 @@ export function UserNav() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent
+        align="end"
+        className="w-56 border-[#51513d]/18 bg-[#e3dcc2] p-2 text-[#1b2021] shadow-[8px_8px_0_rgba(81,81,61,.14)]"
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col gap-1">
-            {user.name && <p className="text-sm leading-none font-medium">{user.name}</p>}
-            <p className="text-muted-foreground text-xs leading-none">{user.email}</p>
+            {user.name && <p className="text-sm leading-none font-black">{user.name}</p>}
+            <p className="text-xs leading-none text-[#1b2021]/60">{user.email}</p>
           </div>
         </DropdownMenuLabel>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-[#51513d]/18" />
 
-        <DropdownMenuItem asChild>
-          <Link href="/history" className="cursor-pointer">
+        <DropdownMenuItem asChild className="cursor-pointer focus:bg-[#51513d]/10 focus:text-[#1b2021]">
+          <Link href="/history" className="flex w-full items-center">
             <History className="mr-2 h-4 w-4" />
             Test history
           </Link>
         </DropdownMenuItem>
 
         {isAdmin && (
-          <DropdownMenuItem asChild>
-            <Link href="/admin/dashboard" className="cursor-pointer">
+          <DropdownMenuItem asChild className="cursor-pointer focus:bg-[#51513d]/10 focus:text-[#1b2021]">
+            <Link href="/admin/dashboard" className="flex w-full items-center">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               Admin dashboard
             </Link>
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          className="cursor-pointer focus:bg-[#51513d]/10 focus:text-[#1b2021]"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>

@@ -142,12 +142,12 @@ export function LandingStage() {
       </div>
 
       <div className="absolute right-5 bottom-24 hidden w-lg max-w-[42vw] md:block">
-        <div className="relative h-80 overflow-hidden border border-[#e3dcc2]/25 bg-[#e3dcc2]/92 p-6 shadow-2xl shadow-[#1b2021]/35">
-          <div className="mb-6 flex items-center justify-between text-xs font-black tracking-[0.22em] text-[#51513d] uppercase">
+        <div className="relative h-80 overflow-hidden border border-[#e3dcc2]/25 bg-[#e3dcc2]/92 p-5 shadow-2xl shadow-[#1b2021]/35">
+          <div className="mb-4 flex items-center justify-between text-xs font-black tracking-[0.22em] text-[#51513d] uppercase">
             <span>Calibration field</span>
-            <span>15 points</span>
+            <span>20 points</span>
           </div>
-          <div className="relative space-y-6 font-serif text-2xl leading-none tracking-[0.18em] text-[#1b2021]/24">
+          <div className="relative z-10 space-y-4 font-serif text-xl leading-none tracking-[0.18em] text-[#1b2021]/24">
             {WORDS.map((word, index) => (
               <div key={word} className="flex justify-between">
                 <span>{word}</span>

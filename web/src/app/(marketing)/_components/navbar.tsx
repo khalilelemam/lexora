@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
-import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { UserNav } from '@/components/shared/user-nav';
 import { Button } from '@/components/ui/button';
 
@@ -157,7 +156,6 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-3">
-            <ThemeToggle />
             <Button
               variant="outline"
               size="sm"
@@ -196,7 +194,7 @@ export function Navbar() {
             />
             {/* Panel */}
             <motion.div
-              className="bg-background fixed top-16 right-0 bottom-0 z-40 w-72 border-l shadow-xl sm:hidden"
+              className="fixed top-16 right-0 bottom-0 z-40 w-72 border-l border-[#51513d]/18 bg-[#e3dcc2] shadow-xl sm:hidden"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -210,8 +208,8 @@ export function Navbar() {
                       onClick={() => scrollTo(link.href)}
                       className={`cursor-pointer rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
                         isLinkActive(link)
-                          ? 'text-foreground bg-accent/10'
-                          : 'text-foreground hover:bg-muted'
+                          ? 'bg-[#51513d]/10 text-[#1b2021]'
+                          : 'text-[#1b2021]/70 hover:bg-[#51513d]/5 hover:text-[#1b2021]'
                       }`}
                     >
                       {link.label}
@@ -223,15 +221,15 @@ export function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className={`rounded-lg px-4 py-3 text-left text-sm font-medium transition-colors ${
                         isLinkActive(link)
-                          ? 'text-foreground bg-accent/10'
-                          : 'text-foreground hover:bg-muted'
+                          ? 'bg-[#51513d]/10 text-[#1b2021]'
+                          : 'text-[#1b2021]/70 hover:bg-[#51513d]/5 hover:text-[#1b2021]'
                       }`}
                     >
                       {link.label}
                     </Link>
                   ),
                 )}
-                <div className="my-2 border-t" />
+                <div className="my-2 border-t border-[#51513d]/18" />
                 <div className="px-4">
                   <UserNav />
                 </div>
