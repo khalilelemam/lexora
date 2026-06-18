@@ -250,7 +250,7 @@ export function useWebcamTestController() {
     handleNewTest,
     handleExit,
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
-    completeEducation: () => dispatch({ type: 'EDUCATION_COMPLETE' }),
+    completeSetup: () => dispatch({ type: 'SETUP_COMPLETE' }),
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
   };

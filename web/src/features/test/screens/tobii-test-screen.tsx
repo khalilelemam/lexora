@@ -55,7 +55,7 @@ export default function TobiiTestScreen() {
     handleExit,
     completeIntake,
     confirmHardware,
-    completeEducation,
+    completeSetup,
     startFromIdle,
     setScreenshot,
   } = useTobiiTestController();
@@ -71,6 +71,11 @@ export default function TobiiTestScreen() {
   const renderState = () => {
     switch (state.currentState) {
       case 'idle':
+        return <PreTestSlides mode="tobii" onComplete={startFromIdle} onSkip={startFromIdle} />;
+      case 'intake':
+        return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
+
+      case 'calibration-setup':
         return (
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
             {/* Hero heading */}
@@ -81,10 +86,6 @@ export default function TobiiTestScreen() {
               <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
                 Eye Tracker Test
               </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#1b2021]/64">
-                This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of
-                3 reading tasks: syllables, pseudo-words, and meaningful text.
-              </p>
             </div>
 
             {/* Service Status & Supported Devices */}
@@ -123,29 +124,17 @@ export default function TobiiTestScreen() {
 
             {/* Calibration Mode Selection */}
             <CalibrationSetup
+              tracker="tobii"
               resolvedMode={requestedCalibrationMode}
               onSelectMode={setSelectedMode}
-              onStart={startFromIdle}
-              startButtonText="Continue to Instructions"
+              onStart={completeSetup}
+              startButtonText="Enter Fullscreen & Start Calibration"
             />
           </div>
         );
 
-      case 'intake':
-        return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
-
       case 'hardware-check':
         return <SupportedHardware onContinue={confirmHardware} />;
-
-      case 'pre-test-education':
-        return (
-          <PreTestSlides
-            mode="tobii"
-            isStarMode={requestedCalibrationMode === 'star'}
-            onComplete={completeEducation}
-            onSkip={completeEducation}
-          />
-        );
 
       case 'device-check':
         return <DeviceCheck onReady={handleDeviceReady} />;

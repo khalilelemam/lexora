@@ -46,7 +46,7 @@ export default function WebcamTestScreen() {
     handleNewTest,
     handleExit,
     completeIntake,
-    completeEducation,
+    completeSetup,
     startFromIdle,
     setScreenshot,
   } = useWebcamTestController();
@@ -54,6 +54,12 @@ export default function WebcamTestScreen() {
   const renderState = () => {
     switch (state.currentState) {
       case 'idle':
+        return <PreTestSlides mode="webcam" onComplete={startFromIdle} onSkip={startFromIdle} />;
+
+      case 'intake':
+        return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
+
+      case 'calibration-setup':
         return (
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
             {/* Hero heading */}
@@ -64,32 +70,16 @@ export default function WebcamTestScreen() {
               <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
                 Webcam Gaze Test
               </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#1b2021]/64">
-                This test uses your browser camera to track eye movement for dyslexia screening. No
-                video is recorded — everything is processed locally in your browser.
-              </p>
             </div>
 
             <CalibrationSetup
+              tracker="webcam"
               resolvedMode={requestedCalibrationMode}
               onSelectMode={setSelectedMode}
-              onStart={startFromIdle}
-              startButtonText="Continue to Instructions"
+              onStart={completeSetup}
+              startButtonText="Enter Fullscreen & Start Calibration"
             />
           </div>
-        );
-
-      case 'intake':
-        return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
-
-      case 'pre-test-education':
-        return (
-          <PreTestSlides
-            mode="webcam"
-            isStarMode={requestedCalibrationMode === 'star'}
-            onComplete={completeEducation}
-            onSkip={completeEducation}
-          />
         );
 
       case 'camera-setup':
