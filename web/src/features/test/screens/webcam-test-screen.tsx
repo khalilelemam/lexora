@@ -58,19 +58,24 @@ export default function WebcamTestScreen() {
       case 'intake':
         return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
 
-      case 'calibration-setup':
+      case 'device-setup':
         return (
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
-            {/* Hero heading */}
             <div className="text-center">
               <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
                 Webcam Tracking
               </p>
               <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
-                Webcam Gaze Test
+                Webcam Setup
               </h1>
             </div>
+            <CameraSetup webcamGaze={webcamGaze} videoRef={videoRef} onReady={handleCameraReady} />
+          </div>
+        );
 
+      case 'calibration-setup':
+        return (
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
             <CalibrationSetup
               tracker="webcam"
               resolvedMode={requestedCalibrationMode}
@@ -79,11 +84,6 @@ export default function WebcamTestScreen() {
               startButtonText="Enter Fullscreen & Start Calibration"
             />
           </div>
-        );
-
-      case 'camera-setup':
-        return (
-          <CameraSetup webcamGaze={webcamGaze} videoRef={videoRef} onReady={handleCameraReady} />
         );
 
       case 'calibrating':
@@ -189,7 +189,7 @@ export default function WebcamTestScreen() {
           />
 
           {showStepIndicator && (
-            <div className="mb-8">
+            <div className="sticky top-0 z-50 mb-8 pt-4 pb-2">
               <StepIndicator steps={steps} currentStepKey={currentStepKey} />
             </div>
           )}
