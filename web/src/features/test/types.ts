@@ -126,9 +126,8 @@ export interface WebcamSubmissionInput {
 export type TobiiTestState =
   | 'idle'
   | 'intake'
+  | 'device-setup'
   | 'calibration-setup'
-  | 'hardware-check'
-  | 'device-check'
   | 'calibrating'
   | 'task-syllables'
   | 'review-syllables'
@@ -143,8 +142,8 @@ export type TobiiTestState =
 export type WebcamTestState =
   | 'idle'
   | 'intake'
+  | 'device-setup'
   | 'calibration-setup'
-  | 'camera-setup'
   | 'calibrating'
   | 'task-paragraph'
   | 'review-paragraph'

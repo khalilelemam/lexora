@@ -88,6 +88,10 @@ export function useTobiiTestController() {
 
   const handleDeviceReady = useCallback(() => {
     dispatch({ type: 'DEVICE_READY' });
+  }, [dispatch]);
+
+  const completeSetup = useCallback(() => {
+    dispatch({ type: 'SETUP_COMPLETE' });
     enterFullscreen();
   }, [dispatch, enterFullscreen]);
 
@@ -200,6 +204,15 @@ export function useTobiiTestController() {
     }
   }, [exitFullscreen, tobiiState.currentState]);
 
+  useEffect(() => {
+    if (tobiiState.currentState === 'device-setup') {
+      if (tobiiStatus?.connected && tobiiStatus.device) {
+        // Automatically proceed if device is connected
+        handleDeviceReady();
+      }
+    }
+  }, [tobiiState.currentState, tobiiStatus, handleDeviceReady]);
+
   return {
     state: tobiiState,
     dispatch,
@@ -237,8 +250,7 @@ export function useTobiiTestController() {
     handleNewTest,
     handleExit,
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
-    confirmHardware: () => dispatch({ type: 'HARDWARE_CONFIRMED' }),
-    completeSetup: () => dispatch({ type: 'SETUP_COMPLETE' }),
+    completeSetup,
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
   };
