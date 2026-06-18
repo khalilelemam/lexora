@@ -13,7 +13,7 @@ import {
 } from '../lib/hardware';
 
 interface SupportedHardwareProps {
-  onContinue: () => void;
+  onContinue?: () => void;
 }
 
 const STATUS_STYLES: Record<DeviceInfo['status'], string> = {
@@ -150,14 +150,16 @@ export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
           transition={{ delay: 0.35 }}
           className="flex flex-col items-start gap-3 border border-[#51513d]/18 bg-[#f3edd7] p-5"
         >
-          <Button
-            size="lg"
-            onClick={onContinue}
-            className="bg-[#51513d] px-8 text-[#e3dcc2] hover:bg-[#1b2021]"
-          >
-            I have a compatible device
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+          {onContinue && (
+            <Button
+              size="lg"
+              onClick={onContinue}
+              className="bg-[#51513d] px-8 text-[#e3dcc2] hover:bg-[#1b2021]"
+            >
+              I have a compatible device
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
           <p className="text-xs leading-5 text-[#1b2021]/58">
             No Tobii device? Use the webcam-based screening path from the landing page.
           </p>
