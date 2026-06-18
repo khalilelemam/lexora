@@ -85,11 +85,14 @@ export function UserNav() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56 border-[#51513d]/25 bg-[#e3dcc2] text-[#1b2021] shadow-xl shadow-[#1b2021]/10">
+      <DropdownMenuContent
+        align="end"
+        className="w-56 border-[#51513d]/25 bg-[#e3dcc2] text-[#1b2021] shadow-xl shadow-[#1b2021]/10"
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col gap-1">
             {user.name && <p className="text-sm leading-none font-medium">{user.name}</p>}
-            <p className="text-[#1b2021]/60 text-xs leading-none">{user.email}</p>
+            <p className="text-xs leading-none text-[#1b2021]/60">{user.email}</p>
           </div>
         </DropdownMenuLabel>
 
@@ -111,7 +114,10 @@ export function UserNav() {
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer focus:bg-[#51513d]/10 focus:text-[#1b2021]">
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          className="cursor-pointer focus:bg-[#51513d]/10 focus:text-[#1b2021]"
+        >
           <LogOut className="mr-2 h-4 w-4 text-[#51513d]" />
           Sign out
         </DropdownMenuItem>
