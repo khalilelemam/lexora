@@ -52,30 +52,23 @@ function detectPlatform(): Platform {
   return 'unknown';
 }
 
-/** No-op subscribe — platform never changes after page load. */
 const noop = () => () => {};
 
-/**
- * OS-specific download buttons section.
- * Auto-detects the user's OS and highlights the matching button.
- * Links to GitHub Releases latest assets.
- */
 export function DownloadSection() {
   const currentPlatform = useSyncExternalStore(noop, detectPlatform, () => 'unknown' as Platform);
-
   const platformKeys = Object.keys(PLATFORMS) as Array<Exclude<Platform, 'unknown'>>;
 
   return (
-    <section id="download" className="px-6 py-20">
+    <section id="download" className="bg-[#f3edd7] px-6 py-20 text-[#1b2021]">
       <div className="mx-auto max-w-3xl text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <Download className="text-muted-foreground/60 mx-auto mb-4 h-8 w-8" />
+          <Download className="mx-auto mb-4 h-8 w-8 text-[#51513d]" />
           <h2 className="mb-3 text-3xl font-bold">Download Tobii Service</h2>
-          <p className="text-muted-foreground mx-auto mb-10 max-w-lg">
+          <p className="mx-auto mb-10 max-w-lg text-[#1b2021]/64">
             To use Lexora with a Tobii eye tracker, download the desktop service for your operating
             system. The service runs locally and streams gaze data to the web app.
           </p>
@@ -86,7 +79,7 @@ export function DownloadSection() {
             ? Array.from({ length: 3 }).map((_, i) => (
                 <div
                   key={i}
-                  className="border-border/60 bg-muted/50 flex h-[124px] w-full animate-pulse flex-col items-center justify-center gap-2 rounded-md border py-5"
+                  className="flex h-[124px] w-full animate-pulse flex-col items-center justify-center gap-2 rounded-md border border-[#51513d]/25 bg-[#e3dcc2]/30 py-5"
                 />
               ))
             : platformKeys.map((key) => {
@@ -108,8 +101,9 @@ export function DownloadSection() {
                           className={cn(
                             'flex h-auto w-full flex-col items-center gap-2 py-5 transition-all',
                             isCurrent &&
-                              'bg-[oklch(0.40_0.04_110)] text-[oklch(0.94_0.02_90)] shadow-md ring-2 ring-[oklch(0.70_0.10_115/0.3)] hover:bg-[oklch(0.35_0.04_110)]',
-                            !isCurrent && 'border-border/60 hover:bg-muted/50',
+                              'bg-[#51513d] text-[#e3dcc2] shadow-md ring-2 ring-[#a6a867]/40 hover:bg-[#1b2021]',
+                            !isCurrent &&
+                              'border-[#51513d]/25 bg-[#e3dcc2]/55 text-[#1b2021] hover:bg-[#e3dc95]/45',
                           )}
                         >
                           {info.icon}
@@ -126,7 +120,7 @@ export function DownloadSection() {
                       <Button
                         variant="outline"
                         disabled
-                        className="flex h-auto w-full cursor-not-allowed flex-col items-center gap-2 py-5 opacity-50"
+                        className="flex h-auto w-full cursor-not-allowed flex-col items-center gap-2 border-[#51513d]/25 bg-[#e3dcc2]/55 py-5 text-[#1b2021] opacity-50"
                       >
                         {info.icon}
                         <span className="text-sm font-semibold">{info.label}</span>
@@ -138,7 +132,7 @@ export function DownloadSection() {
               })}
         </div>
 
-        <p className="text-muted-foreground/50 mt-6 text-xs">
+        <p className="mt-6 text-xs text-[#1b2021]/48">
           The service runs locally on your machine and streams gaze data to the web app.
         </p>
       </div>

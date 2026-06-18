@@ -19,19 +19,19 @@ const QUALITY_UI = {
   good: {
     icon: CheckCircle2,
     label: 'Excellent',
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    ringColor: '#10b981',
+    color: 'text-[#51513d]',
+    bg: 'bg-[#a6a867]/15',
+    border: 'border-[#a6a867]/45',
+    ringColor: '#a6a867',
     message: "Your calibration is highly accurate. You're ready to start the test.",
   },
   acceptable: {
     icon: AlertTriangle,
     label: 'Acceptable',
-    color: 'text-amber-600',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    ringColor: '#f59e0b',
+    color: 'text-[#8b6f25]',
+    bg: 'bg-[#e3dc95]/25',
+    border: 'border-[#e3dc95]',
+    ringColor: '#e3dc95',
     message: 'Calibration is usable but could be better. Consider retrying for improved accuracy.',
   },
   poor: {
@@ -77,7 +77,7 @@ export function CalibrationResult({
       {/* Logo */}
       <LexoraLogo size="sm" className="mb-1" />
 
-      <h2 className="text-2xl font-bold tracking-tight text-[#2D2A26]">Calibration Complete</h2>
+      <h2 className="text-2xl font-bold tracking-tight text-[#1b2021]">Calibration Complete</h2>
 
       {/* Main card — horizontal layout */}
       <div
@@ -115,7 +115,7 @@ export function CalibrationResult({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className={cn('text-3xl font-bold', quality.color)}>{displayScore}%</span>
-              <span className="text-[11px] text-[#8B857E]">accuracy</span>
+              <span className="text-[11px] text-[#1b2021]">accuracy</span>
             </div>
           </div>
 
@@ -127,11 +127,11 @@ export function CalibrationResult({
 
         {/* Right: Details + actions */}
         <div className="flex min-w-0 flex-1 flex-col gap-4 text-center sm:text-left">
-          <p className="text-sm leading-relaxed text-[#6B6560]">{quality.message}</p>
+          <p className="text-sm leading-relaxed text-[#1b2021]">{quality.message}</p>
 
           {/* Validation warning */}
           {quickValidationAccuracy != null && !quickValidationPassed && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-relaxed text-amber-700">
+            <div className="rounded-xl border border-[#e3dc95] bg-[#e3dc95]/25 p-3 text-sm leading-relaxed text-[#51513d]">
               Validation score is below 70%. The test can still proceed, but retrying is
               recommended.
             </div>
@@ -139,8 +139,8 @@ export function CalibrationResult({
 
           {/* Tips for poor calibration */}
           {result.quality === 'poor' && (
-            <div className="rounded-xl border border-[#E8E0D4] bg-white/80 p-4 text-sm text-[#6B6560]">
-              <p className="mb-2 font-semibold text-[#2D2A26]">Tips for better results:</p>
+            <div className="rounded-xl border border-[#51513d] bg-[#f3edd7]/90 p-4 text-sm text-[#1b2021]">
+              <p className="mb-2 font-semibold text-[#1b2021]">Tips for better results:</p>
               <ul className="list-inside list-disc space-y-1.5 text-[13px]">
                 <li>Keep your face centered and stable</li>
                 <li>Use even front lighting — avoid backlighting</li>
@@ -155,7 +155,7 @@ export function CalibrationResult({
             <Button
               variant="outline"
               onClick={onRetry}
-              className="border-[#D4CBBD] text-[#6B6560] hover:text-[#2D2A26]"
+              className="border-[#51513d] text-[#1b2021] hover:text-[#1b2021]"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Retry
@@ -163,7 +163,7 @@ export function CalibrationResult({
             {canProceed && (
               <Button
                 onClick={onContinue}
-                className="bg-[#4A7C59] px-8 text-white hover:bg-[#3D6A4B]"
+                className="bg-[#51513d] px-8 text-[#f3edd7] hover:bg-[#1b2021]"
               >
                 Continue to Test
               </Button>

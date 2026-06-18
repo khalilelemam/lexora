@@ -1,192 +1,381 @@
-import { Eye, Sparkles, Shield, BookOpen, BarChart3, Users, Monitor } from 'lucide-react';
-import { HeroSection } from './_components/hero-section';
+import Link from 'next/link';
+import {
+  Activity,
+  ArrowRight,
+  Brain,
+  Camera,
+  ChartNoAxesCombined,
+  ClipboardCheck,
+  Eye,
+  LineChart,
+  Monitor,
+  MousePointer2,
+  ScanEye,
+  ShieldCheck,
+  Sparkles,
+  Waves,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LandingStage } from './_components/landing-stage';
 import { GazeTrailDemo } from './_components/gaze-trail-demo';
-import { AnimatedStat } from './_components/animated-stat';
-import { FeatureCard } from './_components/feature-card';
-import { StepCard } from './_components/step-card';
-import { CtaSection } from './_components/cta-section';
 import { DownloadSection } from './_components/download-section';
 
-/**
- * Lexora landing page — Server Component.
- *
- * All static content (headings, section wrappers, text) renders on the
- * server. Interactive pieces (hero animations, counters, cards with
- * scroll-triggered animations) are isolated client islands imported above.
- */
+const SIGNALS = [
+  {
+    icon: Eye,
+    title: 'Fixation portrait',
+    copy: 'See where reading slows, where attention returns, and which words hold the gaze longest.',
+  },
+  {
+    icon: Waves,
+    title: 'Sweep rhythm',
+    copy: 'Turn regressions, return sweeps, and line changes into a readable movement signature.',
+  },
+  {
+    icon: Brain,
+    title: 'Screening context',
+    copy: 'Send compact gaze features into the model without making the session feel clinical or cold.',
+  },
+];
+
+const MODES = [
+  {
+    icon: Monitor,
+    title: 'Tobii Studio',
+    label: 'Dedicated eye tracker',
+    copy: 'A precise local setup for labs, schools, and supervised screening sessions.',
+    href: '/test/tobii',
+    className: 'bg-[#51513d] text-[#e3dcc2]',
+  },
+  {
+    icon: Camera,
+    title: 'Webcam Studio',
+    label: 'No extra hardware',
+    copy: 'A fast browser path using face and iris landmarks for accessible first-pass screening.',
+    href: '/test/webcam',
+    className: 'bg-[#a6a867] text-[#1b2021]',
+  },
+];
+
+const WORKFLOW = [
+  ['01', 'Set the room', 'Choose Tobii or webcam and run calibration in a calm full-screen flow.'],
+  [
+    '02',
+    'Read with purpose',
+    'Use syllables, pseudo-words, and passages to capture different reading behaviors.',
+  ],
+  [
+    '03',
+    'Map the gaze',
+    'Translate timing, motion, and regression patterns into a structured screening signal.',
+  ],
+  [
+    '04',
+    'Review gently',
+    'Replay the path and decide what support or professional follow-up should happen next.',
+  ],
+];
+
+const BADGES = [
+  { icon: ShieldCheck, label: 'Local-first' },
+  { icon: LineChart, label: 'Replayable' },
+  { icon: Activity, label: 'ML-ready' },
+  { icon: MousePointer2, label: 'Learner-friendly' },
+];
+
+const PRODUCT_BEATS = [
+  {
+    icon: ShieldCheck,
+    title: 'Guardian-supervised',
+    copy: 'Children do not manage accounts. Parents and teachers control profiles, sessions, retakes, reports, and follow-up.',
+  },
+  {
+    icon: ScanEye,
+    title: 'Calibrated before reading',
+    copy: 'The test starts with a 15-point gaze map so the reading area is measured before the child begins.',
+  },
+  {
+    icon: ClipboardCheck,
+    title: 'Three-part Tobii test',
+    copy: 'Syllables, pseudo-words, and meaningful text reveal different parts of the reading process.',
+  },
+  {
+    icon: ChartNoAxesCombined,
+    title: 'Risk, confidence, replay',
+    copy: 'The result pairs an ML risk signal with confidence, recommendations, and gaze replay context.',
+  },
+];
+
 export default function HomePage() {
   return (
-    <main className="bg-background min-h-screen">
-      {/* ── Hero ──────────────────────────────────────────── */}
-      <HeroSection />
+    <main className="min-h-screen bg-[#e3dcc2] text-[#1b2021]">
+      <LandingStage />
 
-      {/* ── Gaze Demo Strip ──────────────────────────────── */}
-      <section className="px-6 py-14">
-        <div className="mx-auto max-w-2xl">
-          <p className="text-muted-foreground mb-4 text-center text-xs font-medium tracking-wider uppercase">
-            Gaze Pattern Visualization
-          </p>
-          <GazeTrailDemo />
-          <div className="mt-4 flex items-center justify-center gap-6">
-            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[oklch(0.70_0.10_115/0.6)]" />
-              Forward fixation
-            </div>
-            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              <span className="inline-block h-2.5 w-2.5 rounded-full bg-[oklch(0.52_0.12_25/0.6)]" />
-              Regression
-            </div>
-            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              <svg width="14" height="4">
-                <line
-                  x1="0"
-                  y1="2"
-                  x2="14"
-                  y2="2"
-                  stroke="oklch(0.65 0.02 90 / 0.5)"
-                  strokeWidth="1.5"
-                  strokeDasharray="3 3"
-                />
-              </svg>
-              Return sweep
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Stats ────────────────────────────────────────── */}
-      <section className="bg-card/50 border-y py-14">
-        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-12 px-6">
-          <AnimatedStat value={15} label="Calibration Points" />
-          <AnimatedStat value={3} label="Reading Tasks" />
-          <AnimatedStat value={2} label="Tracking Modes" />
-          <AnimatedStat value={478} label="Face Landmarks" />
-        </div>
-      </section>
-
-      {/* ── Features ─────────────────────────────────────── */}
-      <section id="features" className="px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-14 text-center">
-            <h2 className="mb-3 text-3xl font-bold">Built for Accuracy &amp; Accessibility</h2>
-            <p className="text-muted-foreground mx-auto max-w-lg">
-              Professional-grade eye tracking meets accessible webcam-based analysis — designed to
-              make dyslexia screening available to everyone.
+      <section id="signal" className="relative overflow-hidden px-5 py-20 md:px-8 md:py-28">
+        <div className="absolute top-0 right-0 left-0 h-px bg-[#51513d]/18" />
+        <div className="absolute top-20 right-0 h-72 w-72 rounded-full bg-[#e3dc95]/45 blur-3xl" />
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
+          <div>
+            <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#51513d] uppercase">
+              Reading map
+            </p>
+            <h2 className="max-w-xl text-4xl leading-tight font-black text-balance md:text-6xl">
+              Soft colors, sharp signals.
+            </h2>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-[#1b2021]/68">
+              The palette stays warm and academic, while the interface still feels alive. Lexora
+              shows gaze movement as something a parent, teacher, or researcher can actually
+              discuss.
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              icon={<Eye className="h-6 w-6" />}
-              title="Dual Tracking Modes"
-              description="Use the precision of Tobii eye trackers for clinical accuracy, or the convenience of any webcam with MediaPipe iris detection for broader access."
-              delay={0.1}
-            />
-            <FeatureCard
-              icon={<Sparkles className="h-6 w-6" />}
-              title="Engaging Calibration"
-              description="Three calibration modes — classic grid, action stickman, and gentle star — with shrinking targets that adapt to different age groups."
-              delay={0.2}
-            />
-            <FeatureCard
-              icon={<BarChart3 className="h-6 w-6" />}
-              title="Gaze Analytics"
-              description="Fixation duration, saccade patterns, regression detection, and return sweeps — all the features that research links to reading difficulties."
-              delay={0.3}
-            />
-            <FeatureCard
-              icon={<Shield className="h-6 w-6" />}
-              title="Privacy First"
-              description="All video processing happens in your browser. No video recordings are stored, and saved attempts persist only the gaze coordinates and metadata needed for research workflows."
-              delay={0.4}
-            />
-            <FeatureCard
-              icon={<BookOpen className="h-6 w-6" />}
-              title="Research-Backed"
-              description="Reading tasks designed around established research — syllable decoding, pseudo-word recognition, and meaningful text comprehension for thorough analysis."
-              delay={0.5}
-            />
-            <FeatureCard
-              icon={<Users className="h-6 w-6" />}
-              title="Age-Adaptive"
-              description="From gamified star calibration for young children to precise grid-based calibration for adults. Lexora adapts the experience to each user."
-              delay={0.6}
-            />
+          <div className="grid gap-4">
+            <div className="border border-[#51513d]/18 bg-[#e3dcc2]/80 p-3 shadow-[12px_12px_0_rgba(81,81,61,.14)]">
+              <GazeTrailDemo />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {SIGNALS.map((signal) => {
+                const Icon = signal.icon;
+                return (
+                  <article
+                    key={signal.title}
+                    className="border border-[#51513d]/18 bg-[#f3edd7]/70 p-5 shadow-[8px_8px_0_rgba(81,81,61,.1)]"
+                  >
+                    <Icon className="mb-5 h-6 w-6 text-[#51513d]" />
+                    <h3 className="text-lg font-black">{signal.title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-[#1b2021]/64">{signal.copy}</p>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── How It Works ─────────────────────────────────── */}
-      <section id="how-it-works" className="bg-card/40 px-6 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-14 text-center">
-            <h2 className="mb-3 text-3xl font-bold">How It Works</h2>
-            <p className="text-muted-foreground mx-auto max-w-lg">
-              Three simple steps from setup to results. The whole process takes about 5 minutes and
-              requires no prior technical knowledge.
+      <section id="modes" className="bg-[#1b2021] px-5 py-20 text-[#e3dcc2] md:px-8 md:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#e3dc95] uppercase">
+                Two calm launch lanes
+              </p>
+              <h2 className="max-w-2xl text-4xl leading-tight font-black text-balance md:text-6xl">
+                Choose the instrument. Keep the experience human.
+              </h2>
+            </div>
+            <p className="max-w-md text-base leading-7 text-[#e3dcc2]/68">
+              Both paths share the same visual language: quiet confidence, readable steps, and a
+              result screen that supports conversation instead of panic.
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-3">
-            <StepCard
-              step={1}
-              icon={<Monitor className="h-7 w-7" />}
-              title="Connect & Calibrate"
-              description="Connect your Tobii device or grant webcam access. Our calibration process maps your unique gaze to the screen with precision."
-              delay={0.1}
-            />
-            <StepCard
-              step={2}
-              icon={<BookOpen className="h-7 w-7" />}
-              title="Read the Passages"
-              description="Three reading tasks — syllables, pseudo-words, and meaningful text — optimized for capturing the gaze features that matter."
-              delay={0.3}
-            />
-            <StepCard
-              step={3}
-              icon={<BarChart3 className="h-7 w-7" />}
-              title="Get Results"
-              description="Our ML model analyses gaze patterns and provides a risk assessment with detailed fixation visualization and actionable recommendations."
-              delay={0.5}
-            />
+          <div className="grid gap-5 lg:grid-cols-2">
+            {MODES.map((mode) => {
+              const Icon = mode.icon;
+              return (
+                <Link
+                  key={mode.title}
+                  href={mode.href}
+                  className={`${mode.className} group relative overflow-hidden p-8 transition-transform hover:-translate-y-1`}
+                >
+                  <div className="absolute right-0 bottom-0 h-36 w-36 translate-x-10 translate-y-10 rounded-full bg-[#e3dc95]/28" />
+                  <p className="mb-16 text-xs font-black tracking-[0.25em] uppercase opacity-70">
+                    {mode.label}
+                  </p>
+                  <Icon className="mb-7 h-10 w-10" />
+                  <h3 className="text-3xl font-black">{mode.title}</h3>
+                  <p className="mt-4 max-w-lg leading-7 opacity-75">{mode.copy}</p>
+                  <div className="mt-8 inline-flex items-center gap-2 text-sm font-black tracking-[0.18em] uppercase">
+                    Start screening
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── Download Tobii Service ────────────────────────── */}
+      <section id="workflow" className="px-5 py-20 md:px-8 md:py-28">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-12 lg:grid-cols-[0.78fr_1.22fr]">
+            <div>
+              <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#51513d] uppercase">
+                Screening choreography
+              </p>
+              <h2 className="text-4xl leading-tight font-black text-balance md:text-6xl">
+                A simple path, designed with care.
+              </h2>
+              <p className="mt-6 max-w-md leading-7 text-[#1b2021]/66">
+                The page uses the brand colors like paper, ink, and highlighter: grounded first,
+                expressive where it helps the user move.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                {BADGES.map((badge) => {
+                  const BadgeIcon = badge.icon;
+                  return (
+                    <span
+                      key={badge.label}
+                      className="inline-flex items-center gap-2 border border-[#51513d]/22 bg-[#f3edd7]/70 px-3 py-2 text-xs font-black uppercase"
+                    >
+                      <BadgeIcon className="h-4 w-4 text-[#51513d]" />
+                      {badge.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-px overflow-hidden border border-[#51513d]/18 bg-[#51513d]/18 md:grid-cols-2">
+              {WORKFLOW.map(([step, title, copy]) => (
+                <article key={step} className="bg-[#e3dcc2] p-7">
+                  <span className="font-mono text-sm font-black text-[#51513d]">{step}</span>
+                  <h3 className="mt-7 text-2xl font-black">{title}</h3>
+                  <p className="mt-4 leading-7 text-[#1b2021]/64">{copy}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-[#51513d] px-5 py-20 text-[#e3dcc2] md:px-8 md:py-28">
+        <div className="absolute top-0 left-0 h-full w-24 bg-[#a6a867]/24" />
+        <div className="absolute right-0 bottom-0 h-72 w-72 translate-x-20 translate-y-20 rounded-full bg-[#e3dc95]/16" />
+        <div className="relative mx-auto grid max-w-7xl gap-10 md:grid-cols-[0.74fr_1.26fr] md:items-start">
+          <div>
+            <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#e3dc95] uppercase">
+              What the product does
+            </p>
+            <h2 className="text-4xl leading-tight font-black text-balance md:text-6xl">
+              From a child&apos;s first fixation to a useful next step.
+            </h2>
+            <p className="mt-6 max-w-md leading-7 text-[#e3dcc2]/68">
+              The page now mirrors the real flow: supervised setup, calibration, reading, model
+              interpretation, and support after the result.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {PRODUCT_BEATS.map((beat, index) => {
+              const Icon = beat.icon;
+              return (
+                <article
+                  key={beat.title}
+                  className="group relative min-h-64 overflow-hidden border border-[#e3dcc2]/18 bg-[#1b2021]/16 p-6"
+                >
+                  <div className="absolute top-0 right-0 flex h-16 w-16 items-center justify-center bg-[#e3dc95] font-mono text-sm font-black text-[#1b2021]">
+                    0{index + 1}
+                  </div>
+                  <Icon className="mb-16 h-8 w-8 text-[#e3dc95]" />
+                  <h3 className="text-2xl font-black">{beat.title}</h3>
+                  <p className="mt-4 leading-7 text-[#e3dcc2]/68">{beat.copy}</p>
+                  <div className="absolute right-0 bottom-0 h-24 w-24 translate-x-10 translate-y-10 rounded-full bg-[#a6a867]/20 transition-transform group-hover:translate-x-8 group-hover:translate-y-8" />
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-20 md:px-8 md:py-28">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div className="relative overflow-hidden border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[14px_14px_0_rgba(81,81,61,.12)]">
+            <div className="mb-8 flex items-center justify-between border-b border-[#51513d]/16 pb-4 text-xs font-black tracking-[0.24em] text-[#51513d] uppercase">
+              <span>Future support layer</span>
+              <span>Learning + games</span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                [
+                  'Reading mode',
+                  'Line focus, narration speed, tap-to-hear words, and dyslexia-friendly preferences.',
+                ],
+                [
+                  'Exercise engine',
+                  'Syllable splitting, missing letters, phoneme matching, and adaptive difficulty.',
+                ],
+                ['Games', 'Sound matching, word builder, levels, streaks, and progress tracking.'],
+                [
+                  'Classrooms',
+                  'Teacher-created profiles, parent claiming, assignments, and class-level analytics.',
+                ],
+              ].map(([title, copy]) => (
+                <div key={title} className="bg-[#e3dcc2] p-5">
+                  <h3 className="text-xl font-black">{title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[#1b2021]/62">{copy}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#51513d] uppercase">
+              Beyond screening
+            </p>
+            <h2 className="text-4xl leading-tight font-black text-balance md:text-6xl">
+              Not just detection. A path into practice.
+            </h2>
+            <p className="mt-6 max-w-lg text-lg leading-8 text-[#1b2021]/68">
+              Lexora&apos;s bigger idea is to connect screening with support: reports for guardians,
+              classroom visibility for teachers, and reading activities that adapt to the
+              child&apos;s language and level.
+            </p>
+            <Button
+              asChild
+              size="lg"
+              className="mt-8 h-12 rounded-md bg-[#51513d] px-6 text-[#e3dcc2] hover:bg-[#1b2021]"
+            >
+              <Link href="#get-started">
+                Start with screening
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       <DownloadSection />
 
-      {/* ── Call to Action ────────────────────────────────── */}
-      <CtaSection />
-
-      {/* ── About ────────────────────────────────────────── */}
-      <section id="about" className="bg-card/40 border-t px-6 py-20">
-        <div className="mx-auto max-w-3xl">
-          <div className="text-center">
-            <h2 className="mb-6 text-3xl font-bold">About Lexora</h2>
-            <p className="text-muted-foreground mb-4 leading-relaxed">
-              Lexora is developed as a research initiative at the Faculty of Computing and Data
-              Science. By combining eye-tracking technology with machine learning, we aim to make
-              dyslexia screening accessible, affordable, and non-invasive — reaching children who
-              might otherwise go undiagnosed.
+      <section id="get-started" className="bg-[#e3dc95] px-5 py-20 text-[#1b2021] md:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 md:flex-row md:items-center">
+          <div>
+            <p className="mb-4 inline-flex items-center gap-2 text-xs font-black tracking-[0.3em] uppercase">
+              <Sparkles className="h-4 w-4" />
+              Ready when you are
             </p>
-            <p className="text-muted-foreground mb-4 leading-relaxed">
-              Our approach builds on decades of research linking specific eye movement patterns —
-              such as increased fixation duration, higher regression rates, and irregular return
-              sweeps — to reading difficulties. Lexora captures these patterns through calibrated
-              gaze tracking and analyses them using a trained neural network.
-            </p>
-            <p className="text-muted-foreground mb-8 text-sm leading-relaxed">
-              <strong className="text-foreground/80">Important:</strong> This tool is for research
-              and screening purposes only — it does not provide a clinical diagnosis. Results should
-              always be interpreted by qualified professionals.
-            </p>
-            <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-              <span>Built with</span>
-              <span className="text-[oklch(0.70_0.10_115)]">♥</span>
-              <span>by the Lexora Team</span>
-            </div>
+            <h2 className="max-w-3xl text-4xl leading-tight font-black text-balance md:text-6xl">
+              Open Lexora and map the reading signal.
+            </h2>
           </div>
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <Button asChild size="lg" className="h-12 rounded-md bg-[#1b2021] px-6 text-[#e3dcc2]">
+              <Link href="/test/webcam">
+                Webcam
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="h-12 rounded-md border-[#1b2021]/35 bg-transparent px-6 font-bold text-[#1b2021] hover:bg-[#1b2021]/10"
+            >
+              <Link href="/test/tobii">Tobii service</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" className="px-5 py-16 md:px-8">
+        <div className="mx-auto grid max-w-7xl gap-6 border-t border-[#51513d]/18 pt-12 md:grid-cols-[0.7fr_1.3fr]">
+          <p className="text-xs font-black tracking-[0.3em] text-[#51513d] uppercase">
+            Research note
+          </p>
+          <p className="max-w-4xl text-lg leading-8 text-[#1b2021]/68">
+            Lexora is a screening and research tool, not a clinical diagnosis. Its job is to make
+            reading difficulty signals easier to notice, discuss, and follow up with qualified
+            professionals.
+          </p>
         </div>
       </section>
     </main>

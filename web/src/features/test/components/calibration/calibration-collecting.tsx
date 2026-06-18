@@ -42,31 +42,31 @@ export function CalibrationCollecting({
       {/* Face-lost overlay — pauses the feeling of progress clearly */}
       {showFaceLost && (
         <div
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#FDF8F0]/80 backdrop-blur-[2px]"
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#e3dcc2]/80 backdrop-blur-[2px]"
           style={{ animation: 'float-up 0.25s ease-out' }}
         >
-          <div className="flex max-w-xs flex-col items-center gap-3 rounded-2xl border border-[#E8E0D4] bg-white/90 px-7 py-6 text-center shadow-lg">
+          <div className="flex max-w-xs flex-col items-center gap-3 rounded-2xl border border-[#51513d] bg-[#f3edd7]/95 px-7 py-6 text-center shadow-lg">
             {/* Animated eye icon */}
             <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
               <path
                 d="M4 24C4 24 12 10 24 10C36 10 44 24 44 24C44 24 36 38 24 38C12 38 4 24 4 24Z"
-                stroke="#D97706"
+                stroke="#8b6f25"
                 strokeWidth="2.5"
                 strokeLinecap="round"
               />
-              <circle cx="24" cy="24" r="6" stroke="#D97706" strokeWidth="2.5" />
+              <circle cx="24" cy="24" r="6" stroke="#8b6f25" strokeWidth="2.5" />
               <line
                 x1="20"
                 y1="20"
                 x2="28"
                 y2="28"
-                stroke="#D97706"
+                stroke="#8b6f25"
                 strokeWidth="2"
                 strokeLinecap="round"
               />
             </svg>
-            <p className="text-sm font-semibold text-[#2D2A26]">Face not detected</p>
-            <p className="text-xs leading-relaxed text-[#8B857E]">
+            <p className="text-sm font-semibold text-[#1b2021]">Face not detected</p>
+            <p className="text-xs leading-relaxed text-[#51513d]">
               Make sure your face is visible and well-lit.
               <br />
               Keep your head inside the camera frame.
@@ -81,7 +81,7 @@ export function CalibrationCollecting({
           variant="outline"
           size="sm"
           onClick={onSkip}
-          className="border-[#E8E0D4] bg-white/70 text-xs text-[#8B857E] backdrop-blur-sm hover:text-[#2D2A26]"
+          className="border-[#51513d] bg-[#f3edd7]/80 text-xs text-[#51513d] backdrop-blur-sm hover:text-[#1b2021]"
         >
           Skip
         </Button>
@@ -90,19 +90,19 @@ export function CalibrationCollecting({
       {/* Webcam collection-quality warnings — subtle top-center toast */}
       {tracker === 'webcam' && collectionIssue && !showFaceLost && (
         <div
-          className="pointer-events-none absolute top-4 left-1/2 z-20 -translate-x-1/2 rounded-lg border border-amber-300/70 bg-amber-50/90 px-4 py-2 text-xs text-amber-700 backdrop-blur-sm"
+          className="pointer-events-none absolute top-4 left-1/2 z-20 -translate-x-1/2 border border-[#e3dc95] bg-[#e3dc95]/35 px-4 py-2 text-xs text-[#51513d] backdrop-blur-sm"
           style={{ animation: 'float-up 0.3s ease-out' }}
         >
           {collectionIssue === 'no-signal'
-            ? '😶 No face detected — keep your face visible and well-lit'
-            : '👀 Signal unstable — hold your eyes steady on the target'}
+            ? 'No face detected - keep your face visible and well-lit'
+            : 'Signal unstable - hold your eyes steady on the target'}
         </div>
       )}
 
       {/* Gaze dot — shows where gaze is landing for both Tobii and webcam */}
       {gazeCursor && (
         <div
-          className="pointer-events-none absolute z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-[#4A7C59]/80 shadow-[0_0_12px_rgba(74,124,89,0.8)]"
+          className="pointer-events-none absolute z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f3edd7]/80 bg-[#a6a867]/60 shadow-[0_0_12px_rgba(166,168,103,0.55)]"
           style={{ left: gazeCursor.x, top: gazeCursor.y }}
         />
       )}

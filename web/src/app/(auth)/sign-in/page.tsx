@@ -2,7 +2,6 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { LexoraLogo } from '@/components/shared/lexora-logo';
-import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { auth } from '@/lib/auth';
 
 import { FloatingOrbs } from './_components/floating-orbs';
@@ -45,18 +44,18 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   }
 
   return (
-    <div className="relative flex w-full max-w-105 flex-col items-center">
+    <div className="relative flex w-full flex-col items-center">
       <FloatingOrbs />
-
-      {/* Theme toggle */}
-      <div className="absolute -top-2 right-0">
-        <ThemeToggle />
-      </div>
 
       {/* Logo */}
       <div className="mb-8">
         <LexoraLogo size="lg" animate />
       </div>
+
+      {/* Tagline */}
+      <p className="mb-6 text-center text-xs font-black tracking-[0.35em] text-[#51513d]/70 uppercase">
+        Map your potential
+      </p>
 
       {/* Sign-in card (includes consent checkboxes — issue #45) */}
       <SignInCard callbackUrl={callbackUrl} />

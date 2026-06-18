@@ -46,22 +46,22 @@ export function CalibrationValidation({
   }
 
   return (
-    <div className="fixed inset-0 z-50 cursor-none bg-[#FDF8F0]">
+    <div className="fixed inset-0 z-50 cursor-none bg-[#e3dcc2]">
       {/* Bottom HUD — outside calibration area for consistency */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-16 items-center justify-center">
-        <div className="w-[min(420px,85vw)] rounded-xl border border-[#E8E0D4] bg-white/85 px-5 py-2.5 shadow-sm backdrop-blur-md">
+        <div className="w-[min(420px,85vw)] rounded-xl border border-[#51513d] bg-[#f3edd7]/90 px-5 py-2.5 shadow-sm backdrop-blur-md">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-xs text-[#8B857E]">Checking accuracy</span>
-            <span className="text-xs font-semibold text-[#2D2A26]">
+            <span className="text-xs text-[#51513d]">Checking accuracy</span>
+            <span className="text-xs font-semibold text-[#1b2021]">
               {currentStep} / {totalSteps}
             </span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[#E8E0D4]/60">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#51513d]/60">
             <div
               className="h-full rounded-full transition-all duration-150"
               style={{
                 width: `${Math.round(holdProgress * 100)}%`,
-                backgroundColor: resolvedMode === 'star' ? '#D97706' : '#4A7C59',
+                backgroundColor: resolvedMode === 'star' ? '#8b6f25' : '#a6a867',
               }}
             />
           </div>
@@ -80,11 +80,11 @@ export function CalibrationValidation({
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
-                  background: `conic-gradient(#D4A017 ${holdProgress * 360}deg, rgba(212,160,23,0.15) 0deg)`,
+                  background: `conic-gradient(#e3dc95 ${holdProgress * 360}deg, rgba(212,160,23,0.15) 0deg)`,
                 }}
               />
-              <div className="absolute inset-1.5 rounded-full bg-[#FDF8F0]" />
-              <svg className="relative z-10 h-8 w-8" viewBox="0 0 24 24" fill="#D4A017">
+              <div className="absolute inset-1.5 rounded-full bg-[#e3dcc2]" />
+              <svg className="relative z-10 h-8 w-8" viewBox="0 0 24 24" fill="#e3dc95">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
               </svg>
             </div>
@@ -94,11 +94,11 @@ export function CalibrationValidation({
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
-                  background: `conic-gradient(#4A7C59 ${holdProgress * 360}deg, rgba(74,124,89,0.15) 0deg)`,
+                  background: `conic-gradient(#a6a867 ${holdProgress * 360}deg, rgba(166,168,103,0.18) 0deg)`,
                 }}
               />
-              <div className="absolute inset-1.5 flex items-center justify-center rounded-full bg-[#FDF8F0]">
-                <div className="h-5 w-5 rounded-full bg-[#2D2A26] shadow-md" />
+              <div className="absolute inset-1.5 flex items-center justify-center rounded-full bg-[#e3dcc2]">
+                <div className="h-5 w-5 rounded-full bg-[#1b2021] shadow-md" />
               </div>
             </div>
           )}
@@ -108,7 +108,7 @@ export function CalibrationValidation({
       {/* Gaze cursor — visible for all trackers during validation */}
       {gazeCursor && (
         <div
-          className="pointer-events-none absolute z-10 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/80 bg-[#4A7C59]/80 shadow-[0_0_12px_rgba(74,124,89,0.8)]"
+          className="pointer-events-none absolute z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f3edd7]/80 bg-[#a6a867]/50 shadow-[0_0_12px_rgba(166,168,103,0.55)]"
           style={{ left: gazeCursor.x, top: gazeCursor.y }}
         />
       )}

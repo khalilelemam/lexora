@@ -1,7 +1,6 @@
 'use client';
 
 import { AlertCircle, RotateCcw, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface ErrorScreenProps {
   error: string;
@@ -14,34 +13,50 @@ interface ErrorScreenProps {
 
 export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScreenProps) {
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="bg-destructive/10 flex h-16 w-16 items-center justify-center rounded-full">
-        <AlertCircle className="text-destructive h-8 w-8" />
+    <div className="flex flex-col items-center gap-8">
+      <div className="flex h-16 w-16 items-center justify-center bg-[#e3dc95]/25">
+        <AlertCircle className="h-8 w-8 text-[#51513d]" />
       </div>
 
       <div className="text-center">
-        <h2 className="text-2xl font-semibold">Something went wrong</h2>
-        <p className="text-muted-foreground mt-2 max-w-md">{error}</p>
+        <h2 className="text-3xl font-black text-[#1b2021]">Something went wrong</h2>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-[#1b2021]/64">{error}</p>
       </div>
 
       <div className="flex gap-3">
         {onRetry && (
-          <Button onClick={onRetry}>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex items-center bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
+          >
             <RotateCcw className="mr-2 h-4 w-4" />
             Retry Submission
-          </Button>
+          </button>
         )}
         {onStartOver && (
-          <Button variant={onRetry ? 'outline' : 'default'} onClick={onStartOver}>
+          <button
+            type="button"
+            onClick={onStartOver}
+            className={`inline-flex items-center px-5 py-2.5 text-sm font-black transition-colors ${
+              onRetry
+                ? 'border border-[#51513d]/25 bg-[#e3dcc2] text-[#51513d] hover:bg-[#51513d]/10'
+                : 'bg-[#51513d] text-[#e3dcc2] hover:bg-[#1b2021]'
+            }`}
+          >
             <RefreshCw className="mr-2 h-4 w-4" />
             Start Over
-          </Button>
+          </button>
         )}
         {onGoHome && (
-          <Button variant="outline" onClick={onGoHome}>
+          <button
+            type="button"
+            onClick={onGoHome}
+            className="inline-flex items-center border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
+          >
             <Home className="mr-2 h-4 w-4" />
             Back to Home
-          </Button>
+          </button>
         )}
       </div>
     </div>

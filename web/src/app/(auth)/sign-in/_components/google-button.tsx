@@ -4,7 +4,6 @@ import { useCallback, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
-import { Button } from '@/components/ui/button';
 import { authClient } from '@/lib/auth-client';
 
 interface GoogleButtonProps {
@@ -49,19 +48,19 @@ export function GoogleButton({
   }, [callbackUrl, onLoadingChange, onError, onBeforeAuth]);
 
   return (
-    <Button
+    <button
       id="sign-in-google"
-      variant="outline"
-      className="relative h-11 w-full text-sm font-medium"
+      type="button"
       onClick={handleClick}
       disabled={disabled || loading}
+      className="relative flex h-12 w-full items-center justify-center gap-2.5 border border-[#51513d]/20 bg-[#e3dcc2]/60 text-sm font-black text-[#1b2021] transition-all hover:bg-[#e3dcc2] hover:shadow-[4px_4px_0_rgba(81,81,61,.10)] disabled:cursor-not-allowed disabled:opacity-40"
     >
       {loading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin text-[#51513d]" />
       ) : (
-        <FcGoogle className="mr-2 h-5 w-5" />
+        <FcGoogle className="h-5 w-5" />
       )}
       Continue with Google
-    </Button>
+    </button>
   );
 }

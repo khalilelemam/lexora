@@ -354,10 +354,10 @@ export function CalibrationScreen({
    *     Shows a spinner to prevent UI flashing. */
   if (phase === 'validating' && quickValidation.phase === 'idle') {
     return (
-      <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#FDF8F0]">
+      <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#e3dcc2]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#4A7C59] border-t-transparent" />
-          <p className="text-sm text-[#8B857E]">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#51513d] border-t-transparent" />
+          <p className="text-sm text-[#51513d]/70">
             {preValidationDismissed ? 'Preparing validation…' : 'Computing calibration…'}
           </p>
         </div>
@@ -382,7 +382,7 @@ export function CalibrationScreen({
   /* 6. Result */
   if (canFinalize && finalResult) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-[#FDF8F0] py-8">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-[#e3dcc2] py-8">
         <CalibrationResultView
           result={finalResult}
           quickValidationAccuracy={quickValidation.accuracyPercent}

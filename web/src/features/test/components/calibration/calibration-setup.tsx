@@ -28,9 +28,9 @@ export function CalibrationSetup({
   startButtonText = 'Enter Fullscreen & Start Calibration',
 }: CalibrationSetupProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-[#FDF8F0] px-4 py-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-[#e3dcc2] px-4 py-6">
       <div
-        className="flex w-[min(960px,95vw)] flex-col gap-6 overflow-hidden rounded-2xl border border-[#E8E0D4] bg-white/80 shadow-lg backdrop-blur-sm lg:flex-row lg:gap-0"
+        className="flex w-[min(960px,95vw)] flex-col gap-6 overflow-hidden rounded-2xl border border-[#51513d]/18 bg-[#f3edd7] shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm lg:flex-row lg:gap-0"
         style={{ animation: 'float-up 0.5s ease-out' }}
       >
         {/* ── Left: Instructions ── */}
@@ -39,17 +39,17 @@ export function CalibrationSetup({
           <LexoraLogo size="md" />
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-[#2D2A26]">Calibration</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#6B6560]">
+            <h2 className="text-2xl font-black tracking-tight text-[#1b2021]">Calibration</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[#1b2021]/68">
               We need to calibrate the eye tracker before the test. First, follow the target with
               your eyes. Then, read a short paragraph so we can fine-tune accuracy for reading.
             </p>
           </div>
 
           {/* Pre-calibration instructions */}
-          <div className="rounded-xl border border-[#4A7C59]/15 bg-[#4A7C59]/5 p-4">
-            <p className="mb-2 text-sm font-semibold text-[#2D2A26]">📋 Before you start:</p>
-            <ul className="list-inside list-disc space-y-1.5 text-[13px] text-[#6B6560]">
+          <div className="rounded-xl border border-[#51513d]/15 bg-[#51513d]/5 p-4">
+            <p className="mb-2 text-sm font-black text-[#1b2021]">📋 Before you start:</p>
+            <ul className="list-inside list-disc space-y-1.5 text-[13px] text-[#1b2021]/68">
               <li>Sit at a comfortable distance (about arm&apos;s length)</li>
               <li>Keep your head still — move only your eyes</li>
               <li>Make sure your face is well-lit</li>
@@ -58,12 +58,12 @@ export function CalibrationSetup({
           </div>
 
           {/* Fullscreen consent */}
-          <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/60 bg-amber-50/60 p-3 text-xs leading-relaxed text-[#6B6560]">
-            <Maximize className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <div className="flex items-start gap-2.5 rounded-xl border border-[#e3dc95]/60 bg-[#e3dc95]/20 p-3 text-xs leading-relaxed text-[#1b2021]/68">
+            <Maximize className="mt-0.5 h-4 w-4 shrink-0 text-[#51513d]" />
             <span>
-              Calibration requires <strong className="text-[#2D2A26]">fullscreen mode</strong> for
+              Calibration requires <strong className="text-[#1b2021]">fullscreen mode</strong> for
               accurate tracking. Press{' '}
-              <kbd className="rounded border border-[#E8E0D4] bg-white/80 px-1 py-0.5 font-mono text-[10px]">
+              <kbd className="rounded border border-[#51513d]/18 bg-[#e3dcc2] px-1 py-0.5 font-mono text-[10px]">
                 Esc
               </kbd>{' '}
               to exit anytime.
@@ -74,17 +74,17 @@ export function CalibrationSetup({
           <Button
             onClick={onStart}
             size="lg"
-            className="mt-auto w-full bg-[#4A7C59] px-10 text-white hover:bg-[#3D6A4B]"
+            className="mt-auto w-full bg-[#51513d] px-10 text-[#e3dcc2] hover:bg-[#1b2021]"
           >
             {startButtonText}
           </Button>
         </div>
 
         {/* ── Right: Mode selection ── */}
-        <div className="flex flex-1 flex-col gap-4 border-t border-[#E8E0D4] bg-[#FAFAF7] p-7 lg:border-t-0 lg:border-l lg:p-8">
+        <div className="flex flex-1 flex-col gap-4 border-t border-[#51513d]/18 bg-[#e3dcc2]/50 p-7 lg:border-t-0 lg:border-l lg:p-8">
           <div>
-            <p className="mb-1 text-sm font-medium text-[#2D2A26]">Choose a calibration style</p>
-            <p className="text-xs text-[#8B857E]">
+            <p className="mb-1 text-sm font-black text-[#1b2021]">Choose a calibration style</p>
+            <p className="text-xs text-[#1b2021]/52">
               Each style works the same way, just with a different look.
             </p>
           </div>
@@ -105,14 +105,14 @@ export function CalibrationSetup({
                   className={cn(
                     'group flex items-center gap-4 rounded-xl border-2 p-3 text-left transition-all',
                     isSelected
-                      ? 'border-[#4A7C59] bg-[#4A7C59]/5 shadow-md shadow-[#4A7C59]/10'
+                      ? 'border-[#51513d] bg-[#51513d]/5 shadow-md shadow-[#51513d]/10'
                       : isDisabled
-                        ? 'cursor-not-allowed border-[#E8E0D4] bg-[#F5F0E8]/70 opacity-70'
-                        : 'border-transparent bg-white/80 hover:border-[#D4CBBD] hover:bg-white',
+                        ? 'cursor-not-allowed border-[#51513d]/18 bg-[#e3dcc2]/70 opacity-70'
+                        : 'border-transparent bg-[#f3edd7] hover:border-[#51513d]/30 hover:bg-[#f3edd7]/80',
                   )}
                 >
                   {/* Mode image */}
-                  <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-[#F5F0E8]">
+                  <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-[#e3dcc2]">
                     <Image
                       src={option.image}
                       alt={option.label}
@@ -124,29 +124,29 @@ export function CalibrationSetup({
                       sizes="80px"
                     />
                     {isSelected && !isDisabled && (
-                      <div className="absolute inset-0 rounded-lg ring-2 ring-[#4A7C59]/30 ring-inset" />
+                      <div className="absolute inset-0 rounded-lg ring-2 ring-[#51513d]/30 ring-inset" />
                     )}
                   </div>
 
                   {/* Mode info */}
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-[#2D2A26]">{option.label}</span>
+                      <span className="text-sm font-black text-[#1b2021]">{option.label}</span>
                       {option.comingSoon && (
-                        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-amber-700 uppercase">
+                        <span className="rounded-full bg-[#e3dc95] px-1.5 py-0.5 text-[10px] font-black tracking-wide text-[#51513d] uppercase">
                           Coming soon
                         </span>
                       )}
                     </div>
-                    <span className="line-clamp-2 text-xs leading-relaxed text-[#6B6560]">
+                    <span className="line-clamp-2 text-xs leading-relaxed text-[#1b2021]/68">
                       {option.description}
                     </span>
-                    <span className="mt-0.5 text-[10px] text-[#8B857E]">{option.ageHint}</span>
+                    <span className="mt-0.5 text-[10px] text-[#1b2021]/52">{option.ageHint}</span>
                   </div>
 
                   {/* Selected indicator */}
                   {isSelected && !isDisabled && (
-                    <div className="ml-auto h-3 w-3 shrink-0 rounded-full bg-[#4A7C59]" />
+                    <div className="ml-auto h-3 w-3 shrink-0 rounded-full bg-[#51513d]" />
                   )}
                 </button>
               );

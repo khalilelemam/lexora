@@ -64,13 +64,18 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.15 }}
-      className="bg-card relative w-full overflow-hidden rounded-2xl border shadow-lg"
+      className="relative w-full overflow-hidden border border-[#51513d]/18 bg-[#f3edd7] shadow-[12px_12px_0_rgba(81,81,61,.10)]"
     >
-      {/* Gradient accent line */}
-      <div className="absolute top-0 right-0 left-0 h-1 bg-linear-to-r from-[oklch(0.4_0.04_110)] via-[oklch(0.7_0.1_115)] to-[oklch(0.78_0.1_90)]" />
+      {/* Accent bar — editorial stripe */}
+      <div className="flex h-2">
+        <div className="flex-1 bg-[#1b2021]" />
+        <div className="flex-1 bg-[#51513d]" />
+        <div className="flex-1 bg-[#a6a867]" />
+        <div className="flex-1 bg-[#e3dc95]" />
+      </div>
 
       <AnimatePresence mode="wait">
         {sentEmail ? (
@@ -84,9 +89,14 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
             className="p-8"
           >
             {/* Header */}
-            <div className="mb-6 text-center">
-              <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-              <p className="text-muted-foreground mt-1 text-sm">Sign in to continue to Lexora</p>
+            <div className="mb-7">
+              <p className="mb-3 text-[10px] font-black tracking-[0.35em] text-[#51513d] uppercase">
+                Authenticate
+              </p>
+              <h1 className="text-3xl font-black tracking-tight text-[#1b2021]">Welcome back</h1>
+              <p className="mt-2 text-sm leading-relaxed text-[#1b2021]/58">
+                Sign in to continue to Lexora
+              </p>
             </div>
 
             {/* Google */}
@@ -99,12 +109,12 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
             />
 
             {/* Divider */}
-            <div className="my-6 flex items-center gap-3">
-              <div className="bg-border h-px flex-1" />
-              <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+            <div className="my-7 flex items-center gap-4">
+              <div className="h-px flex-1 bg-[#51513d]/15" />
+              <span className="text-[10px] font-black tracking-[0.3em] text-[#51513d]/50 uppercase">
                 or
               </span>
-              <div className="bg-border h-px flex-1" />
+              <div className="h-px flex-1 bg-[#51513d]/15" />
             </div>
 
             {/* Email */}
@@ -118,7 +128,7 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
             />
 
             {/* Consent checkboxes (issue #45) */}
-            <div className="mt-6">
+            <div className="mt-7 border-t border-[#51513d]/12 pt-6">
               <ConsentCheckboxes
                 termsAccepted={termsAccepted}
                 rawDataOptIn={rawDataOptIn}
@@ -135,7 +145,7 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="text-muted-foreground mt-3 text-center text-xs"
+                  className="mt-4 text-center text-xs font-medium text-[#51513d]/60"
                 >
                   Please accept the Terms &amp; Privacy Policy to continue.
                 </motion.p>
@@ -145,14 +155,14 @@ export function SignInCard({ callbackUrl }: SignInCardProps) {
             {/* Error */}
             <AnimatePresence>
               {error && (
-                <motion.p
+                <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 text-center text-sm text-red-500"
+                  className="mt-5 border border-red-400/40 bg-red-50/80 p-3 text-center text-sm text-red-700"
                 >
                   {error}
-                </motion.p>
+                </motion.div>
               )}
             </AnimatePresence>
           </motion.div>

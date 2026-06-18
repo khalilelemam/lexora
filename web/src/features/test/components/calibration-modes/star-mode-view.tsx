@@ -24,7 +24,7 @@ function StarShape() {
         >
           <stop stopColor="#FEF3C7" />
           <stop offset="0.5" stopColor="#F59E0B" />
-          <stop offset="1" stopColor="#D97706" />
+          <stop offset="1" stopColor="#8b6f25" />
         </linearGradient>
       </defs>
     </svg>
@@ -53,7 +53,7 @@ export function StarModeView({
   motionDurationMs,
 }: CalibrationModeViewProps) {
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-[#FDF8F0]">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#e3dcc2]">
       {/* Subtle warm radial accents — static, no motion to avoid saccades */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -92,7 +92,7 @@ export function StarModeView({
         <div
           className={cn(
             'relative flex items-center justify-center rounded-full transition-all duration-200',
-            'h-24 w-24 border-2 border-amber-200/60 bg-amber-50/40',
+            'h-24 w-24 border-2 border-[#e3dc95]/60 bg-[#e3dc95]/25',
             capturePulse && 'scale-110',
           )}
         >
@@ -126,7 +126,7 @@ export function StarModeView({
               cy="50"
               r="42"
               fill="none"
-              stroke={isStableFixation ? '#10b981' : '#D97706'}
+              stroke={isStableFixation ? '#a6a867' : '#8b6f25'}
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray={264}
@@ -140,7 +140,7 @@ export function StarModeView({
             <motion.div
               initial={{ opacity: 0, y: -2 }}
               animate={{ opacity: 1, y: -14 }}
-              className="pointer-events-none absolute -top-7 rounded-md bg-amber-500 px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm"
+              className="pointer-events-none absolute -top-7 rounded-md bg-[#e3dc95]/250 px-2.5 py-1 text-[11px] font-semibold text-[#f3edd7] shadow-sm"
             >
               ✨ Got it!
             </motion.div>
@@ -151,8 +151,8 @@ export function StarModeView({
       {/* Bottom HUD strip — outside calibration area */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
         {/* Mode label */}
-        <div className="flex items-center gap-2 rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
-          <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+        <div className="flex items-center gap-2 rounded-lg border border-[#51513d] bg-[#f3edd7]/75 px-3 py-1.5 text-[11px] text-[#51513d] backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-[#e3dc95]" />
           Star Mode
         </div>
 
@@ -164,20 +164,20 @@ export function StarModeView({
               className={cn(
                 'rounded-full transition-all duration-300',
                 idx < collectionStep - 1
-                  ? 'h-2 w-2 bg-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.4)]'
+                  ? 'h-2 w-2 bg-[#e3dc95] shadow-[0_0_5px_rgba(227,220,149,0.5)]'
                   : idx === collectionStep - 1
-                    ? 'h-2.5 w-2.5 animate-pulse bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]'
-                    : 'h-1.5 w-1.5 bg-[#D4CBBD]/60',
+                    ? 'h-2.5 w-2.5 animate-pulse bg-[#e3dc95]/250 shadow-[0_0_6px_rgba(227,220,149,0.55)]'
+                    : 'h-1.5 w-1.5 bg-[#51513d]/60',
               )}
             />
           ))}
         </div>
 
         {/* Counter */}
-        <div className="rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] backdrop-blur-sm">
-          <span className="font-semibold text-amber-600">{collectionStep}</span>
-          <span className="text-[#C4BDB4]"> / </span>
-          <span className="text-[#6B6560]">{collectionTotal}</span>
+        <div className="rounded-lg border border-[#51513d] bg-[#f3edd7]/75 px-3 py-1.5 text-[11px] backdrop-blur-sm">
+          <span className="font-semibold text-[#8b6f25]">{collectionStep}</span>
+          <span className="text-[#51513d]"> / </span>
+          <span className="text-[#51513d]">{collectionTotal}</span>
         </div>
       </div>
     </div>

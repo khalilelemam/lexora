@@ -137,7 +137,7 @@ export function FullscreenGazeReplay({
             }}
           >
             <div
-              className={cn('rounded-full', f.isRegression ? 'bg-red-400' : 'bg-[#4A7C59]')}
+              className={cn('rounded-full', f.isRegression ? 'bg-red-400' : 'bg-[#51513d]')}
               style={{
                 width: `${size}px`,
                 height: `${size}px`,
@@ -145,7 +145,7 @@ export function FullscreenGazeReplay({
                 boxShadow: isCurrent
                   ? f.isRegression
                     ? '0 0 0 4px rgba(248, 113, 113, 0.25)'
-                    : '0 0 0 4px rgba(74, 124, 89, 0.2)'
+                    : '0 0 0 4px rgba(166, 168, 103, 0.24)'
                   : undefined,
               }}
             />
@@ -154,23 +154,23 @@ export function FullscreenGazeReplay({
       })}
 
       {/* Bottom control bar */}
-      <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 rounded-full border border-[#E8E0D4] bg-white/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+      <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
         <button
           type="button"
           onClick={replay.togglePlayPause}
-          className="text-[#4A7C59] hover:text-[#3D6A4B]"
+          className="text-[#51513d] hover:text-[#1b2021]"
         >
           {replay.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </button>
 
-        <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#E8E0D4]">
+        <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
           <div
-            className="h-full rounded-full bg-[#4A7C59] transition-all duration-75"
+            className="h-full bg-[#51513d] transition-all duration-75"
             style={{ width: `${replay.progress}%` }}
           />
         </div>
 
-        <span className="w-8 text-[11px] text-[#8B857E] tabular-nums">{replay.progress}%</span>
+        <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{replay.progress}%</span>
 
         {/* Speed selector */}
         <div className="flex items-center gap-1">
@@ -181,33 +181,33 @@ export function FullscreenGazeReplay({
               className={cn(
                 'rounded px-1.5 py-0.5 text-[10px] transition-colors',
                 replay.speed === s
-                  ? 'bg-[#4A7C59] text-white'
-                  : 'text-[#8B857E] hover:bg-[#F0EBE3]',
+                  ? 'bg-[#51513d] text-[#f3edd7]'
+                  : 'text-[#1b2021] hover:bg-[#e3dcc2]',
               )}
             >
-              {s}×
+              {s}x
             </button>
           ))}
         </div>
 
         {toolbarSlot ? (
           <>
-            <div className="h-4 w-px bg-[#E8E0D4]" />
+            <div className="h-4 w-px bg-[#51513d]" />
             {toolbarSlot}
           </>
         ) : null}
 
-        <div className="h-4 w-px bg-[#E8E0D4]" />
+        <div className="h-4 w-px bg-[#51513d]" />
 
-        <button type="button" onClick={onClose} className="text-[#8B857E] hover:text-[#2D2A26]">
+        <button type="button" onClick={onClose} className="text-[#1b2021] hover:text-[#1b2021]">
           <X className="h-5 w-5" />
         </button>
       </div>
 
       {/* Legend */}
-      <div className="fixed top-4 right-4 z-70 flex flex-col gap-1.5 rounded-xl border border-[#E8E0D4] bg-white/90 px-4 py-2.5 text-[11px] text-[#8B857E] shadow-sm backdrop-blur-md">
+      <div className="fixed top-4 right-4 z-70 flex flex-col gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-4 py-2.5 text-[11px] text-[#1b2021] shadow-sm backdrop-blur-md">
         <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-[#4A7C59] opacity-60" />
+          <div className="h-2.5 w-2.5 rounded-full bg-[#51513d] opacity-60" />
           <span>Forward fixation</span>
         </div>
         <div className="flex items-center gap-1.5">

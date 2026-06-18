@@ -2,7 +2,7 @@
  * Stickman (Ninja) drawing primitives — canvas-only, no React dependency.
  *
  * Visual design:
- * - Charcoal body (#1e293b) on warm cream (#FDF8F0)
+ * - Charcoal body (#1e293b) on warm cream (#e3dcc2)
  * - Ninja headband (red bandana trailing behind)
  * - Mask line across face
  * - Slightly thicker limbs for better visibility at small scale
