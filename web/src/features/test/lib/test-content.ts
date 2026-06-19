@@ -25,7 +25,7 @@ function getWebcamGroup(age?: number) {
 /** Get content for a Tobii task dynamically based on age */
 export function getTobiiTaskContent(taskType: TobiiTaskType, age?: number): string {
   const group = getTobiiGroup(age);
-  
+
   if (taskType === 'syllables') return group.syllables;
   if (taskType === 'pseudo-words') return group.pseudoWords;
   return group.meaningfulText;

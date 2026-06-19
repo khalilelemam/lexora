@@ -136,7 +136,11 @@ export function CalibrationSetup({
                   {startButtonText}
                 </Button>
                 <p className="text-center text-xs font-medium text-[#1b2021]/60">
-                  Or press <kbd className="mx-1 rounded border border-[#51513d]/18 bg-[#e3dcc2] px-1.5 py-0.5 font-mono text-[10px] font-bold shadow-sm">Enter ↵</kbd> to start
+                  Or press{' '}
+                  <kbd className="mx-1 rounded border border-[#51513d]/18 bg-[#e3dcc2] px-1.5 py-0.5 font-mono text-[10px] font-bold shadow-sm">
+                    Enter ↵
+                  </kbd>{' '}
+                  to start
                 </p>
               </div>
             </div>
