@@ -21,6 +21,7 @@ Dockerfile eol=lf
 *.ps1    eol=crlf
 # Mark binary files so Git doesn't mess with them
 *.png    -text
+*.webp   -text
 *.jpg    -text
 *.jpeg   -text
 *.gif    -text
