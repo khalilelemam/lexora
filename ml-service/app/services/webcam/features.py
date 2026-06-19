@@ -13,13 +13,15 @@ class WebcamProcessingResult:
     """Processed webcam payload ready for prediction and UI replay.
 
     Attributes:
-        sequences: Model input tensor with shape (1, 82, 20, 5).
+        sequences: Model input tensor with shape (1, 40, 20, 6).
+        mask: Validity mask with shape (1, 40), where 1 marks real windows.
         features_data: Per-fixation features for API responses/replay.
         total_fixations: Count of valid fixations used.
         mean_fixation_duration_ms: Mean fixation duration over valid fixations.
     """
 
     sequences: np.ndarray
+    mask: np.ndarray
     sequences_analyzed: int = 0
     features_data: list[dict] = field(default_factory=list)
     total_fixations: int = 0
@@ -35,7 +37,7 @@ class WebcamFeatureProcessor:
     3. Detect fixations with an I-DT style dispersion window.
     4. Extract per-fixation features.
     5. Build sliding windows of 20 fixations with step 5.
-    6. Pad/truncate to 82 windows and reshape for model inference.
+    6. Pad/truncate to 40 windows and build a validity mask for model inference.
     """
 
     def __init__(self):
@@ -47,6 +49,9 @@ class WebcamFeatureProcessor:
         self.one_euro_mincutoff = settings.WEBCAM_ONE_EURO_MINCUTOFF
         self.one_euro_beta = settings.WEBCAM_ONE_EURO_BETA
         self.one_euro_dcutoff = settings.WEBCAM_ONE_EURO_DCUTOFF
+        self.amplitude_floor = settings.WEBCAM_AMPLITUDE_FLOOR
+        self.amplitude_max = settings.WEBCAM_AMPLITUDE_MAX
+        self.efficiency_cap = settings.WEBCAM_EFFICIENCY_CAP
 
     def smooth_signal(
         self, points: List[Tuple[float, float, int]]
@@ -191,20 +196,19 @@ class WebcamFeatureProcessor:
         self,
         fixations: List[np.ndarray],
     ) -> np.ndarray:
-        """Extract six features per fixation.
+        """Extract model and replay features per fixation.
 
-        Feature order:
-            [duration_ms, centroid_x, centroid_y, amplitude, regression, return_sweep]
+        Model feature order:
+            [duration_ms, centroid_x, centroid_y, amplitude, regression, efficiency]
 
-        The model currently consumes the first five features only; return_sweep
-        is included for richer analysis/replay and future model experiments.
+        The seventh return-sweep column is included for richer API replay only
+        and is not passed to the model.
 
-        Line transitions and regressions are detected from raw vertical
-        displacement between consecutive fixation centroids — no coordinate
-        snapping is applied so that the feature distribution matches training.
+        Regression follows the updated webcam training pipeline: any leftward
+        movement from the previous fixation is a regression.
         """
         if not fixations:
-            return np.array([]).reshape(0, 6)
+            return np.array([]).reshape(0, 7)
 
         features = []
         prev_centroid_x = None
@@ -224,21 +228,28 @@ class WebcamFeatureProcessor:
                     current_line_id = max(0, prev_line_id - 1)
 
             if prev_centroid_x is not None:
-                amplitude = np.sqrt(
+                raw_amplitude = np.sqrt(
                     (centroid_x - prev_centroid_x) ** 2
                     + (centroid_y - prev_centroid_y) ** 2
                 )
-
-                # Regression: leftward movement on the same reading line.
-                regression_flag = int(
-                    centroid_x < prev_centroid_x and current_line_id == prev_line_id
+                amplitude = float(
+                    np.clip(raw_amplitude, self.amplitude_floor, self.amplitude_max)
                 )
-                # Return sweep: transition from one line to the next.
+
+                regression_flag = int(centroid_x < prev_centroid_x)
                 return_sweep_flag = 1 if current_line_id > prev_line_id else 0
+                efficiency_ratio = float(
+                    np.clip(
+                        np.log1p(duration_ms / max(amplitude, self.amplitude_floor)),
+                        0.0,
+                        self.efficiency_cap,
+                    )
+                )
             else:
                 amplitude = 0.0
                 regression_flag = 0
                 return_sweep_flag = 0
+                efficiency_ratio = 0.0
 
             features.append(
                 [
@@ -247,6 +258,7 @@ class WebcamFeatureProcessor:
                     centroid_y,
                     amplitude,
                     regression_flag,
+                    efficiency_ratio,
                     return_sweep_flag,
                 ]
             )
@@ -260,32 +272,40 @@ class WebcamFeatureProcessor:
     def create_sequences(self, features: np.ndarray) -> np.ndarray:
         """Create overlapping windows from fixation features.
 
-        Window size and step are aligned with training config. Only the first
-        five features are included in model windows.
+        Window size, step, and feature order are aligned with training config.
+        The replay-only return-sweep column is excluded from model windows.
         """
-        window_size = settings.EYE_TRACKER_SEQUENCE_LENGTH
-        step = settings.EYE_TRACKER_SEQUENCE_STEP
+        window_size = settings.WEBCAM_SEQUENCE_LENGTH
+        step = settings.WEBCAM_SEQUENCE_STEP
+        n_features = settings.WEBCAM_N_FEATURES
 
         if len(features) < window_size:
-            return np.array([]).reshape(0, window_size, 5)
+            return np.array([]).reshape(0, window_size, n_features)
 
         sequences = []
         for i in range(0, len(features) - window_size + 1, step):
-            window = features[i : i + window_size, :5]
+            window = features[i : i + window_size, :n_features]
             sequences.append(window)
 
-        return np.array(sequences)
+        return np.array(sequences, dtype=np.float32)
 
-    def pad_sequences(self, sequences: np.ndarray) -> np.ndarray:
-        """Pad or truncate to the model's required sequence count."""
+    def pad_sequences(self, sequences: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Pad or truncate to the model's sequence count and return validity mask."""
         target_length = settings.WEBCAM_MAX_SEQUENCES
-        window_size = settings.EYE_TRACKER_SEQUENCE_LENGTH
+        window_size = settings.WEBCAM_SEQUENCE_LENGTH
+        n_features = settings.WEBCAM_N_FEATURES
+        mask = np.zeros(target_length, dtype=np.float32)
 
         if len(sequences) >= target_length:
-            return sequences[:target_length]
+            mask[:] = 1.0
+            return sequences[:target_length].astype(np.float32), mask
 
-        padding = np.zeros((target_length - len(sequences), window_size, 5))
-        return np.vstack([sequences, padding])
+        real_count = len(sequences)
+        mask[:real_count] = 1.0
+        padding = np.zeros(
+            (target_length - real_count, window_size, n_features), dtype=np.float32
+        )
+        return np.vstack([sequences, padding]).astype(np.float32), mask
 
     def process(
         self,
@@ -312,10 +332,14 @@ class WebcamFeatureProcessor:
                 "Insufficient data. Please ensure good lighting and read for the full duration."
             )
 
-        padded = self.pad_sequences(sequences)
+        padded, mask = self.pad_sequences(sequences)
         model_input = padded.reshape(
-            1, settings.WEBCAM_MAX_SEQUENCES, settings.EYE_TRACKER_SEQUENCE_LENGTH, 5
+            1,
+            settings.WEBCAM_MAX_SEQUENCES,
+            settings.WEBCAM_SEQUENCE_LENGTH,
+            settings.WEBCAM_N_FEATURES,
         )
+        model_mask = mask.reshape(1, settings.WEBCAM_MAX_SEQUENCES)
 
         features_data = [
             {
@@ -325,13 +349,14 @@ class WebcamFeatureProcessor:
                 "fixation_y": float(row[2]),
                 "saccade_amplitude": float(row[3]),
                 "is_regression": bool(row[4]),
-                "is_return_sweep": bool(row[5]),
+                "is_return_sweep": bool(row[6]),
             }
             for fixation, row in zip(fixations, features)
         ]
 
         return WebcamProcessingResult(
             sequences=model_input,
+            mask=model_mask,
             sequences_analyzed=int(len(sequences)),
             features_data=features_data,
             total_fixations=len(features),
