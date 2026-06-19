@@ -364,7 +364,7 @@ function StepBlock({
         {complete ? '✓' : num}
       </span>
       <span
-        className={`text-[10px] font-black tracking-[0.1em] uppercase ${
+        className={`text-[10px] font-black tracking-widest uppercase ${
           active ? 'text-[#1b2021]' : complete ? 'text-[#51513d]' : 'text-[#51513d]/40'
         }`}
       >
