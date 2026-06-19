@@ -75,17 +75,7 @@ export function CalibrationCollecting({
         </div>
       )}
 
-      {/* Skip button — bottom-right, above HUD strip */}
-      <div className="absolute right-4 bottom-16 z-30">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onSkip}
-          className="border-[#51513d] bg-[#f3edd7]/80 text-xs text-[#51513d] backdrop-blur-sm hover:text-[#1b2021]"
-        >
-          Skip
-        </Button>
-      </div>
+
 
       {/* Webcam collection-quality warnings — subtle top-center toast */}
       {tracker === 'webcam' && collectionIssue && !showFaceLost && (

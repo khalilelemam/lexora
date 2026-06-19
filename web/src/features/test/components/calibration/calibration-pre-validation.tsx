@@ -96,10 +96,7 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
   }, [tick]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#e3dcc2]"
-      onClick={onReady}
-    >
+    <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#e3dcc2]">
       <div
         className="flex max-w-lg flex-col items-center gap-5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-10 py-10 shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm"
         style={{ animation: 'float-up 0.4s ease-out' }}
@@ -144,7 +141,7 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
               <span className="text-lg font-bold text-[#51513d]">{countdown}</span>
             </div>
           </div>
-          <p className="text-[11px] text-[#1b2021]">Starting automatically... or click anywhere</p>
+          <p className="text-[11px] text-[#1b2021]">Starting automatically...</p>
         </div>
       </div>
     </div>
