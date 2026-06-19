@@ -349,7 +349,7 @@ export function TaskDisplay({
         <div
           className={cn(
             'min-h-0 w-full flex-1',
-            preview ? 'overflow-hidden' : 'overflow-y-auto',
+            preview ? 'overflow-hidden' : 'overflow-visible',
             isShortContent && 'flex items-center justify-center',
           )}
           style={preview ? undefined : { scrollbarWidth: 'none' }}

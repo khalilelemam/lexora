@@ -98,9 +98,9 @@ export function useTobiiTestController() {
   const handleCalibrationComplete = useCallback(
     (result: CalibrationResult) => {
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
-      activateTask('syllables', getTobiiTaskContent('syllables'));
+      activateTask('syllables', getTobiiTaskContent('syllables', participantAge));
     },
-    [activateTask, dispatch],
+    [activateTask, dispatch, participantAge],
   );
 
   const handleTaskDone = useCallback(() => {
@@ -114,13 +114,13 @@ export function useTobiiTestController() {
 
   const handleContinue = useCallback(() => {
     if (tobiiState.currentState === 'review-syllables') {
-      activateTask('pseudo-words', getTobiiTaskContent('pseudo-words'));
+      activateTask('pseudo-words', getTobiiTaskContent('pseudo-words', participantAge));
     } else if (tobiiState.currentState === 'review-pseudo-words') {
-      activateTask('meaningful-text', getTobiiTaskContent('meaningful-text'));
+      activateTask('meaningful-text', getTobiiTaskContent('meaningful-text', participantAge));
     }
 
     dispatch({ type: 'CONTINUE' });
-  }, [activateTask, dispatch, tobiiState.currentState]);
+  }, [activateTask, dispatch, tobiiState.currentState, participantAge]);
 
   const retrySubmission = useCallback(() => {
     dispatch({ type: 'RETRY_SUBMIT' });
