@@ -283,33 +283,35 @@ class TestWebcamFeatureProcessor:
         assert features[0, 4] == 0  # First has no previous
         assert features[1, 4] == 1  # Moved left = regression
 
-    def test_extract_features_line_aware_regression_same_line(self, processor):
+    def test_extract_features_regression_on_later_lines(self, processor):
+        # Fixation 0: line 0 (x=0.5, y=0.1)
+        # Fixation 1: return sweep to line 1 (x=0.2, y=0.25)
+        # Fixation 2: forward reading on line 1 (x=0.4, y=0.25)
+        # Fixation 3: regression on line 1 (x=0.3, y=0.25)
         fixations = [
-            np.array([[0.80, 0.29, 0], [0.80, 0.31, 100]]),
-            np.array([[0.60, 0.30, 200], [0.60, 0.32, 300]]),
+            np.array([[0.5, 0.1, 0], [0.5, 0.1, 100]]),
+            np.array(
+                [[0.2, 0.25, 200], [0.2, 0.25, 300]]
+            ),  # y increases -> return sweep
+            np.array([[0.4, 0.25, 400], [0.4, 0.25, 500]]),  # same line, forward
+            np.array(
+                [[0.3, 0.25, 600], [0.3, 0.25, 700]]
+            ),  # same line, leftward -> regression
         ]
 
-        features = processor.extract_features(
-            fixations, normalized_line_centers=[0.3, 0.6]
-        )
+        features = processor.extract_features(fixations)
 
-        assert features.shape == (2, 6)
-        assert features[1, 4] == 1  # Moved left on same snapped line
-        assert features[1, 5] == 0  # Not a line transition
+        # Check return sweeps:
+        assert features[0, 5] == 0  # No return sweep on first
+        assert features[1, 5] == 1  # Return sweep detected at transition to line 1
+        assert features[2, 5] == 0  # Reading on same line
+        assert features[3, 5] == 0  # Regression on same line
 
-    def test_extract_features_line_aware_return_sweep(self, processor):
-        fixations = [
-            np.array([[0.85, 0.29, 0], [0.85, 0.31, 100]]),
-            np.array([[0.15, 0.59, 200], [0.15, 0.61, 300]]),
-        ]
-
-        features = processor.extract_features(
-            fixations, normalized_line_centers=[0.3, 0.6]
-        )
-
-        assert features.shape == (2, 6)
-        assert features[1, 4] == 0  # Cross-line movement is not same-line regression
-        assert features[1, 5] == 1  # Moved from line 0 to line 1
+        # Check regressions:
+        assert features[0, 4] == 0  # First has no previous
+        assert features[1, 4] == 0  # Return sweep transition (different lines)
+        assert features[2, 4] == 0  # Moved rightward
+        assert features[3, 4] == 1  # Moved leftward on the same line -> regression!
 
     def test_extract_features_empty_input(self, processor):
         features = processor.extract_features([])
