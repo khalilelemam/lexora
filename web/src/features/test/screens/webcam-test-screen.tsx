@@ -39,7 +39,6 @@ export default function WebcamTestScreen() {
     handleCameraReady,
     handleCalibrationComplete,
     handleTaskDone,
-    handleLineCentersReady,
     handleRetake,
     handleContinue,
     retrySubmission,
@@ -138,9 +137,10 @@ export default function WebcamTestScreen() {
             pointCount={gazePointCount}
             isCollecting={webcamGaze.collecting}
             onDone={handleTaskDone}
-            onLineCentersReady={handleLineCentersReady}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('paragraph', dataUrl)}
+            onPauseCollection={webcamGaze.pauseCollecting}
+            onResumeCollection={webcamGaze.resumeCollecting}
           />
         );
 
