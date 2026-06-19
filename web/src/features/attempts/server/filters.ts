@@ -14,6 +14,11 @@ export function parseAttemptFilters(searchParams: URLSearchParams): AttemptFilte
   const query = normalizeQuery(searchParams.get('query'));
   const limit = Math.min(parsePositiveInt(searchParams.get('limit'), DEFAULT_LIMIT), MAX_LIMIT);
 
+  const minCalibrationAccuracyParam = searchParams.get('minCalibrationAccuracy');
+  const minCalibrationAccuracy = minCalibrationAccuracyParam 
+    ? parsePositiveInt(minCalibrationAccuracyParam, 0)
+    : undefined;
+
   return {
     testType: TEST_TYPES.has(testType as TestMode) ? (testType as TestMode) : undefined,
     outcomes: outcomes.length > 0 ? outcomes : undefined,
@@ -22,6 +27,7 @@ export function parseAttemptFilters(searchParams: URLSearchParams): AttemptFilte
     createdTo: normalizeDate(searchParams.get('createdTo')),
     cursor: normalizeQuery(searchParams.get('cursor')),
     limit,
+    minCalibrationAccuracy,
   };
 }
 

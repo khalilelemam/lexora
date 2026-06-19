@@ -118,6 +118,7 @@ model TestAttempt {
   outcome          AttemptOutcome
   modelVersion     String          @map("model_version")
   calibrationMode  CalibrationMode @map("calibration_mode")
+  calibrationAccuracy Float?      @map("calibration_accuracy")
   age              Int
   label            String
   // Snapshot of the user's consent state when this specific attempt was submitted.

@@ -89,6 +89,7 @@ function toSearchParams(filters: AttemptFilters) {
   if (filters.createdTo) params.set('createdTo', filters.createdTo);
   if (filters.cursor) params.set('cursor', filters.cursor);
   if (filters.limit) params.set('limit', String(filters.limit));
+  if (filters.minCalibrationAccuracy !== undefined) params.set('minCalibrationAccuracy', String(filters.minCalibrationAccuracy));
 
   return params;
 }
@@ -105,6 +106,7 @@ function toFilterBody(filters: AttemptFilters): Record<string, unknown> {
   if (filters.query) body.query = filters.query;
   if (filters.createdFrom) body.createdFrom = filters.createdFrom;
   if (filters.createdTo) body.createdTo = filters.createdTo;
+  if (filters.minCalibrationAccuracy !== undefined) body.minCalibrationAccuracy = filters.minCalibrationAccuracy;
 
   return body;
 }
