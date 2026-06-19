@@ -77,8 +77,14 @@ class Settings(BaseSettings):
     WEBCAM_ONE_EURO_MINCUTOFF: float = 1.0
     WEBCAM_ONE_EURO_BETA: float = 0.007
     WEBCAM_ONE_EURO_DCUTOFF: float = 1.0
-    WEBCAM_MAX_SEQUENCES: int = 82
+    WEBCAM_SEQUENCE_LENGTH: int = 20
+    WEBCAM_SEQUENCE_STEP: int = 5
+    WEBCAM_N_FEATURES: int = 6
+    WEBCAM_MAX_SEQUENCES: int = 40
     WEBCAM_MIN_SEQUENCES: int = 10  # Minimum sequences for valid prediction
+    WEBCAM_AMPLITUDE_FLOOR: float = 0.0001
+    WEBCAM_AMPLITUDE_MAX: float = 0.076948
+    WEBCAM_EFFICIENCY_CAP: float = 20.0
 
     # Risk classification thresholds
     LOW_RISK_THRESHOLD: float = 0.33
