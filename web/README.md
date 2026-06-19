@@ -176,10 +176,11 @@ Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to
 
 ### Debug
 
-| Variable                            | Default               | What It Does                                                                                                                     |
-| ----------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_DEBUG_GAZE_OVERLAY`    | `false`               | Set to `"true"` to show a real-time gaze dot during the webcam reading task.                                                     |
-| `NEXT_PUBLIC_DEBUG_CALIBRATION_LOG` | `false` in production | Set to `"true"` to enable verbose calibration, pursuit, and validation diagnostics in the browser. Development builds enable it. |
+| Variable                            | Default               | What It Does                                                                                                                                             |
+| ----------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_DEBUG_GAZE_OVERLAY`    | `false`               | Set to `"true"` to show a real-time gaze dot during the webcam reading task.                                                                             |
+| `NEXT_PUBLIC_DEBUG_CALIBRATION_LOG` | `false` in production | Set to `"true"` to enable verbose calibration, pursuit, and validation diagnostics in the browser. Development builds enable it.                         |
+| `NEXT_PUBLIC_GAZE_SNAPPING_MODE`    | `snapped`             | Gaze replay vertical alignment strategy: `"snapped"` (line-by-line state machine), `"global-shift"` (median drift correction), or `"raw"` (no snapping). |
 
 ## Production Config And Deploy
 

@@ -190,7 +190,6 @@ class WebcamFeatureProcessor:
     def extract_features(
         self,
         fixations: List[np.ndarray],
-        normalized_line_centers: List[float] | None = None,
     ) -> np.ndarray:
         """Extract six features per fixation.
 
@@ -200,8 +199,9 @@ class WebcamFeatureProcessor:
         The model currently consumes the first five features only; return_sweep
         is included for richer analysis/replay and future model experiments.
 
-        If ``normalized_line_centers`` is provided, fixation y values are snapped
-        to the nearest line center before regression/sweep logic is computed.
+        Line transitions and regressions are detected from raw vertical
+        displacement between consecutive fixation centroids — no coordinate
+        snapping is applied so that the feature distribution matches training.
         """
         if not fixations:
             return np.array([]).reshape(0, 6)
@@ -210,24 +210,18 @@ class WebcamFeatureProcessor:
         prev_centroid_x = None
         prev_centroid_y = None
         prev_line_id = 0
-        line_centers_arr = np.array(normalized_line_centers or [], dtype=np.float32)
-
         for fixation in fixations:
             duration_ms = fixation[-1, 2] - fixation[0, 2]
             centroid_x = np.mean(fixation[:, 0])
             centroid_y = np.mean(fixation[:, 1])
 
-            if len(line_centers_arr) > 0:
-                distances = np.abs(line_centers_arr - centroid_y)
-                current_line_id = int(np.argmin(distances))
-                centroid_y = line_centers_arr[current_line_id]
-            else:
-                current_line_id = 0
-                if (
-                    prev_centroid_y is not None
-                    and centroid_y - prev_centroid_y > self.line_transition_threshold
-                ):
+            current_line_id = prev_line_id
+            if prev_centroid_y is not None:
+                diff_y = centroid_y - prev_centroid_y
+                if diff_y > self.line_transition_threshold:
                     current_line_id = prev_line_id + 1
+                elif diff_y < -self.line_transition_threshold:
+                    current_line_id = max(0, prev_line_id - 1)
 
             if prev_centroid_x is not None:
                 amplitude = np.sqrt(
@@ -298,7 +292,6 @@ class WebcamFeatureProcessor:
         raw_points: List[RawGazePoint],
         screen_width: int,
         screen_height: int,
-        normalized_line_centers: List[float] | None = None,
     ) -> WebcamProcessingResult:
         """Run the full webcam feature pipeline and return model-ready output."""
         normalized, _out_of_bounds_count = self.normalize_coordinates(
@@ -307,7 +300,7 @@ class WebcamFeatureProcessor:
         smoothed = self.smooth_signal(normalized)
 
         fixations, _invalid_fixation_points = self.detect_fixations(smoothed)
-        features = self.extract_features(fixations, normalized_line_centers)
+        features = self.extract_features(fixations)
 
         if len(features) == 0:
             raise ValueError("No valid fixations detected")

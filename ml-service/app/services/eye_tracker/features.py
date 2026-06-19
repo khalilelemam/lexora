@@ -36,15 +36,11 @@ class EyeTrackerFeatureProcessor:
         gaze_points: List[GazePoint],
         screen_width: int,
         screen_height: int,
-        normalized_line_centers: List[float] | None = None,
     ) -> TaskProcessingResult:
         """Convert one task stream into scaled sequence windows.
 
         Input timestamps are expected in microseconds (Tobii stream). We convert
         durations to milliseconds before fixation-duration filtering.
-
-        When ``normalized_line_centers`` is provided, fixation y-values are
-        snapped to nearest reading lines before scaling.
         """
         if len(gaze_points) < settings.EYE_TRACKER_SEQUENCE_LENGTH:
             raise ValueError(
@@ -97,13 +93,6 @@ class EyeTrackerFeatureProcessor:
         valid_durations = durations_ms[valid_mask]
         valid_timestamps = timestamps[valid_mask]
 
-        if normalized_line_centers and len(normalized_line_centers) > 0:
-            snapped_features = self._snap_to_line_centers(
-                features_filtered, normalized_line_centers
-            )
-        else:
-            snapped_features = features_filtered
-
         features_data = [
             {
                 "timestamp": int(valid_timestamps[i] / 1000),
@@ -113,10 +102,10 @@ class EyeTrackerFeatureProcessor:
                 "saccade_amplitude": float(row[3]),
                 "saccade_velocity": float(row[4]),
             }
-            for i, row in enumerate(snapped_features)
+            for i, row in enumerate(features_filtered)
         ]
 
-        features_scaled = self.scaler.transform(snapped_features)
+        features_scaled = self.scaler.transform(features_filtered)
         sequences = self._create_sequences(features_scaled)
         padded_sequences = self._pad_sequences(sequences)
 
@@ -187,25 +176,3 @@ class EyeTrackerFeatureProcessor:
         padded[:n_sequences] = sequences
 
         return padded
-
-    def _snap_to_line_centers(
-        self, features: np.ndarray, normalized_line_centers: List[float]
-    ) -> np.ndarray:
-        """Snap fixation Y-coordinates to the nearest line center.
-
-        This reduces vertical jitter when downstream logic is line-aware.
-        """
-        if len(normalized_line_centers) == 0:
-            return features
-
-        snapped = features.copy()
-        line_centers_arr = np.array(normalized_line_centers, dtype=np.float32)
-
-        for i in range(len(snapped)):
-            centroid_y = snapped[i, 2]
-            distances = np.abs(line_centers_arr - centroid_y)
-            nearest_idx = np.argmin(distances)
-
-            snapped[i, 2] = line_centers_arr[nearest_idx]
-
-        return snapped
