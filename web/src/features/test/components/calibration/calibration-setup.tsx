@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Image from 'next/image';
 import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,17 @@ export function CalibrationSetup({
   onStart,
   startButtonText = 'Enter Fullscreen & Start Calibration',
 }: CalibrationSetupProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onStart();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onStart]);
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#e3dcc2]/95 backdrop-blur-sm">
       <div className="flex min-h-full items-center justify-center p-4 py-8">
@@ -114,14 +126,19 @@ export function CalibrationSetup({
                 </p>
               </div>
 
-              {/* Start Button */}
-              <Button
-                onClick={onStart}
-                size="lg"
-                className="mt-auto h-14 w-full bg-[#51513d] text-base font-bold text-[#e3dcc2] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#1b2021] hover:shadow-xl"
-              >
-                {startButtonText}
-              </Button>
+              {/* Start Button & Trigger */}
+              <div className="mt-auto flex flex-col gap-3">
+                <Button
+                  onClick={onStart}
+                  size="lg"
+                  className="h-14 w-full bg-[#51513d] text-base font-bold text-[#e3dcc2] shadow-lg transition-all hover:-translate-y-0.5 hover:bg-[#1b2021] hover:shadow-xl"
+                >
+                  {startButtonText}
+                </Button>
+                <p className="text-center text-xs font-medium text-[#1b2021]/60">
+                  Or press <kbd className="mx-1 rounded border border-[#51513d]/18 bg-[#e3dcc2] px-1.5 py-0.5 font-mono text-[10px] font-bold shadow-sm">Enter ↵</kbd> to start
+                </p>
+              </div>
             </div>
 
             {/* Right: Mode Selection */}

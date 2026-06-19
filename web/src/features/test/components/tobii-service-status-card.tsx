@@ -56,12 +56,37 @@ export function TobiiServiceStatusCard({
           </p>
         </div>
       ) : (
-        <div className="mt-5 space-y-2 border border-[#e3dc95]/60 bg-[#e3dc95]/15 p-4 text-sm">
-          <p className="font-black text-[#1b2021]">Tobii helper is not reachable.</p>
-          <p className="text-[#1b2021]/64">
-            Install or start the Lexora Tobii Service app on your computer before running the Tobii
-            test.
-          </p>
+        <div className="mt-5 space-y-4 border border-[#e3dc95]/60 bg-[#e3dc95]/15 p-4 text-sm">
+          <div>
+            <p className="font-black text-[#1b2021]">Tobii helper is not reachable.</p>
+            <p className="mt-1 text-[#1b2021]/64">
+              Install or start the Lexora Tobii Service app on your computer before running the Tobii
+              test. Follow these steps:
+            </p>
+          </div>
+          
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex flex-col gap-2 rounded-lg border border-[#e3dc95]/40 bg-[#f3edd7]/50 p-3">
+              <div className="aspect-video w-full overflow-hidden rounded-md border border-[#51513d]/10 bg-[#e3dcc2] shadow-inner relative flex items-center justify-center">
+                <span className="text-xs font-bold text-[#51513d]/40">Screenshot: System Tray</span>
+                {/* <Image src="/images/guide/tobii-tray.png" alt="Open the app from the system tray" fill className="object-cover" /> */}
+              </div>
+              <p className="text-xs text-[#1b2021]/70">
+                1. Click <strong>Open Service</strong> below, or find the Lexora icon in your Windows system tray.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-2 rounded-lg border border-[#e3dc95]/40 bg-[#f3edd7]/50 p-3">
+              <div className="aspect-video w-full overflow-hidden rounded-md border border-[#51513d]/10 bg-[#e3dcc2] shadow-inner relative flex items-center justify-center">
+                <span className="text-xs font-bold text-[#51513d]/40">Screenshot: App Start Button</span>
+                {/* <Image src="/images/guide/tobii-start.png" alt="Click start inside the Tobii helper app" fill className="object-cover" /> */}
+              </div>
+              <p className="text-xs text-[#1b2021]/70">
+                2. Inside the desktop app, click the <strong>Start</strong> button to connect your Tobii tracker to the browser.
+              </p>
+            </div>
+          </div>
+
           {serviceError && <p className="text-xs text-[#51513d]">{serviceError}</p>}
         </div>
       )}
