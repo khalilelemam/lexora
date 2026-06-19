@@ -221,7 +221,7 @@ export function useTobiiTestController() {
     serviceChecking,
     serviceError,
     checkStatus,
-    serviceRunning: tobiiStatus?.connected === true,
+    serviceRunning: tobiiStatus != null,
     serviceDevice: tobiiStatus?.device,
     lastGazeRef,
     gazePointCount,

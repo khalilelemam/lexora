@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 interface TobiiServiceStatusCardProps {
   serviceChecking: boolean;
   serviceRunning: boolean;
@@ -80,8 +82,7 @@ export function TobiiServiceStatusCard({
             <div className="flex flex-col gap-3 rounded-lg border border-[#e3dc95]/40 bg-[#f3edd7]/50 p-4">
               <div className="aspect-video w-full overflow-hidden rounded-md border border-[#51513d]/10 bg-[#e3dcc2] shadow-inner relative flex items-center justify-center">
                 <span className="text-sm font-bold text-[#51513d]/40">Screenshot: App Start Button</span>
-                {/* TODO(colleague): Uncomment the Image component below and add the screenshot of the app's Start button to the public/images/guide folder */}
-                {/* <Image src="/images/guide/tobii-start.png" alt="Click start inside the Tobii helper app" fill className="object-cover" /> */}
+                <Image src="/images/guide/tobii-start-test.webp" alt="Click start inside the Tobii helper app" fill className="object-cover" />
               </div>
               <p className="text-sm text-[#1b2021]/70">
                 2. Inside the desktop app, click the <strong>Start</strong> button to connect your Tobii tracker to the browser.
@@ -125,7 +126,7 @@ export function TobiiServiceStatusCard({
         <button
           type="button"
           onClick={onRefresh}
-          className="border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
+          className="cursor-pointer border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
         >
           Refresh Status
         </button>
