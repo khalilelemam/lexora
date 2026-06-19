@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { TASK_LABELS } from '../lib/test-content';
 import { MIN_GAZE_POINTS } from '../lib/constants';
 import { TaskDisplay } from './task-display';
+import { groupIntoFixations, type GazeFixation } from '../lib/gaze-processing';
 import type { WebcamGazePoint } from '../types';
 
 interface ReviewPanelProps {
@@ -30,15 +31,14 @@ interface ReviewPanelProps {
   rawGazeData?: WebcamGazePoint[];
 }
 
-const TRAIL_LENGTH = 30;
-const REPLAY_SPEED = 4;
+const REPLAY_SPEED = 1;
 
 /**
  * Post-task review screen.
  *
- * Default view: centered status card with data quality info.
+ * Default view: Modern Submit Screen.
  * "View Gaze Trail" button: expands to fullscreen TaskDisplay (preview mode)
- * with raw gaze trail replaying over the text.
+ * with grouped fixations and smooth interpolation over the text.
  */
 export function ReviewPanel({
   taskType,
@@ -52,60 +52,98 @@ export function ReviewPanel({
   const hasEnoughData = pointCount >= MIN_GAZE_POINTS;
   const label = TASK_LABELS[taskType] ?? taskType;
 
-  // Stabilize to avoid re-renders on every parent render
+  // Stabilize raw data and group into fixations
   const rawGazeData = useMemo(() => rawGazeDataProp ?? [], [rawGazeDataProp]);
+  const fixations = useMemo(() => groupIntoFixations(rawGazeData), [rawGazeData]);
 
   // ── Gaze preview state ──
   const [showGazePreview, setShowGazePreview] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // Interpolated state for the bubble
+  const [bubbleState, setBubbleState] = useState<{ x: number; y: number; size: number } | null>(null);
+  const [progress, setProgress] = useState(0);
+
   const rafRef = useRef(0);
   const startTimeRef = useRef(0);
-  const baseIndexRef = useRef(0);
+  const baseElapsedRef = useRef(0);
 
-  const trail = useMemo(() => {
-    if (currentIndex <= 0) return [];
-    const start = Math.max(0, currentIndex - TRAIL_LENGTH);
-    return rawGazeData.slice(start, currentIndex + 1);
-  }, [rawGazeData, currentIndex]);
+  const maxDuration = useMemo(() => Math.max(...fixations.map(f => f.durationMs), 1), [fixations]);
+
+  const totalDuration = useMemo(() => {
+    if (fixations.length < 2) return 0;
+    const first = fixations[0];
+    const last = fixations[fixations.length - 1];
+    return last.timestamp + last.durationMs - first.timestamp;
+  }, [fixations]);
 
   // Animation loop
   useEffect(() => {
-    if (!isPlaying || rawGazeData.length < 2) return;
+    if (!isPlaying || fixations.length < 2) return;
 
-    const baseIdx = baseIndexRef.current;
-    const baseTs = rawGazeData[baseIdx]?.timestamp ?? rawGazeData[0].timestamp;
-    startTimeRef.current = performance.now();
+    const firstTs = fixations[0].timestamp;
 
     const tick = () => {
-      const elapsed = (performance.now() - startTimeRef.current) * REPLAY_SPEED;
-      const targetTs = baseTs + elapsed;
+      const elapsed = baseElapsedRef.current + (performance.now() - startTimeRef.current) * REPLAY_SPEED;
+      const targetTs = firstTs + elapsed;
 
-      let idx = baseIdx;
-      while (idx < rawGazeData.length - 1 && rawGazeData[idx + 1].timestamp <= targetTs) {
-        idx++;
+      let currentIdx = 0;
+      for (let i = 0; i < fixations.length; i++) {
+        if (targetTs >= fixations[i].timestamp) {
+          currentIdx = i;
+        } else {
+          break;
+        }
       }
 
-      if (idx >= rawGazeData.length - 1) {
-        setCurrentIndex(rawGazeData.length - 1);
+      if (elapsed >= totalDuration || currentIdx >= fixations.length - 1) {
         setIsPlaying(false);
+        baseElapsedRef.current = totalDuration;
+        setProgress(100);
+        
+        const last = fixations[fixations.length - 1];
+        setBubbleState({ 
+          x: last.x, 
+          y: last.y, 
+          size: 10 + (last.durationMs / maxDuration) * 26 
+        });
         return;
       }
 
-      setCurrentIndex(idx);
+      const curr = fixations[currentIdx];
+      const next = fixations[currentIdx + 1];
+
+      // Interpolation logic
+      const t = Math.max(0, Math.min(1, (targetTs - curr.timestamp) / (next.timestamp - curr.timestamp)));
+      
+      // Easing (ease-in-out) for smoother bubble glides
+      const easeT = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+      const interpX = curr.x + (next.x - curr.x) * easeT;
+      const interpY = curr.y + (next.y - curr.y) * easeT;
+      const interpDuration = curr.durationMs + (next.durationMs - curr.durationMs) * easeT;
+      const size = 10 + (interpDuration / maxDuration) * 26;
+
+      setBubbleState({ x: interpX, y: interpY, size });
+      setProgress(Math.round((elapsed / totalDuration) * 100));
+
       rafRef.current = requestAnimationFrame(tick);
     };
 
+    startTimeRef.current = performance.now();
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying, rawGazeData]);
+  }, [isPlaying, fixations, totalDuration, maxDuration]);
 
   const handleOpenGaze = useCallback(() => {
     setShowGazePreview(true);
-    setCurrentIndex(0);
-    baseIndexRef.current = 0;
+    baseElapsedRef.current = 0;
+    setProgress(0);
+    if (fixations.length > 0) {
+      setBubbleState({ x: fixations[0].x, y: fixations[0].y, size: 10 + (fixations[0].durationMs / maxDuration) * 26 });
+    }
     setIsPlaying(true);
-  }, []);
+  }, [fixations, maxDuration]);
 
   const handleCloseGaze = useCallback(() => {
     setShowGazePreview(false);
@@ -114,21 +152,19 @@ export function ReviewPanel({
   }, []);
 
   const handlePlayPause = useCallback(() => {
-    if (currentIndex >= rawGazeData.length - 1) {
-      setCurrentIndex(0);
-      baseIndexRef.current = 0;
+    if (progress >= 100) {
+      baseElapsedRef.current = 0;
+      setProgress(0);
       setIsPlaying(true);
     } else if (isPlaying) {
       setIsPlaying(false);
+      baseElapsedRef.current += (performance.now() - startTimeRef.current) * REPLAY_SPEED;
       cancelAnimationFrame(rafRef.current);
     } else {
-      baseIndexRef.current = currentIndex;
       setIsPlaying(true);
     }
-  }, [currentIndex, rawGazeData.length, isPlaying]);
+  }, [isPlaying, progress]);
 
-  const progress =
-    rawGazeData.length > 1 ? Math.round((currentIndex / (rawGazeData.length - 1)) * 100) : 0;
 
   // ═══════════════════════════════════════════════════════
   //  FULLSCREEN GAZE PREVIEW
@@ -145,59 +181,50 @@ export function ReviewPanel({
           preview={true}
         />
 
-        {/* Raw gaze trail dots */}
-        {trail.map((point, idx) => {
-          const age = trail.length - idx;
-          const opacity = Math.max(0.1, 1 - (age / TRAIL_LENGTH) * 0.9);
-          const isLatest = idx === trail.length - 1;
-          const size = isLatest ? 14 : 5;
-
-          return (
+        {/* Smooth Visualization Bubble */}
+        {bubbleState && (
+          <div
+            className="pointer-events-none fixed"
+            style={{
+              left: `${bubbleState.x}px`,
+              top: `${bubbleState.y}px`,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 60,
+            }}
+          >
             <div
-              key={`${point.timestamp}-${idx}`}
-              className="pointer-events-none fixed"
+              className="rounded-full bg-[#51513d] transition-all"
               style={{
-                left: `${point.x}px`,
-                top: `${point.y}px`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 60,
+                width: `${bubbleState.size}px`,
+                height: `${bubbleState.size}px`,
+                opacity: 0.75,
+                boxShadow: '0 0 0 4px rgba(81, 81, 61, 0.2)',
               }}
-            >
-              <div
-                className="rounded-full"
-                style={{
-                  width: size,
-                  height: size,
-                  backgroundColor: isLatest ? 'rgba(239, 68, 68, 0.85)' : 'rgba(239, 68, 68, 0.5)',
-                  opacity,
-                  boxShadow: isLatest ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none',
-                }}
-              />
-            </div>
-          );
-        })}
+            />
+          </div>
+        )}
 
         {/* Bottom controls */}
-        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md rounded-lg">
           <button
             type="button"
             onClick={handlePlayPause}
-            className="text-[#51513d] hover:text-[#1b2021]"
+            className="text-[#51513d] hover:text-[#1b2021] transition-colors"
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
+          <div className="h-1.5 w-48 overflow-hidden bg-[#51513d]/15 rounded-full">
             <div
               className="h-full bg-[#51513d] transition-all duration-75"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{progress}%</span>
-          <div className="h-4 w-px bg-[#51513d]" />
+          <span className="w-10 text-[11px] font-black text-[#1b2021] tabular-nums">{progress}%</span>
+          <div className="h-4 w-px bg-[#51513d]/20" />
           <button
             type="button"
             onClick={handleCloseGaze}
-            className="text-[#1b2021] hover:text-[#1b2021]"
+            className="text-[#1b2021]/60 hover:text-[#1b2021] transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -207,97 +234,107 @@ export function ReviewPanel({
   }
 
   // ═══════════════════════════════════════════════════════
-  //  DEFAULT VIEW — Status card
+  //  DEFAULT VIEW — Modern Submit Screen
   // ═══════════════════════════════════════════════════════
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#e3dcc2]/90 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#e3dcc2]/90 backdrop-blur-md"
       style={{ animation: 'float-up 0.4s ease-out' }}
     >
-      <div className="w-[min(420px,90vw)] border border-[#51513d]/18 bg-[#f3edd7] shadow-[10px_10px_0_rgba(81,81,61,.08)]">
-        <div className="border-b border-[#51513d]/18 p-5">
+      <div className="w-[min(460px,90vw)] rounded-xl border border-[#51513d]/18 bg-[#f3edd7] shadow-xl overflow-hidden flex flex-col">
+        <div className="border-b border-[#51513d]/18 p-6 flex justify-between items-center bg-[#e3dcc2]/30">
           <LexoraLogo size="sm" />
+          <span className="text-xs font-black tracking-widest text-[#51513d]/70 uppercase">Task Verification</span>
         </div>
 
-        <div className="flex flex-col gap-5 p-6">
-          {/* Status */}
-          <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-6 p-8">
+          {/* Status Header */}
+          <div className="flex items-center gap-5">
             <div
               className={cn(
-                'flex h-12 w-12 shrink-0 items-center justify-center border',
+                'flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-4',
                 hasEnoughData
-                  ? 'border-[#a6a867] bg-[#a6a867]/15'
-                  : 'border-[#e3dc95] bg-[#e3dc95]/25',
+                  ? 'border-[#a6a867]/30 bg-[#a6a867]/20 text-[#51513d]'
+                  : 'border-[#e3dc95]/40 bg-[#e3dc95]/30 text-[#8b6f25]',
               )}
             >
               {hasEnoughData ? (
-                <CheckCircle2 className="h-6 w-6 text-[#51513d]" />
+                <CheckCircle2 className="h-7 w-7" />
               ) : (
-                <AlertTriangle className="h-6 w-6 text-[#8b6f25]" />
+                <AlertTriangle className="h-7 w-7" />
               )}
             </div>
-            <div className="flex flex-col gap-0.5 pt-0.5">
-              <h2 className="text-xl font-black tracking-tight text-[#1b2021]">
-                {hasEnoughData ? 'Task Complete' : 'Task Finished'}
+            <div className="flex flex-col gap-1">
+              <h2 className="text-2xl font-black tracking-tight text-[#1b2021]">
+                {hasEnoughData ? 'Recording Saved' : 'Data Incomplete'}
               </h2>
-              <p className="text-xs font-black tracking-[0.15em] text-[#51513d] uppercase">
+              <p className="text-sm font-medium text-[#51513d]/80 uppercase tracking-widest">
                 {label}
               </p>
             </div>
           </div>
 
-          {/* Data quality */}
-          <div
-            className={cn(
-              'border p-4 text-sm leading-relaxed',
-              hasEnoughData
-                ? 'border-[#51513d]/12 bg-[#e3dcc2]/60 text-[#1b2021]'
-                : 'border-[#e3dc95] bg-[#e3dc95]/25 text-[#1b2021]',
-            )}
-          >
-            {hasEnoughData ? (
-              <p>
-                <span className="font-black text-[#51513d]">{pointCount}</span> gaze points captured
-                successfully.
-              </p>
-            ) : (
-              <p>
-                Only <span className="font-black text-[#8b6f25]">{pointCount}</span> points
-                captured. Consider retaking.
-              </p>
-            )}
+          {/* Data Quality Metrics */}
+          <div className="flex flex-col gap-3">
+            <div
+              className={cn(
+                'rounded-lg border p-5 text-sm leading-relaxed',
+                hasEnoughData
+                  ? 'border-[#51513d]/10 bg-[#e3dcc2]/60'
+                  : 'border-[#8b6f25]/20 bg-yellow-50',
+              )}
+            >
+              <div className="flex justify-between items-end mb-2">
+                 <span className="text-xs font-black uppercase tracking-wider text-[#51513d]/60">Data Quality</span>
+                 <span className={cn("text-2xl font-black font-mono leading-none", hasEnoughData ? "text-[#51513d]" : "text-[#8b6f25]")}>{pointCount}</span>
+              </div>
+              {hasEnoughData ? (
+                <p className="text-[#1b2021]/80">
+                  Gaze points captured successfully. The reading sample is stable and ready for analysis.
+                </p>
+              ) : (
+                <p className="text-yellow-800">
+                  Insufficient data points captured for accurate analysis. We highly recommend retaking this task.
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* View Gaze button */}
-          {rawGazeData.length > 1 && readingContent && (
+          {/* View Gaze Feature */}
+          {fixations.length > 1 && readingContent && (
             <button
               type="button"
               onClick={handleOpenGaze}
-              className="flex items-center gap-3 border border-[#51513d]/20 bg-[#e3dc95]/30 p-3.5 text-sm text-[#51513d] transition-colors hover:bg-[#e3dc95]/60"
+              className="group relative flex items-center gap-4 overflow-hidden rounded-lg border border-[#51513d]/20 bg-white p-4 transition-all hover:border-[#51513d]/40 hover:shadow-sm"
             >
-              <Eye className="h-5 w-5" />
-              <span className="font-black">View Gaze Trail</span>
-              <span className="ml-auto text-xs text-[#1b2021]/60">Fullscreen replay</span>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f3edd7] text-[#51513d]">
+                <Eye className="h-5 w-5" />
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="font-black text-[#1b2021]">Review Playback</span>
+                <span className="text-xs text-[#1b2021]/60">Watch how the text was read</span>
+              </div>
+              <ArrowRight className="ml-auto h-4 w-4 text-[#51513d]/40 transition-transform group-hover:translate-x-1 group-hover:text-[#51513d]" />
             </button>
           )}
 
           {/* Actions */}
-          <div className="mt-2 flex flex-col gap-3">
+          <div className="mt-4 flex flex-col gap-3">
             <button
               type="button"
               onClick={onContinue}
-              className="inline-flex w-full items-center justify-center bg-[#51513d] px-5 py-3.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
+              className="group flex w-full items-center justify-center gap-2 rounded-lg bg-[#51513d] px-6 py-4 text-sm font-black text-[#e3dcc2] shadow-sm transition-all hover:bg-[#1b2021] hover:shadow-md"
             >
-              {isLastTask ? 'Submit for Analysis' : 'Next Task'}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {isLastTask ? 'Submit for Analysis' : 'Continue to Next Task'}
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
             <button
               type="button"
               onClick={onRetake}
-              className="inline-flex w-full items-center justify-center border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-3.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#51513d]/20 bg-transparent px-6 py-4 text-sm font-black text-[#51513d] transition-all hover:bg-[#51513d]/5 hover:text-[#1b2021]"
             >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Retake
+              <RotateCcw className="h-4 w-4" />
+              Retake Recording
             </button>
           </div>
         </div>

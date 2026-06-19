@@ -8,6 +8,8 @@ import { TaskDisplay } from './task-display';
 import { useGazeReplay } from '../hooks/use-gaze-replay';
 import type { GazeFeature } from '../types';
 
+import { detectRegressions } from '../lib/gaze-processing';
+
 function getAOIXBounds() {
   const xs = CALIBRATION_POINTS.map((p) => p.x);
   return { min: Math.min(...xs), max: Math.max(...xs) };
@@ -38,10 +40,11 @@ interface FullscreenGazeReplayProps {
 export function FullscreenGazeReplay({
   taskType,
   content,
-  features,
+  features: rawFeatures,
   onClose,
   toolbarSlot,
 }: FullscreenGazeReplayProps) {
+  const features = useMemo(() => detectRegressions(rawFeatures, 'ltr'), [rawFeatures]);
   const replay = useGazeReplay({ features, active: true });
 
   // Lock body scroll while the overlay is mounted to prevent
@@ -92,13 +95,15 @@ export function FullscreenGazeReplay({
             const x2 = zoneLeft + mapX(curr.fixationX) * zoneW;
             const y2 = zoneTop + mapY(curr.fixationY) * zoneH;
 
+            const isRegression = curr.isRegression && !curr.isReturnSweep;
             const stroke = curr.isReturnSweep
               ? '#d1d5db'
-              : curr.isRegression
-                ? '#f87171'
+              : isRegression
+                ? '#ef4444' // bright red
                 : '#86efac';
             const dashArray = curr.isReturnSweep ? '3 4' : 'none';
-            const opacity = curr.isReturnSweep ? 0.35 : 0.45;
+            const strokeWidth = isRegression ? 3 : 1.5;
+            const opacity = curr.isReturnSweep ? 0.35 : isRegression ? 0.8 : 0.45;
 
             return (
               <line
@@ -108,9 +113,10 @@ export function FullscreenGazeReplay({
                 x2={x2}
                 y2={y2}
                 stroke={stroke}
-                strokeWidth={1.5}
+                strokeWidth={strokeWidth}
                 strokeDasharray={dashArray}
                 opacity={opacity}
+                className={isRegression ? "drop-shadow-[0_0_3px_rgba(239,68,68,0.8)]" : ""}
               />
             );
           })}

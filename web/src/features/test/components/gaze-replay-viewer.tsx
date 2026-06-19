@@ -5,6 +5,7 @@ import { Play, Pause, RotateCcw, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CALIBRATION_POINTS, AOI_Y_BOUNDS } from '../lib/constants';
 import { useGazeReplay } from '../hooks/use-gaze-replay';
+import { detectRegressions } from '../lib/gaze-processing';
 import type { GazeFeature } from '../types';
 
 interface GazeReplayViewerProps {
@@ -44,7 +45,8 @@ function mapToElement(raw: number, min: number, max: number): number {
  * Both axes must be remapped from the calibration/task AOI down to the
  * compact replay container, otherwise bubbles are misaligned.
  */
-export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeReplayViewerProps) {
+export function GazeReplayViewer({ content, features: rawFeatures, direction = 'ltr' }: GazeReplayViewerProps) {
+  const features = useMemo(() => detectRegressions(rawFeatures, direction), [rawFeatures, direction]);
   const replay = useGazeReplay({ features, active: true });
 
   // AOI bounds for both axes
@@ -152,13 +154,15 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
               const curr = features[idx];
               if (!prev || !curr) return null;
 
+              const isRegression = curr.isRegression && !curr.isReturnSweep;
               const stroke = curr.isReturnSweep
                 ? '#51513d'
-                : curr.isRegression
-                  ? '#f87171'
+                : isRegression
+                  ? '#ef4444' // bright red for clear indication
                   : '#a6a867';
+              const strokeWidth = isRegression ? 3 : 1.5;
               const dashArray = curr.isReturnSweep ? '3 4' : 'none';
-              const opacity = curr.isReturnSweep ? 0.25 : 0.45;
+              const opacity = curr.isReturnSweep ? 0.25 : isRegression ? 0.8 : 0.45;
 
               return (
                 <line
@@ -168,9 +172,10 @@ export function GazeReplayViewer({ content, features, direction = 'ltr' }: GazeR
                   x2={`${mapX(curr.fixationX) * 100}%`}
                   y2={`${mapY(curr.fixationY) * 100}%`}
                   stroke={stroke}
-                  strokeWidth={1.5}
+                  strokeWidth={strokeWidth}
                   strokeDasharray={dashArray}
                   opacity={opacity}
+                  className={isRegression ? "drop-shadow-[0_0_2px_rgba(239,68,68,0.8)]" : ""}
                 />
               );
             })}
