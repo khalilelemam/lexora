@@ -1,0 +1,30 @@
+{
+  "ageGroups": [
+    {
+      "minAge": 7,
+      "maxAge": 10,
+      "syllables": "ba  da  ka  ma  pa  ta\nfi  lo  re  su  we  zi\nbla  cra  dri  fro  glu  ple\nsna  spe  stra  tri  twi  whi",
+      "pseudoWords": "bafmol  trinset  glopwed  furkane\nchasdim  pluvort  snelkab  winthoz\ndremfil  quabish  zontrel  krapfin",
+      "meaningfulText": "The small brown dog ran quickly across the green field. It was chasing a bright red ball that bounced higher and higher. The children laughed and clapped as they watched the happy dog play in the warm afternoon sun."
+    },
+    {
+      "minAge": 11,
+      "maxAge": 15,
+      "syllables": "be  de  ke  me  pe  te\nfa  li  ro  sa  wo  ze\nbro  cla  dre  fra  gli  pra\nsni  spo  stre  tro  twe  wha",
+      "pseudoWords": "moldren  tuvbisk  frapgel  juknest\nwherblot  snigfam  clodwep  bruvtil\nzalkome  plinduf  grewsap  thinvol",
+      "meaningfulText": "A little bird sat on the top of a tall tree. It sang a beautiful song every morning. The people in the village loved to listen to the bird as they walked to the market on the dusty road."
+    },
+    {
+      "minAge": 16,
+      "maxAge": 25,
+      "syllables": "bo  do  ko  mo  po  to\nfe  la  ri  se  wu  za\nbri  cle  dro  fre  gla  pru\nsno  spa  stri  tre  twa  who",
+      "pseudoWords": "zintruf  crambosh  plendik  grostem\nflarvip  snurkel  blispan  tromvel\ndrinzap  clumfex  grawbit  plonkad",
+      "meaningfulText": "The ancient clock tower chimed midnight, echoing through the empty, cobblestone streets. A thick fog rolled in from the harbor, wrapping the sleeping city in a quiet embrace. Only the solitary lighthouse pierced the gloom."
+    }
+  ],
+  "default": {
+    "syllables": "be  de  ke  me  pe  te\nfa  li  ro  sa  wo  ze\nbro  cla  dre  fra  gli  pra\nsni  spo  stre  tro  twe  wha",
+    "pseudoWords": "moldren  tuvbisk  frapgel  juknest\nwherblot  snigfam  clodwep  bruvtil\nzalkome  plinduf  grewsap  thinvol",
+    "meaningfulText": "A little bird sat on the top of a tall tree. It sang a beautiful song every morning. The people in the village loved to listen to the bird as they walked to the market on the dusty road."
+  }
+}
