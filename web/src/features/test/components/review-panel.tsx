@@ -59,16 +59,21 @@ export function ReviewPanel({
   // ── Gaze preview state ──
   const [showGazePreview, setShowGazePreview] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  
+
   // Interpolated state for the bubble
-  const [bubbleState, setBubbleState] = useState<{ x: number; y: number; size: number } | null>(null);
+  const [bubbleState, setBubbleState] = useState<{ x: number; y: number; size: number } | null>(
+    null,
+  );
   const [progress, setProgress] = useState(0);
 
   const rafRef = useRef(0);
   const startTimeRef = useRef(0);
   const baseElapsedRef = useRef(0);
 
-  const maxDuration = useMemo(() => Math.max(...fixations.map(f => f.durationMs), 1), [fixations]);
+  const maxDuration = useMemo(
+    () => Math.max(...fixations.map((f) => f.durationMs), 1),
+    [fixations],
+  );
 
   const totalDuration = useMemo(() => {
     if (fixations.length < 2) return 0;
@@ -84,7 +89,8 @@ export function ReviewPanel({
     const firstTs = fixations[0].timestamp;
 
     const tick = () => {
-      const elapsed = baseElapsedRef.current + (performance.now() - startTimeRef.current) * REPLAY_SPEED;
+      const elapsed =
+        baseElapsedRef.current + (performance.now() - startTimeRef.current) * REPLAY_SPEED;
       const targetTs = firstTs + elapsed;
 
       let currentIdx = 0;
@@ -100,12 +106,12 @@ export function ReviewPanel({
         setIsPlaying(false);
         baseElapsedRef.current = totalDuration;
         setProgress(100);
-        
+
         const last = fixations[fixations.length - 1];
-        setBubbleState({ 
-          x: last.x, 
-          y: last.y, 
-          size: 10 + (last.durationMs / maxDuration) * 26 
+        setBubbleState({
+          x: last.x,
+          y: last.y,
+          size: 10 + (last.durationMs / maxDuration) * 26,
         });
         return;
       }
@@ -114,8 +120,11 @@ export function ReviewPanel({
       const next = fixations[currentIdx + 1];
 
       // Interpolation logic
-      const t = Math.max(0, Math.min(1, (targetTs - curr.timestamp) / (next.timestamp - curr.timestamp)));
-      
+      const t = Math.max(
+        0,
+        Math.min(1, (targetTs - curr.timestamp) / (next.timestamp - curr.timestamp)),
+      );
+
       // Easing (ease-in-out) for smoother bubble glides
       const easeT = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
@@ -140,7 +149,11 @@ export function ReviewPanel({
     baseElapsedRef.current = 0;
     setProgress(0);
     if (fixations.length > 0) {
-      setBubbleState({ x: fixations[0].x, y: fixations[0].y, size: 10 + (fixations[0].durationMs / maxDuration) * 26 });
+      setBubbleState({
+        x: fixations[0].x,
+        y: fixations[0].y,
+        size: 10 + (fixations[0].durationMs / maxDuration) * 26,
+      });
     }
     setIsPlaying(true);
   }, [fixations, maxDuration]);
@@ -164,7 +177,6 @@ export function ReviewPanel({
       setIsPlaying(true);
     }
   }, [isPlaying, progress]);
-
 
   // ═══════════════════════════════════════════════════════
   //  FULLSCREEN GAZE PREVIEW
@@ -205,26 +217,28 @@ export function ReviewPanel({
         )}
 
         {/* Bottom controls */}
-        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md rounded-lg">
+        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 rounded-lg border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
           <button
             type="button"
             onClick={handlePlayPause}
-            className="text-[#51513d] hover:text-[#1b2021] transition-colors"
+            className="text-[#51513d] transition-colors hover:text-[#1b2021]"
           >
             {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
           </button>
-          <div className="h-1.5 w-48 overflow-hidden bg-[#51513d]/15 rounded-full">
+          <div className="h-1.5 w-48 overflow-hidden rounded-full bg-[#51513d]/15">
             <div
               className="h-full bg-[#51513d] transition-all duration-75"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="w-10 text-[11px] font-black text-[#1b2021] tabular-nums">{progress}%</span>
+          <span className="w-10 text-[11px] font-black text-[#1b2021] tabular-nums">
+            {progress}%
+          </span>
           <div className="h-4 w-px bg-[#51513d]/20" />
           <button
             type="button"
             onClick={handleCloseGaze}
-            className="text-[#1b2021]/60 hover:text-[#1b2021] transition-colors"
+            className="text-[#1b2021]/60 transition-colors hover:text-[#1b2021]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -241,10 +255,12 @@ export function ReviewPanel({
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#e3dcc2]/90 backdrop-blur-md"
       style={{ animation: 'float-up 0.4s ease-out' }}
     >
-      <div className="w-[min(460px,90vw)] rounded-xl border border-[#51513d]/18 bg-[#f3edd7] shadow-xl overflow-hidden flex flex-col">
-        <div className="border-b border-[#51513d]/18 p-6 flex justify-between items-center bg-[#e3dcc2]/30">
+      <div className="flex w-[min(460px,90vw)] flex-col overflow-hidden rounded-xl border border-[#51513d]/18 bg-[#f3edd7] shadow-xl">
+        <div className="flex items-center justify-between border-b border-[#51513d]/18 bg-[#e3dcc2]/30 p-6">
           <LexoraLogo size="sm" />
-          <span className="text-xs font-black tracking-widest text-[#51513d]/70 uppercase">Task Verification</span>
+          <span className="text-xs font-black tracking-widest text-[#51513d]/70 uppercase">
+            Task Verification
+          </span>
         </div>
 
         <div className="flex flex-col gap-6 p-8">
@@ -268,7 +284,7 @@ export function ReviewPanel({
               <h2 className="text-2xl font-black tracking-tight text-[#1b2021]">
                 {hasEnoughData ? 'Recording Saved' : 'Data Incomplete'}
               </h2>
-              <p className="text-sm font-medium text-[#51513d]/80 uppercase tracking-widest">
+              <p className="text-sm font-medium tracking-widest text-[#51513d]/80 uppercase">
                 {label}
               </p>
             </div>
@@ -284,17 +300,28 @@ export function ReviewPanel({
                   : 'border-[#8b6f25]/20 bg-yellow-50',
               )}
             >
-              <div className="flex justify-between items-end mb-2">
-                 <span className="text-xs font-black uppercase tracking-wider text-[#51513d]/60">Data Quality</span>
-                 <span className={cn("text-2xl font-black font-mono leading-none", hasEnoughData ? "text-[#51513d]" : "text-[#8b6f25]")}>{pointCount}</span>
+              <div className="mb-2 flex items-end justify-between">
+                <span className="text-xs font-black tracking-wider text-[#51513d]/60 uppercase">
+                  Data Quality
+                </span>
+                <span
+                  className={cn(
+                    'font-mono text-2xl leading-none font-black',
+                    hasEnoughData ? 'text-[#51513d]' : 'text-[#8b6f25]',
+                  )}
+                >
+                  {pointCount}
+                </span>
               </div>
               {hasEnoughData ? (
                 <p className="text-[#1b2021]/80">
-                  Gaze points captured successfully. The reading sample is stable and ready for analysis.
+                  Gaze points captured successfully. The reading sample is stable and ready for
+                  analysis.
                 </p>
               ) : (
                 <p className="text-yellow-800">
-                  Insufficient data points captured for accurate analysis. We highly recommend retaking this task.
+                  Insufficient data points captured for accurate analysis. We highly recommend
+                  retaking this task.
                 </p>
               )}
             </div>

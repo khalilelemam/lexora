@@ -15,7 +15,7 @@ export function parseAttemptFilters(searchParams: URLSearchParams): AttemptFilte
   const limit = Math.min(parsePositiveInt(searchParams.get('limit'), DEFAULT_LIMIT), MAX_LIMIT);
 
   const minCalibrationAccuracyParam = searchParams.get('minCalibrationAccuracy');
-  const minCalibrationAccuracy = minCalibrationAccuracyParam 
+  const minCalibrationAccuracy = minCalibrationAccuracyParam
     ? parsePositiveInt(minCalibrationAccuracyParam, 0)
     : undefined;
 

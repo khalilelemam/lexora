@@ -253,7 +253,7 @@ export function FullscreenGazeReplay({
                 strokeWidth={strokeWidth}
                 strokeDasharray={dashArray}
                 opacity={opacity}
-                className={isRegression ? "drop-shadow-[0_0_3px_rgba(239,68,68,0.8)]" : ""}
+                className={isRegression ? 'drop-shadow-[0_0_3px_rgba(239,68,68,0.8)]' : ''}
               />
             );
           })}

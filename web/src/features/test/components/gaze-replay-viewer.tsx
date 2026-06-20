@@ -45,8 +45,15 @@ function mapToElement(raw: number, min: number, max: number): number {
  * Both axes must be remapped from the calibration/task AOI down to the
  * compact replay container, otherwise bubbles are misaligned.
  */
-export function GazeReplayViewer({ content, features: rawFeatures, direction = 'ltr' }: GazeReplayViewerProps) {
-  const features = useMemo(() => detectRegressions(rawFeatures, direction), [rawFeatures, direction]);
+export function GazeReplayViewer({
+  content,
+  features: rawFeatures,
+  direction = 'ltr',
+}: GazeReplayViewerProps) {
+  const features = useMemo(
+    () => detectRegressions(rawFeatures, direction),
+    [rawFeatures, direction],
+  );
   const replay = useGazeReplay({ features, active: true });
 
   // AOI bounds for both axes
@@ -175,7 +182,7 @@ export function GazeReplayViewer({ content, features: rawFeatures, direction = '
                   strokeWidth={strokeWidth}
                   strokeDasharray={dashArray}
                   opacity={opacity}
-                  className={isRegression ? "drop-shadow-[0_0_2px_rgba(239,68,68,0.8)]" : ""}
+                  className={isRegression ? 'drop-shadow-[0_0_2px_rgba(239,68,68,0.8)]' : ''}
                 />
               );
             })}
