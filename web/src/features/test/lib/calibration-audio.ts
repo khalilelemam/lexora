@@ -25,6 +25,8 @@ export type SoundType =
 
 interface CalibrationAudioEngine {
   play: (sound: SoundType, options?: { progress?: number }) => void;
+  startPhase: (phase: 'grid' | 'pursuit') => void;
+  stopPhase: () => void;
   setMuted: (muted: boolean) => void;
   isMuted: () => boolean;
   resume: () => Promise<void>;
@@ -37,6 +39,7 @@ let audioCtx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let muted = false;
 let masterVolume = 0.5;
+let phaseAudio: HTMLAudioElement | null = null;
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -343,8 +346,31 @@ export function createCalibrationAudioEngine(): CalibrationAudioEngine {
       handler?.(options);
     },
 
+    startPhase(phase) {
+      if (typeof window === 'undefined' || muted) return;
+      this.stopPhase();
+      const path = phase === 'grid' ? '/assets/grid.mp3' : '/assets/pursuit.mp3';
+      phaseAudio = new Audio(path);
+      phaseAudio.loop = true;
+      phaseAudio.volume = masterVolume;
+      phaseAudio.play().catch(() => {
+        // Auto-play policy might block this
+      });
+    },
+
+    stopPhase() {
+      if (phaseAudio) {
+        phaseAudio.pause();
+        phaseAudio.currentTime = 0;
+        phaseAudio = null;
+      }
+    },
+
     setMuted(newMuted) {
       muted = newMuted;
+      if (muted && phaseAudio) {
+        this.stopPhase();
+      }
     },
 
     isMuted() {
@@ -356,6 +382,9 @@ export function createCalibrationAudioEngine(): CalibrationAudioEngine {
       const gain = getMasterGain();
       if (gain) {
         gain.gain.value = masterVolume;
+      }
+      if (phaseAudio) {
+        phaseAudio.volume = masterVolume;
       }
     },
 

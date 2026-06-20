@@ -99,7 +99,15 @@ export function TobiiServiceStatusCard({
             </div>
           </div>
 
-          {serviceError && <p className="text-xs text-[#51513d]">{serviceError}</p>}
+          {serviceError && (
+            <p className="text-xs text-[#51513d]">
+              <span className="font-bold">Error:</span> {serviceError}{' '}
+              <span className="opacity-75">
+                (This usually means the local Tobii service is unreachable and needs to be started
+                manually.)
+              </span>
+            </p>
+          )}
         </div>
       )}
 
@@ -139,6 +147,11 @@ export function TobiiServiceStatusCard({
         >
           Refresh Status
         </button>
+        {!serviceRunning && (
+          <div className="flex w-full items-center text-xs text-[#1b2021]/60">
+            * After starting the app, click Refresh Status.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -141,9 +141,21 @@ export function CalibrationScreen({
 
   /* ---- subtle capture pulse sound ---- */
   useEffect(() => {
+    if (phase === 'pursuit') return;
     if (captureCount <= 0 || captureCount % 8 !== 0) return;
     playSoftSound(isStableFixation ? 760 : 520, 70, 0.015);
-  }, [captureCount, isStableFixation]);
+  }, [captureCount, isStableFixation, phase]);
+
+  /* ---- phase audio ---- */
+  useEffect(() => {
+    if (phase === 'collecting' || phase === 'recalibrating') {
+      calibrationAudio.startPhase('grid');
+    } else if (phase === 'pursuit') {
+      calibrationAudio.startPhase('pursuit');
+    } else {
+      calibrationAudio.stopPhase();
+    }
+  }, [phase, calibrationAudio]);
 
   const capturePulse = captureCount % 2 === 1;
 
