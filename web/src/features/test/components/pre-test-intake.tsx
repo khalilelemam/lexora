@@ -107,7 +107,7 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-60">
-                    Model accuracy is strongest near the age range represented in training data.
+                    We output more accurate results if the user is between 9 and 11.
                   </TooltipContent>
                 </Tooltip>
               </FieldLabel>
