@@ -23,6 +23,7 @@ export interface AttemptListItem {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  calibrationAccuracy: number | null;
   user?: AttemptUserSummary;
 }
 
@@ -49,6 +50,7 @@ export interface AttemptFilters {
   createdTo?: string;
   cursor?: string;
   limit?: number;
+  minCalibrationAccuracy?: number;
 }
 
 export interface AttemptsListResponse {

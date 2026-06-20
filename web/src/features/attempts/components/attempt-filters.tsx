@@ -33,7 +33,8 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
     filters.testType ||
     selectedOutcomes.length ||
     filters.createdFrom ||
-    filters.createdTo,
+    filters.createdTo ||
+    filters.minCalibrationAccuracy !== undefined,
   );
 
   // Ref keeps the latest filters available to the debounce effect without
@@ -145,6 +146,24 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
                 createdTo: range.to,
               })
             }
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="min-calibration" className="text-xs">
+            Min Calibration Acc (%)
+          </Label>
+          <Input
+            id="min-calibration"
+            type="number"
+            min="0"
+            max="100"
+            placeholder="e.g. 80"
+            value={filters.minCalibrationAccuracy ?? ''}
+            onChange={(event) => {
+              const val = event.target.value ? parseInt(event.target.value, 10) : undefined;
+              updateFilters({ ...filters, minCalibrationAccuracy: val });
+            }}
           />
         </div>
 

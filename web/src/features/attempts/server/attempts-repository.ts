@@ -32,6 +32,7 @@ const ATTEMPT_SELECT = {
   deletedAt: true,
   createdAt: true,
   updatedAt: true,
+  calibrationAccuracy: true,
   user: {
     select: {
       id: true,
@@ -53,6 +54,7 @@ interface AttemptListRow {
   user_id: string;
   user_name: string | null;
   user_email: string;
+  calibration_accuracy: number | null;
   total_count: bigint | number;
 }
 
@@ -127,6 +129,7 @@ async function listAttempts({
       u.id AS user_id,
       u.name AS user_name,
       u.email AS user_email,
+      a.calibration_accuracy,
       COUNT(*) OVER() AS total_count
     FROM test_attempts a
     INNER JOIN users u ON u.id = a.user_id
@@ -179,6 +182,7 @@ function toAttemptListItem(
     createdAt: attempt.createdAt.toISOString(),
     updatedAt: attempt.updatedAt.toISOString(),
     deletedAt: attempt.deletedAt?.toISOString() ?? null,
+    calibrationAccuracy: attempt.calibrationAccuracy,
     user: includeUser ? attempt.user : undefined,
   };
 }
@@ -193,6 +197,7 @@ function toAttemptListItemFromRow(row: AttemptListRow, includeUser: boolean): At
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString(),
     deletedAt: row.deleted_at ? new Date(row.deleted_at).toISOString() : null,
+    calibrationAccuracy: row.calibration_accuracy,
     user: includeUser
       ? {
           id: row.user_id,

@@ -82,6 +82,10 @@ export function buildWhereSql({ filters, userId, includeDeleted }: BuildWhereOpt
     conditions.push(Prisma.sql`a.created_at < ${endExclusiveUtcDay(filters.createdTo)}`);
   }
 
+  if (filters.minCalibrationAccuracy !== undefined) {
+    conditions.push(Prisma.sql`a.calibration_accuracy >= ${filters.minCalibrationAccuracy}`);
+  }
+
   if (filters.query) {
     const likeQuery = `%${escapeLikePattern(filters.query)}%`;
     conditions.push(Prisma.sql`
