@@ -100,14 +100,14 @@ export function useWebcamTestController() {
       }
 
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
-      setTaskContent(getWebcamTaskContent());
+      setTaskContent(getWebcamTaskContent(participantAge));
       gazeDataRef.current = [];
       setGazePointCount(0);
       setReviewGazeData([]);
       lastTaskGazePositionRef.current = null;
       setLastTaskGazePosition(null);
     },
-    [dispatch, webcamGaze],
+    [dispatch, webcamGaze, participantAge],
   );
 
   const handleTaskDone = useCallback(() => {

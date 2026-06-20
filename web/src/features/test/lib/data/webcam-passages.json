@@ -1,0 +1,22 @@
+{
+  "ageGroups": [
+    {
+      "minAge": 7,
+      "maxAge": 10,
+      "paragraph": "In the quiet forest, many animals made their homes among the tall trees. Squirrels jumped from branch to branch collecting nuts for the winter. Owls slept during the day and flew silently at night to catch their food. A family of deer walked carefully along the narrow path, stopping now and then to eat the fresh green leaves. Near the river, a beaver was building a dam from sticks and mud. The water flowed gently past the smooth stones on the bank."
+    },
+    {
+      "minAge": 11,
+      "maxAge": 15,
+      "paragraph": "The old lighthouse stood tall on the rocky cliff above the sea. Every night its bright light would spin around and around, helping ships find their way safely through the dark waters. The lighthouse keeper climbed the steep stairs each evening to make sure the light was working properly. He could see for miles from the top, watching the waves crash against the rocks below. Sometimes a storm would come and shake the building."
+    },
+    {
+      "minAge": 16,
+      "maxAge": 25,
+      "paragraph": "The history of deep sea exploration is filled with tales of incredible bravery and unexpected discoveries. For centuries, the crushing pressure and absolute darkness of the ocean floor remained a mystery. It wasn't until the development of advanced submersibles that scientists could finally journey into the abyss. There, they found bizarre ecosystems thriving around hydrothermal vents, completely independent of sunlight. These expeditions continue to challenge our understanding of life on Earth."
+    }
+  ],
+  "default": {
+    "paragraph": "The old lighthouse stood tall on the rocky cliff above the sea. Every night its bright light would spin around and around, helping ships find their way safely through the dark waters. The lighthouse keeper climbed the steep stairs each evening to make sure the light was working properly. He could see for miles from the top, watching the waves crash against the rocks below. Sometimes a storm would come and shake the building."
+  }
+}
