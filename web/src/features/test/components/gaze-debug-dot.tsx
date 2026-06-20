@@ -66,15 +66,16 @@ export function GazeDebugDot({ getPosition, active }: GazeDebugDotProps) {
       id="gaze-debug-dot"
       style={{
         position: 'fixed',
-        width: 14,
-        height: 14,
+        width: 12,
+        height: 12,
         borderRadius: '50%',
-        background: '#ff0000',
+        background: '#4A7C59',
         transform: 'translate(-50%, -50%)',
         pointerEvents: 'none',
         zIndex: 9999,
-        boxShadow: '0 0 6px rgba(255,0,0,0.5)',
+        boxShadow: '0 0 12px rgba(74, 124, 89, 0.6)',
         display: 'none',
+        border: '1px solid rgba(255, 255, 255, 0.8)',
       }}
     />
   );

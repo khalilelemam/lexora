@@ -8,18 +8,18 @@ function NinjaFigure() {
   return (
     <svg width={72} height={72} viewBox="0 0 120 120" fill="none">
       {/* Head with mask */}
-      <circle cx="60" cy="24" r="12" stroke="#2D2A26" strokeWidth="4" />
-      <rect x="48" y="19" width="24" height="6" rx="2" fill="#2D2A26" />
-      <circle cx="54" cy="21" r="1.5" fill="#FDF8F0" />
-      <circle cx="66" cy="21" r="1.5" fill="#FDF8F0" />
+      <circle cx="60" cy="24" r="12" stroke="#1b2021" strokeWidth="4" />
+      <rect x="48" y="19" width="24" height="6" rx="2" fill="#1b2021" />
+      <circle cx="54" cy="21" r="1.5" fill="#e3dcc2" />
+      <circle cx="66" cy="21" r="1.5" fill="#e3dcc2" />
       {/* Body */}
-      <path d="M60 36V68" stroke="#2D2A26" strokeWidth="4" strokeLinecap="round" />
+      <path d="M60 36V68" stroke="#1b2021" strokeWidth="4" strokeLinecap="round" />
       {/* Arms */}
-      <path d="M60 46L36 56" stroke="#2D2A26" strokeWidth="4" strokeLinecap="round" />
-      <path d="M60 46L84 56" stroke="#2D2A26" strokeWidth="4" strokeLinecap="round" />
+      <path d="M60 46L36 56" stroke="#1b2021" strokeWidth="4" strokeLinecap="round" />
+      <path d="M60 46L84 56" stroke="#1b2021" strokeWidth="4" strokeLinecap="round" />
       {/* Legs */}
-      <path d="M60 68L42 96" stroke="#2D2A26" strokeWidth="4" strokeLinecap="round" />
-      <path d="M60 68L78 96" stroke="#2D2A26" strokeWidth="4" strokeLinecap="round" />
+      <path d="M60 68L42 96" stroke="#1b2021" strokeWidth="4" strokeLinecap="round" />
+      <path d="M60 68L78 96" stroke="#1b2021" strokeWidth="4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -48,7 +48,7 @@ export function StickmanModeView({
   motionDurationMs,
 }: CalibrationModeViewProps) {
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-[#FDF8F0]">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#e3dcc2]">
       {/* Subtle dark accent for ninja theme */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -82,7 +82,7 @@ export function StickmanModeView({
         <div
           className={cn(
             'relative flex items-center justify-center rounded-full transition-all duration-200',
-            'h-22 w-22 border-2 border-[#2D2A26]/30 bg-[#2D2A26]/5',
+            'h-22 w-22 border-2 border-[#1b2021]/30 bg-[#1b2021]/5',
             isStableFixation && 'shadow-[0_0_30px_rgba(220,38,38,0.25)]',
             capturePulse && 'scale-110',
           )}
@@ -128,7 +128,7 @@ export function StickmanModeView({
               cy="50"
               r="42"
               fill="none"
-              stroke={isStableFixation ? '#10b981' : '#DC2626'}
+              stroke={isStableFixation ? '#a6a867' : '#DC2626'}
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray={264}
@@ -143,7 +143,7 @@ export function StickmanModeView({
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: -16 }}
               exit={{ opacity: 0 }}
-              className="pointer-events-none absolute -top-7 rounded-md bg-[#2D2A26] px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm"
+              className="pointer-events-none absolute -top-7 rounded-md bg-[#1b2021] px-2.5 py-1 text-[11px] font-semibold text-[#f3edd7] shadow-sm"
             >
               💥 Hit!
             </motion.div>
@@ -154,7 +154,7 @@ export function StickmanModeView({
       {/* Bottom HUD strip — outside calibration area */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
         {/* Mode label */}
-        <div className="flex items-center gap-2 rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
+        <div className="flex items-center gap-2 rounded-lg border border-[#51513d] bg-[#f3edd7]/75 px-3 py-1.5 text-[11px] text-[#51513d] backdrop-blur-sm">
           <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
           Ninja Mode
         </div>
@@ -170,17 +170,17 @@ export function StickmanModeView({
                   ? 'h-2 w-2 bg-red-500 shadow-[0_0_5px_rgba(220,38,38,0.4)]'
                   : idx === collectionStep - 1
                     ? 'h-2.5 w-2.5 animate-pulse bg-red-500 shadow-[0_0_6px_rgba(220,38,38,0.5)]'
-                    : 'h-1.5 w-1.5 bg-[#D4CBBD]/60',
+                    : 'h-1.5 w-1.5 bg-[#51513d]/60',
               )}
             />
           ))}
         </div>
 
         {/* Counter */}
-        <div className="rounded-lg border border-[#E8E0D4] bg-white/60 px-3 py-1.5 text-[11px] backdrop-blur-sm">
+        <div className="rounded-lg border border-[#51513d] bg-[#f3edd7]/75 px-3 py-1.5 text-[11px] backdrop-blur-sm">
           <span className="font-semibold text-red-600">{collectionStep}</span>
-          <span className="text-[#C4BDB4]"> / </span>
-          <span className="text-[#6B6560]">{collectionTotal}</span>
+          <span className="text-[#51513d]"> / </span>
+          <span className="text-[#51513d]">{collectionTotal}</span>
         </div>
       </div>
     </div>

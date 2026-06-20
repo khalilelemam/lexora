@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { CalibrationPoint, CalibrationResult } from '../types';
-import { CALIBRATION_POINTS } from '../lib/constants';
+import { AOI_X_BOUNDS, AOI_Y_BOUNDS, CALIBRATION_POINTS } from '../lib/constants';
 import { GridModeView, StickmanCanvas, StarCanvas } from './calibration-modes';
 import { getCalibrationAudio } from '../lib/calibration-audio';
 import { playSoftSound } from '../lib/ui-audio';
+import type { CalibrationVisualMode } from '../lib/calibration-mode';
+import type { CollectedSample } from '../lib/calibration-samples';
 import {
-  type CalibrationVisualMode,
   type WebcamCalibrationSample,
   useCalibrationEngine,
 } from '../hooks/use-calibration-engine';
@@ -17,6 +18,7 @@ import {
   CalibrationPreValidation,
   CalibrationValidation,
   CalibrationResult as CalibrationResultView,
+  PursuitCalibrationView,
   SAMPLE_INTERVAL_MS,
   GRID_TIMEOUT_MIN_SAMPLES_WEBCAM,
   getModeTiming,
@@ -32,7 +34,10 @@ interface CalibrationScreenProps {
   participantAge?: number;
   onGetGazeSample?: () => { x: number; y: number } | null;
   onGetIrisSample?: () => WebcamCalibrationSample | null;
-  onGetHeadPoseSample?: () => { yaw: number; pitch: number } | null;
+  onGetHeadPoseSample?: () => {
+    yaw: number;
+    pitch: number;
+  } | null;
   onComplete: (
     result: CalibrationResult,
     mapping?: {
@@ -76,6 +81,8 @@ export function CalibrationScreen({
     beginCalibration,
     resetEngine,
     ingestSampleForTarget,
+    ingestPursuitSample,
+    finishPursuit,
     resetFixationState,
     skipCalibration,
     startValidation,
@@ -120,6 +127,12 @@ export function CalibrationScreen({
   useEffect(() => {
     stableFixationRef.current = isStableFixation;
   }, [isStableFixation]);
+
+  useEffect(() => {
+    if (phase === 'pursuit' && tracker !== 'webcam') {
+      finishPursuit([]);
+    }
+  }, [finishPursuit, phase, tracker]);
 
   /* ---- audio sync (calibration-audio engine mute is independent of voice now) ---- */
   useEffect(() => {
@@ -175,25 +188,28 @@ export function CalibrationScreen({
         if (advanced) return;
         const elapsedMs = performance.now() - pointStartedAt;
         const capturedThisPoint = captureCountRef.current - startCaptureCount;
-        const canAdvanceByQuality =
+        const shouldAdvance =
           capturedThisPoint >= minSamples &&
           (stableFixationRef.current || elapsedMs >= timing.gridMinDwellMs);
+        const canForceAdvance = capturedThisPoint >= minSamplesForTimeoutAdvance;
         const mustAdvanceByTimeout =
           tracker === 'webcam'
-            ? elapsedMs >= timing.gridMaxDwellMs && capturedThisPoint >= minSamplesForTimeoutAdvance
+            ? elapsedMs >= timing.gridMaxDwellMs && canForceAdvance
             : elapsedMs >= timing.gridMaxDwellMs;
         const forceAdvance = tracker === 'webcam' && elapsedMs >= timing.gridForceAdvanceMs;
 
-        if (canAdvanceByQuality || mustAdvanceByTimeout || forceAdvance) {
+        if (shouldAdvance || mustAdvanceByTimeout || forceAdvance) {
           pushIssue(null);
           advanced = true;
-          advancePoint();
+          advancePoint(capturedThisPoint);
           return;
         }
 
-        if (tracker === 'webcam' && elapsedMs >= timing.gridMaxDwellMs) {
+        const issueStartsAtMs = timing.gridMaxDwellMs;
+        const issueMinSamples = minSamplesForTimeoutAdvance;
+        if (tracker === 'webcam' && elapsedMs >= issueStartsAtMs) {
           if (capturedThisPoint === 0) pushIssue('no-signal');
-          else if (capturedThisPoint < minSamplesForTimeoutAdvance) pushIssue('low-samples');
+          else if (capturedThisPoint < issueMinSamples) pushIssue('low-samples');
           else pushIssue(null);
         } else if (capturedThisPoint > 0) {
           pushIssue(null);
@@ -266,7 +282,7 @@ export function CalibrationScreen({
 
   /* 3. Collecting / Recalibrating */
   if (phase === 'collecting' || phase === 'recalibrating') {
-    const modeSurface =
+    const modeSurface: ReactNode =
       resolvedMode === 'stickman' ? (
         <StickmanCanvas {...modeViewProps} onSampleCollected={handleCanvasSampleCollected} />
       ) : resolvedMode === 'star' ? (
@@ -286,10 +302,37 @@ export function CalibrationScreen({
     );
   }
 
+  if (phase === 'pursuit') {
+    if (tracker !== 'webcam' || !onGetIrisSample) {
+      return (
+        <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#FDF8F0]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#4A7C59] border-t-transparent" />
+            <p className="text-sm text-[#8B857E]">Preparing validation…</p>
+          </div>
+        </div>
+      );
+    }
+
+    const handlePursuitSample = (sample: CollectedSample) => {
+      ingestPursuitSample(sample);
+    };
+
+    return (
+      <PursuitCalibrationView
+        gridPointCount={calibration.totalPoints}
+        aoiBounds={{ x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS }}
+        irisStream={onGetIrisSample}
+        headPoseStream={onGetHeadPoseSample}
+        onSampleReady={handlePursuitSample}
+        onComplete={finishPursuit}
+        onCancel={() => finishPursuit([])}
+      />
+    );
+  }
+
   /* 4. Pre-validation instructions (shown once before validation starts)
-   *    IMPORTANT: readyForPreValidation prevents flashing the card before
-   *    recalibration — it is only true after the engine computation finishes
-   *    without triggering a recalibration round.
+   *    readyForPreValidation gates the UI (recalibration currently disabled)
    */
   if (
     quickValidation.phase === 'idle' &&
@@ -307,15 +350,14 @@ export function CalibrationScreen({
       />
     );
   }
-  /* 4b. Transitional: computing calibration, waiting for recalibration decision, or
-   *     dismissed but validation hasn't started yet (brief async gap).
-   *     Shows a spinner so the UI never flashes the wrong panel. */
+  /* 4b. Transitional: computing calibration or dismissed but validation hasn't started yet.
+   *     Shows a spinner to prevent UI flashing. */
   if (phase === 'validating' && quickValidation.phase === 'idle') {
     return (
-      <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#FDF8F0]">
+      <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#e3dcc2]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#4A7C59] border-t-transparent" />
-          <p className="text-sm text-[#8B857E]">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#51513d] border-t-transparent" />
+          <p className="text-sm text-[#51513d]/70">
             {preValidationDismissed ? 'Preparing validation…' : 'Computing calibration…'}
           </p>
         </div>
@@ -340,7 +382,7 @@ export function CalibrationScreen({
   /* 6. Result */
   if (canFinalize && finalResult) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-[#FDF8F0] py-8">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-[#e3dcc2] py-8">
         <CalibrationResultView
           result={finalResult}
           quickValidationAccuracy={quickValidation.accuracyPercent}

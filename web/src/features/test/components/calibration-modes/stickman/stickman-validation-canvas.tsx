@@ -171,7 +171,7 @@ export function StickmanValidationCanvas({
       ctx.clearRect(0, 0, w, h);
 
       // Background — warm cream, matches calibration + test
-      ctx.fillStyle = '#FDF8F0';
+      ctx.fillStyle = '#e3dcc2';
       ctx.fillRect(0, 0, w, h);
 
       // Subtle grid
@@ -416,14 +416,14 @@ export function StickmanValidationCanvas({
 
       {/* Bottom HUD */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-16 items-center justify-center">
-        <div className="w-[min(420px,85vw)] rounded-xl border border-[#E8E0D4] bg-white/85 px-5 py-2.5 shadow-sm backdrop-blur-md">
+        <div className="w-[min(420px,85vw)] rounded-xl border border-[#51513d] bg-[#f3edd7]/90 px-5 py-2.5 shadow-sm backdrop-blur-md">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-xs text-[#8B857E]">🎯 Lock eyes on the ninja</span>
-            <span className="text-xs font-semibold text-[#2D2A26]">
+            <span className="text-xs text-[#51513d]">🎯 Lock eyes on the ninja</span>
+            <span className="text-xs font-semibold text-[#1b2021]">
               {currentStep} / {totalSteps}
             </span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[#E8E0D4]/60">
+          <div className="h-1.5 overflow-hidden rounded-full bg-[#51513d]/60">
             <div
               className="h-full rounded-full transition-all duration-150"
               style={{ width: `${Math.round(holdProgress * 100)}%`, backgroundColor: '#DC2626' }}

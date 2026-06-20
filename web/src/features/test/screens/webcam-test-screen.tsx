@@ -17,10 +17,11 @@ import { CalibrationSetup } from '@/features/test/components/calibration/calibra
 import { PreTestIntake } from '@/features/test/components/pre-test-intake';
 import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useWebcamTestController } from '@/features/test/hooks';
+import { DEBUG_GAZE_OVERLAY } from '@/features/test/lib/debug-config';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
 import type { IntakeData } from '@/features/test/types';
 
-export function WebcamTestScreen() {
+export default function WebcamTestScreen() {
   const {
     state,
     videoRef,
@@ -39,7 +40,6 @@ export function WebcamTestScreen() {
     handleCameraReady,
     handleCalibrationComplete,
     handleTaskDone,
-    handleLineCentersReady,
     handleRetake,
     handleContinue,
     retrySubmission,
@@ -55,12 +55,28 @@ export function WebcamTestScreen() {
     switch (state.currentState) {
       case 'idle':
         return (
-          <CalibrationSetup
-            resolvedMode={requestedCalibrationMode}
-            onSelectMode={setSelectedMode}
-            onStart={startFromIdle}
-            startButtonText="Continue to Instructions"
-          />
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+            {/* Hero heading */}
+            <div className="text-center">
+              <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
+                Webcam Tracking
+              </p>
+              <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
+                Webcam Gaze Test
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#1b2021]/64">
+                This test uses your browser camera to track eye movement for dyslexia screening. No
+                video is recorded — everything is processed locally in your browser.
+              </p>
+            </div>
+
+            <CalibrationSetup
+              resolvedMode={requestedCalibrationMode}
+              onSelectMode={setSelectedMode}
+              onStart={startFromIdle}
+              startButtonText="Continue to Instructions"
+            />
+          </div>
         );
 
       case 'intake':
@@ -122,9 +138,10 @@ export function WebcamTestScreen() {
             pointCount={gazePointCount}
             isCollecting={webcamGaze.collecting}
             onDone={handleTaskDone}
-            onLineCentersReady={handleLineCentersReady}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('paragraph', dataUrl)}
+            onPauseCollection={webcamGaze.pauseCollecting}
+            onResumeCollection={webcamGaze.resumeCollecting}
           />
         );
 
@@ -190,8 +207,9 @@ export function WebcamTestScreen() {
           )}
 
           {renderState()}
-
-          <GazeDebugDot active={false} getPosition={() => lastTaskGazePosition} />
+          {DEBUG_GAZE_OVERLAY && state.currentState === 'task-paragraph' && (
+            <GazeDebugDot active={webcamGaze.collecting} getPosition={() => lastTaskGazePosition} />
+          )}
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

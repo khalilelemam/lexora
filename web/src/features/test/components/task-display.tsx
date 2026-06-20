@@ -13,7 +13,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { MIN_GAZE_POINTS, ESTIMATED_READING_WPM, MIN_AUTO_DETECT_SECONDS } from '../lib/constants';
+import {
+  MIN_GAZE_POINTS,
+  ESTIMATED_READING_WPM,
+  MIN_AUTO_DETECT_SECONDS,
+  READING_ZONE_BOUNDS,
+} from '../lib/constants';
 
 /* ── Public types ──────────────────────────────────────── */
 
@@ -34,11 +39,6 @@ export interface TaskDisplayProps {
    */
   getLastGazePosition?: () => { x: number; y: number } | null;
   /**
-   * Optional: callback to provide normalized line centers (Y-values 0-1)
-   * Called after DOM measurement completes
-   */
-  onLineCentersReady?: (lineCenters: number[]) => void;
-  /**
    * When true, renders in read-only mode — no end-of-reading detection,
    * no dialog. Used by the review panel and results page to display
    * the exact same text layout for gaze overlay.
@@ -49,6 +49,17 @@ export interface TaskDisplayProps {
    * Used to capture the exact visual layout for export visualizations.
    */
   onScreenshotReady?: (dataUrl: string) => void;
+  /**
+   * Called when the "done reading?" dialog opens so the parent can
+   * pause gaze collection. Prevents recording noise while the dialog
+   * is visible.
+   */
+  onPauseCollection?: () => void;
+  /**
+   * Called when the user dismisses the dialog with "Continue Reading"
+   * so the parent can resume gaze collection.
+   */
+  onResumeCollection?: () => void;
 }
 
 /**
@@ -62,11 +73,6 @@ export interface TaskDisplayProps {
  * End-of-reading detection (disabled in preview mode):
  * - Time-based estimate from word count triggers "are you done?" dialog
  * - Requires `MIN_GAZE_POINTS` before the dialog can appear
- *
- * Y-Axis Line Snapping:
- * - For paragraph content, measures the vertical centers of each line via DOM
- * - Normalizes line centers relative to the content container (0.0-1.0)
- * - Calls onLineCentersReady with the computed centers
  */
 export function TaskDisplay({
   taskType,
@@ -74,8 +80,9 @@ export function TaskDisplay({
   pointCount,
   isCollecting,
   onDone,
-  onLineCentersReady,
   onScreenshotReady,
+  onPauseCollection,
+  onResumeCollection,
   preview = false,
 }: TaskDisplayProps) {
   const [showDialog, setShowDialog] = useState(false);
@@ -146,6 +153,7 @@ export function TaskDisplay({
     if (dialogTriggeredRef.current) return;
     if (pointCountRef.current < MIN_GAZE_POINTS) return;
     dialogTriggeredRef.current = true;
+    onPauseCollection?.();
     setShowDialog(true);
   }, [preview]);
 
@@ -234,7 +242,7 @@ export function TaskDisplay({
       <div ref={textContentRef}>
         <p
           className={cn(
-            'leading-loose whitespace-pre-line text-[#2D2A26] sm:leading-loose md:leading-loose',
+            'leading-loose whitespace-pre-line text-[#1b2021] sm:leading-loose md:leading-loose',
             'text-left font-normal select-none',
           )}
           style={{
@@ -305,13 +313,14 @@ export function TaskDisplay({
     setShowDialog(false);
     dialogTriggeredRef.current = false;
     dismissCountRef.current += 1;
+    onResumeCollection?.();
 
     // Re-schedule time-based fallback (shorter interval)
     const reschedule = Math.max(5, estimatedSeconds() * 0.5);
     autoDetectTimerRef.current = setTimeout(() => {
       triggerDialog();
     }, reschedule * 1000);
-  }, [estimatedSeconds, triggerDialog]);
+  }, [estimatedSeconds, triggerDialog, onResumeCollection]);
 
   const handleConfirmDone = useCallback(() => {
     setShowDialog(false);
@@ -322,20 +331,20 @@ export function TaskDisplay({
   // ─── Render ─────────────────────────────────────────
 
   return (
-    <div ref={rootRef} className={cn('fixed inset-0 z-40 bg-[#FDF8F0]', !preview && 'cursor-none')}>
+    <div ref={rootRef} className={cn('fixed inset-0 z-40 bg-[#e3dcc2]', !preview && 'cursor-none')}>
       {/*
-       * Reading zone — text flows naturally from the top.
-       * Horizontal bounds: 20%–80% of screen (matches calibration X: 0.2–0.8)
-       * Vertical: starts at 10% from top, flows downward.
+       * Reading zone — text flows within the replay/export bounds.
+       * Horizontal bounds: 25%–75% of screen (within calibration X: 0.2–0.8)
+       * Vertical bounds: 18%–62% of screen (within calibration Y: 0.15–0.60)
        */}
       <div
         ref={readingZoneRef}
         className="absolute flex flex-col"
         style={{
-          top: '10%',
-          left: '20%',
-          right: '20%',
-          bottom: '5%',
+          top: `${READING_ZONE_BOUNDS.top * 100}%`,
+          left: `${READING_ZONE_BOUNDS.left * 100}%`,
+          right: `${READING_ZONE_BOUNDS.right * 100}%`,
+          bottom: `${READING_ZONE_BOUNDS.bottom * 100}%`,
         }}
         dir="ltr"
       >
@@ -351,7 +360,7 @@ export function TaskDisplay({
             <div className="flex flex-col items-center justify-center gap-6">
               <pre
                 className={cn(
-                  'text-center font-mono whitespace-pre-wrap text-[#2D2A26]',
+                  'text-center font-mono whitespace-pre-wrap text-[#1b2021]',
                   'text-3xl leading-loose tracking-[0.25em] sm:text-4xl md:text-5xl',
                   'select-none',
                 )}
@@ -371,8 +380,8 @@ export function TaskDisplay({
           className="pointer-events-none fixed left-1/2 z-50 -translate-x-1/2"
           style={{ bottom: '12px' }}
         >
-          <div className="flex items-center gap-1.5 rounded-full border border-[#E8E0D4] bg-white/60 px-3 py-1 text-xs text-[#8B857E] backdrop-blur-sm">
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4A7C59]" />
+          <div className="flex items-center gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/75 px-3 py-1 text-xs text-[#51513d]/70 backdrop-blur-sm">
+            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a6a867]" />
             <span>Tracking</span>
           </div>
         </div>
@@ -381,22 +390,36 @@ export function TaskDisplay({
       {/* ─── "Are you done?" dialog ──────────────────── */}
       {!preview && (
         <Dialog open={showDialog} onOpenChange={(open) => !open && handleContinueReading()}>
-          <DialogContent showCloseButton={false} className="sm:max-w-md">
+          <DialogContent
+            showCloseButton={false}
+            className="border-[#51513d]/18 bg-[#f3edd7] text-[#1b2021] sm:max-w-md"
+          >
             <DialogHeader>
-              <div className="bg-primary/10 mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full">
-                <BookOpen className="text-primary h-6 w-6" />
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center border border-[#e3dc95] bg-[#e3dc95]/30">
+                <BookOpen className="h-6 w-6 text-[#51513d]" />
               </div>
-              <DialogTitle className="text-center">Has the reader finished?</DialogTitle>
-              <DialogDescription className="text-center">
+              <DialogTitle className="text-center text-[#1b2021]">
+                Has the reader finished?
+              </DialogTitle>
+              <DialogDescription className="text-center text-[#1b2021]/62">
                 It looks like enough time has passed for this passage. Is the child done reading?
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="flex-row justify-center gap-3 sm:justify-center">
-              <Button variant="outline" onClick={handleContinueReading}>
+              <Button
+                variant="outline"
+                onClick={handleContinueReading}
+                className="border-[#51513d]/30 text-[#51513d] hover:bg-[#e3dcc2]"
+              >
                 <Clock className="mr-2 h-4 w-4" />
                 Need more time
               </Button>
-              <Button onClick={handleConfirmDone}>Yes, done reading</Button>
+              <Button
+                onClick={handleConfirmDone}
+                className="bg-[#51513d] text-[#f3edd7] hover:bg-[#1b2021]"
+              >
+                Yes, done reading
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

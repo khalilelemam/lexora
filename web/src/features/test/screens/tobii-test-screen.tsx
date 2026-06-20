@@ -24,7 +24,7 @@ import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { buildTobiiResultVisualizations } from '@/features/test/lib/build-tobii-visualizations';
 import type { IntakeData } from '@/features/test/types';
 
-export function TobiiTestScreen() {
+export default function TobiiTestScreen() {
   const {
     state,
     connected,
@@ -41,7 +41,6 @@ export function TobiiTestScreen() {
     taskPointCounts,
     lastTaskGazePosition,
     taskContent,
-    setLineCenters,
     steps,
     currentStepKey,
     showStepIndicator,
@@ -73,21 +72,56 @@ export function TobiiTestScreen() {
     switch (state.currentState) {
       case 'idle':
         return (
-          <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-6">
-            <h1 className="text-3xl font-bold">Eye Tracker Test</h1>
-            <p className="text-muted-foreground max-w-2xl text-center">
-              This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of 3
-              reading tasks: syllables, pseudo-words, and meaningful text.
-            </p>
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+            {/* Hero heading */}
+            <div className="text-center">
+              <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
+                Tobii Eye Tracking
+              </p>
+              <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
+                Eye Tracker Test
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#1b2021]/64">
+                This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of
+                3 reading tasks: syllables, pseudo-words, and meaningful text.
+              </p>
+            </div>
 
-            <TobiiServiceStatusCard
-              serviceChecking={serviceChecking}
-              serviceRunning={serviceRunning}
-              serviceDevice={serviceDevice ?? null}
-              serviceError={serviceError}
-              onRefresh={checkStatus}
-            />
+            {/* Service Status & Supported Devices */}
+            <div className="grid w-full gap-5 md:grid-cols-[1.2fr_0.8fr]">
+              <TobiiServiceStatusCard
+                serviceChecking={serviceChecking}
+                serviceRunning={serviceRunning}
+                serviceDevice={serviceDevice ?? null}
+                serviceError={serviceError}
+                onRefresh={checkStatus}
+              />
 
+              {/* Supported devices card */}
+              <div className="border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[10px_10px_0_rgba(81,81,61,.08)]">
+                <p className="mb-1 text-xs font-black tracking-[0.2em] text-[#51513d] uppercase">
+                  Supported Devices
+                </p>
+                <p className="mb-5 text-xs leading-relaxed text-[#1b2021]/58">
+                  Tobii Pro devices with SDK support. Consumer trackers (e.g. Eye Tracker 5) are not
+                  compatible.
+                </p>
+                <div className="grid gap-px overflow-hidden border border-[#51513d]/18 bg-[#51513d]/18">
+                  {['Tobii Pro Fusion', 'Tobii Pro Spectrum', 'Tobii Pro Nano'].map(
+                    (device, idx) => (
+                      <div key={device} className="grid grid-cols-[3rem_1fr] bg-[#e3dcc2]">
+                        <div className="bg-[#a6a867] p-3 font-mono text-xs font-black text-[#1b2021]">
+                          0{idx + 1}
+                        </div>
+                        <div className="p-3 text-sm font-black text-[#1b2021]">{device}</div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Calibration Mode Selection */}
             <CalibrationSetup
               resolvedMode={requestedCalibrationMode}
               onSelectMode={setSelectedMode}
@@ -136,7 +170,6 @@ export function TobiiTestScreen() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => setLineCenters('syllables', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('syllables', dataUrl)}
           />
@@ -162,7 +195,6 @@ export function TobiiTestScreen() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => setLineCenters('pseudo-words', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('pseudo-words', dataUrl)}
           />
@@ -188,7 +220,6 @@ export function TobiiTestScreen() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => setLineCenters('meaningful-text', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('meaningful-text', dataUrl)}
           />

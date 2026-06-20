@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
  *    which contaminate calibration samples.
  *    (Rayner 2009: peripheral motion draws gaze involuntarily)
  *
- * 3. Warm cream background (#FDF8F0) — must match test screen to prevent
+ * 3. Warm cream background (#e3dcc2) — must match test screen to prevent
  *    pupil size artifacts (PSA) that introduce systematic spatial bias.
  *    (Mathôt et al. 2013)
  *
@@ -161,7 +161,7 @@ export function StarCanvas({
       ctx.clearRect(0, 0, w, h);
 
       /* Background — warm cream */
-      ctx.fillStyle = '#FDF8F0';
+      ctx.fillStyle = '#e3dcc2';
       ctx.fillRect(0, 0, w, h);
 
       /* Very faint warm grid — same as grid mode, for visual consistency */
@@ -267,7 +267,7 @@ export function StarCanvas({
           const sx = tx + Math.cos(angle) * dist2;
           const sy = ty + Math.sin(angle) * dist2;
           ctx.globalAlpha = (1 - t) * 0.8;
-          ctx.fillStyle = '#D4A017';
+          ctx.fillStyle = '#e3dc95';
           ctx.beginPath();
           ctx.arc(sx, sy, 3 * (1 - t), 0, Math.PI * 2);
           ctx.fill();
@@ -316,13 +316,13 @@ export function StarCanvas({
 
       {/* Bottom HUD strip */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
-        <div className="flex items-center gap-1.5 rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
-          <div className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+        <div className="flex items-center gap-1.5 rounded-lg border border-[#51513d] bg-[#f3edd7]/72 px-3 py-1.5 text-[11px] text-[#51513d] backdrop-blur-sm">
+          <div className="h-1.5 w-1.5 rounded-full bg-[#e3dc95]" />
           Star Mode
         </div>
 
         {/* Star collection tally — each point is a star icon */}
-        <div className="flex items-center gap-0.5 rounded-lg border border-[#E8E0D4] bg-white/55 px-2.5 py-1 backdrop-blur-sm">
+        <div className="flex items-center gap-0.5 rounded-lg border border-[#51513d] bg-[#f3edd7]/72 px-2.5 py-1 backdrop-blur-sm">
           {Array.from({ length: collectionTotal }).map((_, idx) => {
             const active = idx === collectionStep - 1;
             const done = idx < collectionStep - 1;
@@ -335,8 +335,8 @@ export function StarCanvas({
                   active && 'animate-pulse',
                 )}
                 viewBox="0 0 24 24"
-                fill={done ? '#F59E0B' : active ? '#D97706' : 'none'}
-                stroke={done ? '#D97706' : active ? '#B45309' : '#D4CBBD'}
+                fill={done ? '#F59E0B' : active ? '#8b6f25' : 'none'}
+                stroke={done ? '#8b6f25' : active ? '#B45309' : '#51513d'}
                 strokeWidth={done ? 0 : active ? 1.5 : 1.5}
               >
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
@@ -345,10 +345,10 @@ export function StarCanvas({
           })}
         </div>
 
-        <div className="rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] backdrop-blur-sm">
-          <span className="font-semibold text-amber-600">{collectionStep}</span>
-          <span className="text-[#C4BDB4]"> / </span>
-          <span className="text-[#6B6560]">{collectionTotal}</span>
+        <div className="rounded-lg border border-[#51513d] bg-[#f3edd7]/72 px-3 py-1.5 text-[11px] backdrop-blur-sm">
+          <span className="font-semibold text-[#8b6f25]">{collectionStep}</span>
+          <span className="text-[#51513d]"> / </span>
+          <span className="text-[#51513d]">{collectionTotal}</span>
         </div>
       </div>
     </div>

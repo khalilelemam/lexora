@@ -19,79 +19,75 @@ export function TobiiServiceStatusCard({
   serviceError,
   onRefresh,
 }: TobiiServiceStatusCardProps) {
+  const openTobiiService = () => {
+    if (typeof window === 'undefined') return;
+    const TOBII_SERVICE_URL = process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
+    const url = serviceRunning ? TOBII_SERVICE_URL : '/api/download/service';
+    window.open(url, '_blank');
+  };
+
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <div className="border-border bg-background rounded-3xl border p-6 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold">Tobii Service Status</p>
-            <p className="text-muted-foreground text-xs">
-              Lexora checks the local Tobii helper service on <code>localhost:28980</code>.
-            </p>
-          </div>
-          <span
-            className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${
-              serviceChecking
-                ? 'bg-slate-200 text-slate-700'
-                : serviceRunning
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : 'bg-amber-100 text-amber-800'
-            }`}
-          >
-            {serviceChecking ? 'Checking…' : serviceRunning ? 'Running' : 'Not running'}
-          </span>
+    <div className="w-full border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[10px_10px_0_rgba(81,81,61,.08)]">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-black text-[#1b2021]">Tobii Service Status</p>
+          <p className="mt-1 text-xs leading-relaxed text-[#1b2021]/58">
+            Lexora checks the local Tobii helper service on{' '}
+            <code className="border border-[#51513d]/15 bg-[#e3dcc2] px-1 py-0.5 font-mono text-[10px]">
+              localhost:28980
+            </code>
+          </p>
         </div>
+        <span
+          className={`inline-flex px-3 py-1 text-[11px] font-black tracking-wider uppercase ${
+            serviceChecking
+              ? 'bg-[#51513d]/10 text-[#51513d]'
+              : serviceRunning
+                ? 'bg-[#a6a867] text-[#1b2021]'
+                : 'bg-[#e3dc95] text-[#51513d]'
+          }`}
+        >
+          {serviceChecking ? 'Checking…' : serviceRunning ? 'Running' : 'Not running'}
+        </span>
+      </div>
 
-        {serviceRunning ? (
-          <div className="mt-4 space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm">
-            <p className="text-foreground font-medium">Connected to the Tobii helper app.</p>
-            <p className="text-muted-foreground">
-              {serviceDevice?.deviceName ?? 'Tobii Pro device'} (
-              {serviceDevice?.model ?? 'Unknown model'})
-            </p>
-            <p className="text-muted-foreground text-xs">
-              Serial: {serviceDevice?.serialNumber ?? 'N/A'}
-            </p>
-          </div>
-        ) : (
-          <div className="mt-4 space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm">
-            <p className="text-foreground font-medium">Tobii helper is not reachable.</p>
-            <p className="text-muted-foreground">
-              Install or start the Lexora Tobii Service app on your computer before running the
-              Tobii test.
-            </p>
-            {serviceError && <p className="text-xs text-amber-700">{serviceError}</p>}
-          </div>
-        )}
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          {serviceRunning ? (
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = 'lexora://open';
-              }}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md px-5 py-2 text-sm font-medium"
-            >
-              Open Tobii Service
-            </button>
-          ) : (
-            <a
-              href="/api/download/service"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground inline-flex items-center justify-center rounded-md px-5 py-2 text-sm font-medium"
-            >
-              Download Tobii Service
-            </a>
-          )}
-
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="border-border bg-background text-foreground hover:bg-muted/70 inline-flex items-center justify-center rounded-md border px-5 py-2 text-sm font-medium"
-          >
-            Refresh Status
-          </button>
+      {serviceRunning ? (
+        <div className="mt-5 space-y-2 border border-[#a6a867]/30 bg-[#a6a867]/8 p-4 text-sm">
+          <p className="font-black text-[#1b2021]">Connected to the Tobii helper app.</p>
+          <p className="text-[#1b2021]/64">
+            {serviceDevice?.deviceName ?? 'Tobii Pro device'} (
+            {serviceDevice?.model ?? 'Unknown model'})
+          </p>
+          <p className="text-xs text-[#1b2021]/50">
+            Serial: {serviceDevice?.serialNumber ?? 'N/A'}
+          </p>
         </div>
+      ) : (
+        <div className="mt-5 space-y-2 border border-[#e3dc95]/60 bg-[#e3dc95]/15 p-4 text-sm">
+          <p className="font-black text-[#1b2021]">Tobii helper is not reachable.</p>
+          <p className="text-[#1b2021]/64">
+            Install or start the Lexora Tobii Service app on your computer before running the Tobii
+            test.
+          </p>
+          {serviceError && <p className="text-xs text-[#51513d]">{serviceError}</p>}
+        </div>
+      )}
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={openTobiiService}
+          className="bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
+        >
+          {serviceRunning ? 'Open Tobii Service' : 'Download Tobii Service'}
+        </button>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
+        >
+          Refresh Status
+        </button>
       </div>
     </div>
   );

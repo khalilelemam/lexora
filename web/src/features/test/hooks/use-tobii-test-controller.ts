@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { submitTobiiTest } from '@/features/test/actions/submit-tobii-test';
-import type { CalibrationVisualMode } from '@/features/test/hooks/use-calibration-engine';
+import type { CalibrationVisualMode } from '@/features/test/lib/calibration-mode';
 import type { CalibrationResult, IntakeData, TobiiTestFlowState } from '@/features/test/types';
 
 import { useCalibrationQueryParams } from './use-calibration-query-params';
@@ -54,7 +54,6 @@ export function useTobiiTestController() {
     pseudoWordsRef,
     meaningfulTextRef,
     lastGazeRef,
-    lineCentersRef,
     gazePointCount,
     taskPointCounts,
     lastTaskGazePosition,
@@ -62,7 +61,6 @@ export function useTobiiTestController() {
     pushGazeData,
     activateTask,
     clearActiveBuffer,
-    setLineCenters,
     resetAll,
   } = useTobiiTaskBuffers();
 
@@ -152,7 +150,6 @@ export function useTobiiTestController() {
       meaningfulText: meaningfulTextRef.current,
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
-      lineCenters: lineCentersRef.current,
       screenshots:
         Object.keys(screenshotsRef.current).length > 0 ? screenshotsRef.current : undefined,
     });
@@ -166,7 +163,6 @@ export function useTobiiTestController() {
   }, [
     dispatch,
     getOrCreateAttemptId,
-    lineCentersRef,
     meaningfulTextRef,
     pseudoWordsRef,
     requestedCalibrationMode,
@@ -220,7 +216,6 @@ export function useTobiiTestController() {
     lastTaskGazePosition,
     taskContent,
     activateTask,
-    setLineCenters,
     steps: TOBII_STEPS.map((step) => ({ key: step.key, label: step.label })),
     currentStepKey: getStepKeyForState(tobiiState.currentState),
     showStepIndicator: !STEP_INDICATOR_HIDDEN_STATES.has(tobiiState.currentState),

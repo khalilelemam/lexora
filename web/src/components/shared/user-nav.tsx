@@ -37,7 +37,7 @@ export function UserNav() {
 
   /* ── Loading skeleton ─────────────────────────────────── */
   if (isPending) {
-    return <div className="bg-muted h-8 w-8 animate-pulse rounded-full" />;
+    return <div className="h-8 w-8 animate-pulse bg-[#51513d]/15" />;
   }
 
   /* ── Guest ────────────────────────────────────────────── */
@@ -47,7 +47,7 @@ export function UserNav() {
         asChild
         variant="outline"
         size="sm"
-        className="border-[oklch(0.70_0.10_115/0.4)] text-[oklch(0.40_0.04_110)] hover:border-[oklch(0.70_0.10_115)] hover:bg-[oklch(0.70_0.10_115/0.1)]"
+        className="border-[#51513d]/30 text-[#51513d] hover:border-[#51513d] hover:bg-[#51513d]/8"
       >
         <Link href="/sign-in">Sign In</Link>
       </Button>
@@ -77,7 +77,7 @@ export function UserNav() {
                 className="rounded-full object-cover"
               />
             ) : (
-              <AvatarFallback className="text-xs font-semibold">
+              <AvatarFallback className="bg-[#51513d] text-xs font-black text-[#e3dcc2]">
                 {initials || <User className="h-4 w-4" />}
               </AvatarFallback>
             )}
@@ -85,34 +85,40 @@ export function UserNav() {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent
+        align="end"
+        className="w-56 border-[#51513d]/25 bg-[#e3dcc2] text-[#1b2021] shadow-xl shadow-[#1b2021]/10"
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col gap-1">
             {user.name && <p className="text-sm leading-none font-medium">{user.name}</p>}
-            <p className="text-muted-foreground text-xs leading-none">{user.email}</p>
+            <p className="text-xs leading-none text-[#1b2021]/60">{user.email}</p>
           </div>
         </DropdownMenuLabel>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="bg-[#51513d]/15" />
 
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="focus:bg-[#51513d]/10 focus:text-[#1b2021]">
           <Link href="/history" className="cursor-pointer">
-            <History className="mr-2 h-4 w-4" />
+            <History className="mr-2 h-4 w-4 text-[#51513d]" />
             Test history
           </Link>
         </DropdownMenuItem>
 
         {isAdmin && (
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild className="focus:bg-[#51513d]/10 focus:text-[#1b2021]">
             <Link href="/admin/dashboard" className="cursor-pointer">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <LayoutDashboard className="mr-2 h-4 w-4 text-[#51513d]" />
               Admin dashboard
             </Link>
           </DropdownMenuItem>
         )}
 
-        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-          <LogOut className="mr-2 h-4 w-4" />
+        <DropdownMenuItem
+          onClick={handleSignOut}
+          className="cursor-pointer focus:bg-[#51513d]/10 focus:text-[#1b2021]"
+        >
+          <LogOut className="mr-2 h-4 w-4 text-[#51513d]" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

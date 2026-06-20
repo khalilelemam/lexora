@@ -1,332 +1,157 @@
-export interface TrainingSample {
-  ix: number;
-  iy: number;
-  yaw: number;
-  pitch: number;
-  targetX: number;
-  targetY: number;
-  pointIndex: number;
-}
-export type ModelKind = 'polynomial-ridge';
+import { calibrationLogger } from './debug-config';
+import { NUM_FEATURES_X, NUM_FEATURES_Y } from './calibration-models/feature-builders';
+import { fitIdwModel } from './calibration-models/idw-model';
+import { meanEuclideanError } from './calibration-models/metrics';
+import { fitPolynomialRidge } from './calibration-models/polynomial-ridge-model';
+import type { CalibrationModel, TrainingSample } from './calibration-models/types';
 
-export interface CalibrationModel {
-  kind: ModelKind;
-  predict: (irisX: number, irisY: number, yaw: number, pitch: number) => { x: number; y: number };
-  trainingError: number;
-  info: string;
-}
+const IDW_MAX_CENTROID_ERROR_PX = 100;
+const POLYNOMIAL_MAX_TRAINING_ERROR_PX = 200;
 
-interface FeatureScaler {
-  means: number[];
-  stds: number[];
-}
-
-interface CandidateModelFit {
-  label: string;
-  lambdaX: number;
-  lambdaY: number;
-  error: number;
-  trainingError: number;
-  predict: (ix: number, iy: number, yaw: number, pitch: number) => { x: number; y: number };
-}
-
-function expandFeatures(ix: number, iy: number, yaw: number, pitch: number): number[] {
-  return [
-    1,
-    ix,
-    iy,
-    yaw,
-    pitch,
-    ix * ix,
-    iy * iy,
-    yaw * yaw,
-    pitch * pitch,
-    ix * iy,
-    ix * yaw,
-    ix * pitch,
-    iy * yaw,
-    iy * pitch,
-    yaw * pitch,
-  ];
-}
-
-function expandCompactFeatures(ix: number, iy: number, yaw: number, pitch: number): number[] {
-  return [1, ix, iy, yaw, pitch, ix * iy, ix * pitch, iy * yaw, yaw * pitch];
-}
-
-function fitScaler(matrix: number[][]): FeatureScaler {
-  const cols = matrix[0]?.length ?? 0;
-  if (cols === 0 || matrix.length === 0) {
-    return { means: [], stds: [] };
-  }
-
-  const means = new Array(cols).fill(0);
-  const stds = new Array(cols).fill(1);
-
-  for (const row of matrix) {
-    for (let col = 1; col < cols; col++) means[col] += row[col];
-  }
-  for (let col = 1; col < cols; col++) means[col] /= matrix.length;
-
-  for (const row of matrix) {
-    for (let col = 1; col < cols; col++) stds[col] += (row[col] - means[col]) ** 2;
-  }
-  for (let col = 1; col < cols; col++) {
-    stds[col] = Math.max(1e-6, Math.sqrt(stds[col] / matrix.length));
-  }
-
-  return { means, stds };
-}
-
-function normalizeFeatures(matrix: number[][], scaler: FeatureScaler): number[][] {
-  return matrix.map((row) => {
-    return normalizeRow(row, scaler);
-  });
-}
-
-function normalizeRow(row: number[], scaler: FeatureScaler): number[] {
-  const normalized = [...row];
-  for (let col = 1; col < row.length; col++) {
-    normalized[col] = (row[col] - scaler.means[col]) / scaler.stds[col];
-  }
-  return normalized;
-}
-
-function solveRidge(
-  A: number[][],
-  b: number[],
-  lambda: number,
-  unregularizedCols: number,
-): number[] {
-  const cols = A[0]?.length ?? 0;
-  const n = A.length;
-  if (cols === 0 || n === 0) return new Array(cols).fill(0);
-
-  const ATA: number[][] = Array.from({ length: cols }, () => new Array(cols).fill(0));
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < cols; j++) {
-      let s = 0;
-      for (let k = 0; k < n; k++) s += A[k][i] * A[k][j];
-      ATA[i][j] = s;
-    }
-    if (i >= unregularizedCols) ATA[i][i] += lambda;
-  }
-
-  const ATb: number[] = new Array(cols).fill(0);
-  for (let i = 0; i < cols; i++) {
-    let s = 0;
-    for (let k = 0; k < n; k++) s += A[k][i] * b[k];
-    ATb[i] = s;
-  }
-
-  const aug: number[][] = ATA.map((row, i) => [...row, ATb[i]]);
-  for (let col = 0; col < cols; col++) {
-    let pivotRow = col;
-    for (let row = col + 1; row < cols; row++) {
-      if (Math.abs(aug[row][col]) > Math.abs(aug[pivotRow][col])) pivotRow = row;
-    }
-    [aug[col], aug[pivotRow]] = [aug[pivotRow], aug[col]];
-    const pivot = aug[col][col];
-    if (Math.abs(pivot) < 1e-12) continue;
-    for (let j = col; j <= cols; j++) aug[col][j] /= pivot;
-    for (let row = 0; row < cols; row++) {
-      if (row === col) continue;
-      const factor = aug[row][col];
-      for (let j = col; j <= cols; j++) aug[row][j] -= factor * aug[col][j];
-    }
-  }
-  return aug.map((r) => r[cols]);
-}
-
-function predictLinear(coeffs: number[], features: number[]): number {
-  let sum = 0;
-  for (let i = 0; i < coeffs.length; i++) sum += coeffs[i] * features[i];
-  return sum;
-}
-
-function meanEuclideanError(
-  samples: TrainingSample[],
-  predict: (s: TrainingSample) => { x: number; y: number },
-): number {
-  if (samples.length === 0) return Number.POSITIVE_INFINITY;
-  let total = 0;
-  for (const s of samples) {
-    const p = predict(s);
-    total += Math.hypot(p.x - s.targetX, p.y - s.targetY);
-  }
-  return total / samples.length;
-}
-
-function meanSquaredError(errors: number[]): number {
-  if (errors.length === 0) return Number.POSITIVE_INFINITY;
-  return errors.reduce((sum, value) => sum + value * value, 0) / errors.length;
-}
-
-function leaveOneOutMse(features: number[][], targets: number[], lambda: number): number {
-  const n = features.length;
-  if (n <= 1) return Number.POSITIVE_INFINITY;
-
-  const residuals: number[] = [];
-
-  for (let holdOut = 0; holdOut < n; holdOut++) {
-    const trainRows: number[][] = [];
-    const trainTargets: number[] = [];
-
-    for (let i = 0; i < n; i++) {
-      if (i === holdOut) continue;
-      trainRows.push(features[i]);
-      trainTargets.push(targets[i]);
-    }
-
-    const coeffs = solveRidge(trainRows, trainTargets, lambda, 1);
-    const predicted = predictLinear(coeffs, features[holdOut]);
-    residuals.push(predicted - targets[holdOut]);
-  }
-
-  return meanSquaredError(residuals);
-}
-
-function selectBestAxisCoefficients(
-  trainFeatures: number[][],
-  trainTargets: number[],
-  selectorFeatures: number[][],
-  selectorTargets: number[],
-  lambdas: number[],
-): { lambda: number; coeffs: number[] } {
-  const useLeaveOneOut = trainFeatures.length >= 6;
-  let best: { lambda: number; mse: number } | null = null;
-
-  for (const lambda of lambdas) {
-    const fallbackCoeffs = solveRidge(trainFeatures, trainTargets, lambda, 1);
-    const mse = useLeaveOneOut
-      ? leaveOneOutMse(trainFeatures, trainTargets, lambda)
-      : meanSquaredError(
-          selectorFeatures.map(
-            (row, index) => predictLinear(fallbackCoeffs, row) - selectorTargets[index],
-          ),
-        );
-
-    if (!best || mse < best.mse) {
-      best = { lambda, mse };
-    }
-  }
-
-  if (!best) {
-    return { lambda: lambdas[0] ?? 1e-2, coeffs: new Array(trainFeatures[0]?.length ?? 0).fill(0) };
-  }
-
-  return {
-    lambda: best.lambda,
-    coeffs: solveRidge(trainFeatures, trainTargets, best.lambda, 1),
-  };
-}
-
-function fitCandidateModel(
-  train: TrainingSample[],
-  selector: TrainingSample[],
-  featureBuilder: (ix: number, iy: number, yaw: number, pitch: number) => number[],
-  label: string,
-): CandidateModelFit {
-  const trainFeaturesRaw = train.map((sample) =>
-    featureBuilder(sample.ix, sample.iy, sample.yaw, sample.pitch),
-  );
-  const scaler = fitScaler(trainFeaturesRaw);
-  const trainFeatures = normalizeFeatures(trainFeaturesRaw, scaler);
-
-  const selectorFeatures = normalizeFeatures(
-    selector.map((sample) => featureBuilder(sample.ix, sample.iy, sample.yaw, sample.pitch)),
-    scaler,
-  );
-
-  const trainTargetsX = train.map((sample) => sample.targetX);
-  const trainTargetsY = train.map((sample) => sample.targetY);
-  const selectorTargetsX = selector.map((sample) => sample.targetX);
-  const selectorTargetsY = selector.map((sample) => sample.targetY);
-
-  const lambdas = [1e-6, 1e-4, 1e-3, 1e-2, 3e-2, 1e-1, 3e-1, 1, 3];
-
-  const bestX = selectBestAxisCoefficients(
-    trainFeatures,
-    trainTargetsX,
-    selectorFeatures,
-    selectorTargetsX,
-    lambdas,
-  );
-  const bestY = selectBestAxisCoefficients(
-    trainFeatures,
-    trainTargetsY,
-    selectorFeatures,
-    selectorTargetsY,
-    lambdas,
-  );
-
-  const predict = (ix: number, iy: number, yaw: number, pitch: number) => {
-    const normalizedRow = normalizeRow(featureBuilder(ix, iy, yaw, pitch), scaler);
-    return {
-      x: predictLinear(bestX.coeffs, normalizedRow),
-      y: predictLinear(bestY.coeffs, normalizedRow),
-    };
-  };
-
-  const error = meanEuclideanError(selector, (sample) =>
-    predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
-  );
-  const trainingError = meanEuclideanError(train, (sample) =>
-    predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
-  );
-
-  return {
-    label,
-    lambdaX: bestX.lambda,
-    lambdaY: bestY.lambda,
-    error,
-    trainingError,
-    predict,
-  };
-}
-
-function fitPolynomialRidge(
-  train: TrainingSample[],
-  validation: TrainingSample[],
-): CalibrationModel {
-  const selector = validation.length > 0 ? validation : train;
-
-  const fullPolynomial = fitCandidateModel(train, selector, expandFeatures, 'poly2-full');
-  const compactPolynomial = fitCandidateModel(
-    train,
-    selector,
-    expandCompactFeatures,
-    'poly2-compact',
-  );
-
-  // Prefer the compact model if it performs within 5% of full model error.
-  // This improves stability and reduces overfitting in sparse/noisy webcam samples.
-  const selectedModel =
-    compactPolynomial.error <= fullPolynomial.error * 1.05 ? compactPolynomial : fullPolynomial;
-
-  return {
-    kind: 'polynomial-ridge',
-    predict: selectedModel.predict,
-    trainingError: selectedModel.trainingError,
-    info:
-      `Polynomial ridge (${selectedModel.label}, ` +
-      `lambdaX=${selectedModel.lambdaX}, lambdaY=${selectedModel.lambdaY}, ` +
-      `selectorErr=${selectedModel.error.toFixed(2)}px)`,
-  };
-}
-
+/**
+ * Production calibration model selection.
+ *
+ * This is intentionally the small orchestration seam: the individual model
+ * adapters own their math, while this module compares their validation errors
+ * and applies the current safety thresholds.
+ */
 export function fitProductionCalibrationModel(
   samples: TrainingSample[],
   validationSamples: TrainingSample[] = [],
 ): CalibrationModel {
   if (samples.length < 8) {
     return {
-      kind: 'polynomial-ridge',
+      kind: 'idw',
       predict: () => ({ x: 0, y: 0 }),
       trainingError: Number.POSITIVE_INFINITY,
-      info: 'Polynomial ridge (insufficient samples)',
+      info: 'IDW (insufficient samples)',
     };
   }
 
-  return fitPolynomialRidge(samples, validationSamples);
+  const selector = validationSamples.length > 0 ? validationSamples : samples;
+  const screenW = typeof window !== 'undefined' ? window.innerWidth : 1920;
+  const screenH = typeof window !== 'undefined' ? window.innerHeight : 1080;
+
+  calibrationLogger.debug('[FEATURE SET] calibration models - separate X/Y feature builders', {
+    xAxisFeatures: NUM_FEATURES_X,
+    yAxisFeatures: NUM_FEATURES_Y,
+    xFeatures: [
+      '1',
+      'ix',
+      'iy',
+      'pitch',
+      'ix^2',
+      'iy^2',
+      'ix*iy',
+      'ix^3',
+      'iy^3',
+      'ix^2*iy',
+      'ix*iy^2',
+      'yaw',
+      'yaw*ix',
+      'pitch*iy',
+    ],
+    yFeatures: [
+      '1',
+      'ix',
+      'iy',
+      'pitch',
+      'ix^2',
+      'iy^2',
+      'ix*iy',
+      'ix^3',
+      'iy^3',
+      'ix^2*iy',
+      'ix*iy^2',
+      'pitch*iy',
+    ],
+    excludedFromY: ['yaw', 'yaw*ix'],
+    poseFeatures: ['yaw', 'pitch'],
+  });
+
+  const idwModel = fitIdwModel(samples, selector, screenW, screenH);
+  const polynomialModel = fitPolynomialRidge(samples, validationSamples);
+
+  const idwSelectorError = meanEuclideanError(selector, (sample) =>
+    idwModel.predict(sample.ix, sample.iy, 0, sample.pitch),
+  );
+  const idwMaxCentroidError = idwModel.maxCentroidErrorPx ?? Number.POSITIVE_INFINITY;
+  const polynomialSelectorError = meanEuclideanError(selector, (sample) =>
+    polynomialModel.predict(sample.ix, sample.iy, sample.yaw, sample.pitch),
+  );
+
+  const idwCandidate = {
+    kind: 'idw' as const,
+    model: idwModel,
+    selectorErrorPx: idwSelectorError,
+    trainingErrorPx: idwModel.trainingError,
+    maxCentroidErrorPx: idwMaxCentroidError,
+    sanityPassed: idwMaxCentroidError <= IDW_MAX_CENTROID_ERROR_PX,
+  };
+  const polynomialCandidate = {
+    kind: 'polynomial-ridge' as const,
+    model: polynomialModel,
+    selectorErrorPx: polynomialSelectorError,
+    trainingErrorPx: polynomialModel.trainingError,
+    maxCentroidErrorPx: null,
+    sanityPassed: true,
+  };
+  const candidates = [idwCandidate, polynomialCandidate]
+    .filter((candidate) => candidate.sanityPassed)
+    .sort((a, b) => a.selectorErrorPx - b.selectorErrorPx);
+
+  let selectedCandidate = candidates[0] ?? idwCandidate;
+  let reason =
+    selectedCandidate.kind === 'idw'
+      ? 'IDW had lower selector error'
+      : 'Polynomial ridge had lower selector error';
+
+  if (
+    selectedCandidate.kind === 'polynomial-ridge' &&
+    selectedCandidate.trainingErrorPx > POLYNOMIAL_MAX_TRAINING_ERROR_PX
+  ) {
+    selectedCandidate = idwCandidate;
+    reason = `Polynomial training error > ${POLYNOMIAL_MAX_TRAINING_ERROR_PX}px, falling back to IDW`;
+  } else if (!idwCandidate.sanityPassed) {
+    reason = `IDW max centroid error exceeded ${IDW_MAX_CENTROID_ERROR_PX}px sanity threshold`;
+  }
+
+  const selectedModel = selectedCandidate.model;
+
+  calibrationLogger.debug('[MODEL CANDIDATES]', {
+    idw: {
+      kind: idwModel.kind,
+      selectorErrorPx: Number(idwSelectorError.toFixed(2)),
+      trainingErrorPx: Number(idwModel.trainingError.toFixed(2)),
+      maxCentroidErrorPx: Number(idwMaxCentroidError.toFixed(2)),
+      maxCentroidErrorThresholdPx: IDW_MAX_CENTROID_ERROR_PX,
+      sanityPassed: idwCandidate.sanityPassed,
+      info: idwModel.info,
+    },
+    polynomial: {
+      kind: polynomialModel.kind,
+      selectorErrorPx: Number(polynomialSelectorError.toFixed(2)),
+      trainingErrorPx: Number(polynomialModel.trainingError.toFixed(2)),
+      maxTrainingErrorThresholdPx: POLYNOMIAL_MAX_TRAINING_ERROR_PX,
+      info: polynomialModel.info,
+    },
+  });
+
+  calibrationLogger.debug('[MODEL SELECTED]', {
+    kind: selectedModel.kind,
+    reason,
+    selectorErrorPx: Number(selectedCandidate.selectorErrorPx.toFixed(2)),
+    trainingErrorPx: Number(selectedModel.trainingError.toFixed(2)),
+    info: selectedModel.info,
+  });
+
+  if (typeof window !== 'undefined') {
+    (
+      window as typeof window & {
+        __lexoraCalibrationModel?: { predict: CalibrationModel['predict'] };
+      }
+    ).__lexoraCalibrationModel = { predict: selectedModel.predict };
+  }
+
+  return selectedModel;
 }

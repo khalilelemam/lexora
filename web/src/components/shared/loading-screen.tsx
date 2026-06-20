@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
 import { LexoraLogo } from './lexora-logo';
+import { cn } from '@/lib/utils';
 
 interface LoadingScreenProps {
   message?: string;
@@ -17,10 +17,10 @@ export function LoadingScreen({
     >
       <LexoraLogo size="lg" animate showText={false} />
       <div className="flex flex-col items-center gap-2">
-        <p className="text-foreground text-lg font-medium">{message}</p>
-        <div className="bg-muted mt-2 h-1 w-48 overflow-hidden rounded-full">
+        <p className="text-lg font-black text-[#1b2021]">{message}</p>
+        <div className="mt-2 h-1 w-48 overflow-hidden bg-[#51513d]/12">
           <div
-            className="from-primary to-accent h-full w-1/3 rounded-full bg-linear-to-r"
+            className="h-full w-1/3 bg-[#51513d]"
             style={{ animation: 'shimmer 1.5s ease-in-out infinite' }}
           />
         </div>

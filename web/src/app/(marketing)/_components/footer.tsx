@@ -2,39 +2,38 @@ import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
 
-/**
- * Marketing footer — Server Component (no 'use client').
- * Static content renders at build time for optimal SEO.
- */
 export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-card/30 border-t px-6 py-8">
-      <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
-        <LexoraLogo size="sm" />
+    <footer className="border-t border-[#e3dcc2]/10 bg-[#1b2021] px-6 py-9 text-[#e3dcc2]">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-4">
+        <LexoraLogo
+          size="sm"
+          className="[&_img]:brightness-0 [&_img]:invert [&_span]:text-[#e3dcc2]"
+        />
 
-        <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs">
-          <Link href="/about" className="hover:text-foreground transition-colors">
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#e3dcc2]/58">
+          <Link href="/about" className="transition-colors hover:text-[#e3dc95]">
             About
           </Link>
-          <Link href="/faq" className="hover:text-foreground transition-colors">
+          <Link href="/faq" className="transition-colors hover:text-[#e3dc95]">
             FAQ
           </Link>
-          <Link href="/privacy" className="hover:text-foreground transition-colors">
+          <Link href="/privacy" className="transition-colors hover:text-[#e3dc95]">
             Privacy
           </Link>
           <a
             href="https://github.com/khalilelemam/lexora"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-foreground flex items-center gap-1 transition-colors"
+            className="flex items-center gap-1 transition-colors hover:text-[#e3dc95]"
           >
             GitHub <ExternalLink className="h-3 w-3" />
           </a>
         </div>
 
-        <div className="text-muted-foreground/60 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px]">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-[#e3dcc2]/42">
           <span>© {year} Lexora</span>
           <span>·</span>
           <span>Research Use Only</span>

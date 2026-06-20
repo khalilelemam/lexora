@@ -2,6 +2,7 @@ import 'server-only';
 
 import sharp from 'sharp';
 
+import { READING_ZONE_BOUNDS } from '@/features/test/lib/constants';
 import type { GazeFeature } from '@/features/test/types';
 
 // ── AOI bounds — sourced from constants.ts ──────────────────
@@ -12,14 +13,14 @@ const AOI_X = { min: 0.2, max: 0.8 };
 const AOI_Y = { min: 0.1, max: 0.65 };
 
 // ── Virtual viewport ────────────────────────────────────────
-// Matches fullscreen layout: reading zone at 20%–80% X, 10%–95% Y
+// Matches fullscreen layout: reading zone at 25%–75% X, 18%–62% Y
 
 const VP_W = 1920;
 const VP_H = 1080;
-const ZONE_LEFT = VP_W * 0.2;
-const ZONE_TOP = VP_H * 0.1;
-const ZONE_W = VP_W * 0.6; // 20%–80%
-const ZONE_H = VP_H * 0.85; // 10%–95%
+const ZONE_LEFT = VP_W * READING_ZONE_BOUNDS.left;
+const ZONE_TOP = VP_H * READING_ZONE_BOUNDS.top;
+const ZONE_W = VP_W * (1 - READING_ZONE_BOUNDS.left - READING_ZONE_BOUNDS.right);
+const ZONE_H = VP_H * (1 - READING_ZONE_BOUNDS.top - READING_ZONE_BOUNDS.bottom);
 
 // ── Coordinate mapping ──────────────────────────────────────
 // Same as FullscreenGazeReplay: mapToElement(raw, aoi.min, aoi.max) → [0,1]

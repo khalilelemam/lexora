@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import type { CalibrationVisualMode } from './use-calibration-engine';
+import type { CalibrationVisualMode } from '../lib/calibration-mode';
 import { parseCalibrationMode } from '../lib/parse-calibration-mode';
 
 export interface CalibrationQueryParams {

@@ -119,22 +119,38 @@ export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScre
 
       <div className="flex gap-3">
         {onRetry && (
-          <Button onClick={onRetry}>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="inline-flex items-center bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
+          >
             <RotateCcw className="mr-2 h-4 w-4" />
             Retry Submission
-          </Button>
+          </button>
         )}
         {onStartOver && (
-          <Button variant={onRetry ? 'outline' : 'default'} onClick={onStartOver}>
+          <button
+            type="button"
+            onClick={onStartOver}
+            className={`inline-flex items-center px-5 py-2.5 text-sm font-black transition-colors ${
+              onRetry
+                ? 'border border-[#51513d]/25 bg-[#e3dcc2] text-[#51513d] hover:bg-[#51513d]/10'
+                : 'bg-[#51513d] text-[#e3dcc2] hover:bg-[#1b2021]'
+            }`}
+          >
             <RefreshCw className="mr-2 h-4 w-4" />
             Start Over
-          </Button>
+          </button>
         )}
         {onGoHome && (
-          <Button variant="outline" onClick={onGoHome}>
+          <button
+            type="button"
+            onClick={onGoHome}
+            className="inline-flex items-center border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
+          >
             <Home className="mr-2 h-4 w-4" />
             Back to Home
-          </Button>
+          </button>
         )}
       </div>
     </div>

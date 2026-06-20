@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
  * Research decisions:
  * - No "Lock on!" text during collecting — text near target creates a
  *   competing fixation stimulus (Holmqvist & Andersson 2017)
- * - Warm cream background (#FDF8F0) matches test screen — PSA prevention
+ * - Warm cream background (#e3dcc2) matches test screen — PSA prevention
  *   (Mathôt et al. 2013)
  * - Speed lines only during sequence phase — no peripheral motion during
  *   active gaze collection
@@ -256,7 +256,7 @@ export function StickmanCanvas({
       ctx.clearRect(0, 0, w, h);
 
       // Background — warm cream
-      ctx.fillStyle = '#FDF8F0';
+      ctx.fillStyle = '#e3dcc2';
       ctx.fillRect(0, 0, w, h);
 
       // Very faint warm grid
@@ -508,7 +508,7 @@ export function StickmanCanvas({
 
       {/* Bottom HUD strip */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between px-5">
-        <div className="flex items-center gap-1.5 rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] text-[#8B857E] backdrop-blur-sm">
+        <div className="flex items-center gap-1.5 rounded-lg border border-[#51513d] bg-[#f3edd7]/72 px-3 py-1.5 text-[11px] text-[#51513d] backdrop-blur-sm">
           <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
           Ninja Mode
         </div>
@@ -523,16 +523,16 @@ export function StickmanCanvas({
                   ? 'h-2 w-2 bg-red-500/70'
                   : idx === activeIdx
                     ? 'h-2.5 w-2.5 bg-red-500 shadow-[0_0_5px_rgba(220,38,38,0.5)]'
-                    : 'h-1.5 w-1.5 bg-[#D4CBBD]/50',
+                    : 'h-1.5 w-1.5 bg-[#51513d]/50',
               )}
             />
           ))}
         </div>
 
-        <div className="rounded-lg border border-[#E8E0D4] bg-white/55 px-3 py-1.5 text-[11px] backdrop-blur-sm">
+        <div className="rounded-lg border border-[#51513d] bg-[#f3edd7]/72 px-3 py-1.5 text-[11px] backdrop-blur-sm">
           <span className="font-semibold text-red-600">{collectionStep}</span>
-          <span className="text-[#C4BDB4]"> / </span>
-          <span className="text-[#6B6560]">{collectionTotal}</span>
+          <span className="text-[#51513d]"> / </span>
+          <span className="text-[#51513d]">{collectionTotal}</span>
         </div>
       </div>
     </div>
