@@ -75,8 +75,6 @@ export function CalibrationCollecting({
         </div>
       )}
 
-
-
       {/* Webcam collection-quality warnings — subtle top-center toast */}
       {tracker === 'webcam' && collectionIssue && !showFaceLost && (
         <div

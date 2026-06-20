@@ -110,8 +110,8 @@ export function useQuickValidation(
           ? targetOverride.map((target, index) => ({ target, pointIndex: index }))
           : Array.from({ length: NUM_VALIDATION_POINTS }).map((_, index) => {
               // Strict bounds: Vertical 15% to 60%, Horizontal 20% to 80%
-              const x = 0.20 + Math.random() * (0.80 - 0.20);
-              const y = 0.15 + Math.random() * (0.60 - 0.15);
+              const x = 0.2 + Math.random() * (0.8 - 0.2);
+              const y = 0.15 + Math.random() * (0.6 - 0.15);
               return {
                 target: { x, y, phase: 'STATIC' as const },
                 pointIndex: index,
