@@ -216,7 +216,7 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
           tips: [
             'We will ask for Camera permission next',
             'No video is recorded or stored',
-            'Only abstract coordinates are used',
+            'We only track where you look on the screen, not your face',
           ],
         }
       : {
@@ -235,10 +235,10 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
     visual: <PrivacyVisual />,
     title: 'Your Privacy',
     description:
-      'Privacy first. Webcam video stays in your browser, while authenticated test attempts can save gaze coordinates and ML results for research and follow-up.',
+      'Processing stays securely in your browser. Authenticated test attempts can save anonymous gaze points safely.',
     tips: [
       'No video recordings or face images stored',
-      'Raw gaze JSON is saved only when you explicitly opted in during registration',
+      'Gaze data is saved only if you explicitly opted in during registration',
       'Attempt history is linked to your signed-in account',
     ],
   };
