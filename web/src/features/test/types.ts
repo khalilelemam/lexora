@@ -107,7 +107,6 @@ export interface TobiiSubmissionInput {
   meaningfulText: TobiiGazePoint[];
   screenWidth: number;
   screenHeight: number;
-  lineCenters?: Record<string, number[]>;
   /** Task screenshots captured during the test (taskType → JPEG data URL) */
   screenshots?: Record<string, string>;
 }
@@ -117,7 +116,6 @@ export interface WebcamSubmissionInput {
   gazeData: WebcamGazePoint[];
   screenWidth: number;
   screenHeight: number;
-  lineCenters?: number[];
   /** Task screenshots captured during the test (taskType → JPEG data URL) */
   screenshots?: Record<string, string>;
 }

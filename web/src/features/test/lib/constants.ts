@@ -3,6 +3,25 @@
  */
 
 /**
+ * Gaze visualization snapping strategy.
+ *
+ * Controlled by `NEXT_PUBLIC_GAZE_SNAPPING_MODE`:
+ * - `"snapped"` — sequential state-machine snapping (line-by-line)
+ * - `"global-shift"` — single uniform vertical offset (median drift correction)
+ * - `"raw"` — no snapping; render raw gaze positions
+ */
+export type GazeSnappingMode = 'snapped' | 'raw' | 'global-shift';
+
+const VALID_SNAPPING_MODES = new Set<GazeSnappingMode>(['snapped', 'raw', 'global-shift']);
+
+function parseSnappingMode(): GazeSnappingMode {
+  const raw = process.env.NEXT_PUBLIC_GAZE_SNAPPING_MODE ?? 'snapped';
+  return VALID_SNAPPING_MODES.has(raw as GazeSnappingMode) ? (raw as GazeSnappingMode) : 'snapped';
+}
+
+export const GAZE_SNAPPING_MODE: GazeSnappingMode = parseSnappingMode();
+
+/**
  * 20-point calibration pattern focused on the top-anchored reading container (4x5 grid).
  *
  * Grid layout:

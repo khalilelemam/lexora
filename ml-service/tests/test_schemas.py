@@ -94,26 +94,6 @@ class TestGazeSequence:
 
         assert "ascending order" in str(exc_info.value)
 
-    def test_normalized_line_centers_must_be_in_range(self, valid_gaze_points):
-        with pytest.raises(ValidationError) as exc_info:
-            GazeSequence(
-                gaze_points=valid_gaze_points,
-                normalized_line_centers=[0.2, 1.2],
-            )
-
-        assert "normalized_line_centers" in str(exc_info.value)
-
-    def test_normalized_line_centers_must_be_strictly_increasing(
-        self, valid_gaze_points
-    ):
-        with pytest.raises(ValidationError) as exc_info:
-            GazeSequence(
-                gaze_points=valid_gaze_points,
-                normalized_line_centers=[0.3, 0.25, 0.6],
-            )
-
-        assert "strictly increasing" in str(exc_info.value)
-
 
 class TestPredictionRequest:
     def test_valid_request(self, valid_gaze_sequence):
@@ -288,35 +268,3 @@ class TestWebcamPredictionRequest:
             )
 
         assert "gaze_data" in str(exc_info.value)
-
-    def test_webcam_line_centers_must_be_in_range(self):
-        gaze_data = [
-            RawGazePoint(x=960.0, y=540.0, timestamp=1000000 + i * 16000)
-            for i in range(25)
-        ]
-
-        with pytest.raises(ValidationError) as exc_info:
-            WebcamPredictionRequest(
-                gaze_data=gaze_data,
-                screen_width=1920,
-                screen_height=1080,
-                normalized_line_centers=[0.3, -0.1],
-            )
-
-        assert "normalized_line_centers" in str(exc_info.value)
-
-    def test_webcam_line_centers_must_be_strictly_increasing(self):
-        gaze_data = [
-            RawGazePoint(x=960.0, y=540.0, timestamp=1000000 + i * 16000)
-            for i in range(25)
-        ]
-
-        with pytest.raises(ValidationError) as exc_info:
-            WebcamPredictionRequest(
-                gaze_data=gaze_data,
-                screen_width=1920,
-                screen_height=1080,
-                normalized_line_centers=[0.3, 0.3, 0.6],
-            )
-
-        assert "strictly increasing" in str(exc_info.value)

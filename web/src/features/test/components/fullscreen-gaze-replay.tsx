@@ -1,9 +1,22 @@
 'use client';
 
-import { useEffect, useMemo, useCallback, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useCallback,
+  useLayoutEffect,
+  useState,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { X, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CALIBRATION_POINTS, AOI_Y_BOUNDS, READING_ZONE_BOUNDS } from '../lib/constants';
+import {
+  CALIBRATION_POINTS,
+  AOI_Y_BOUNDS,
+  READING_ZONE_BOUNDS,
+  GAZE_SNAPPING_MODE,
+} from '../lib/constants';
 import { TaskDisplay } from './task-display';
 import { useGazeReplay } from '../hooks/use-gaze-replay';
 import type { GazeFeature } from '../types';
@@ -45,6 +58,7 @@ export function FullscreenGazeReplay({
   toolbarSlot,
 }: FullscreenGazeReplayProps) {
   const features = useMemo(() => detectRegressions(rawFeatures, 'ltr'), [rawFeatures]);
+  const snappingMode = GAZE_SNAPPING_MODE;
   const replay = useGazeReplay({ features, active: true });
 
   // Lock body scroll while the overlay is mounted to prevent
@@ -70,8 +84,126 @@ export function FullscreenGazeReplay({
   const zoneW = screenW * (1 - READING_ZONE_BOUNDS.left - READING_ZONE_BOUNDS.right);
   const zoneH = screenH * (1 - READING_ZONE_BOUNDS.top - READING_ZONE_BOUNDS.bottom);
 
+  const [lineCenters, setLineCenters] = useState<number[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+
+    const measure = () => {
+      if (!containerRef.current) return;
+      const wordSpans = containerRef.current.querySelectorAll('[data-word]');
+      if (wordSpans.length === 0) return;
+
+      const lineMap = new Map<number, Array<{ top: number; bottom: number }>>();
+
+      wordSpans.forEach((span) => {
+        const rect = (span as HTMLElement).getBoundingClientRect();
+        const lineKey = Math.round(rect.top);
+
+        if (!lineMap.has(lineKey)) {
+          lineMap.set(lineKey, []);
+        }
+        lineMap.get(lineKey)!.push({ top: rect.top, bottom: rect.bottom });
+      });
+
+      const centers: number[] = [];
+      const sortedLineKeys = Array.from(lineMap.keys()).sort((a, b) => a - b);
+
+      sortedLineKeys.forEach((lineKey) => {
+        const rects = lineMap.get(lineKey)!;
+        const minTop = Math.min(...rects.map((r) => r.top));
+        const maxBottom = Math.max(...rects.map((r) => r.bottom));
+        centers.push((minTop + maxBottom) / 2);
+      });
+
+      setLineCenters(centers);
+    };
+
+    const timer = setTimeout(measure, 100);
+    window.addEventListener('resize', measure);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', measure);
+    };
+  }, [content, taskType]);
+
+  const snappedYCoordinates = useMemo(() => {
+    if (snappingMode === 'raw' || lineCenters.length === 0 || features.length === 0) {
+      return [];
+    }
+
+    // ── 1. Run sequential snapping to map each fixation to its most likely reading line center ──
+    let avgLineHeight = 50;
+    if (lineCenters.length > 1) {
+      let total = 0;
+      for (let i = 1; i < lineCenters.length; i++) {
+        total += lineCenters[i] - lineCenters[i - 1];
+      }
+      avgLineHeight = total / (lineCenters.length - 1);
+    }
+    const threshold = avgLineHeight * 1.5;
+
+    const sequentialSnapped: number[] = [];
+    let currentLineIndex = 0;
+
+    features.forEach((f, idx) => {
+      const yRaw = zoneTop + mapY(f.fixationY) * zoneH;
+
+      if (idx === 0) {
+        let closestIdx = 0;
+        let minDiff = Math.abs(lineCenters[0] - yRaw);
+        for (let j = 1; j < lineCenters.length; j++) {
+          const diff = Math.abs(lineCenters[j] - yRaw);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestIdx = j;
+          }
+        }
+        currentLineIndex = closestIdx;
+      } else {
+        if (f.isReturnSweep) {
+          currentLineIndex = Math.min(lineCenters.length - 1, currentLineIndex + 1);
+        } else {
+          const distToCurrent = Math.abs(yRaw - lineCenters[currentLineIndex]);
+          if (distToCurrent > threshold) {
+            let closestIdx = 0;
+            let minDiff = Math.abs(lineCenters[0] - yRaw);
+            for (let j = 1; j < lineCenters.length; j++) {
+              const diff = Math.abs(lineCenters[j] - yRaw);
+              if (diff < minDiff) {
+                minDiff = diff;
+                closestIdx = j;
+              }
+            }
+            currentLineIndex = closestIdx;
+          }
+        }
+      }
+
+      sequentialSnapped.push(lineCenters[currentLineIndex]);
+    });
+
+    // ── 2. Global Shift mode: single uniform vertical offset calculated from median drift ──
+    if (snappingMode === 'global-shift') {
+      const rawYValues = features.map((f) => zoneTop + mapY(f.fixationY) * zoneH);
+      const diffs = rawYValues.map((y, i) => sequentialSnapped[i] - y);
+
+      const sortedDiffs = [...diffs].sort((a, b) => a - b);
+      const mid = Math.floor(sortedDiffs.length / 2);
+      const medianOffset =
+        sortedDiffs.length % 2 !== 0
+          ? sortedDiffs[mid]
+          : (sortedDiffs[mid - 1] + sortedDiffs[mid]) / 2;
+
+      return rawYValues.map((y) => y + medianOffset);
+    }
+
+    return sequentialSnapped;
+  }, [features, lineCenters, zoneTop, zoneH, mapY, snappingMode]);
+
   return (
-    <div className="fixed inset-0 z-50">
+    <div ref={containerRef} className="fixed inset-0 z-50">
       {/* TaskDisplay in preview mode — identical text layout */}
       <TaskDisplay
         taskType={taskType}
@@ -90,10 +222,15 @@ export function FullscreenGazeReplay({
             const curr = features[idx];
             if (!prev || !curr) return null;
 
+            const prevSnappedY = snappedYCoordinates[replay.trail[i]];
+            const currSnappedY = snappedYCoordinates[idx];
+
             const x1 = zoneLeft + mapX(prev.fixationX) * zoneW;
-            const y1 = zoneTop + mapY(prev.fixationY) * zoneH;
+            const y1 =
+              prevSnappedY !== undefined ? prevSnappedY : zoneTop + mapY(prev.fixationY) * zoneH;
             const x2 = zoneLeft + mapX(curr.fixationX) * zoneW;
-            const y2 = zoneTop + mapY(curr.fixationY) * zoneH;
+            const y2 =
+              currSnappedY !== undefined ? currSnappedY : zoneTop + mapY(curr.fixationY) * zoneH;
 
             const isRegression = curr.isRegression && !curr.isReturnSweep;
             const stroke = curr.isReturnSweep
@@ -129,7 +266,10 @@ export function FullscreenGazeReplay({
         const size = replay.getBubbleSize(f.durationMs);
         const isCurrent = idx === replay.currentIndex;
         const leftPx = zoneLeft + mapX(f.fixationX) * zoneW;
-        const topPx = zoneTop + mapY(f.fixationY) * zoneH;
+        const topPx =
+          snappedYCoordinates[idx] !== undefined
+            ? snappedYCoordinates[idx]
+            : zoneTop + mapY(f.fixationY) * zoneH;
 
         return (
           <div

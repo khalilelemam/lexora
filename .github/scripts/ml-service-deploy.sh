@@ -34,6 +34,10 @@ else
   az containerapp update \
     --name "$AZURE_CONTAINERAPP_NAME" \
     --resource-group "$AZURE_RESOURCE_GROUP" \
+    --cpu "$CONTAINER_CPU" \
+    --memory "$CONTAINER_MEMORY" \
+    --min-replicas "$CONTAINER_MIN_REPLICAS" \
+    --max-replicas "$CONTAINER_MAX_REPLICAS" \
     --set-env-vars "${ML_ENV_VARS[@]}"
 fi
 

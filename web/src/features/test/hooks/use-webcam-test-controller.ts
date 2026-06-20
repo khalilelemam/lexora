@@ -45,7 +45,6 @@ export function useWebcamTestController() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const gazeDataRef = useRef<WebcamGazePoint[]>([]);
-  const lineCentersRef = useRef<number[]>([]);
   const lastTaskGazePositionRef = useRef<{ x: number; y: number } | null>(null);
 
   const [gazePointCount, setGazePointCount] = useState(0);
@@ -117,10 +116,6 @@ export function useWebcamTestController() {
     dispatch({ type: 'TASK_COMPLETE' });
   }, [dispatch, webcamGaze]);
 
-  const handleLineCentersReady = useCallback((centers: number[]) => {
-    lineCentersRef.current = centers;
-  }, []);
-
   const handleRetake = useCallback(() => {
     gazeDataRef.current = [];
     setGazePointCount(0);
@@ -172,7 +167,6 @@ export function useWebcamTestController() {
       gazeData: gazeDataRef.current,
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
-      lineCenters: lineCentersRef.current,
       screenshots: screenshotRef.current ? { paragraph: screenshotRef.current } : undefined,
     });
 
@@ -213,7 +207,8 @@ export function useWebcamTestController() {
     if (webcamState.currentState === 'task-paragraph') {
       webcamGaze.startCollecting();
     }
-  }, [webcamGaze, webcamState.currentState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- startCollecting is stable; avoid re-triggering on webcamGaze object identity changes
+  }, [webcamState.currentState]);
 
   useEffect(() => {
     if (webcamState.currentState === 'results') {
@@ -249,7 +244,6 @@ export function useWebcamTestController() {
     completeSetup,
     handleCalibrationComplete,
     handleTaskDone,
-    handleLineCentersReady,
     handleRetake,
     handleContinue,
     retrySubmission,
