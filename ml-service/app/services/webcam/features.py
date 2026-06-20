@@ -199,7 +199,7 @@ class WebcamFeatureProcessor:
         """Extract model and replay features per fixation.
 
         Model feature order:
-            [duration_ms, centroid_x, centroid_y, amplitude, regression, efficiency]
+            [duration_ms, centroid_x, centroid_y, amplitude, regression, efficiency_ratio]
 
         The seventh return-sweep column is included for richer API replay only
         and is not passed to the model.
@@ -341,6 +341,8 @@ class WebcamFeatureProcessor:
         )
         model_mask = mask.reshape(1, settings.WEBCAM_MAX_SEQUENCES)
 
+        # is_return_sweep feature is a replay-only feature and not used by the ml model
+        # it's returned by the api for the frontend to use it in the replay feature.
         features_data = [
             {
                 "timestamp": int(fixation[0, 2]),
