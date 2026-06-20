@@ -12,15 +12,16 @@ import { auth } from '@/lib/auth';
  * @see https://github.com/khalilelemam/lexora/issues/46
  */
 export async function proxy(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    const signInUrl = new URL('/sign-in', request.url);
-    signInUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
-    return NextResponse.redirect(signInUrl);
-  }
+  // Temporarily bypass authentication check so anyone can access /test pages
+  // const session = await auth.api.getSession({
+  //   headers: await headers(),
+  // });
+  //
+  // if (!session) {
+  //   const signInUrl = new URL('/sign-in', request.url);
+  //   signInUrl.searchParams.set('callbackUrl', request.nextUrl.pathname);
+  //   return NextResponse.redirect(signInUrl);
+  // }
 
   return NextResponse.next();
 }
