@@ -157,9 +157,9 @@ class WebcamPredictionService:
             )
 
         probability = float(
-            self.model.predict(
-                [scaled_sequences, mask.astype(np.float32)], verbose=0
-            )[0][0]
+            self.model.predict([scaled_sequences, mask.astype(np.float32)], verbose=0)[
+                0
+            ][0]
         )
 
         return {
