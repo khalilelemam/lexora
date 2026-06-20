@@ -191,7 +191,8 @@ class TestPredictWebcamEndpoint:
     def mock_feature_processor(self):
         processor = Mock()
         processor.process.return_value = WebcamProcessingResult(
-            sequences=np.zeros((1, 82, 20, 5), dtype=np.float32),
+            sequences=np.zeros((1, 40, 20, 6), dtype=np.float32),
+            mask=np.ones((1, 40), dtype=np.float32),
             features_data=[
                 {
                     "timestamp": 1000,
@@ -313,6 +314,9 @@ class TestPredictWebcamEndpoint:
         await predict_webcam(webcam_request_data, mock_request)
 
         mock_prediction_service.predict.assert_called_once()
+        args = mock_prediction_service.predict.call_args[0]
+        assert args[0].shape == (1, 40, 20, 6)
+        assert args[1].shape == (1, 40)
 
     # --- Error Handling Tests ---
 

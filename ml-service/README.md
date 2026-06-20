@@ -50,25 +50,19 @@ DEBUG=false
 PORT=8001
 HOST=0.0.0.0
 
-# Eye Tracker Features  
-EYE_TRACKER_SEQUENCE_LENGTH=20
-EYE_TRACKER_SEQUENCE_STEP=5
-EYE_TRACKER_MAX_SEQUENCES=100
-EYE_TRACKER_MIN_FIXATION_MS=80
-EYE_TRACKER_MAX_FIXATION_MS=1000
+# CORS
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
-# Webcam I-DT + One Euro
-WEBCAM_MIN_FIXATION_MS=50
-WEBCAM_MAX_FIXATION_MS=1500
-WEBCAM_IDT_DISPERSION_THRESHOLD=0.04
-WEBCAM_IDT_MIN_WINDOW_MS=150
-WEBCAM_LINE_TRANSITION_THRESHOLD=0.04
-WEBCAM_ONE_EURO_MINCUTOFF=1.0
-WEBCAM_ONE_EURO_BETA=0.007
-WEBCAM_ONE_EURO_DCUTOFF=1.0
-WEBCAM_MAX_SEQUENCES=82
+# Risk classification thresholds
+LOW_RISK_THRESHOLD=0.33
+HIGH_RISK_THRESHOLD=0.66
+
+# QA Configurations
 WEBCAM_MIN_SEQUENCES=10
 ```
+
+> [!NOTE]
+> Deep learning model contracts, input shapes (such as `WEBCAM_MAX_SEQUENCES=40`, `WEBCAM_N_FEATURES=6`), math normalization caps, and relative file paths are locked down as static constants (`ClassVar`) in `app/config.py` to prevent accidental environmental drift and ensure prediction reproducibility.
 
 See `.env.example` for complete documentation of all options.
 
@@ -124,7 +118,7 @@ docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:1.2.1
 # Pass environment variables
 docker run -p 8001:8001 \
   -e DEBUG=true \
-  -e WEBCAM_IDT_DISPERSION_THRESHOLD=0.045 \
+  -e WEBCAM_MIN_SEQUENCES=1 \
   ghcr.io/khalil-elemam/lexora-ml:latest
 ```
 
@@ -138,8 +132,7 @@ services:
       - "8001:8001"
     environment:
       DEBUG: "false"
-      WEBCAM_IDT_DISPERSION_THRESHOLD: "0.04"
-      EYE_TRACKER_MIN_FIXATION_MS: "80"
+      WEBCAM_MIN_SEQUENCES: "10"
 ```
 
 ### Build Locally

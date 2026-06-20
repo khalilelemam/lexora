@@ -128,7 +128,7 @@ async def predict_webcam(request: WebcamPredictionRequest, http_request: Request
             request.screen_height,
         )
 
-        result = prediction.predict(processing.sequences)
+        result = prediction.predict(processing.sequences, processing.mask)
 
         return WebcamPredictionResponse(
             dyslexia_probability=result["dyslexia_probability"],
