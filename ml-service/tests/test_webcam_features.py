@@ -79,15 +79,17 @@ class TestWebcamFeatureProcessor:
 
         result = processor.process(raw_points, 1920, 1080)
 
-        assert result.sequences.shape == (1, 82, 20, 5)
+        assert result.sequences.shape == (1, 40, 20, 6)
+        assert result.mask.shape == (1, 40)
         assert (
             result.sequences.dtype == np.float64 or result.sequences.dtype == np.float32
         )
+        assert result.mask.dtype == np.float32
         assert result.total_fixations > 0
         assert result.mean_fixation_duration_ms > 0
         assert len(result.features_data) == result.total_fixations
 
-    def test_output_is_padded_to_82_sequences(self, processor):
+    def test_output_is_padded_to_40_sequences(self, processor):
         np.random.seed(42)
 
         def make_points(count: int = 5000):
@@ -143,8 +145,9 @@ class TestWebcamFeatureProcessor:
 
         result = processor.process(raw_points, 1920, 1080)
 
-        # Should always output exactly 82 sequences
-        assert result.sequences.shape[1] == 82
+        # Should always output exactly 40 sequence slots plus a validity mask.
+        assert result.sequences.shape[1] == 40
+        assert result.mask.shape[1] == 40
 
     # --- Coordinate Normalization ---
 
@@ -240,7 +243,7 @@ class TestWebcamFeatureProcessor:
 
     # --- Feature Extraction ---
 
-    def test_extract_features_returns_6_features(self, processor):
+    def test_extract_features_returns_7_columns(self, processor):
         # Timestamps in milliseconds
         fixations = [
             np.array([[0.3, 0.4, 100], [0.3, 0.4, 200], [0.3, 0.4, 300]]),
@@ -249,7 +252,7 @@ class TestWebcamFeatureProcessor:
 
         features = processor.extract_features(fixations)
 
-        assert features.shape == (2, 6)
+        assert features.shape == (2, 7)
 
     def test_extract_features_duration(self, processor):
         # 250ms fixation
@@ -301,21 +304,22 @@ class TestWebcamFeatureProcessor:
 
         features = processor.extract_features(fixations)
 
-        # Check return sweeps:
-        assert features[0, 5] == 0  # No return sweep on first
-        assert features[1, 5] == 1  # Return sweep detected at transition to line 1
-        assert features[2, 5] == 0  # Reading on same line
-        assert features[3, 5] == 0  # Regression on same line
+        # Check return sweeps in replay-only column:
+        assert features[0, 6] == 0  # No return sweep on first
+        assert features[1, 6] == 1  # Return sweep detected at transition to line 1
+        assert features[2, 6] == 0  # Reading on same line
+        assert features[3, 6] == 0  # Regression on same line
 
-        # Check regressions:
+        # Check regressions. Updated model training treats any leftward movement
+        # from the previous fixation as a regression.
         assert features[0, 4] == 0  # First has no previous
-        assert features[1, 4] == 0  # Return sweep transition (different lines)
+        assert features[1, 4] == 1  # Return sweep is still leftward
         assert features[2, 4] == 0  # Moved rightward
-        assert features[3, 4] == 1  # Moved leftward on the same line -> regression!
+        assert features[3, 4] == 1  # Moved leftward
 
     def test_extract_features_empty_input(self, processor):
         features = processor.extract_features([])
-        assert features.shape == (0, 6)
+        assert features.shape == (0, 7)
 
     # --- Sequence Creation ---
 
@@ -325,44 +329,51 @@ class TestWebcamFeatureProcessor:
         sequences = processor.create_sequences(features)
 
         # (30-20)/5 + 1 = 3 sequences (using config: window_size=20, step=5)
-        # Sequence creator filters to 5 variables for the model
-        assert sequences.shape == (3, 20, 5)
+        # Sequence creator filters to 6 variables for the model.
+        assert sequences.shape == (3, 20, 6)
 
     def test_create_sequences_insufficient_data(self, processor):
         features = np.random.randn(15, 6)  # Less than window_size
 
         sequences = processor.create_sequences(features)
 
-        assert sequences.shape == (0, 20, 5)
+        assert sequences.shape == (0, 20, 6)
 
-    def test_create_sequences_uses_first_five_features(self, processor):
-        features = np.zeros((20, 6), dtype=np.float32)
+    def test_create_sequences_uses_first_six_features(self, processor):
+        features = np.zeros((20, 7), dtype=np.float32)
         features[:, 0] = np.arange(20)  # duration
-        features[:, 5] = 1.0  # return_sweep channel should be excluded
+        features[:, 5] = 1.0  # efficiency channel should be included
+        features[:, 6] = 2.0  # return_sweep channel should be excluded
 
         sequences = processor.create_sequences(features)
 
-        assert sequences.shape == (1, 20, 5)
+        assert sequences.shape == (1, 20, 6)
         np.testing.assert_array_equal(sequences[0, :, 0], np.arange(20))
+        np.testing.assert_array_equal(sequences[0, :, 5], 1.0)
 
     # --- Padding ---
 
     def test_pad_sequences_pads_short_input(self, processor):
-        sequences = np.ones((10, 20, 5))
+        sequences = np.ones((10, 20, 6))
 
-        padded = processor.pad_sequences(sequences)
+        padded, mask = processor.pad_sequences(sequences)
 
-        assert padded.shape == (82, 20, 5)
+        assert padded.shape == (40, 20, 6)
+        assert mask.shape == (40,)
         np.testing.assert_array_equal(padded[:10], sequences)
         np.testing.assert_array_equal(padded[10:], 0)
+        np.testing.assert_array_equal(mask[:10], 1.0)
+        np.testing.assert_array_equal(mask[10:], 0.0)
 
     def test_pad_sequences_truncates_long_input(self, processor):
-        sequences = np.random.randn(100, 20, 5)
+        sequences = np.random.randn(100, 20, 6).astype(np.float32)
 
-        padded = processor.pad_sequences(sequences)
+        padded, mask = processor.pad_sequences(sequences)
 
-        assert padded.shape == (82, 20, 5)
-        np.testing.assert_array_equal(padded, sequences[:82])
+        assert padded.shape == (40, 20, 6)
+        assert mask.shape == (40,)
+        np.testing.assert_array_equal(padded, sequences[:40])
+        np.testing.assert_array_equal(mask, 1.0)
 
     # --- Error Handling ---
 

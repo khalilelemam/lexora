@@ -47,17 +47,19 @@ class TestWebcamPredictionService:
     # --- Prediction Output Tests ---
 
     def test_predict_returns_dict_with_required_keys(self, prediction_service):
-        sequences = np.zeros((1, 82, 20, 5), dtype=np.float32)
+        sequences = np.zeros((1, 40, 20, 6), dtype=np.float32)
+        mask = np.ones((1, 40), dtype=np.float32)
 
-        result = prediction_service.predict(sequences)
+        result = prediction_service.predict(sequences, mask)
 
         assert "dyslexia_probability" in result
         assert "risk_level" in result
 
     def test_predict_returns_valid_probability(self, prediction_service):
-        sequences = np.zeros((1, 82, 20, 5), dtype=np.float32)
+        sequences = np.zeros((1, 40, 20, 6), dtype=np.float32)
+        mask = np.ones((1, 40), dtype=np.float32)
 
-        result = prediction_service.predict(sequences)
+        result = prediction_service.predict(sequences, mask)
 
         assert isinstance(result["dyslexia_probability"], float)
         assert 0 <= result["dyslexia_probability"] <= 1
@@ -65,9 +67,10 @@ class TestWebcamPredictionService:
     def test_predict_calls_model_with_scaled_data(
         self, prediction_service, mock_model, mock_scaler
     ):
-        sequences = np.random.randn(1, 82, 20, 5).astype(np.float32)
+        sequences = np.random.randn(1, 40, 20, 6).astype(np.float32)
+        mask = np.ones((1, 40), dtype=np.float32)
 
-        prediction_service.predict(sequences)
+        prediction_service.predict(sequences, mask)
 
         # Scaler should be called
         mock_scaler.transform.assert_called_once()
@@ -78,44 +81,48 @@ class TestWebcamPredictionService:
 
     def test_risk_level_low(self, prediction_service):
         prediction_service.model.predict.return_value = np.array([[0.2]])
-        sequences = np.zeros((1, 82, 20, 5), dtype=np.float32)
+        sequences = np.zeros((1, 40, 20, 6), dtype=np.float32)
+        mask = np.ones((1, 40), dtype=np.float32)
 
-        result = prediction_service.predict(sequences)
+        result = prediction_service.predict(sequences, mask)
 
         assert result["risk_level"] == "low"
 
     def test_risk_level_medium(self, prediction_service):
         prediction_service.model.predict.return_value = np.array([[0.5]])
-        sequences = np.zeros((1, 82, 20, 5), dtype=np.float32)
+        sequences = np.zeros((1, 40, 20, 6), dtype=np.float32)
+        mask = np.ones((1, 40), dtype=np.float32)
 
-        result = prediction_service.predict(sequences)
+        result = prediction_service.predict(sequences, mask)
 
         assert result["risk_level"] == "medium"
 
     def test_risk_level_high(self, prediction_service):
         prediction_service.model.predict.return_value = np.array([[0.8]])
-        sequences = np.zeros((1, 82, 20, 5), dtype=np.float32)
+        sequences = np.zeros((1, 40, 20, 6), dtype=np.float32)
+        mask = np.ones((1, 40), dtype=np.float32)
 
-        result = prediction_service.predict(sequences)
+        result = prediction_service.predict(sequences, mask)
 
         assert result["risk_level"] == "high"
 
     def test_risk_level_thresholds(self, prediction_service):
         """Test exact threshold boundaries."""
-        sequences = np.zeros((1, 82, 20, 5), dtype=np.float32)
+        sequences = np.zeros((1, 40, 20, 6), dtype=np.float32)
+        mask = np.ones((1, 40), dtype=np.float32)
 
         # At LOW_RISK_THRESHOLD (0.33) -> medium
         prediction_service.model.predict.return_value = np.array(
             [[settings.LOW_RISK_THRESHOLD]]
         )
-        result = prediction_service.predict(sequences)
+        result = prediction_service.predict(sequences, mask)
         assert result["risk_level"] == "medium"
 
         # At HIGH_RISK_THRESHOLD (0.66) -> high
         prediction_service.model.predict.return_value = np.array(
             [[settings.HIGH_RISK_THRESHOLD]]
         )
-        result = prediction_service.predict(sequences)
+        result = prediction_service.predict(sequences, mask)
         assert result["risk_level"] == "high"
 
     # --- Model State Tests ---
