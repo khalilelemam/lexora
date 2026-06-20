@@ -150,7 +150,9 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="min-calibration" className="text-xs">Min Calibration Acc (%)</Label>
+          <Label htmlFor="min-calibration" className="text-xs">
+            Min Calibration Acc (%)
+          </Label>
           <Input
             id="min-calibration"
             type="number"
