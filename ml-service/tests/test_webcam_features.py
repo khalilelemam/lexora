@@ -243,7 +243,7 @@ class TestWebcamFeatureProcessor:
 
     # --- Feature Extraction ---
 
-    def test_extract_features_returns_6_features(self, processor):
+    def test_extract_features_returns_7_columns(self, processor):
         # Timestamps in milliseconds
         fixations = [
             np.array([[0.3, 0.4, 100], [0.3, 0.4, 200], [0.3, 0.4, 300]]),
