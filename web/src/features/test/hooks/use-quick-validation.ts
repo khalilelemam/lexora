@@ -104,14 +104,20 @@ export function useQuickValidation(
           '[QUICK VALIDATION RUN] Using default grid VALIDATION_POINT_INDICES',
         );
       }
+      const NUM_VALIDATION_POINTS = 5;
       const validationTargets =
         targetOverride.length > 0
           ? targetOverride.map((target, index) => ({ target, pointIndex: index }))
-          : VALIDATION_POINT_INDICES.map((pointIndex) => ({
-              target: CALIBRATION_POINTS[pointIndex],
-              pointIndex,
-            }));
-      const shuffledTargets = shuffleArray(validationTargets);
+          : Array.from({ length: NUM_VALIDATION_POINTS }).map((_, index) => {
+              // Strict bounds: Vertical 15% to 60%, Horizontal 20% to 80%
+              const x = 0.2 + Math.random() * (0.8 - 0.2);
+              const y = 0.15 + Math.random() * (0.6 - 0.15);
+              return {
+                target: { x, y, phase: 'STATIC' as const },
+                pointIndex: index,
+              };
+            });
+      const shuffledTargets = validationTargets; // No need to shuffle random points
       const validationPoints = shuffledTargets.map((entry) => entry.target);
       const scores: number[] = [];
       const normalizedErrors: number[] = [];

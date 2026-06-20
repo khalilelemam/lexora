@@ -19,13 +19,6 @@ export function TobiiServiceStatusCard({
   serviceError,
   onRefresh,
 }: TobiiServiceStatusCardProps) {
-  const openTobiiService = () => {
-    if (typeof window === 'undefined') return;
-    const TOBII_SERVICE_URL = process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
-    const url = serviceRunning ? TOBII_SERVICE_URL : '/api/download/service';
-    window.open(url, '_blank');
-  };
-
   return (
     <div className="w-full border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[10px_10px_0_rgba(81,81,61,.08)]">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -74,12 +67,33 @@ export function TobiiServiceStatusCard({
       )}
 
       <div className="mt-5 flex flex-wrap gap-3">
+        {!serviceRunning && (
+          <a
+            href="/api/download/service"
+            className="bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
+          >
+            Download Service
+          </a>
+        )}
         <button
           type="button"
-          onClick={openTobiiService}
-          className="bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
+          onClick={() => {
+            if (typeof window === 'undefined') return;
+            if (serviceRunning) {
+              const TOBII_SERVICE_URL =
+                process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
+              window.open(TOBII_SERVICE_URL, '_blank');
+            } else {
+              window.location.href = 'lexora://open';
+            }
+          }}
+          className={
+            serviceRunning
+              ? 'bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]'
+              : 'border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10'
+          }
         >
-          {serviceRunning ? 'Open Tobii Service' : 'Download Tobii Service'}
+          Open Service
         </button>
         <button
           type="button"

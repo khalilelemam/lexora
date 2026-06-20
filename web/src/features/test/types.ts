@@ -124,9 +124,8 @@ export interface WebcamSubmissionInput {
 export type TobiiTestState =
   | 'idle'
   | 'intake'
-  | 'hardware-check'
-  | 'pre-test-education'
-  | 'device-check'
+  | 'device-setup'
+  | 'calibration-setup'
   | 'calibrating'
   | 'task-syllables'
   | 'review-syllables'
@@ -141,8 +140,8 @@ export type TobiiTestState =
 export type WebcamTestState =
   | 'idle'
   | 'intake'
-  | 'pre-test-education'
-  | 'camera-setup'
+  | 'device-setup'
+  | 'calibration-setup'
   | 'calibrating'
   | 'task-paragraph'
   | 'review-paragraph'
@@ -157,7 +156,7 @@ export type TestAction =
   | { type: 'START' }
   | { type: 'INTAKE_COMPLETE'; data: IntakeData }
   | { type: 'HARDWARE_CONFIRMED' }
-  | { type: 'EDUCATION_COMPLETE' }
+  | { type: 'SETUP_COMPLETE' }
   | { type: 'DEVICE_READY' }
   | { type: 'CAMERA_READY' }
   | { type: 'CALIBRATION_COMPLETE'; result: CalibrationResult }
