@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, ClassVar
 import tomllib
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -35,9 +35,9 @@ PROJECT_METADATA = _load_project_metadata()
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
-    APP_NAME: str = PROJECT_METADATA["name"]
-    APP_VERSION: str = PROJECT_METADATA["version"]
-    APP_DESCRIPTION: str = PROJECT_METADATA["description"]
+    APP_NAME: ClassVar[str] = PROJECT_METADATA["name"]
+    APP_VERSION: ClassVar[str] = PROJECT_METADATA["version"]
+    APP_DESCRIPTION: ClassVar[str] = PROJECT_METADATA["description"]
     DEBUG: bool = False
 
     HOST: str = "0.0.0.0"
@@ -48,37 +48,47 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
     ]
 
-    BASE_DIR: Path = Path(__file__).resolve().parent.parent
-    MODELS_DIR: Path = BASE_DIR / "models"
+    BASE_DIR: ClassVar[Path] = Path(__file__).resolve().parent.parent
+    MODELS_DIR: ClassVar[Path] = BASE_DIR / "models"
 
     # Eye tracker model paths
-    EYE_TRACKER_MODEL_PATH: Path = (
+    EYE_TRACKER_MODEL_PATH: ClassVar[Path] = (
         MODELS_DIR / "eye-tracker" / "dyslexia_profile_model.keras"
     )
-    EYE_TRACKER_SCALER_PATH: Path = MODELS_DIR / "eye-tracker" / "scaler.pkl"
+    EYE_TRACKER_SCALER_PATH: ClassVar[Path] = MODELS_DIR / "eye-tracker" / "scaler.pkl"
 
     # Webcam model paths
-    WEBCAM_MODEL_PATH: Path = MODELS_DIR / "webcam" / "dyslexia_uda_classifier.keras"
-    WEBCAM_SCALER_PATH: Path = MODELS_DIR / "webcam" / "target_domain_scaler.pkl"
+    WEBCAM_MODEL_PATH: ClassVar[Path] = (
+        MODELS_DIR / "webcam" / "dyslexia_uda_classifier.keras"
+    )
+    WEBCAM_SCALER_PATH: ClassVar[Path] = (
+        MODELS_DIR / "webcam" / "target_domain_scaler.pkl"
+    )
 
     # Feature engineering parameters (Eye Tracker)
-    EYE_TRACKER_SEQUENCE_LENGTH: int = 20
-    EYE_TRACKER_SEQUENCE_STEP: int = 5
-    EYE_TRACKER_MAX_SEQUENCES: int = 100
-    EYE_TRACKER_MIN_FIXATION_MS: int = 80
-    EYE_TRACKER_MAX_FIXATION_MS: int = 1000
+    EYE_TRACKER_SEQUENCE_LENGTH: ClassVar[int] = 20
+    EYE_TRACKER_SEQUENCE_STEP: ClassVar[int] = 5
+    EYE_TRACKER_MAX_SEQUENCES: ClassVar[int] = 100
+    EYE_TRACKER_MIN_FIXATION_MS: ClassVar[int] = 80
+    EYE_TRACKER_MAX_FIXATION_MS: ClassVar[int] = 1000
 
     # Feature engineering parameters (Webcam)
-    WEBCAM_MIN_FIXATION_MS: int = 50
-    WEBCAM_MAX_FIXATION_MS: int = 1500
-    WEBCAM_IDT_DISPERSION_THRESHOLD: float = 0.04
-    WEBCAM_IDT_MIN_WINDOW_MS: int = 150
-    WEBCAM_LINE_TRANSITION_THRESHOLD: float = 0.04
-    WEBCAM_ONE_EURO_MINCUTOFF: float = 1.0
-    WEBCAM_ONE_EURO_BETA: float = 0.007
-    WEBCAM_ONE_EURO_DCUTOFF: float = 1.0
-    WEBCAM_MAX_SEQUENCES: int = 82
+    WEBCAM_MIN_FIXATION_MS: ClassVar[int] = 50
+    WEBCAM_MAX_FIXATION_MS: ClassVar[int] = 1500
+    WEBCAM_IDT_DISPERSION_THRESHOLD: ClassVar[float] = 0.04
+    WEBCAM_IDT_MIN_WINDOW_MS: ClassVar[int] = 150
+    WEBCAM_LINE_TRANSITION_THRESHOLD: ClassVar[float] = 0.04
+    WEBCAM_ONE_EURO_MINCUTOFF: ClassVar[float] = 1.0
+    WEBCAM_ONE_EURO_BETA: ClassVar[float] = 0.007
+    WEBCAM_ONE_EURO_DCUTOFF: ClassVar[float] = 1.0
+    WEBCAM_SEQUENCE_LENGTH: ClassVar[int] = 20
+    WEBCAM_SEQUENCE_STEP: ClassVar[int] = 5
+    WEBCAM_N_FEATURES: ClassVar[int] = 6
+    WEBCAM_MAX_SEQUENCES: ClassVar[int] = 40
     WEBCAM_MIN_SEQUENCES: int = 10  # Minimum sequences for valid prediction
+    WEBCAM_AMPLITUDE_FLOOR: ClassVar[float] = 0.0001
+    WEBCAM_AMPLITUDE_MAX: ClassVar[float] = 0.076948
+    WEBCAM_EFFICIENCY_CAP: ClassVar[float] = 20.0
 
     # Risk classification thresholds
     LOW_RISK_THRESHOLD: float = 0.33
