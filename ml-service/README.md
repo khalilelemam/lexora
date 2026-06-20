@@ -70,8 +70,6 @@ WEBCAM_MAX_SEQUENCES=82
 WEBCAM_MIN_SEQUENCES=10
 ```
 
-For paragraph-style tasks, sending normalized line centers from the client is strongly recommended for more stable line-aware regression and return-sweep detection.
-
 See `.env.example` for complete documentation of all options.
 
 Application metadata (`name`, `version`, `description`) is sourced from `pyproject.toml`.

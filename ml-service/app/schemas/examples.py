@@ -90,21 +90,17 @@ _EXAMPLE_GAZE_POINTS = _generate_gaze_points(0.1, 0.3, 1_000_000, 22)
 
 GAZE_SEQUENCE_EXAMPLE = {
     "gazePoints": _EXAMPLE_GAZE_POINTS,
-    "normalizedLineCenters": [0.25, 0.5, 0.75],
 }
 
 PREDICTION_REQUEST_EXAMPLE = {
     "syllablesTask": {
         "gazePoints": _generate_gaze_points(0.1, 0.3, 1_000_000, 22),
-        "normalizedLineCenters": [0.25, 0.5, 0.75],
     },
     "meaningfulTask": {
         "gazePoints": _generate_gaze_points(0.1, 0.35, 5_000_000, 22),
-        "normalizedLineCenters": [0.22, 0.44, 0.66],
     },
     "pseudoTask": {
         "gazePoints": _generate_gaze_points(0.1, 0.4, 9_000_000, 22),
-        "normalizedLineCenters": [0.3, 0.6],
     },
     "screenWidth": 1920,
     "screenHeight": 1080,
@@ -181,7 +177,6 @@ WEBCAM_PREDICTION_REQUEST_EXAMPLE = {
     "screenWidth": 1920,
     "screenHeight": 1080,
     "gazeData": _generate_raw_gaze_points(800),
-    "normalizedLineCenters": [0.28, 0.46, 0.64],
 }
 
 WEBCAM_PREDICTION_RESPONSE_EXAMPLE = {

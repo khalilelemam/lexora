@@ -54,15 +54,13 @@ POST /v1/eye-tracker/predict
       {"fixationX": 0.15, "fixationY": 0.35, "timestamp": 1000000},
       {"fixationX": 0.22, "fixationY": 0.36, "timestamp": 1250000},
       {"fixationX": 0.28, "fixationY": 0.35, "timestamp": 1480000}
-    ],
-    "normalizedLineCenters": [0.25, 0.5, 0.75]
+    ]
   },
   "meaningfulTask": {
     "gazePoints": [
       {"fixationX": 0.12, "fixationY": 0.40, "timestamp": 1000000},
       {"fixationX": 0.20, "fixationY": 0.41, "timestamp": 1200000}
-    ],
-    "normalizedLineCenters": [0.3, 0.6]
+    ]
   },
   "pseudoTask": {
     "gazePoints": [
@@ -90,7 +88,6 @@ POST /v1/eye-tracker/predict
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `gazePoints` | GazePoint[] | Yes | Array of gaze points (minimum 20) |
-| `normalizedLineCenters` | float[] | No | Optional normalized line center Y-values (0-1) |
 
 **GazePoint Schema:**
 
@@ -227,8 +224,7 @@ POST /v1/webcam/predict
     {"x": 450.3, "y": 275.2, "timestamp": 1064}
   ],
   "screenWidth": 1920,
-  "screenHeight": 1080,
-  "normalizedLineCenters": [0.28, 0.46, 0.64]
+  "screenHeight": 1080
 }
 ```
 
@@ -239,7 +235,6 @@ POST /v1/webcam/predict
 | `gazeData` | RawGazePoint[] | Yes | Array of raw gaze points (minimum 20) |
 | `screenWidth` | integer | Yes | Screen width in pixels |
 | `screenHeight` | integer | Yes | Screen height in pixels |
-| `normalizedLineCenters` | float[] | No | Optional normalized line center Y-values (0-1) |
 
 **RawGazePoint Schema:**
 
@@ -360,7 +355,6 @@ POST /v1/webcam/predict
 - **Coordinate format:** Pixels (will be normalized internally)
 - **Sample rate:** ~60fps recommended (16ms intervals)
 - **Fixation filtering:** Only fixations 50-1500ms duration are used
-- **Optional line centers:** Send `normalizedLineCenters` for paragraph tasks to improve line-aware regression/return-sweep detection
 
 ### Timestamp Conversion
 

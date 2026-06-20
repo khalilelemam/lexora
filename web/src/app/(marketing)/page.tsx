@@ -92,7 +92,7 @@ const PRODUCT_BEATS = [
   {
     icon: ScanEye,
     title: 'Calibrated before reading',
-    copy: 'The test starts with a 15-point gaze map so the reading area is measured before the child begins.',
+    copy: 'The test starts with a 20-point gaze map so the reading area is measured before the child begins.',
   },
   {
     icon: ClipboardCheck,

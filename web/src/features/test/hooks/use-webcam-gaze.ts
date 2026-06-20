@@ -248,6 +248,16 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     setCollecting(false);
   }, []);
 
+  const pauseCollecting = useCallback(() => {
+    collectingRef.current = false;
+    setCollecting(false);
+  }, []);
+
+  const resumeCollecting = useCallback(() => {
+    collectingRef.current = true;
+    setCollecting(true);
+  }, []);
+
   const getLastIrisPosition = useCallback(() => lastIrisRef.current, []);
 
   const getLastRawIrisLandmarks = useCallback(() => lastRawIrisLandmarksRef.current, []);
@@ -304,6 +314,8 @@ export function useWebcamGaze({ enabled, onGazePoint }: UseWebcamGazeOptions) {
     // Collection
     startCollecting,
     stopCollecting,
+    pauseCollecting,
+    resumeCollecting,
     resetCount,
     // Cleanup
     cleanup,

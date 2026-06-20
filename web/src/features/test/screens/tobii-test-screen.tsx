@@ -38,7 +38,6 @@ export default function TobiiTestScreen() {
     taskPointCounts,
     lastTaskGazePosition,
     taskContent,
-    setLineCenters,
     steps,
     currentStepKey,
     showStepIndicator,
@@ -145,7 +144,6 @@ export default function TobiiTestScreen() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => setLineCenters('syllables', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('syllables', dataUrl)}
           />
@@ -171,7 +169,6 @@ export default function TobiiTestScreen() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => setLineCenters('pseudo-words', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('pseudo-words', dataUrl)}
           />
@@ -197,7 +194,6 @@ export default function TobiiTestScreen() {
             pointCount={gazePointCount}
             isCollecting={connected}
             onDone={handleTaskDone}
-            onLineCentersReady={(centers) => setLineCenters('meaningful-text', centers)}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('meaningful-text', dataUrl)}
           />

@@ -31,7 +31,7 @@ const PRINCIPLES = [
 ];
 
 const TIMELINE = [
-  ['Calibrate', 'A 15-point map aligns gaze with the reading area before the test begins.'],
+  ['Calibrate', 'A 20-point map aligns gaze with the reading area before the test begins.'],
   [
     'Read',
     'Tobii mode uses syllables, pseudo-words, and meaningful text. Webcam mode uses a paragraph task.',

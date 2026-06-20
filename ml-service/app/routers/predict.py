@@ -61,19 +61,16 @@ async def predict_eye_tracker(request: PredictionRequest, http_request: Request)
             request.syllables_task.gaze_points,
             request.screen_width,
             request.screen_height,
-            request.syllables_task.normalized_line_centers,
         )
         mean_result = features.process_gaze_points(
             request.meaningful_task.gaze_points,
             request.screen_width,
             request.screen_height,
-            request.meaningful_task.normalized_line_centers,
         )
         pseudo_result = features.process_gaze_points(
             request.pseudo_task.gaze_points,
             request.screen_width,
             request.screen_height,
-            request.pseudo_task.normalized_line_centers,
         )
 
         result = prediction.predict(
@@ -129,7 +126,6 @@ async def predict_webcam(request: WebcamPredictionRequest, http_request: Request
             request.gaze_data,
             request.screen_width,
             request.screen_height,
-            request.normalized_line_centers,
         )
 
         result = prediction.predict(processing.sequences)
