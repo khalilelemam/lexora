@@ -1,10 +1,6 @@
 'use client';
 
-<<<<<<< HEAD
 import { useEffect } from 'react';
-=======
-import * as React from 'react';
->>>>>>> 45c3740 (feat(calibration): integrate audio cues, enforce grid mode, and add engaging loading screen)
 import Image from 'next/image';
 import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,16 +31,10 @@ export function CalibrationSetup({
   onStart,
   startButtonText = 'Enter Fullscreen & Start Calibration',
 }: CalibrationSetupProps) {
-<<<<<<< HEAD
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-=======
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
->>>>>>> 45c3740 (feat(calibration): integrate audio cues, enforce grid mode, and add engaging loading screen)
         onStart();
       }
     };
@@ -93,7 +83,6 @@ export function CalibrationSetup({
                 </p>
               </div>
 
-<<<<<<< HEAD
               {/* Checklist */}
               <div className="rounded-xl border border-[#51513d]/15 bg-[#51513d]/5 p-5">
                 <p className="mb-3 text-sm font-black tracking-wider text-[#51513d] uppercase">
@@ -112,60 +101,6 @@ export function CalibrationSetup({
                         exactly at eye level.
                       </span>
                     </li>
-=======
-          {/* Fullscreen consent */}
-          <div className="flex items-start gap-2.5 rounded-xl border border-[#e3dc95]/60 bg-[#e3dc95]/20 p-3 text-xs leading-relaxed text-[#1b2021]/68">
-            <Maximize className="mt-0.5 h-4 w-4 shrink-0 text-[#51513d]" />
-            <span>
-              Calibration requires <strong className="text-[#1b2021]">fullscreen mode</strong> for
-              accurate tracking. Press{' '}
-              <kbd className="rounded border border-[#51513d]/18 bg-[#e3dcc2] px-1 py-0.5 font-mono text-[10px]">
-                Esc
-              </kbd>{' '}
-              to exit anytime.
-            </span>
-          </div>
-
-          {/* Start button */}
-          <Button
-            onClick={onStart}
-            size="lg"
-            className="mt-auto w-full bg-[#51513d] px-10 text-[#e3dcc2] hover:bg-[#1b2021]"
-          >
-            {startButtonText} (Press Enter)
-          </Button>
-        </div>
-
-        {/* ── Right: Mode selection ── */}
-        <div className="flex flex-1 flex-col gap-4 border-t border-[#51513d]/18 bg-[#e3dcc2]/50 p-7 lg:border-t-0 lg:border-l lg:p-8">
-          <div>
-            <p className="mb-1 text-sm font-black text-[#1b2021]">Choose a calibration style</p>
-            <p className="text-xs text-[#1b2021]/52">
-              Each style works the same way, just with a different look.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {MODE_OPTIONS.map((option) => {
-              const isDisabled = option.disabled === true;
-              const isSelected = resolvedMode === option.key;
-
-              return (
-                <button
-                  key={option.key}
-                  type="button"
-                  disabled={isDisabled}
-                  onClick={() => {
-                    if (!isDisabled) onSelectMode(option.key);
-                  }}
-                  className={cn(
-                    'group flex items-center gap-4 rounded-xl border-2 p-3 text-left transition-all',
-                    isSelected
-                      ? 'border-[#51513d] bg-[#51513d]/5 shadow-md shadow-[#51513d]/10'
-                      : isDisabled
-                        ? 'cursor-not-allowed border-[#51513d]/18 bg-[#e3dcc2]/70 opacity-70'
-                        : 'border-transparent bg-[#f3edd7] hover:border-[#51513d]/30 hover:bg-[#f3edd7]/80',
->>>>>>> 45c3740 (feat(calibration): integrate audio cues, enforce grid mode, and add engaging loading screen)
                   )}
                   <li className="flex items-start gap-3">
                     <div className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#51513d]" />
