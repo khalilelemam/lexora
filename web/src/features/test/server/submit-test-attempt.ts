@@ -18,15 +18,12 @@ export async function submitTobiiTestAttempt(
     const mlInput = {
       syllablesTask: {
         gazePoints: input.syllables,
-        normalizedLineCenters: input.lineCenters?.syllables ?? [],
       },
       meaningfulTask: {
         gazePoints: input.meaningfulText,
-        normalizedLineCenters: input.lineCenters?.['meaningful-text'] ?? [],
       },
       pseudoTask: {
         gazePoints: input.pseudoWords,
-        normalizedLineCenters: input.lineCenters?.['pseudo-words'] ?? [],
       },
       screenWidth: input.screenWidth,
       screenHeight: input.screenHeight,
@@ -74,7 +71,6 @@ export async function submitWebcamTestAttempt(
       gazeData: input.gazeData,
       screenWidth: input.screenWidth,
       screenHeight: input.screenHeight,
-      normalizedLineCenters: input.lineCenters ?? [],
     };
 
     const prediction = await predictWebcamDetailed(mlInput);

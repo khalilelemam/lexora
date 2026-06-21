@@ -39,11 +39,6 @@ export interface TaskDisplayProps {
    */
   getLastGazePosition?: () => { x: number; y: number } | null;
   /**
-   * Optional: callback to provide normalized line centers (Y-values 0-1)
-   * Called after DOM measurement completes
-   */
-  onLineCentersReady?: (lineCenters: number[]) => void;
-  /**
    * When true, renders in read-only mode — no end-of-reading detection,
    * no dialog. Used by the review panel and results page to display
    * the exact same text layout for gaze overlay.
@@ -54,6 +49,17 @@ export interface TaskDisplayProps {
    * Used to capture the exact visual layout for export visualizations.
    */
   onScreenshotReady?: (dataUrl: string) => void;
+  /**
+   * Called when the "done reading?" dialog opens so the parent can
+   * pause gaze collection. Prevents recording noise while the dialog
+   * is visible.
+   */
+  onPauseCollection?: () => void;
+  /**
+   * Called when the user dismisses the dialog with "Continue Reading"
+   * so the parent can resume gaze collection.
+   */
+  onResumeCollection?: () => void;
 }
 
 /**
@@ -67,11 +73,6 @@ export interface TaskDisplayProps {
  * End-of-reading detection (disabled in preview mode):
  * - Time-based estimate from word count triggers "are you done?" dialog
  * - Requires `MIN_GAZE_POINTS` before the dialog can appear
- *
- * Y-Axis Line Snapping:
- * - For paragraph content, measures the vertical centers of each line via DOM
- * - Normalizes line centers relative to the content container (0.0-1.0)
- * - Calls onLineCentersReady with the computed centers
  */
 export function TaskDisplay({
   taskType,
@@ -79,8 +80,9 @@ export function TaskDisplay({
   pointCount,
   isCollecting,
   onDone,
-  onLineCentersReady,
   onScreenshotReady,
+  onPauseCollection,
+  onResumeCollection,
   preview = false,
 }: TaskDisplayProps) {
   const [showDialog, setShowDialog] = useState(false);
@@ -151,64 +153,9 @@ export function TaskDisplay({
     if (dialogTriggeredRef.current) return;
     if (pointCountRef.current < MIN_GAZE_POINTS) return;
     dialogTriggeredRef.current = true;
+    onPauseCollection?.();
     setShowDialog(true);
-  }, [preview]);
-
-  // ─── Measure line centers for Y-axis snapping ──────
-
-  useLayoutEffect(() => {
-    if (isShortContent || !textContentRef.current || !onLineCentersReady) {
-      return;
-    }
-
-    // Get all word spans
-    const wordSpans = textContentRef.current.querySelectorAll('[data-word]');
-    if (wordSpans.length === 0) {
-      onLineCentersReady([]);
-      return;
-    }
-
-    // Group spans by their Y-coordinate (getBoundingClientRect().top)
-    // to identify distinct physical lines
-    const lineMap = new Map<number, Array<{ top: number; bottom: number }>>();
-
-    wordSpans.forEach((span) => {
-      const rect = (span as HTMLElement).getBoundingClientRect();
-      const lineKey = Math.round(rect.top); // Group by rounded top value
-
-      if (!lineMap.has(lineKey)) {
-        lineMap.set(lineKey, []);
-      }
-      lineMap.get(lineKey)!.push({ top: rect.top, bottom: rect.bottom });
-    });
-
-    // Find the first and last word to get text content bounds
-    const firstWordRect = (wordSpans[0] as HTMLElement).getBoundingClientRect();
-    const lastWordRect = (wordSpans[wordSpans.length - 1] as HTMLElement).getBoundingClientRect();
-
-    const textTop = firstWordRect.top;
-    const textBottom = lastWordRect.bottom;
-    const textHeight = textBottom - textTop;
-
-    // Calculate the vertical center of each line and normalize
-    const lineCenters: number[] = [];
-    const sortedLineKeys = Array.from(lineMap.keys()).sort((a, b) => a - b);
-
-    sortedLineKeys.forEach((lineKey) => {
-      const rects = lineMap.get(lineKey)!;
-      const minTop = Math.min(...rects.map((r) => r.top));
-      const maxBottom = Math.max(...rects.map((r) => r.bottom));
-      const lineCenterAbsolute = (minTop + maxBottom) / 2;
-
-      if (textHeight > 0) {
-        const normalizedCenter = (lineCenterAbsolute - textTop) / textHeight;
-        const clamped = Math.max(0, Math.min(1, normalizedCenter));
-        lineCenters.push(clamped);
-      }
-    });
-
-    onLineCentersReady(lineCenters);
-  }, [isShortContent, onLineCentersReady, content]);
+  }, [preview, onPauseCollection]);
 
   // ─── Auto-scale font if text overflows the reading zone ───
 
@@ -312,13 +259,14 @@ export function TaskDisplay({
     setShowDialog(false);
     dialogTriggeredRef.current = false;
     dismissCountRef.current += 1;
+    onResumeCollection?.();
 
     // Re-schedule time-based fallback (shorter interval)
     const reschedule = Math.max(5, estimatedSeconds() * 0.5);
     autoDetectTimerRef.current = setTimeout(() => {
       triggerDialog();
     }, reschedule * 1000);
-  }, [estimatedSeconds, triggerDialog]);
+  }, [estimatedSeconds, triggerDialog, onResumeCollection]);
 
   const handleConfirmDone = useCallback(() => {
     setShowDialog(false);

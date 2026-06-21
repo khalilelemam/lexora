@@ -92,9 +92,9 @@ interface EyeTrackerGazePoint {
 }
 
 interface EyeTrackerPredictInput {
-  syllablesTask: { gazePoints: EyeTrackerGazePoint[]; normalizedLineCenters?: number[] };
-  meaningfulTask: { gazePoints: EyeTrackerGazePoint[]; normalizedLineCenters?: number[] };
-  pseudoTask: { gazePoints: EyeTrackerGazePoint[]; normalizedLineCenters?: number[] };
+  syllablesTask: { gazePoints: EyeTrackerGazePoint[] };
+  meaningfulTask: { gazePoints: EyeTrackerGazePoint[] };
+  pseudoTask: { gazePoints: EyeTrackerGazePoint[] };
   screenWidth?: number;
   screenHeight?: number;
 }
@@ -133,7 +133,6 @@ interface WebcamPredictInput {
   gazeData: WebcamGazePoint[];
   screenWidth: number;
   screenHeight: number;
-  normalizedLineCenters?: number[];
 }
 
 interface WebcamPredictResponse {

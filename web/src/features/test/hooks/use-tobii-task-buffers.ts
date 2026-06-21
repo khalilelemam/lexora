@@ -45,13 +45,6 @@ export function useTobiiTaskBuffers() {
   // ── Task content ──
   const [taskContent, setTaskContent] = useState<Record<string, string>>({});
 
-  // ── Y-axis line centers ──
-  const lineCentersRef = useRef<Record<string, number[]>>({
-    syllables: [],
-    'pseudo-words': [],
-    'meaningful-text': [],
-  });
-
   /** Push incoming gaze points into the active buffer. */
   const pushGazeData = useCallback((points: TobiiGazePoint[]) => {
     if (points.length > 0) {
@@ -103,11 +96,6 @@ export function useTobiiTaskBuffers() {
     setLastTaskGazePosition(null);
   }, []);
 
-  /** Store normalized line centers for a task. */
-  const setLineCenters = useCallback((taskKey: string, centers: number[]) => {
-    lineCentersRef.current[taskKey] = centers;
-  }, []);
-
   /** Full reset — clears all buffers and state. */
   const resetAll = useCallback(() => {
     syllablesRef.current = [];
@@ -128,7 +116,6 @@ export function useTobiiTaskBuffers() {
     pseudoWordsRef,
     meaningfulTextRef,
     lastGazeRef,
-    lineCentersRef,
 
     // UI state
     gazePointCount,
@@ -140,7 +127,6 @@ export function useTobiiTaskBuffers() {
     pushGazeData,
     activateTask,
     clearActiveBuffer,
-    setLineCenters,
     resetAll,
   };
 }
