@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
 
 interface InfiniteScrollSentinelProps {
   hasNextPage: boolean;
@@ -39,9 +38,22 @@ export function InfiniteScrollSentinel({
   return (
     <div ref={sentinelRef} className="flex min-h-10 items-center justify-center py-2">
       {isFetchingNextPage ? (
-        <div className="text-muted-foreground inline-flex items-center gap-2 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading more tests
+        <div className="text-[#51513d]/60 inline-flex items-center gap-2 text-xs font-medium">
+          <div className="flex gap-1">
+            <span
+              className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#51513d]/60"
+              style={{ animationDelay: '0ms' }}
+            />
+            <span
+              className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#51513d]/60"
+              style={{ animationDelay: '150ms' }}
+            />
+            <span
+              className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#51513d]/60"
+              style={{ animationDelay: '300ms' }}
+            />
+          </div>
+          <span>Loading more...</span>
         </div>
       ) : null}
     </div>
