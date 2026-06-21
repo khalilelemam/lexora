@@ -31,9 +31,9 @@ export function AttemptList({ attempts, scope }: AttemptListProps) {
   return (
     <Accordion type="single" collapsible value={openAttemptId} onValueChange={setOpenAttemptId}>
       <div className="grid gap-3">
-        {attempts.map((attempt) => (
+        {attempts.map((attempt, index) => (
           <AttemptCard
-            key={attempt.attemptId}
+            key={`${attempt.attemptId}-${index}`}
             attempt={attempt}
             scope={scope}
             expanded={openAttemptId === attempt.attemptId}
