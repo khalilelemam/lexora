@@ -35,7 +35,7 @@ export function HistoryPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <main className="bg-background min-h-screen">
+    <main className="min-h-screen bg-[#e3dcc2] text-[#1b2021]">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 py-6 sm:px-8">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <Link href="/">
@@ -53,10 +53,10 @@ export function HistoryPage() {
 
         <section className="space-y-2">
           <div className="flex items-center gap-2">
-            <Activity className="text-primary h-5 w-5" />
-            <h1 className="text-2xl font-semibold tracking-normal">Test History</h1>
+            <Activity className="h-5 w-5 text-[#51513d]" />
+            <h1 className="text-2xl font-semibold tracking-normal text-[#1b2021]">Test History</h1>
           </div>
-          <p className="text-muted-foreground max-w-2xl text-sm">
+          <p className="max-w-2xl text-sm text-[#1b2021]/70">
             Your saved screening tests and outcomes.
           </p>
         </section>
@@ -86,7 +86,10 @@ function AttemptListSkeleton() {
   return (
     <div className="grid gap-3">
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="border-border bg-card rounded-lg border p-4 shadow-sm">
+        <div
+          key={index}
+          className="rounded-lg border border-[#51513d]/18 bg-[#f3edd7] p-4 shadow-sm"
+        >
           <div className="space-y-4">
             <div className="flex gap-2">
               <Skeleton className="h-5 w-20 rounded-full" />
@@ -105,9 +108,9 @@ function AttemptListSkeleton() {
 
 function LoadError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="border-destructive/20 bg-card rounded-lg border p-6">
-      <h2 className="font-semibold">Could not load tests</h2>
-      <p className="text-muted-foreground mt-1 text-sm">Please try again.</p>
+    <div className="border-destructive/20 rounded-lg border bg-[#f3edd7] p-6">
+      <h2 className="font-semibold text-[#1b2021]">Could not load tests</h2>
+      <p className="mt-1 text-sm text-[#1b2021]/70">Please try again.</p>
       <Button onClick={onRetry} variant="outline" size="sm" className="mt-4">
         <RefreshCcw className="h-4 w-4" />
         Retry

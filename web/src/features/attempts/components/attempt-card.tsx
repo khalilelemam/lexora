@@ -39,7 +39,7 @@ export function AttemptCard({ attempt, scope, expanded }: AttemptCardProps) {
   return (
     <AccordionItem
       value={attempt.attemptId}
-      className="border-border bg-card rounded-lg border px-4 shadow-sm transition-shadow hover:shadow-md"
+      className="rounded-lg border border-[#51513d]/18 bg-[#f3edd7] px-4 shadow-sm transition-all hover:border-[#51513d]/30 hover:shadow-md"
     >
       <AccordionTrigger className="py-4 hover:no-underline">
         <div className="flex min-w-0 flex-1 flex-col gap-3 text-left">
@@ -60,7 +60,7 @@ export function AttemptCard({ attempt, scope, expanded }: AttemptCardProps) {
 
           <div className="grid gap-2">
             <h2 className="truncate text-base font-semibold">{attempt.label}</h2>
-            <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#1b2021]/70">
               <span className="inline-flex items-center gap-1.5">
                 <CalendarClock className="h-3.5 w-3.5" />
                 {formatAttemptDate(attempt.createdAt)}
@@ -127,7 +127,7 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
       <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold">{OUTCOME_LABELS[detail.outcome]}</h3>
-          <p className="text-muted-foreground max-w-2xl text-sm">{OUTCOME_COPY[detail.outcome]}</p>
+          <p className="max-w-2xl text-sm text-[#1b2021]/70">{OUTCOME_COPY[detail.outcome]}</p>
           {detail.deletedAt ? (
             <p className="text-destructive text-sm">
               Deleted from the user&apos;s history on {formatAttemptDate(detail.deletedAt)}.
@@ -142,7 +142,7 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
               Visualization
             </Button>
           ) : (
-            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <div className="flex items-center gap-1.5 text-xs text-[#1b2021]/70">
               <Info className="h-3.5 w-3.5" />
               No replay data
             </div>
@@ -180,8 +180,8 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
 
 function AdminMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-muted/40 rounded-md border px-3 py-2">
-      <p className="text-muted-foreground text-xs">{label}</p>
+    <div className="rounded-md border border-[#51513d]/10 bg-[#51513d]/5 px-3 py-2">
+      <p className="text-xs text-[#1b2021]/70">{label}</p>
       <p className="mt-1 truncate font-medium">{value}</p>
     </div>
   );
