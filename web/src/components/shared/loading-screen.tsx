@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import { LexoraLogo } from './lexora-logo';
 import { cn } from '@/lib/utils';

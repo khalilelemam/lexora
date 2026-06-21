@@ -72,17 +72,8 @@ export default function TobiiTestScreen() {
 
       case 'device-setup':
         return (
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
-            <div className="text-center">
-              <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
-                Device Setup
-              </p>
-              <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
-                Connect your Tracker
-              </h1>
-            </div>
-
-            <div className="grid w-full gap-5 md:grid-cols-[1.2fr_0.8fr]">
+          <div className="grid h-[min(640px,calc(100dvh-5.5rem))] min-h-0 w-full max-w-6xl gap-4 pt-10 lg:grid-cols-[1.25fr_0.75fr]">
+            <section className="min-h-0">
               <TobiiServiceStatusCard
                 serviceChecking={serviceChecking}
                 serviceRunning={serviceRunning}
@@ -90,22 +81,65 @@ export default function TobiiTestScreen() {
                 serviceError={serviceError}
                 onRefresh={checkStatus}
               />
+            </section>
 
-              <div className="border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[10px_10px_0_rgba(81,81,61,.08)]">
-                <p className="mb-1 text-xs font-black tracking-[0.2em] text-[#51513d] uppercase">
-                  Hardware Check
+            <div className="relative flex min-h-0 flex-col overflow-hidden border border-[#51513d]/18 bg-[#1b2021] text-[#e3dcc2] shadow-[10px_10px_0_rgba(81,81,61,.08)]">
+              {/* Premium Hero Visual Section */}
+              <div className="relative flex-1 overflow-hidden border-b border-[#51513d]/18">
+                <img
+                  src="/images/service-tray.png"
+                  alt="Lexora Eye Tracker Service in System Tray"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                
+                {/* Simulated Pulse around the tray area (adjusting position) */}
+                <div className="absolute bottom-[13%] right-[46%] h-12 w-12 -translate-x-1/2 rounded-full border-2 border-[#a6a867] opacity-80">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-[#a6a867]/40" />
+                </div>
+              </div>
+
+              {/* Instructions Section */}
+              <div className="relative z-10 p-6">
+                <div className="mb-4 inline-flex items-center gap-2 bg-[#a6a867]/20 px-3 py-1 text-[10px] font-black tracking-widest text-[#e3dc95] uppercase">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#e3dc95] opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[#e3dc95]" />
+                  </span>
+                  Action Required
+                </div>
+
+                <h1 className="text-3xl leading-tight font-black tracking-tight text-[#e3dcc2]">
+                  Start the Lexora Service
+                </h1>
+                <p className="mt-3 text-sm leading-relaxed text-[#e3dcc2]/70">
+                  To connect your eye tracker to the browser, the Lexora helper app must be running
+                  on your machine.
                 </p>
-                <p className="mb-5 text-xs leading-relaxed text-[#1b2021]/58">
-                  The Tobii flow only works with Tobii Pro screen-based trackers. You must have a
-                  compatible tracker connected and the Lexora Tobii Service running.
-                </p>
-                <a
-                  href="/test/supported-hardware"
-                  target="_blank"
-                  className="inline-block text-sm font-black text-[#51513d] underline transition-colors hover:text-[#1b2021]"
-                >
-                  View Supported Devices →
-                </a>
+
+                <div className="mt-6 flex flex-col gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center bg-[#51513d] text-sm font-black text-[#e3dcc2]">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#e3dcc2]">Open from System Tray</p>
+                      <p className="mt-1 text-xs text-[#e3dcc2]/60">
+                        Click the Lexora icon in your Windows taskbar cascade menu.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center bg-[#51513d] text-sm font-black text-[#e3dcc2]">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#e3dcc2]">Click Start</p>
+                      <p className="mt-1 text-xs text-[#e3dcc2]/60">
+                        Inside the desktop app, click the Start button to begin tracking.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

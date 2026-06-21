@@ -71,8 +71,8 @@ export function PreTestIntake({ onComplete }: PreTestIntakeProps) {
             Start with the child, not the machine.
           </h1>
           <p className="mt-5 leading-7 text-[#e3dcc2]/70">
-            Age helps Lexora choose the right calibration expectations and interpret the test
-            session with the right context.
+            Knowing the child&apos;s age lets us adjust the experience to suit them — from how the
+            calibration behaves to how we interpret their reading patterns.
           </p>
         </section>
 

@@ -58,100 +58,104 @@ export function TobiiServiceStatusCard({
           </p>
         </div>
       ) : (
-        <div className="mt-5 space-y-4 border border-[#e3dc95]/60 bg-[#e3dc95]/15 p-4 text-sm">
-          <div>
-            <p className="font-black text-[#1b2021]">Tobii helper is not reachable.</p>
-            <p className="mt-1 text-[#1b2021]/64">
-              Install or start the Lexora Tobii Service app on your computer before running the
-              Tobii test. Follow these steps:
-            </p>
-          </div>
-
-          <div className="grid gap-6">
-            <div className="flex flex-col gap-3 rounded-lg border border-[#e3dc95]/40 bg-[#f3edd7]/50 p-4">
-              <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-md border border-[#51513d]/10 bg-[#e3dcc2] shadow-inner">
-                <span className="text-sm font-bold text-[#51513d]/40">Screenshot: System Tray</span>
-                {/* TODO(colleague): Uncomment the Image component below and add the screenshot of the system tray to the public/images/guide folder */}
-                {/* <Image src="/images/guide/tobii-tray.png" alt="Open the app from the system tray" fill className="object-cover" /> */}
-              </div>
-              <p className="text-sm text-[#1b2021]/70">
-                1. Click <strong>Open Service</strong> below, or find the Lexora icon in your
-                Windows system tray.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 rounded-lg border border-[#e3dc95]/40 bg-[#f3edd7]/50 p-4">
-              <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-md border border-[#51513d]/10 bg-[#e3dcc2] shadow-inner">
-                <span className="text-sm font-bold text-[#51513d]/40">
-                  Screenshot: App Start Button
-                </span>
-                <Image
-                  src="/images/guide/tobii-start.webp"
-                  alt="Click start inside the Tobii helper app"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <p className="text-sm text-[#1b2021]/70">
-                2. Inside the desktop app, click the <strong>Start</strong> button to connect your
-                Tobii tracker to the browser.
-              </p>
-            </div>
-          </div>
-
+        <div className="mt-5 space-y-2 border border-[#e3dc95]/60 bg-[#e3dc95]/15 p-4 text-sm">
+          <p className="font-black text-[#1b2021]">Tobii helper is not reachable.</p>
+          <p className="text-[#1b2021]/64">
+            The service must be running in the background to connect to your eye tracker.
+          </p>
           {serviceError && (
-            <p className="text-xs text-[#51513d]">
-              <span className="font-bold">Error:</span> {serviceError}{' '}
-              <span className="opacity-75">
-                (This usually means the local Tobii service is unreachable and needs to be started
-                manually.)
-              </span>
+            <p className="mt-2 text-xs text-[#51513d]">
+              <span className="font-bold">Error:</span> {serviceError}
             </p>
           )}
         </div>
       )}
 
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-5 flex flex-col gap-4">
         {!serviceRunning && (
-          <a
-            href="/api/download/service"
-            className="bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
-          >
-            Download Service
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            if (typeof window === 'undefined') return;
-            if (serviceRunning) {
-              const TOBII_SERVICE_URL =
-                process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
-              window.open(TOBII_SERVICE_URL, '_blank');
-            } else {
-              window.location.href = 'lexora://open';
-            }
-          }}
-          className={
-            serviceRunning
-              ? 'bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]'
-              : 'border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10'
-          }
-        >
-          Open Service
-        </button>
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="cursor-pointer border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
-        >
-          Refresh Status
-        </button>
-        {!serviceRunning && (
-          <div className="flex w-full items-center text-xs text-[#1b2021]/60">
-            * After starting the app, click Refresh Status.
+          <div className="space-y-3">
+            <p className="text-xs font-black tracking-wider text-[#51513d] uppercase">
+              Download for your platform
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <a
+                href="/api/download/service?platform=windows"
+                className="group flex items-center gap-3 border border-[#51513d]/18 bg-[#e3dcc2] p-3 transition-all hover:-translate-y-0.5 hover:border-[#51513d]/40 hover:shadow-md"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#51513d] text-lg text-[#e3dcc2]">
+                  ⊞
+                </div>
+                <div>
+                  <p className="text-sm font-black text-[#1b2021]">Windows</p>
+                  <p className="text-[10px] text-[#1b2021]/50">.exe installer</p>
+                </div>
+              </a>
+              <a
+                href="/api/download/service?platform=macos"
+                className="group flex items-center gap-3 border border-[#51513d]/18 bg-[#e3dcc2] p-3 transition-all hover:-translate-y-0.5 hover:border-[#51513d]/40 hover:shadow-md"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#51513d] text-lg text-[#e3dcc2]">
+                  ⌘
+                </div>
+                <div>
+                  <p className="text-sm font-black text-[#1b2021]">macOS</p>
+                  <p className="text-[10px] text-[#1b2021]/50">.pkg installer</p>
+                </div>
+              </a>
+              <a
+                href="/api/download/service?platform=linux"
+                className="group flex items-center gap-3 border border-[#51513d]/18 bg-[#e3dcc2] p-3 transition-all hover:-translate-y-0.5 hover:border-[#51513d]/40 hover:shadow-md"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#51513d] text-lg text-[#e3dcc2]">
+                  ◆
+                </div>
+                <div>
+                  <p className="text-sm font-black text-[#1b2021]">Linux</p>
+                  <p className="text-[10px] text-[#1b2021]/50">.deb package</p>
+                </div>
+              </a>
+            </div>
           </div>
         )}
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window === 'undefined') return;
+              if (serviceRunning) {
+                const TOBII_SERVICE_URL =
+                  process.env.NEXT_PUBLIC_TOBII_SERVICE_URL ?? 'http://localhost:28980';
+                window.open(TOBII_SERVICE_URL, '_blank');
+              } else {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = 'lexora://open';
+                document.body.appendChild(iframe);
+                setTimeout(() => iframe.remove(), 2000);
+              }
+            }}
+            className={
+              serviceRunning
+                ? 'bg-[#51513d] px-5 py-2.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]'
+                : 'border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10'
+            }
+          >
+            Open Service
+          </button>
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="cursor-pointer border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-2.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
+          >
+            Refresh Status
+          </button>
+          {!serviceRunning && (
+            <div className="flex w-full items-center text-xs text-[#1b2021]/60">
+              * After starting the app, click Refresh Status.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

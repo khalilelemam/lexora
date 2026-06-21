@@ -233,13 +233,13 @@ function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
 
   const privacySlide: Slide = {
     visual: <PrivacyVisual />,
-    title: 'Your Privacy',
+    title: 'Your Privacy Comes First',
     description:
-      'Processing stays securely in your browser. Authenticated test attempts can save anonymous gaze points safely.',
+      'Everything happens right here on your device. We never record video or capture images of your face — we only measure where you look on the screen.',
     tips: [
-      'No video recordings or face images stored',
-      'Gaze data is saved only if you explicitly opted in during registration',
-      'Attempt history is linked to your signed-in account',
+      'No camera footage is saved or sent anywhere',
+      'Your results are private and tied to your account only',
+      'You are always in control of your data',
     ],
   };
 

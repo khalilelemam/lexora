@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Maximize } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,16 +43,16 @@ export function CalibrationSetup({
   }, [onStart]);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#e3dcc2]/95 backdrop-blur-sm">
-      <div className="flex min-h-full items-center justify-center p-4 py-8">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-[#e3dcc2]/95 backdrop-blur-sm">
+      <div className="flex h-full items-center justify-center p-4">
         <div
-          className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#51513d]/18 bg-[#f3edd7] shadow-[0_24px_70px_rgba(27,32,33,0.16)]"
+          className="flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#51513d]/18 bg-[#f3edd7] shadow-[0_24px_70px_rgba(27,32,33,0.16)]"
           style={{ animation: 'float-up 0.5s ease-out' }}
         >
           {/* ── Top: Hero Visual ── */}
-          <div className="relative h-64 w-full border-b border-[#51513d]/18 bg-[#1b2021] md:h-80 lg:h-96">
+          <div className="relative h-44 w-full shrink-0 border-b border-[#51513d]/18 bg-[#1b2021] md:h-56 lg:h-64">
             <div className="absolute inset-0 overflow-hidden opacity-90">
-              {resolvedMode === 'star' ? <StarGameVisual /> : <CalibrationVisual />}
+              <DualPhaseVisual resolvedMode={resolvedMode} />
             </div>
 
             {/* Subtle gradient overlay to blend into the rest of the card */}
@@ -70,7 +70,7 @@ export function CalibrationSetup({
           </div>
 
           {/* ── Bottom: Content Area (Two Columns on Desktop) ── */}
-          <div className="flex flex-col lg:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row">
             {/* Left: Instructions & Controls */}
             <div className="flex flex-1 flex-col gap-6 p-7 lg:p-10">
               <div>
@@ -234,6 +234,103 @@ export function CalibrationSetup({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ─── Dual-Phase Demo Visual ─────────────────────────────────────────────── */
+
+function DualPhaseVisual({ resolvedMode }: { resolvedMode: CalibrationVisualMode }) {
+  const [phase, setPhase] = useState<'circles' | 'pursuit'>('circles');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhase((prev) => (prev === 'circles' ? 'pursuit' : 'circles'));
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative h-full w-full">
+      {/* Phase visuals with crossfade */}
+      <div
+        className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+        style={{ opacity: phase === 'circles' ? 1 : 0 }}
+      >
+        {resolvedMode === 'star' ? <StarGameVisual /> : <CalibrationVisual />}
+      </div>
+      <div
+        className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+        style={{ opacity: phase === 'pursuit' ? 1 : 0 }}
+      >
+        <PursuitVisual />
+      </div>
+
+      {/* Phase label */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+        <div className="flex items-center gap-3 rounded-full bg-[#1b2021]/70 px-4 py-1.5 text-[10px] font-black tracking-widest text-[#e3dc95] uppercase backdrop-blur-md">
+          <span
+            className={`transition-opacity duration-500 ${phase === 'circles' ? 'opacity-100' : 'opacity-40'}`}
+          >
+            Phase 1: Fixation Points
+          </span>
+          <span className="text-[#e3dc95]/30">|</span>
+          <span
+            className={`transition-opacity duration-500 ${phase === 'pursuit' ? 'opacity-100' : 'opacity-40'}`}
+          >
+            Phase 2: Smooth Pursuit
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Pursuit Visual — horizontal sweeping dot ───────────────────────────── */
+
+function PursuitVisual() {
+  return (
+    <div className="relative flex h-full w-full items-center justify-center bg-[#1b2021]">
+      {/* Horizontal guide lines */}
+      {[0.3, 0.5, 0.7].map((y) => (
+        <div
+          key={y}
+          className="absolute h-px w-3/4 bg-[#51513d]/20"
+          style={{ top: `${y * 100}%`, left: '12.5%' }}
+        />
+      ))}
+
+      {/* Sweeping dot */}
+      <div
+        className="absolute h-4 w-4 rounded-full bg-[#a6a867] shadow-[0_0_16px_rgba(166,168,103,0.6)]"
+        style={{
+          top: '50%',
+          transform: 'translateY(-50%)',
+          animation: 'pursuit-sweep 3s ease-in-out infinite alternate',
+        }}
+      />
+
+      {/* Trail glow */}
+      <div
+        className="absolute h-2 w-2 rounded-full bg-[#a6a867]/40 blur-sm"
+        style={{
+          top: '50%',
+          transform: 'translateY(-50%)',
+          animation: 'pursuit-sweep 3s ease-in-out infinite alternate',
+          animationDelay: '-0.15s',
+        }}
+      />
+
+      <style jsx>{`
+        @keyframes pursuit-sweep {
+          0% {
+            left: 10%;
+          }
+          100% {
+            left: 85%;
+          }
+        }
+      `}</style>
     </div>
   );
 }
