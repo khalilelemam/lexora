@@ -38,43 +38,29 @@ export async function getAdminAttempt(attemptId: string) {
 /**
  * Triggers a ZIP export download for the given filters and content mode.
  *
- * Uses a raw fetch (rather than ky) because we need to handle the binary
- * response as a blob and trigger a file download rather than parsing JSON.
+ * Uses a dynamically constructed GET URL and an anchor tag to leverage
+ * the browser's native download streaming, avoiding in-memory buffering.
  */
 export async function exportAdminAttempts(
   filters: AttemptFilters,
   include: ExportContentMode,
   includeVisuals: boolean,
 ): Promise<void> {
-  const response = await fetch('/api/admin/export', {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filters: toFilterBody(filters), include, includeVisuals }),
-  });
+  const params = toSearchParams(filters);
+  params.set('include', include);
+  params.set('includeVisuals', String(includeVisuals));
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Export failed' }));
-    throw new Error((error as { error?: string }).error ?? 'Export failed');
-  }
-
-  // Extract filename from Content-Disposition header or use a default.
-  const disposition = response.headers.get('Content-Disposition');
-  const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
-  const filename = filenameMatch?.[1] ?? 'lexora-export.zip';
-
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
+  const url = `/api/admin/export?${params.toString()}`;
 
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = filename;
+  // The browser will use the Content-Disposition header for the filename.
+  anchor.download = '';
   document.body.appendChild(anchor);
   anchor.click();
 
   // Clean up after a short delay to ensure the download starts.
   setTimeout(() => {
-    URL.revokeObjectURL(url);
     anchor.remove();
   }, 100);
 }
@@ -91,20 +77,4 @@ function toSearchParams(filters: AttemptFilters) {
   if (filters.limit) params.set('limit', String(filters.limit));
 
   return params;
-}
-
-/**
- * Converts AttemptFilters into a plain object for the export POST body.
- * Array fields (outcomes) are serialized as arrays rather than repeated params.
- */
-function toFilterBody(filters: AttemptFilters): Record<string, unknown> {
-  const body: Record<string, unknown> = {};
-
-  if (filters.testType) body.testType = filters.testType;
-  if (filters.outcomes?.length) body.outcome = filters.outcomes;
-  if (filters.query) body.query = filters.query;
-  if (filters.createdFrom) body.createdFrom = filters.createdFrom;
-  if (filters.createdTo) body.createdTo = filters.createdTo;
-
-  return body;
 }
