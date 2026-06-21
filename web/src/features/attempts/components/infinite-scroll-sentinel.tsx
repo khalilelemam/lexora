@@ -38,7 +38,7 @@ export function InfiniteScrollSentinel({
   return (
     <div ref={sentinelRef} className="flex min-h-10 items-center justify-center py-2">
       {isFetchingNextPage ? (
-        <div className="text-[#51513d]/60 inline-flex items-center gap-2 text-xs font-medium">
+        <div className="inline-flex items-center gap-2 text-xs font-medium text-[#51513d]/60">
           <div className="flex gap-1">
             <span
               className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#51513d]/60"
