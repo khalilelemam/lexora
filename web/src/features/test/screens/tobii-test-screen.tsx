@@ -91,9 +91,9 @@ export default function TobiiTestScreen() {
                   alt="Lexora Eye Tracker Service in System Tray"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
-                
+
                 {/* Simulated Pulse around the tray area (adjusting position) */}
-                <div className="absolute bottom-[13%] right-[46%] h-12 w-12 -translate-x-1/2 rounded-full border-2 border-[#a6a867] opacity-80">
+                <div className="absolute right-[46%] bottom-[13%] h-12 w-12 -translate-x-1/2 rounded-full border-2 border-[#a6a867] opacity-80">
                   <div className="absolute inset-0 animate-ping rounded-full bg-[#a6a867]/40" />
                 </div>
               </div>
