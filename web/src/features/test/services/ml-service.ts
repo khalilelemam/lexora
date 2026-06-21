@@ -147,6 +147,7 @@ interface WebcamPredictResponse {
     fixationX: number;
     fixationY: number;
     saccadeAmplitude: number;
+    efficiencyRatio: number;
     isRegression: boolean;
     isReturnSweep?: boolean;
   }>;
@@ -235,6 +236,7 @@ export async function predictWebcamDetailed(
           fixationX: f.fixationX,
           fixationY: f.fixationY,
           saccadeAmplitude: f.saccadeAmplitude,
+          efficiencyRatio: f.efficiencyRatio,
           isRegression: f.isRegression,
           isReturnSweep: f.isReturnSweep,
         })),

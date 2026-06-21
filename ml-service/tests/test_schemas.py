@@ -1,7 +1,13 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import GazePoint, GazeSequence, PredictionRequest, RiskLevel
+from app.schemas import (
+    GazePoint,
+    GazeSequence,
+    PredictionRequest,
+    RiskLevel,
+    WebcamFeatureRow,
+)
 from app.schemas.webcam import RawGazePoint, WebcamPredictionRequest
 from tests.conftest import create_gaze_points
 
@@ -268,3 +274,35 @@ class TestWebcamPredictionRequest:
             )
 
         assert "gaze_data" in str(exc_info.value)
+
+
+class TestWebcamFeatureRow:
+    """Tests for webcam response feature rows."""
+
+    def test_requires_efficiency_ratio(self):
+        with pytest.raises(ValidationError) as exc_info:
+            WebcamFeatureRow(
+                timestamp=1000,
+                duration_ms=180.0,
+                fixation_x=0.25,
+                fixation_y=0.35,
+                saccade_amplitude=0.0,
+                is_regression=False,
+            )
+
+        assert "efficiencyRatio" in str(exc_info.value)
+
+    def test_accepts_camel_case_efficiency_ratio(self):
+        row = WebcamFeatureRow.model_validate(
+            {
+                "timestamp": 1000,
+                "durationMs": 180.0,
+                "fixationX": 0.25,
+                "fixationY": 0.35,
+                "saccadeAmplitude": 0.0,
+                "efficiencyRatio": 0.0,
+                "isRegression": False,
+            }
+        )
+
+        assert row.efficiency_ratio == 0.0

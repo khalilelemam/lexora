@@ -62,6 +62,7 @@ interface DerivedFeatureRow {
   fixationX: number;
   fixationY: number;
   saccadeAmplitude: number;
+  efficiencyRatio?: number;
   saccadeVelocity?: number;
   isRegression?: boolean;
   isReturnSweep?: boolean;
@@ -438,6 +439,7 @@ function toGazeFeatures(rows: DerivedFeatureRow[]): GazeFeature[] {
     fixationX: row.fixationX,
     fixationY: row.fixationY,
     saccadeAmplitude: row.saccadeAmplitude,
+    efficiencyRatio: row.efficiencyRatio,
     isRegression: row.isRegression ?? (i > 0 ? row.fixationX < all[i - 1].fixationX : false),
     isReturnSweep:
       row.isReturnSweep ??
