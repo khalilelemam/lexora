@@ -40,6 +40,10 @@ export async function upsertTestAttemptRecord(
       rawDataConsented: params.rawDataConsented,
       rawBlobUrl: params.rawBlobUrl ?? null,
       derivedBlobUrl: params.derivedBlobUrl,
+      exportArtifactStatus: 'PENDING',
+      exportManifestPath: null,
+      exportArtifactError: null,
+      exportArtifactReadyAt: null,
     },
     update: {
       testType: mapTestMode(params.testType),
@@ -51,8 +55,46 @@ export async function upsertTestAttemptRecord(
       rawDataConsented: params.rawDataConsented,
       rawBlobUrl: params.rawBlobUrl,
       derivedBlobUrl: params.derivedBlobUrl,
+      exportArtifactStatus: 'PENDING',
+      exportManifestPath: null,
+      exportArtifactError: null,
+      exportArtifactReadyAt: null,
     },
   });
+}
+
+export async function markAttemptExportArtifactReady(
+  attemptId: string,
+  manifestPath: string,
+): Promise<void> {
+  await prisma.testAttempt.update({
+    where: { attemptId },
+    data: {
+      exportArtifactStatus: 'READY',
+      exportManifestPath: manifestPath,
+      exportArtifactError: null,
+      exportArtifactReadyAt: new Date(),
+    },
+  });
+}
+
+export async function markAttemptExportArtifactFailed(
+  attemptId: string,
+  error: unknown,
+): Promise<void> {
+  await prisma.testAttempt.update({
+    where: { attemptId },
+    data: {
+      exportArtifactStatus: 'FAILED',
+      exportArtifactError: formatExportArtifactError(error),
+      exportArtifactReadyAt: null,
+    },
+  });
+}
+
+function formatExportArtifactError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.slice(0, 1_000);
 }
 
 function mapTestMode(testType: TestMode): PrismaTestMode {

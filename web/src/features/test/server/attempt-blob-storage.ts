@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { BlobServiceClient, type ContainerClient } from '@azure/storage-blob';
+import type { Readable } from 'node:stream';
 
 const JSON_CONTENT_TYPE = 'application/json; charset=utf-8';
 
@@ -29,11 +30,29 @@ export async function uploadAttemptJson(
   data: unknown,
 ): Promise<string> {
   const body = Buffer.from(JSON.stringify(data, null, 2), 'utf8');
+  return uploadAttemptBuffer(containerClient, path, body, JSON_CONTENT_TYPE);
+}
+
+export async function uploadAttemptText(
+  containerClient: ContainerClient,
+  path: string,
+  data: string,
+  contentType: string,
+): Promise<string> {
+  return uploadAttemptBuffer(containerClient, path, Buffer.from(data, 'utf8'), contentType);
+}
+
+export async function uploadAttemptBuffer(
+  containerClient: ContainerClient,
+  path: string,
+  data: Buffer,
+  contentType: string,
+): Promise<string> {
   const blobClient = containerClient.getBlockBlobClient(path);
 
-  await blobClient.uploadData(body, {
+  await blobClient.uploadData(data, {
     blobHTTPHeaders: {
-      blobContentType: JSON_CONTENT_TYPE,
+      blobContentType: contentType,
     },
   });
 
@@ -88,6 +107,31 @@ export async function downloadAttemptBuffer(
     return await blobClient.downloadToBuffer();
   } catch (error: unknown) {
     // 404 — blob doesn't exist (e.g. older tests without screenshots)
+    if (
+      error instanceof Object &&
+      'statusCode' in error &&
+      (error as { statusCode: number }).statusCode === 404
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Opens a blob as a Node readable stream so large export artifacts can be
+ * appended to ZIP downloads without materialising each file in memory.
+ */
+export async function downloadAttemptStream(
+  containerClient: ContainerClient,
+  path: string,
+): Promise<Readable | null> {
+  const blobClient = containerClient.getBlockBlobClient(path);
+
+  try {
+    const response = await blobClient.download();
+    return (response.readableStreamBody as Readable | undefined) ?? null;
+  } catch (error: unknown) {
     if (
       error instanceof Object &&
       'statusCode' in error &&
