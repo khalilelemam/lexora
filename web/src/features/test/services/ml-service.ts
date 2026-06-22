@@ -65,21 +65,44 @@ async function handleMLError(error: unknown): Promise<never> {
   if (error instanceof MLServiceError) throw error;
 
   if (error instanceof HTTPError) {
-    const errorBody = (await error.response.json().catch(() => null)) as MLErrorResponse | null;
-    throw new MLServiceError(
-      errorBody?.code ?? `HTTP_${error.response.status}`,
-      errorBody?.message ?? `ML service returned ${error.response.status}`,
-      errorBody?.details,
-    );
+    // FastAPI usually returns { detail: string | array }
+    const errorBody = (await error.response.json().catch(() => null)) as any;
+    const statusCode = error.response.status;
+
+    let code = errorBody?.code ?? `HTTP_${statusCode}`;
+    let friendlyMessage = 'We ran into a small issue analyzing your results. Please try again.';
+
+    if (statusCode === 422) {
+      code = 'VALIDATION_ERROR';
+      friendlyMessage = "Hmm, the eye tracking data we received wasn't quite right. Make sure your face is clearly visible and try the test again.";
+    } else if (statusCode === 404) {
+      code = 'NOT_FOUND';
+      friendlyMessage = "We couldn't reach the analysis engine. It might be taking a quick nap. Give it another try!";
+    } else if (statusCode >= 500) {
+      code = 'SERVER_ERROR';
+      friendlyMessage = "Our analysis servers are currently taking a breather. Please try again in a few moments!";
+    } else if (statusCode === 429) {
+      code = 'RATE_LIMITED';
+      friendlyMessage = "Whoa, slow down! We're processing a lot of tests right now. Please wait a minute before trying again.";
+    } else if (errorBody?.detail && typeof errorBody.detail === 'string') {
+      friendlyMessage = errorBody.detail;
+    } else if (errorBody?.message) {
+      friendlyMessage = errorBody.message;
+    }
+
+    throw new MLServiceError(code, friendlyMessage, errorBody?.detail);
   }
 
   if (error instanceof DOMException && error.name === 'AbortError') {
-    throw new MLServiceError('TIMEOUT', 'ML service request timed out');
+    throw new MLServiceError(
+      'TIMEOUT',
+      "The analysis took a bit too long and timed out. This usually happens if the connection is slow. Please try again!"
+    );
   }
 
   throw new MLServiceError(
     'NETWORK_ERROR',
-    error instanceof Error ? error.message : 'Failed to connect to ML service',
+    "We couldn't connect to our analysis servers. Please check your internet connection and try again."
   );
 }
 

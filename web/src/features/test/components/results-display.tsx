@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -268,14 +269,13 @@ export function ResultsDisplay({
                 <RotateCcw className="mr-2 h-4 w-4" />
                 New Test
               </button>
-              <button
-                type="button"
-                onClick={onNewTest}
+              <Link
+                href="/history"
                 className="inline-flex flex-1 items-center justify-center bg-[#51513d] px-5 py-3.5 text-xs font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
               >
-                Dashboard
+                History
                 <ArrowRight className="ml-2 h-4 w-4" />
-              </button>
+              </Link>
             </div>
           </div>
         </div>

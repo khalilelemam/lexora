@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import type { CalibrationPoint } from '../../types';
 import type { CollectedSample } from '../../lib/calibration-samples';
 import { STABLE_VELOCITY_NORM_PER_SEC } from '../../lib/calibration-engine-constants';
@@ -301,37 +302,40 @@ export function PursuitCalibrationView({
         );
 
   return (
-    <div className="fixed inset-0 z-50 cursor-none overflow-hidden bg-[#FDF8F0]">
-      <div className="absolute inset-x-0 top-10 flex justify-center px-4">
-        <div className="rounded-xl border border-[#E8E0D4] bg-white/90 px-5 py-3 text-center shadow-sm">
-          <p className="text-sm font-medium text-[#2D2A26]">
+    <div className="fixed inset-0 z-50 cursor-none overflow-hidden bg-[#e3dcc2]">
+      <div 
+        className={cn(
+          "absolute inset-x-0 top-6 flex justify-center px-4 z-40 transition-opacity duration-500",
+          stage === 'instruction' ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      >
+        <div className="border-2 border-[#1b2021] bg-[#e3dcc2] px-6 py-4 text-center shadow-[4px_4px_0_0_#1b2021] max-w-lg w-full">
+          <p className="text-sm sm:text-base font-black uppercase tracking-tight text-[#1b2021]">
             Follow the dot with your eyes as it moves across the screen
           </p>
-          {stage === 'instruction' ? (
-            <p className="mt-1 text-xs text-[#8B857E]">Starting shortly…</p>
-          ) : (
-            <p className="mt-1 text-xs text-[#8B857E]">
-              Line {Math.min(lineIndex + 1, LINE_COUNT)} of {LINE_COUNT}
-            </p>
-          )}
+          <p className="mt-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#51513d]">
+            Starting shortly…
+          </p>
         </div>
       </div>
 
       {dotPos && stage === 'sweeping' && (
         <div
-          className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full bg-[#2D2A26] shadow-[0_0_0_6px_rgba(45,42,38,0.12)]"
+          className="pointer-events-none absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[4px_4px_0_0_rgba(27,32,33,0.3)] transition-[opacity] duration-150"
           style={{
             left: `${dotPos.x * 100}%`,
             top: `${dotPos.y * 100}%`,
           }}
-        />
+        >
+          <div className="h-2 w-2 rounded-full bg-[#1b2021]" />
+        </div>
       )}
 
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-12 items-center justify-center px-6">
         <div className="w-[min(520px,90vw)]">
-          <div className="h-1 overflow-hidden rounded-full bg-[#E8E0D4]/80">
+          <div className="h-4 overflow-hidden rounded-none border-2 border-[#1b2021] bg-[#e3dcc2] shadow-[4px_4px_0_0_#1b2021]">
             <div
-              className="h-full rounded-full bg-[#2D2A26] transition-[width] duration-150"
+              className="h-full border-r-2 border-[#1b2021] bg-[#a6a867] transition-[width] duration-150"
               style={{ width: `${Math.round(overallProgress * 100)}%` }}
             />
           </div>
@@ -343,7 +347,7 @@ export function PursuitCalibrationView({
           variant="outline"
           size="sm"
           onClick={onCancel}
-          className="border-[#E8E0D4] bg-white/70 text-xs text-[#8B857E] backdrop-blur-sm hover:text-[#2D2A26]"
+          className="rounded-none border-2 border-[#1b2021] bg-[#e3dcc2] text-xs font-black uppercase tracking-wider text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#1b2021]"
         >
           Skip
         </Button>

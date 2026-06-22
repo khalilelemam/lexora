@@ -442,7 +442,7 @@ function PursuitVisual() {
       {lines.map((y) => (
         <div
           key={y}
-          className="absolute h-px bg-[#51513d]/18"
+          className="absolute h-[2px] bg-[#1b2021]/10"
           style={{ top: `${y}%`, left: '20%', width: '60%' }}
         />
       ))}
@@ -450,12 +450,14 @@ function PursuitVisual() {
       {/* Target Dot */}
       <div
         key={`pursuit-dot-${lineIndex}`}
-        className="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2D2A26] shadow-[0_0_0_6px_rgba(45,42,38,0.12)]"
+        className="absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[3px_3px_0_0_#1b2021]"
         style={{
           top: `${currentY}%`,
-          animation: 'pursuit-sweep 1.5s ease-in-out forwards, pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          animation: 'pursuit-sweep 1.5s ease-in-out forwards',
         }}
-      />
+      >
+        <div className="h-1.5 w-1.5 rounded-full bg-[#1b2021]" />
+      </div>
 
       <style jsx>{`
         @keyframes pursuit-sweep {

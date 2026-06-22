@@ -181,30 +181,30 @@ export const GridModeView = React.memo(
         {/* 6. Floating HUD Bar (bottom) */}
         <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-24 items-end justify-between px-6 pb-6">
           {/* Active Mode Label */}
-          <div className="flex items-center gap-2 border border-[#51513d]/15 bg-[#f3edd7]/90 px-3 py-2 text-[10px] font-black tracking-widest text-[#51513d] uppercase shadow-[4px_4px_0_rgba(81,81,61,0.05)] backdrop-blur-md rounded-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#a6a867] animate-pulse" />
+          <div className="flex items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#1b2021] shadow-[4px_4px_0_0_#1b2021]">
+            <span className="h-2 w-2 animate-pulse rounded-full border border-[#1b2021] bg-[#a6a867]" />
             Grid Calibration
           </div>
 
           {/* Dynamic Compact Progress Dots */}
-          <div className="flex items-center gap-1.5 border border-[#51513d]/10 bg-[#f3edd7]/60 px-4 py-2 shadow-inner backdrop-blur-md rounded-full">
+          <div className="hidden sm:flex items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-5 py-2.5 shadow-[4px_4px_0_0_#1b2021]">
             {Array.from({ length: collectionTotal }).map((_, idx) => (
               <div
                 key={idx}
                 className={cn(
-                  'rounded-full transition-all duration-300',
+                  'rounded-full transition-all duration-300 border',
                   idx < activeIndex
-                    ? 'h-1.5 w-1.5 bg-[#a6a867]/75'
+                    ? 'h-2 w-2 bg-[#a6a867] border-[#1b2021]'
                     : idx === activeIndex
-                      ? 'h-2 w-2 bg-[#a6a867] shadow-[0_0_6px_rgba(166,168,103,0.6)] scale-110'
-                      : 'h-1 w-1 bg-[#51513d]/30',
+                      ? 'h-2.5 w-2.5 scale-125 bg-[#a6a867] border-[#1b2021] shadow-[1px_1px_0_0_#1b2021]'
+                      : 'h-1.5 w-1.5 bg-transparent border-[#1b2021]/30',
                 )}
               />
             ))}
           </div>
 
           {/* Numeric Step Counter */}
-          <div className="border border-[#51513d]/15 bg-[#f3edd7]/90 px-3 py-2 text-[10px] font-mono font-bold tracking-wider text-[#51513d] shadow-[4px_4px_0_rgba(81,81,61,0.05)] backdrop-blur-md rounded-sm">
+          <div className="border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 text-[10px] sm:text-xs font-mono font-black tracking-wider text-[#1b2021] shadow-[4px_4px_0_0_#1b2021]">
             STEP <span className="text-[#a6a867]">{collectionStep}</span> / {collectionTotal}
           </div>
         </div>

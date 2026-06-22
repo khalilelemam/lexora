@@ -431,6 +431,14 @@ export function ReviewPanel({
             </button>
             <button
               type="button"
+              onClick={() => {}}
+              className="flex flex-1 items-center justify-center gap-2 border-2 border-[#1b2021] bg-[#a6a867] px-6 py-4 text-sm font-black uppercase text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] transition-colors hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#1b2021]"
+            >
+              <Eye className="h-4 w-4" />
+              See my child vision
+            </button>
+            <button
+              type="button"
               onClick={onContinue}
               className="flex flex-1 items-center justify-center gap-2 bg-[#51513d] px-6 py-4 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021] active:translate-y-px active:shadow-none"
             >

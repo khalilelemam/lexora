@@ -26,12 +26,18 @@ export interface AttemptsUser {
 }
 
 export async function requireAttemptsUser(): Promise<AttemptsUser> {
-  // BYPASS FOR TESTING
-  const firstUser = await prisma.user.findFirst();
-  if (firstUser) {
-    return { id: firstUser.id, role: Role.ADMIN };
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new AttemptsAuthError();
   }
-  return { id: 'test-user-id', role: Role.ADMIN };
+
+  return {
+    id: session.user.id,
+    role: session.user.role as Role,
+  };
 }
 
 export async function requireAdminAttemptsUser() {
