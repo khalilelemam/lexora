@@ -11,8 +11,6 @@ import {
   Play,
   Pause,
 } from 'lucide-react';
-import { LexoraLogo } from '@/components/shared/lexora-logo';
-import { cn } from '@/lib/utils';
 import { TASK_LABELS } from '../lib/test-content';
 import { MIN_GAZE_POINTS } from '../lib/constants';
 import { TaskDisplay } from './task-display';
@@ -211,95 +209,82 @@ export function ReviewPanel({
   // ═══════════════════════════════════════════════════════
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#e3dcc2]/90 backdrop-blur-sm"
-      style={{ animation: 'float-up 0.4s ease-out' }}
+      className="fixed inset-0 z-50 flex h-[100dvh] w-[100vw] flex-col items-center justify-center overflow-hidden bg-[#e3dcc2] p-6 text-[#1b2021] md:p-12"
+      style={{ animation: 'float-up 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
     >
-      <div className="w-[min(420px,90vw)] border border-[#51513d]/18 bg-[#f3edd7] shadow-[10px_10px_0_rgba(81,81,61,.08)]">
-        <div className="border-b border-[#51513d]/18 p-5">
-          <LexoraLogo size="sm" />
-        </div>
+      {/* Background Glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#e3dc95]/40 blur-[100px]" />
+      </div>
 
-        <div className="flex flex-col gap-5 p-6">
-          {/* Status */}
-          <div className="flex items-start gap-4">
-            <div
-              className={cn(
-                'flex h-12 w-12 shrink-0 items-center justify-center border',
-                hasEnoughData
-                  ? 'border-[#a6a867] bg-[#a6a867]/15'
-                  : 'border-[#e3dc95] bg-[#e3dc95]/25',
-              )}
-            >
-              {hasEnoughData ? (
-                <CheckCircle2 className="h-6 w-6 text-[#51513d]" />
-              ) : (
-                <AlertTriangle className="h-6 w-6 text-[#8b6f25]" />
-              )}
-            </div>
-            <div className="flex flex-col gap-0.5 pt-0.5">
-              <h2 className="text-xl font-black tracking-tight text-[#1b2021]">
-                {hasEnoughData ? 'Task Complete' : 'Task Finished'}
-              </h2>
-              <p className="text-xs font-black tracking-[0.15em] text-[#51513d] uppercase">
-                {label}
-              </p>
-            </div>
-          </div>
-
-          {/* Data quality */}
-          <div
-            className={cn(
-              'border p-4 text-sm leading-relaxed',
-              hasEnoughData
-                ? 'border-[#51513d]/12 bg-[#e3dcc2]/60 text-[#1b2021]'
-                : 'border-[#e3dc95] bg-[#e3dc95]/25 text-[#1b2021]',
-            )}
-          >
+      <div className="relative z-10 flex min-h-0 w-full max-w-[800px] flex-col border border-[#51513d]/20 bg-[#f3edd7] shadow-[12px_12px_0_rgba(81,81,61,.14)] md:max-w-4xl">
+        <div className="flex flex-col gap-6 p-6 md:p-10 min-h-0">
+          
+          {/* Header */}
+          <div className="flex flex-col items-center text-center">
             {hasEnoughData ? (
-              <p>
-                <span className="font-black text-[#51513d]">{pointCount}</span> gaze points captured
-                successfully.
-              </p>
+              <div className="mb-4 flex h-14 w-14 items-center justify-center bg-[#a6a867] text-[#1b2021]">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
             ) : (
-              <p>
-                Only <span className="font-black text-[#8b6f25]">{pointCount}</span> points
-                captured. Consider retaking.
-              </p>
+              <div className="mb-4 flex h-14 w-14 items-center justify-center bg-[#e3dc95] text-[#1b2021]">
+                <AlertTriangle className="h-7 w-7" />
+              </div>
             )}
+
+            <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+              {hasEnoughData ? 'Wonderful reading!' : 'We had a little trouble seeing you.'}
+            </h2>
+            <p className="mt-4 max-w-lg text-sm leading-7 text-[#1b2021]/70 md:text-base">
+              {hasEnoughData
+                ? "We've successfully captured a clear picture of your eye movements."
+                : 'You can submit this attempt, or try reading the paragraph once more for better results.'}
+            </p>
           </div>
 
-          {/* View Gaze button */}
+          {/* Reading Paragraph Display - Responsive Scaling */}
+          {readingContent && (
+            <div className="relative flex min-h-0 w-full flex-1 items-center justify-center border border-[#51513d]/18 bg-[#e3dcc2]/60 p-6 shadow-inner">
+              <p
+                className="text-center font-medium leading-relaxed text-[#1b2021]"
+                style={{ fontSize: 'clamp(0.875rem, 1.5vh + 0.5vw, 1.75rem)' }}
+              >
+                {readingContent}
+              </p>
+            </div>
+          )}
+
+          {/* Controls */}
+          <div className="mt-4 flex flex-col items-stretch gap-4 sm:flex-row">
+            <button
+              type="button"
+              onClick={onRetake}
+              className="flex flex-1 items-center justify-center gap-2 border border-[#51513d]/25 bg-[#e3dcc2] px-6 py-4 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10 active:translate-y-px active:shadow-none"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Read Again
+            </button>
+            <button
+              type="button"
+              onClick={onContinue}
+              className="flex flex-1 items-center justify-center gap-2 bg-[#51513d] px-6 py-4 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021] active:translate-y-px active:shadow-none"
+            >
+              {isLastTask ? 'Submit for Analysis' : 'Next Task'}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Eye Tracking Visualization Toggle */}
           {rawGazeData.length > 1 && readingContent && (
             <button
               type="button"
               onClick={handleOpenGaze}
-              className="flex items-center gap-3 border border-[#51513d]/20 bg-[#e3dc95]/30 p-3.5 text-sm text-[#51513d] transition-colors hover:bg-[#e3dc95]/60"
+              className="mx-auto mt-2 flex items-center gap-2 text-xs font-black tracking-widest text-[#51513d]/70 uppercase transition-colors hover:text-[#51513d]"
             >
-              <Eye className="h-5 w-5" />
-              <span className="font-black">View Gaze Trail</span>
-              <span className="ml-auto text-xs text-[#1b2021]/60">Fullscreen replay</span>
+              <Eye className="h-4 w-4" />
+              Eye Tracking Visualization
             </button>
           )}
-
-          {/* Actions */}
-          <div className="mt-2 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={onContinue}
-              className="inline-flex w-full items-center justify-center bg-[#51513d] px-5 py-3.5 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021]"
-            >
-              {isLastTask ? 'Submit for Analysis' : 'Next Task'}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={onRetake}
-              className="inline-flex w-full items-center justify-center border border-[#51513d]/25 bg-[#e3dcc2] px-5 py-3.5 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10"
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Retake
-            </button>
-          </div>
         </div>
       </div>
     </div>

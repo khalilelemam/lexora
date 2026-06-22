@@ -89,16 +89,23 @@ export function PursuitCalibrationView({
       (_, i) => bounds.y.min + (i * span) / (LINE_COUNT - 1),
     );
   }, [bounds]);
-  const validationTargets = useMemo(
-    () =>
-      lineYs.map((y, index) => ({
-        x: 0.5,
-        y,
-        phase: 'PURSUIT_VALIDATION' as const,
-        label: `pursuit-line-${index + 1}`,
-      })),
-    [lineYs],
-  );
+  const validationTargets = useMemo(() => {
+    // Distribute X coordinates across the AOI to avoid all points
+    // collapsing into a single vertical line at x: 0.5.
+    const xSpan = bounds.x.max - bounds.x.min;
+    const xPositions = lineYs.map((_, i) => {
+      // Spread evenly across the AOI X range
+      if (lineYs.length <= 1) return 0.5;
+      return bounds.x.min + (i * xSpan) / (lineYs.length - 1);
+    });
+
+    return lineYs.map((y, index) => ({
+      x: xPositions[index],
+      y,
+      phase: 'PURSUIT_VALIDATION' as const,
+      label: `pursuit-line-${index + 1}`,
+    }));
+  }, [lineYs, bounds]);
 
   const [stage, setStage] = useState<PursuitStage>('instruction');
   const [lineIndex, setLineIndex] = useState(0);

@@ -11,4 +11,5 @@ export { TobiiServiceStatusCard } from './tobii-service-status-card';
 export { GazeReplayViewer } from './gaze-replay-viewer';
 export { FullscreenGazeReplay } from './fullscreen-gaze-replay';
 export { GazeDebugDot } from './gaze-debug-dot';
+export { DebugTestNavigation } from './debug-test-navigation';
 export { TestErrorBoundary } from './test-error-boundary';

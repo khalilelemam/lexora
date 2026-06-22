@@ -202,7 +202,6 @@ export function useQuickValidation(
           calibrationLogger.warn('[QUICK VALIDATION] skipped point', {
             step: index + 1,
             pointIndex: shuffledTargets[index].pointIndex,
-            label: target.label,
             target: {
               normalizedX: target.x,
               normalizedY: target.y,
@@ -246,7 +245,6 @@ export function useQuickValidation(
         calibrationLogger.debug('[QUICK VALIDATION] point result', {
           step: index + 1,
           pointIndex: shuffledTargets[index].pointIndex,
-          label: target.label,
           target: {
             normalizedX: target.x,
             normalizedY: target.y,

@@ -18,30 +18,30 @@ interface CalibrationResultProps {
 const QUALITY_UI = {
   good: {
     icon: CheckCircle2,
-    label: 'Excellent',
+    label: 'Great reading!',
     color: 'text-[#51513d]',
     bg: 'bg-[#a6a867]/15',
     border: 'border-[#a6a867]/45',
     ringColor: '#a6a867',
-    message: "Your calibration is highly accurate. You're ready to start the test.",
+    message: "The camera has learned your eye movements perfectly. You're all set to begin the test.",
   },
   acceptable: {
     icon: AlertTriangle,
-    label: 'Acceptable',
+    label: 'Not bad!',
     color: 'text-[#8b6f25]',
     bg: 'bg-[#e3dc95]/25',
     border: 'border-[#e3dc95]',
     ringColor: '#e3dc95',
-    message: 'Calibration is usable but could be better. Consider retrying for improved accuracy.',
+    message: "We got an okay reading. You can continue, but giving it one more quick try might help us get a better score.",
   },
   poor: {
     icon: XCircle,
-    label: 'Poor',
+    label: 'Needs another try',
     color: 'text-red-600',
     bg: 'bg-red-50',
     border: 'border-red-200',
     ringColor: '#ef4444',
-    message: 'Calibration quality is low. Retrying is strongly recommended.',
+    message: "Hmm, the camera had a little trouble catching your eyes that time. Let's give it another quick try!",
   },
 } as const;
 
@@ -132,20 +132,19 @@ export function CalibrationResult({
           {/* Validation warning */}
           {quickValidationAccuracy != null && !quickValidationPassed && (
             <div className="rounded-xl border border-[#e3dc95] bg-[#e3dc95]/25 p-3 text-sm leading-relaxed text-[#51513d]">
-              Validation score is below 70%. The test can still proceed, but retrying is
-              recommended.
+              Your tracking score was a bit low. We can still move forward, but trying once more usually clears this up!
             </div>
           )}
 
           {/* Tips for poor calibration */}
           {result.quality === 'poor' && (
             <div className="rounded-xl border border-[#51513d] bg-[#f3edd7]/90 p-4 text-sm text-[#1b2021]">
-              <p className="mb-2 font-semibold text-[#1b2021]">Tips for better results:</p>
+              <p className="mb-2 font-semibold text-[#1b2021]">A few quick tips for a perfect score:</p>
               <ul className="list-inside list-disc space-y-1.5 text-[13px]">
-                <li>Keep your face centered and stable</li>
-                <li>Use even front lighting — avoid backlighting</li>
-                <li>Use only your eyes to follow the target</li>
-                <li>Avoid sudden head movements</li>
+                <li>Try to keep your head nice and still</li>
+                <li>Make sure your face is well-lit from the front</li>
+                <li>Follow the dot using only your eyes</li>
+                <li>Avoid sudden movements or leaning back</li>
               </ul>
             </div>
           )}
@@ -158,21 +157,21 @@ export function CalibrationResult({
               className="border-[#51513d] text-[#1b2021] hover:text-[#1b2021]"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Retry
+              Try Again
             </Button>
             {canProceed && (
               <Button
                 onClick={onContinue}
                 className="bg-[#51513d] px-8 text-[#f3edd7] hover:bg-[#1b2021]"
               >
-                Continue to Test
+                Ready to Start
               </Button>
             )}
           </div>
 
           {result.quality === 'poor' && blockOnPoor && (
             <p className="text-xs text-red-600">
-              Calibration quality is too low to proceed. Please retry.
+              We need a slightly better reading before we can start the test. Let's try again!
             </p>
           )}
         </div>

@@ -172,7 +172,7 @@ export function CalibrationScreen({
     previousPointRef.current = currentPoint;
     resetFixationState();
 
-    const isCanvasMode = resolvedMode === 'stickman' || resolvedMode === 'star';
+    const isCanvasMode = resolvedMode === 'stickman' || resolvedMode === 'star' || resolvedMode === 'grid';
     const timing = getModeTiming(resolvedMode);
 
     const sampleInterval = setInterval(() => {
@@ -246,10 +246,10 @@ export function CalibrationScreen({
 
   /* ---- callbacks ---- */
   const handleRetry = useCallback(() => {
-    resetEngine();
+    beginCalibration();
     setCollectionIssue(null);
     setDismissedValidationRound(null);
-  }, [resetEngine]);
+  }, [beginCalibration]);
 
   const handleSkip = useCallback(() => {
     skipCalibration();
@@ -300,7 +300,7 @@ export function CalibrationScreen({
       ) : resolvedMode === 'star' ? (
         <StarCanvas {...modeViewProps} onSampleCollected={handleCanvasSampleCollected} />
       ) : (
-        <GridModeView {...modeViewProps} />
+        <GridModeView {...modeViewProps} onSampleCollected={handleCanvasSampleCollected} />
       );
 
     return (

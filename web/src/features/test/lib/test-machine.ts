@@ -121,6 +121,9 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
     case 'ERROR':
       return { ...state, currentState: 'error', error: action.error };
 
+    case 'FORCE_STATE':
+      return { ...state, currentState: action.state as any };
+
     default:
       return state;
   }
@@ -188,6 +191,9 @@ function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTe
 
     case 'ERROR':
       return { ...state, currentState: 'error', error: action.error };
+
+    case 'FORCE_STATE':
+      return { ...state, currentState: action.state as any };
 
     default:
       return state;

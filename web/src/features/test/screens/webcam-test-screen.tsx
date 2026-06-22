@@ -11,6 +11,7 @@ import {
   ScreenGuard,
   TaskDisplay,
   TestErrorBoundary,
+  DebugTestNavigation,
 } from '@/features/test/components';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { PreTestIntake } from '@/features/test/components/pre-test-intake';
@@ -48,6 +49,7 @@ export default function WebcamTestScreen() {
     completeSetup,
     startFromIdle,
     setScreenshot,
+    forceState,
   } = useWebcamTestController();
 
   const renderState = () => {
@@ -198,6 +200,23 @@ export default function WebcamTestScreen() {
           {DEBUG_GAZE_OVERLAY && state.currentState === 'task-paragraph' && (
             <GazeDebugDot active={webcamGaze.collecting} getPosition={() => lastTaskGazePosition} />
           )}
+          
+          <DebugTestNavigation
+            states={[
+              'idle',
+              'intake',
+              'device-setup',
+              'calibration-setup',
+              'calibrating',
+              'task-paragraph',
+              'review-paragraph',
+              'submitting',
+              'results',
+              'error',
+            ]}
+            currentState={state.currentState}
+            onForceState={forceState}
+          />
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

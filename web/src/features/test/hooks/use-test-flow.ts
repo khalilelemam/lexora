@@ -21,6 +21,7 @@ export function useTestFlow({ mode }: UseTestFlowOptions) {
 
   const start = useCallback(() => dispatch({ type: 'START' }), []);
   const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
+  const forceState = useCallback((stateName: any) => dispatch({ type: 'FORCE_STATE', state: stateName }), []);
 
-  return { state, dispatch, start, reset };
+  return { state, dispatch, start, reset, forceState };
 }

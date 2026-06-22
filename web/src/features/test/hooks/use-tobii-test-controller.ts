@@ -32,7 +32,7 @@ const STEP_INDICATOR_HIDDEN_STATES = new Set([
 
 export function useTobiiTestController() {
   const router = useRouter();
-  const { state, dispatch } = useTestFlow({ mode: 'tobii' });
+  const { state, dispatch, forceState } = useTestFlow({ mode: 'tobii' });
   const tobiiState = state as TobiiTestFlowState;
   const { mode: initialCalibrationMode, age: participantAge } = useCalibrationQueryParams();
   const { getOrCreateAttemptId, resetAttemptId } = useStableAttemptId();
@@ -248,5 +248,6 @@ export function useTobiiTestController() {
     completeSetup,
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
+    forceState,
   };
 }

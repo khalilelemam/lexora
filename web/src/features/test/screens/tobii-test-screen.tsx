@@ -12,6 +12,7 @@ import {
   TaskDisplay,
   TestErrorBoundary,
   TobiiServiceStatusCard,
+  DebugTestNavigation,
 } from '@/features/test/components';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { PreTestIntake } from '@/features/test/components/pre-test-intake';
@@ -54,6 +55,7 @@ export default function TobiiTestScreen() {
     completeSetup,
     startFromIdle,
     setScreenshot,
+    forceState,
   } = useTobiiTestController();
 
   const visualizations = useMemo(
@@ -292,6 +294,27 @@ export default function TobiiTestScreen() {
             </div>
           )}
           {renderState()}
+          
+          <DebugTestNavigation
+            states={[
+              'idle',
+              'intake',
+              'device-setup',
+              'calibration-setup',
+              'calibrating',
+              'task-syllables',
+              'review-syllables',
+              'task-pseudo-words',
+              'review-pseudo-words',
+              'task-meaningful-text',
+              'review-meaningful-text',
+              'submitting',
+              'results',
+              'error',
+            ]}
+            currentState={state.currentState}
+            onForceState={forceState}
+          />
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

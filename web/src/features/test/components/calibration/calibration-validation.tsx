@@ -109,7 +109,7 @@ export function CalibrationValidation({
       {gazeCursor && (
         <div
           className="pointer-events-none absolute z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f3edd7]/80 bg-[#a6a867]/50 shadow-[0_0_12px_rgba(166,168,103,0.55)]"
-          style={{ left: gazeCursor.x, top: gazeCursor.y }}
+          style={{ left: `${gazeCursor.x}px`, top: `${gazeCursor.y}px` }}
         />
       )}
     </div>

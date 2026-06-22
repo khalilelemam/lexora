@@ -32,7 +32,7 @@ const STEP_INDICATOR_HIDDEN_STATES = new Set([
 
 export function useWebcamTestController() {
   const router = useRouter();
-  const { state, dispatch } = useTestFlow({ mode: 'webcam' });
+  const { state, dispatch, forceState } = useTestFlow({ mode: 'webcam' });
   const webcamState = state as WebcamTestFlowState;
   const { mode: initialCalibrationMode, age: participantAge } = useCalibrationQueryParams();
   const { getOrCreateAttemptId, resetAttemptId } = useStableAttemptId();
@@ -252,5 +252,6 @@ export function useWebcamTestController() {
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
+    forceState,
   };
 }
