@@ -88,6 +88,7 @@ class TestWebcamFeatureProcessor:
         assert result.total_fixations > 0
         assert result.mean_fixation_duration_ms > 0
         assert len(result.features_data) == result.total_fixations
+        assert "efficiency_ratio" in result.features_data[0]
 
     def test_output_is_padded_to_40_sequences(self, processor):
         np.random.seed(42)

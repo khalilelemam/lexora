@@ -17,6 +17,7 @@ interface EyeTrackerFeatureRow {
 }
 
 interface WebcamFeatureRow extends EyeTrackerFeatureRow {
+  efficiencyRatio: number;
   isRegression: boolean;
   isReturnSweep?: boolean;
 }
@@ -153,6 +154,7 @@ function toWebcamGazeFeatures(features: WebcamFeatureRow[]): GazeFeature[] {
     fixationX: feature.fixationX,
     fixationY: feature.fixationY,
     saccadeAmplitude: feature.saccadeAmplitude,
+    efficiencyRatio: feature.efficiencyRatio,
     isRegression: feature.isRegression,
     isReturnSweep: feature.isReturnSweep,
   }));

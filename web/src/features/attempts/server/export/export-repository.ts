@@ -52,6 +52,8 @@ export async function* streamExportAttempts(
         a.raw_data_consented,
         a.raw_blob_url,
         a.derived_blob_url,
+        a.export_artifact_status,
+        a.export_manifest_path,
         a.created_at,
         a.deleted_at,
         u.id   AS user_id,

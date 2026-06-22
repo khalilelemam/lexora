@@ -73,8 +73,14 @@ export interface GazeFeature {
   fixationX: number;
   fixationY: number;
   saccadeAmplitude: number;
+  /** Webcam-only per-fixation feature returned by the ML service. */
+  efficiencyRatio?: number;
   isRegression: boolean;
   isReturnSweep?: boolean;
+}
+
+export interface WebcamGazeFeature extends GazeFeature {
+  efficiencyRatio: number;
 }
 
 export interface PredictionResult {
