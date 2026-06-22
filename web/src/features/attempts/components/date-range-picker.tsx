@@ -54,20 +54,29 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" className="w-full justify-start px-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-start border-[#51513d]/22 bg-[#e3dcc2]/75 px-3 text-[#1b2021] hover:bg-[#e3dc95]/45"
+        >
           <CalendarDays className="h-4 w-4 opacity-70" />
-          <span className={cn('truncate', !value.from && !value.to && 'text-muted-foreground')}>
+          <span className={cn('truncate', !value.from && !value.to && 'text-[#1b2021]/46')}>
             {formatRangeLabel(value)}
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0" sideOffset={8}>
-        <div className="border-b p-3">
+      <PopoverContent
+        align="start"
+        className="w-auto border-[#51513d]/22 bg-[#f3edd7] p-0 text-[#1b2021] shadow-[10px_10px_0_rgba(81,81,61,.1)]"
+        sideOffset={8}
+      >
+        <div className="border-b border-[#51513d]/16 p-3">
           <div className="flex items-center justify-between gap-2">
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
+              className="text-[#51513d] hover:bg-[#51513d]/10 hover:text-[#1b2021]"
               onClick={() => setVisibleMonth((month) => addMonths(month, -1))}
               aria-label="Previous month"
             >
@@ -80,6 +89,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
               type="button"
               variant="ghost"
               size="icon-sm"
+              className="text-[#51513d] hover:bg-[#51513d]/10 hover:text-[#1b2021]"
               onClick={() => setVisibleMonth((month) => addMonths(month, 1))}
               aria-label="Next month"
             >
@@ -97,7 +107,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
           <MonthCalendar month={nextMonth} range={selectedRange} onSelectDate={handleSelectDate} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#51513d]/16 p-3">
           <div className="flex flex-wrap gap-2">
             <QuickRangeButton days={7} onChange={onChange} onClose={() => setOpen(false)} />
             <QuickRangeButton days={30} onChange={onChange} onClose={() => setOpen(false)} />
@@ -107,6 +117,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
             variant="ghost"
             size="sm"
             disabled={!value.from && !value.to}
+            className="font-bold text-[#51513d] hover:bg-[#51513d]/10 hover:text-[#1b2021]"
             onClick={() => {
               onChange({ from: undefined, to: undefined });
               setOpen(false);
@@ -135,7 +146,7 @@ function MonthCalendar({
   return (
     <div className="w-70">
       <div className="mb-3 text-center text-sm font-medium">{formatMonthYear(month)}</div>
-      <div className="text-muted-foreground grid grid-cols-7 gap-1 text-center text-xs">
+      <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#51513d]/64">
         {WEEKDAYS.map((weekday) => (
           <div key={weekday} className="flex h-7 items-center justify-center">
             {weekday}
@@ -153,10 +164,10 @@ function MonthCalendar({
               key={formatDateKey(day)}
               type="button"
               className={cn(
-                'hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring flex h-9 w-9 items-center justify-center rounded-md text-sm transition-colors outline-none focus-visible:ring-2',
-                !isCurrentMonth && 'text-muted-foreground opacity-45',
-                isInRange && 'bg-accent text-accent-foreground',
-                isSelectedBoundary && 'bg-primary text-primary-foreground hover:bg-primary/90',
+                'flex h-9 w-9 items-center justify-center rounded-md text-sm transition-colors outline-none hover:bg-[#e3dc95]/55 focus-visible:ring-2 focus-visible:ring-[#51513d]/40',
+                !isCurrentMonth && 'text-[#1b2021]/35',
+                isInRange && 'bg-[#a6a867]/22 text-[#1b2021]',
+                isSelectedBoundary && 'bg-[#51513d] text-[#e3dcc2] hover:bg-[#1b2021]',
               )}
               onClick={() => onSelectDate(day)}
               aria-pressed={isSelectedBoundary}
@@ -184,6 +195,7 @@ function QuickRangeButton({
       type="button"
       variant="outline"
       size="sm"
+      className="border-[#51513d]/22 bg-[#e3dcc2]/70 font-bold text-[#1b2021] hover:bg-[#e3dc95]/45"
       onClick={() => {
         const today = localDateAsUtcMidnight();
         onChange({

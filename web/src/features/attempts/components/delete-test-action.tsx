@@ -32,7 +32,7 @@ export function DeleteTestAction({ attemptId, label }: DeleteTestActionProps) {
             type="button"
             variant="outline"
             size="sm"
-            className="text-destructive hover:text-destructive"
+            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive bg-[#e3dcc2]/62 font-bold"
             disabled={deleteMutation.isPending}
           >
             {deleteMutation.isPending ? (
@@ -43,19 +43,21 @@ export function DeleteTestAction({ attemptId, label }: DeleteTestActionProps) {
             Delete
           </Button>
         </AlertDialogTrigger>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-[#51513d]/22 bg-[#f3edd7] text-[#1b2021] shadow-[14px_14px_0_rgba(81,81,61,.12)]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this test?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="font-black">Delete this test?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#1b2021]/62">
               {label} will be removed from your history. The underlying record stays preserved for
               audit and research integrity.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="border-[#51513d]/28 bg-[#e3dcc2]/70 font-bold text-[#1b2021] hover:bg-[#e3dc95]/45">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(attemptId)}
-              className="bg-destructive hover:bg-destructive/90 text-white"
+              className="bg-destructive hover:bg-destructive/90 font-bold text-white"
             >
               Delete test
             </AlertDialogAction>

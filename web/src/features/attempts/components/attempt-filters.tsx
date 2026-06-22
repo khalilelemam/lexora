@@ -63,13 +63,13 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
   }, [debouncedQuery, updateFilters]);
 
   return (
-    <section className="border-border bg-card rounded-lg border p-4 shadow-sm">
+    <section className="border border-[#51513d]/18 bg-[#f3edd7]/84 p-4 shadow-[10px_10px_0_rgba(81,81,61,.09)] backdrop-blur-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <SlidersHorizontal className="h-4 w-4" />
+        <div className="inline-flex items-center gap-2 border border-[#51513d]/18 bg-[#e3dcc2]/70 px-3 py-2 text-[10px] font-black tracking-[0.2em] text-[#51513d] uppercase">
+          <SlidersHorizontal className="h-3.5 w-3.5" />
           Filters
         </div>
-        <div className="text-muted-foreground text-xs">
+        <div className="font-mono text-xs font-black text-[#51513d]/70">
           {typeof resultCount === 'number'
             ? `${resultCount} test${resultCount === 1 ? '' : 's'}`
             : null}
@@ -82,20 +82,20 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
             Search
           </Label>
           <div className="relative">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#51513d]/70" />
             <Input
               id="test-search"
               value={queryDraft}
               onChange={(event) => setQueryDraft(event.target.value)}
               placeholder="Label, outcome, user email"
-              className="pr-9 pl-9"
+              className="border-[#51513d]/22 bg-[#e3dcc2]/75 pr-9 pl-9 text-[#1b2021] placeholder:text-[#1b2021]/42 focus-visible:ring-[#51513d]/35"
             />
             {queryDraft ? (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                className="absolute top-1/2 right-2 -translate-y-1/2"
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-[#51513d] hover:bg-[#51513d]/10"
                 onClick={() => {
                   setQueryDraft('');
                   updateFilters({ ...filters, query: undefined });
@@ -152,7 +152,7 @@ export function AttemptFiltersPanel({ filters, onChange, resultCount }: AttemptF
           type="button"
           variant="ghost"
           disabled={!hasFilters}
-          className="md:col-span-2 md:justify-self-end xl:col-span-1"
+          className="font-bold text-[#51513d] hover:bg-[#51513d]/10 hover:text-[#1b2021] md:col-span-2 md:justify-self-end xl:col-span-1"
           onClick={() => {
             setQueryDraft('');
             onChange({ limit: filters.limit });

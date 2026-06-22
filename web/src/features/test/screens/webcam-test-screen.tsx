@@ -83,7 +83,7 @@ export default function WebcamTestScreen() {
               resolvedMode={requestedCalibrationMode}
               onSelectMode={setSelectedMode}
               onStart={completeSetup}
-              startButtonText="Enter Fullscreen & Start Calibration"
+              startButtonText="Start Calibration"
             />
           </div>
         );

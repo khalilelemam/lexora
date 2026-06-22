@@ -39,7 +39,7 @@ export function AttemptCard({ attempt, scope, expanded }: AttemptCardProps) {
   return (
     <AccordionItem
       value={attempt.attemptId}
-      className="border-border bg-card rounded-lg border px-4 shadow-sm transition-shadow hover:shadow-md"
+      className="overflow-hidden border border-[#51513d]/18 bg-[#f3edd7]/88 px-4 shadow-[8px_8px_0_rgba(81,81,61,.08)] transition-all hover:-translate-y-0.5 hover:border-[#51513d]/32 hover:bg-[#f3edd7] hover:shadow-[10px_10px_0_rgba(81,81,61,.11)]"
     >
       <AccordionTrigger className="py-4 hover:no-underline">
         <div className="flex min-w-0 flex-1 flex-col gap-3 text-left">
@@ -53,14 +53,16 @@ export function AttemptCard({ attempt, scope, expanded }: AttemptCardProps) {
                 Deleted
               </Badge>
             ) : null}
-            <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+            <span className="border border-[#51513d]/16 bg-[#e3dcc2]/72 px-2 py-0.5 text-xs font-bold text-[#51513d]">
               {TEST_TYPE_LABELS[attempt.testType]}
             </span>
           </div>
 
           <div className="grid gap-2">
-            <h2 className="truncate text-base font-semibold">{attempt.label}</h2>
-            <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <h2 className="truncate text-base font-black tracking-tight text-[#1b2021]">
+              {attempt.label}
+            </h2>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#1b2021]/70">
               <span className="inline-flex items-center gap-1.5">
                 <CalendarClock className="h-3.5 w-3.5" />
                 {formatAttemptDate(attempt.createdAt)}
@@ -84,7 +86,7 @@ export function AttemptCard({ attempt, scope, expanded }: AttemptCardProps) {
         {detailQuery.isPending ? (
           <AttemptDetailSkeleton />
         ) : detailQuery.isError ? (
-          <div className="border-destructive/20 bg-destructive/5 rounded-md border p-4 text-sm">
+          <div className="border-destructive/24 bg-destructive/5 border p-4 text-sm">
             Could not load the saved result for this test.
           </div>
         ) : (
@@ -123,11 +125,11 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
   }, [ownsFullscreen]);
 
   return (
-    <div className="grid gap-4 border-t pt-4">
+    <div className="grid gap-4 border-t border-[#51513d]/16 pt-4">
       <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold">{OUTCOME_LABELS[detail.outcome]}</h3>
-          <p className="text-muted-foreground max-w-2xl text-sm">{OUTCOME_COPY[detail.outcome]}</p>
+          <h3 className="text-sm font-black text-[#1b2021]">{OUTCOME_LABELS[detail.outcome]}</h3>
+          <p className="max-w-2xl text-sm text-[#1b2021]/70">{OUTCOME_COPY[detail.outcome]}</p>
           {detail.deletedAt ? (
             <p className="text-destructive text-sm">
               Deleted from the user&apos;s history on {formatAttemptDate(detail.deletedAt)}.
@@ -137,12 +139,16 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
 
         <div className="flex flex-wrap justify-start gap-2 md:justify-end">
           {hasReplay ? (
-            <Button size="sm" onClick={openVisualization}>
+            <Button
+              size="sm"
+              className="bg-[#51513d] font-bold text-[#e3dcc2] hover:bg-[#1b2021]"
+              onClick={openVisualization}
+            >
               <Eye className="h-4 w-4" />
               Visualization
             </Button>
           ) : (
-            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+            <div className="flex items-center gap-1.5 border border-[#51513d]/14 bg-[#e3dcc2]/58 px-2.5 py-1.5 text-xs font-bold text-[#1b2021]/64">
               <Info className="h-3.5 w-3.5" />
               No replay data
             </div>
@@ -180,22 +186,22 @@ function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user
 
 function AdminMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-muted/40 rounded-md border px-3 py-2">
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <p className="mt-1 truncate font-medium">{value}</p>
+    <div className="border border-[#51513d]/14 bg-[#e3dcc2]/58 px-3 py-2">
+      <p className="text-[10px] font-black tracking-[0.16em] text-[#51513d] uppercase">{label}</p>
+      <p className="mt-1 truncate font-black text-[#1b2021]">{value}</p>
     </div>
   );
 }
 
 function AttemptDetailSkeleton() {
   return (
-    <div className="grid gap-4 border-t pt-4">
+    <div className="grid gap-4 border-t border-[#51513d]/16 pt-4">
       <div className="flex items-center justify-between gap-4">
         <div className="grid flex-1 gap-2">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-full max-w-xl" />
         </div>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm font-bold text-[#51513d]">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading
         </div>
