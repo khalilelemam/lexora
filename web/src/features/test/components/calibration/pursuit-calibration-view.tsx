@@ -73,6 +73,8 @@ function interpolateLaggedPoint(
   return buffer[buffer.length - 1] ?? null;
 }
 
+import { AudioWidget } from '@/components/shared/audio-widget';
+
 export function PursuitCalibrationView({
   gridPointCount,
   aoiBounds,
@@ -302,7 +304,10 @@ export function PursuitCalibrationView({
         );
 
   return (
-    <div className="fixed inset-0 z-50 cursor-none overflow-hidden bg-[#e3dcc2]">
+    <div className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-[#e3dcc2] select-none">
+      <AudioWidget src="/audio/pursuit-audio.mp4" />
+      
+      {/* 1. Backdrop Grid Overlay */}
       <div 
         className={cn(
           "absolute inset-x-0 top-6 flex justify-center px-4 z-40 transition-opacity duration-500",
@@ -342,7 +347,7 @@ export function PursuitCalibrationView({
         </div>
       </div>
 
-      <div className="absolute right-4 bottom-16 z-30">
+      <div className="absolute right-6 bottom-6 z-30">
         <Button
           variant="outline"
           size="sm"

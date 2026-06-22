@@ -19,6 +19,8 @@ import type { CalibrationModeViewProps } from './types';
  *   movements (gazeX, gazeY) and raw fixation progress updates. This reduces re-renders
  *   during the shrink animation to absolute zero, guaranteeing 60fps frame-rate smoothness.
  */
+import { AudioWidget } from '@/components/shared/audio-widget';
+
 export const GridModeView = React.memo(
   function GridModeView({
     points,
@@ -36,6 +38,8 @@ export const GridModeView = React.memo(
 
     return (
       <div className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-[#e3dcc2] select-none">
+        <AudioWidget src="/audio/fixation-audio.mp4" />
+        
         {/* 1. Backdrop Grid Overlay */}
         <div
           className="absolute inset-0 opacity-40 pointer-events-none"
