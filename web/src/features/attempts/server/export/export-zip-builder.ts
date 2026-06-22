@@ -6,14 +6,24 @@ import { PassThrough } from 'node:stream';
 
 import {
   createAttemptBlobContainerClient,
+  downloadAttemptBuffer,
   downloadAttemptJson,
   downloadAttemptStream,
 } from '@/features/test/server/attempt-blob-storage';
+import {
+  markAttemptExportArtifactFailed,
+  markAttemptExportArtifactReady,
+} from '@/features/test/server/test-attempt-repository';
 import type { AttemptFilters } from '@/features/attempts/types';
 
 import { streamExportAttempts } from './export-repository';
 import type { ExportAttemptRow, ExportContentMode } from './export-types';
-import type { ExportArtifactFile, ExportArtifactManifest } from './export-artifacts';
+import {
+  generateAttemptExportArtifacts,
+  type ExportArtifactFile,
+  type ExportArtifactManifest,
+} from './export-artifacts';
+import { fromPrismaCalibrationMode, fromPrismaOutcome, fromPrismaTestMode } from '../shared-sql';
 
 export interface ExportOptions {
   filters: AttemptFilters;
@@ -48,6 +58,10 @@ export function buildExportZipStream(options: ExportOptions): PassThrough {
 }
 
 const CONCURRENCY = 6;
+const SCREENSHOT_KEYS = {
+  tobii: ['syllables', 'pseudo', 'meaningful'],
+  webcam: ['paragraph'],
+} as const;
 
 async function runExportPipeline(
   archive: Archiver,
@@ -58,32 +72,17 @@ async function runExportPipeline(
 
   for await (const batch of streamExportAttempts(filters)) {
     await processWithConcurrency(batch, CONCURRENCY, async (row) => {
-      if (row.export_artifact_status !== 'READY' || !row.export_manifest_path) {
-        skipped.push({
-          attemptId: row.attempt_id,
-          reason: `export artifacts are ${row.export_artifact_status.toLowerCase()}`,
-        });
-        return;
-      }
-
       try {
-        const manifest = (await downloadAttemptJson(
+        const manifest = await loadOrCreateManifest(row, containerClient);
+        await appendManifestFiles(
+          archive,
           containerClient,
-          row.export_manifest_path,
-        )) as ExportArtifactManifest;
-
-        for (const file of selectManifestFiles(manifest.files, include, includeVisuals, row)) {
-          const stream = await downloadAttemptStream(containerClient, file.blobPath);
-          if (!stream) {
-            skipped.push({
-              attemptId: row.attempt_id,
-              reason: `missing export artifact blob: ${file.blobPath}`,
-            });
-            continue;
-          }
-
-          archive.append(stream, { name: file.zipPath });
-        }
+          manifest,
+          row,
+          include,
+          includeVisuals,
+          skipped,
+        );
       } catch (error) {
         skipped.push({
           attemptId: row.attempt_id,
@@ -99,6 +98,121 @@ async function runExportPipeline(
   }
 
   await archive.finalize();
+}
+
+async function loadOrCreateManifest(
+  row: ExportAttemptRow,
+  containerClient: ReturnType<typeof createAttemptBlobContainerClient>,
+): Promise<ExportArtifactManifest> {
+  if (row.export_artifact_status === 'READY' && row.export_manifest_path) {
+    return (await downloadAttemptJson(
+      containerClient,
+      row.export_manifest_path,
+    )) as ExportArtifactManifest;
+  }
+
+  try {
+    const result = await generateArtifactsFromStoredBlobs(row, containerClient);
+    await markAttemptExportArtifactReady(row.attempt_id, result.manifestPath);
+    return (await downloadAttemptJson(
+      containerClient,
+      result.manifestPath,
+    )) as ExportArtifactManifest;
+  } catch (error) {
+    await markAttemptExportArtifactFailed(row.attempt_id, error);
+    throw error;
+  }
+}
+
+async function generateArtifactsFromStoredBlobs(
+  row: ExportAttemptRow,
+  containerClient: ReturnType<typeof createAttemptBlobContainerClient>,
+) {
+  const attemptId = row.attempt_id;
+  const testType = fromPrismaTestMode(row.test_type);
+  const derivedPayload = await downloadAttemptJson(containerClient, `derived/${attemptId}.json`);
+  const rawPayload =
+    row.raw_data_consented && row.raw_blob_url
+      ? await downloadOptionalJson(containerClient, `raw/${attemptId}.json`)
+      : undefined;
+
+  return generateAttemptExportArtifacts({
+    attemptId,
+    testType,
+    outcome: fromPrismaOutcome(row.outcome),
+    modelVersion: row.model_version,
+    calibrationMode: fromPrismaCalibrationMode(row.calibration_mode),
+    age: row.age,
+    label: row.label,
+    rawDataConsented: row.raw_data_consented,
+    rawPayload,
+    derivedPayload,
+    screenshotBuffers: await downloadScreenshotBuffers(
+      containerClient,
+      attemptId,
+      SCREENSHOT_KEYS[testType],
+    ),
+    submittedAt: new Date(row.created_at),
+  });
+}
+
+async function downloadOptionalJson(
+  containerClient: ReturnType<typeof createAttemptBlobContainerClient>,
+  path: string,
+) {
+  try {
+    return await downloadAttemptJson(containerClient, path);
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+async function downloadScreenshotBuffers(
+  containerClient: ReturnType<typeof createAttemptBlobContainerClient>,
+  attemptId: string,
+  taskKeys: readonly string[],
+) {
+  const screenshots: Record<string, Buffer> = {};
+
+  await Promise.all(
+    taskKeys.map(async (taskKey) => {
+      const buffer = await downloadAttemptBuffer(
+        containerClient,
+        `screenshots/${attemptId}_${taskKey}.jpg`,
+      );
+      if (buffer) {
+        screenshots[taskKey] = buffer;
+      }
+    }),
+  );
+
+  return screenshots;
+}
+
+async function appendManifestFiles(
+  archive: Archiver,
+  containerClient: ReturnType<typeof createAttemptBlobContainerClient>,
+  manifest: ExportArtifactManifest,
+  row: ExportAttemptRow,
+  include: ExportContentMode,
+  includeVisuals: boolean,
+  skipped: SkippedAttempt[],
+) {
+  for (const file of selectManifestFiles(manifest.files, include, includeVisuals, row)) {
+    const stream = await downloadAttemptStream(containerClient, file.blobPath);
+    if (!stream) {
+      skipped.push({
+        attemptId: row.attempt_id,
+        reason: `missing export artifact blob: ${file.blobPath}`,
+      });
+      continue;
+    }
+
+    archive.append(stream, { name: file.zipPath });
+  }
 }
 
 function selectManifestFiles(
@@ -126,6 +240,14 @@ function selectManifestFiles(
 
     return true;
   });
+}
+
+function isNotFoundError(error: unknown) {
+  return (
+    error instanceof Object &&
+    'statusCode' in error &&
+    (error as { statusCode: number }).statusCode === 404
+  );
 }
 
 async function processWithConcurrency<T>(

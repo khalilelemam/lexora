@@ -49,6 +49,7 @@ export interface GenerateAttemptExportArtifactsParams {
   derivedPayload: unknown;
   contentSnapshot?: AttemptContentSnapshot;
   screenshots?: Record<string, string>;
+  screenshotBuffers?: Record<string, Buffer>;
   submittedAt: Date;
 }
 
@@ -114,7 +115,7 @@ export async function generateAttemptExportArtifacts(
 
   const basePath = `exports/${params.attemptId}`;
   const files: ExportArtifactFile[] = [];
-  const screenshots = decodeScreenshots(params.screenshots);
+  const screenshots = collectScreenshots(params.screenshots, params.screenshotBuffers);
   const derived = normalizeDerivedPayload(params.derivedPayload, params.contentSnapshot);
 
   await uploadDerivedArtifacts({
@@ -405,7 +406,10 @@ function normalizeDerivedPayload(
   };
 }
 
-function decodeScreenshots(screenshots: Record<string, string> | undefined) {
+function collectScreenshots(
+  screenshots: Record<string, string> | undefined,
+  screenshotBuffers: Record<string, Buffer> | undefined,
+) {
   const decoded = new Map<string, Buffer>();
 
   for (const [taskKey, dataUrl] of Object.entries(screenshots ?? {})) {
@@ -413,6 +417,10 @@ function decodeScreenshots(screenshots: Record<string, string> | undefined) {
     if (buffer) {
       decoded.set(normalizeScreenshotKey(taskKey), buffer);
     }
+  }
+
+  for (const [taskKey, buffer] of Object.entries(screenshotBuffers ?? {})) {
+    decoded.set(normalizeScreenshotKey(taskKey), buffer);
   }
 
   return decoded;
