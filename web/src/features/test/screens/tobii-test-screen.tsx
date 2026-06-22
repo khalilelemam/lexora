@@ -255,14 +255,32 @@ export default function TobiiTestScreen() {
       case 'submitting':
         return <LoadingScreen message="Analyzing eye movement data..." />;
 
-      case 'results':
-        if (!state.results) {
+      case 'results': {
+        let resultToDisplay = state.results;
+        
+        // Inject mock result data if accessed via debug menu
+        if (!resultToDisplay && process.env.NODE_ENV === 'development') {
+          resultToDisplay = {
+            id: 'mock-debug-tobii-123',
+            createdAt: new Date().toISOString(),
+            dyslexiaProbability: 0.25,
+            riskLevel: 'medium',
+            confidence: 0.78,
+            metadata: {
+              sequencesAnalyzed: 180,
+              totalFixations: 130,
+            },
+            features: [],
+          };
+        }
+
+        if (!resultToDisplay) {
           return null;
         }
 
         return (
           <ResultsDisplay
-            result={state.results}
+            result={resultToDisplay}
             mode="tobii"
             onNewTest={handleNewTest}
             readingContent={
@@ -271,6 +289,7 @@ export default function TobiiTestScreen() {
             visualizations={visualizations}
           />
         );
+      }
 
       case 'error':
         return (

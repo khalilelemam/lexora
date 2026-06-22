@@ -136,35 +136,69 @@ export default function WebcamTestScreen() {
           />
         );
 
-      case 'review-paragraph':
+      case 'review-paragraph': {
+        let gazeDataToDisplay = reviewGazeData;
+        // Inject mock gaze data if accessed via debug menu
+        if (gazeDataToDisplay.length === 0 && process.env.NODE_ENV === 'development') {
+          const now = Date.now();
+          gazeDataToDisplay = [
+            { x: 100, y: 100, timestamp: now },
+            { x: 200, y: 100, timestamp: now + 500 },
+            { x: 300, y: 100, timestamp: now + 1000 },
+            { x: 400, y: 100, timestamp: now + 1500 },
+            { x: 100, y: 150, timestamp: now + 2000 }, // simulated return sweep
+            { x: 200, y: 150, timestamp: now + 2500 },
+          ];
+        }
+
         return (
           <ReviewPanel
             taskType="paragraph"
-            pointCount={gazePointCount}
+            pointCount={gazePointCount || 100}
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
             readingContent={taskContent || getWebcamTaskContent()}
-            rawGazeData={reviewGazeData}
+            rawGazeData={gazeDataToDisplay}
           />
         );
+      }
 
       case 'submitting':
         return <LoadingScreen message="Analyzing eye movement data..." />;
 
-      case 'results':
-        if (!state.results) {
+      case 'results': {
+        let resultToDisplay = state.results;
+        
+        // Inject mock result data if accessed via debug menu
+        if (!resultToDisplay && process.env.NODE_ENV === 'development') {
+          resultToDisplay = {
+            id: 'mock-debug-123',
+            createdAt: new Date().toISOString(),
+            dyslexiaProbability: 0.12,
+            riskLevel: 'low',
+            confidence: 0.89,
+            metadata: {
+              sequencesAnalyzed: 120,
+              totalFixations: 85,
+            },
+            features: [],
+          };
+        }
+
+        if (!resultToDisplay) {
           return null;
         }
 
         return (
           <ResultsDisplay
-            result={state.results}
+            result={resultToDisplay}
             mode="webcam"
             onNewTest={handleNewTest}
             readingContent={taskContent || getWebcamTaskContent()}
           />
         );
+      }
 
       case 'error':
         return (
