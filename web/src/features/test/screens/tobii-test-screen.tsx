@@ -20,6 +20,7 @@ import { useTobiiTestController } from '@/features/test/hooks';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { buildTobiiResultVisualizations } from '@/features/test/lib/build-tobii-visualizations';
 import type { IntakeData } from '@/features/test/types';
+import Image from 'next/image';
 
 export default function TobiiTestScreen() {
   const {
@@ -86,14 +87,16 @@ export default function TobiiTestScreen() {
             <div className="relative flex min-h-0 flex-col overflow-hidden border border-[#51513d]/18 bg-[#1b2021] text-[#e3dcc2] shadow-[10px_10px_0_rgba(81,81,61,.08)]">
               {/* Premium Hero Visual Section */}
               <div className="relative flex-1 overflow-hidden border-b border-[#51513d]/18">
-                <img
+                <Image
                   src="/images/service-tray.png"
                   alt="Lexora Eye Tracker Service in System Tray"
                   className="absolute inset-0 h-full w-full object-cover"
+                  width={800}
+                  height={600}
                 />
 
                 {/* Simulated Pulse around the tray area (adjusting position) */}
-                <div className="absolute right-[46%] bottom-[13%] h-12 w-12 -translate-x-1/2 rounded-full border-2 border-[#a6a867] opacity-80">
+                <div className="absolute right-[36.5%] bottom-[20%] h-12 w-12 -translate-x-1/2 rounded-full border-2 border-[#a6a867] opacity-80">
                   <div className="absolute inset-0 animate-ping rounded-full bg-[#a6a867]/40" />
                 </div>
               </div>
