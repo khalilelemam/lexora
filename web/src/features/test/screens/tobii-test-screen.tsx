@@ -156,7 +156,7 @@ export default function TobiiTestScreen() {
               resolvedMode={requestedCalibrationMode}
               onSelectMode={setSelectedMode}
               onStart={completeSetup}
-              startButtonText="Enter Fullscreen & Start Calibration"
+              startButtonText="Start Calibration"
             />
           </div>
         );

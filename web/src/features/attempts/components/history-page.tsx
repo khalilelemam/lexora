@@ -1,16 +1,15 @@
 'use client';
 
-import Link from 'next/link';
-import { Activity, RefreshCcw } from 'lucide-react';
+import { Activity, Camera, Monitor, RefreshCcw, Sparkles } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { useMyAttempts } from '@/features/attempts/hooks/use-attempts';
 import type { AttemptFilters } from '@/features/attempts/types';
 
 import { AttemptFiltersPanel } from './attempt-filters';
+import { AttemptsWorkbenchShell } from './attempts-workbench-shell';
 import { InfiniteScrollSentinel } from './infinite-scroll-sentinel';
 import { AttemptList } from './attempt-list';
 
@@ -27,6 +26,7 @@ export function HistoryPage() {
   );
   const total = attemptsQuery.data?.pages[0]?.total;
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = attemptsQuery;
+  const activeFilterCount = getActiveFilterCount(filters);
 
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -35,32 +35,35 @@ export function HistoryPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <main className="bg-background min-h-screen">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-5 py-6 sm:px-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <Link href="/">
-            <LexoraLogo size="sm" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/test/webcam">New Webcam Test</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/test/tobii">New Tobii Test</Link>
-            </Button>
-          </div>
-        </header>
-
-        <section className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Activity className="text-primary h-5 w-5" />
-            <h1 className="text-2xl font-semibold tracking-normal">Test History</h1>
-          </div>
-          <p className="text-muted-foreground max-w-2xl text-sm">
-            Your saved screening tests and outcomes.
-          </p>
-        </section>
-
+    <AttemptsWorkbenchShell
+      activeSection="history"
+      eyebrow="Personal signal log"
+      title="Test History"
+      description="Review saved screenings, compare outcomes, and reopen gaze visualizations without leaving your Lexora workspace."
+      icon={Activity}
+      actions={[
+        { label: 'New Webcam Test', href: '/test/webcam', icon: Camera },
+        { label: 'New Tobii Test', href: '/test/tobii', icon: Monitor, variant: 'outline' },
+      ]}
+      stats={[
+        {
+          label: 'Saved tests',
+          value: typeof total === 'number' ? total.toLocaleString() : '...',
+          detail: 'Matching current history view',
+        },
+        {
+          label: 'Loaded',
+          value: attempts.length.toLocaleString(),
+          detail: hasNextPage ? 'More available below' : 'Visible in current session',
+        },
+        {
+          label: 'Filters',
+          value: activeFilterCount.toString(),
+          detail: activeFilterCount ? 'Narrowing signal list' : 'Full history shown',
+        },
+      ]}
+    >
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
         <AttemptFiltersPanel filters={filters} onChange={setFilters} resultCount={total} />
 
         {attemptsQuery.isPending ? (
@@ -78,7 +81,7 @@ export function HistoryPage() {
           </>
         )}
       </div>
-    </main>
+    </AttemptsWorkbenchShell>
   );
 }
 
@@ -86,7 +89,10 @@ function AttemptListSkeleton() {
   return (
     <div className="grid gap-3">
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className="border-border bg-card rounded-lg border p-4 shadow-sm">
+        <div
+          key={index}
+          className="border border-[#51513d]/18 bg-[#f3edd7]/86 p-4 shadow-[7px_7px_0_rgba(81,81,61,.08)]"
+        >
           <div className="space-y-4">
             <div className="flex gap-2">
               <Skeleton className="h-5 w-20 rounded-full" />
@@ -105,13 +111,31 @@ function AttemptListSkeleton() {
 
 function LoadError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="border-destructive/20 bg-card rounded-lg border p-6">
-      <h2 className="font-semibold">Could not load tests</h2>
-      <p className="text-muted-foreground mt-1 text-sm">Please try again.</p>
-      <Button onClick={onRetry} variant="outline" size="sm" className="mt-4">
+    <div className="border-destructive/24 border bg-[#f3edd7]/86 p-6 shadow-[8px_8px_0_rgba(81,81,61,.08)]">
+      <div className="mb-3 inline-flex items-center gap-2 border border-[#51513d]/18 bg-[#e3dcc2]/70 px-3 py-2 text-[10px] font-black tracking-[0.2em] text-[#51513d] uppercase">
+        <Sparkles className="h-3.5 w-3.5" />
+        Sync stalled
+      </div>
+      <h2 className="font-black text-[#1b2021]">Could not load tests</h2>
+      <p className="mt-1 text-sm text-[#1b2021]/70">Please try again.</p>
+      <Button
+        onClick={onRetry}
+        variant="outline"
+        size="sm"
+        className="mt-4 border-[#51513d]/28 bg-[#e3dcc2]/70 font-bold text-[#1b2021] hover:bg-[#e3dc95]/55"
+      >
         <RefreshCcw className="h-4 w-4" />
         Retry
       </Button>
     </div>
   );
+}
+
+function getActiveFilterCount(filters: AttemptFilters) {
+  return [
+    filters.query,
+    filters.testType,
+    filters.outcomes?.length ? filters.outcomes : undefined,
+    filters.createdFrom || filters.createdTo,
+  ].filter(Boolean).length;
 }

@@ -31,15 +31,23 @@ export function OutcomeFilter({ value, onChange }: OutcomeFilterProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline" className="justify-between">
+        <Button
+          type="button"
+          variant="outline"
+          className="justify-between border-[#51513d]/22 bg-[#e3dcc2]/75 text-[#1b2021] hover:bg-[#e3dc95]/45"
+        >
           <span className="truncate">{formatOutcomeSelection(value)}</span>
           <ChevronDown className="h-4 w-4 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
+      <DropdownMenuContent
+        align="start"
+        className="w-56 border-[#51513d]/22 bg-[#f3edd7] text-[#1b2021]"
+      >
         {OUTCOME_OPTIONS.map((outcome) => (
           <DropdownMenuCheckboxItem
             key={outcome}
+            className="focus:bg-[#51513d]/10 focus:text-[#1b2021]"
             checked={value.includes(outcome)}
             onCheckedChange={() => toggleOutcome(outcome)}
             onSelect={(event) => event.preventDefault()}

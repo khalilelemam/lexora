@@ -125,26 +125,26 @@ export function ExportDialog({ open, onOpenChange, filters }: ExportDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="border-[#51513d]/22 bg-[#f3edd7] text-[#1b2021] shadow-[14px_14px_0_rgba(81,81,61,.12)] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 font-black">
             <FileArchive className="h-5 w-5" />
             Export Test Data
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-[#1b2021]/62">
             Download a ZIP file with feature CSVs, metadata, and optional gaze visualizations.
           </DialogDescription>
         </DialogHeader>
 
         {/* ── Active filter indicator ─────────────────────── */}
-        <div className="bg-muted/50 rounded-lg border px-3 py-2.5">
+        <div className="border border-[#51513d]/16 bg-[#e3dcc2]/64 px-3 py-2.5">
           <div className="flex items-center gap-1.5 text-xs font-medium">
-            <Filter className="text-muted-foreground h-3.5 w-3.5" />
-            <span className="text-muted-foreground">Applies to:</span>
+            <Filter className="h-3.5 w-3.5 text-[#51513d]" />
+            <span className="text-[#1b2021]/58">Applies to:</span>
             {hasFilters ? (
-              <span className="text-foreground">Current filters</span>
+              <span className="font-bold text-[#1b2021]">Current filters</span>
             ) : (
-              <span className="text-foreground">All tests</span>
+              <span className="font-bold text-[#1b2021]">All tests</span>
             )}
           </div>
           {hasFilters && (
@@ -152,7 +152,7 @@ export function ExportDialog({ open, onOpenChange, filters }: ExportDialogProps)
               {filterTags.map((tag) => (
                 <span
                   key={tag}
-                  className="bg-background text-muted-foreground inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs"
+                  className="inline-flex items-center border border-[#51513d]/14 bg-[#f3edd7] px-1.5 py-0.5 text-xs font-bold text-[#51513d]"
                 >
                   {tag}
                 </span>
@@ -167,7 +167,9 @@ export function ExportDialog({ open, onOpenChange, filters }: ExportDialogProps)
           disabled={status === 'exporting'}
           aria-label="Content to include"
         >
-          <label className="text-muted-foreground text-xs font-medium">Include</label>
+          <label className="text-xs font-black tracking-[0.16em] text-[#51513d] uppercase">
+            Include
+          </label>
           {CONTENT_OPTIONS.map((option) => {
             const isSelected = selected === option.value;
 
@@ -178,27 +180,27 @@ export function ExportDialog({ open, onOpenChange, filters }: ExportDialogProps)
                 role="radio"
                 aria-checked={isSelected}
                 className={cn(
-                  'flex flex-col gap-0.5 rounded-lg border p-3 text-left transition-colors',
+                  'flex flex-col gap-0.5 border p-3 text-left transition-colors',
                   isSelected
-                    ? 'border-primary bg-primary/5 ring-primary/20 ring-1'
-                    : 'border-border hover:bg-accent/50',
+                    ? 'border-[#51513d] bg-[#e3dc95]/26 shadow-[5px_5px_0_rgba(81,81,61,.09)]'
+                    : 'border-[#51513d]/16 bg-[#e3dcc2]/46 hover:bg-[#e3dc95]/22',
                 )}
                 onClick={() => setSelected(option.value)}
               >
-                <span className="text-sm font-medium">{option.label}</span>
-                <span className="text-muted-foreground text-xs">{option.description}</span>
+                <span className="text-sm font-black text-[#1b2021]">{option.label}</span>
+                <span className="text-xs leading-5 text-[#1b2021]/60">{option.description}</span>
               </button>
             );
           })}
         </fieldset>
 
         {/* ── Visuals toggle ─────────────────────────────── */}
-        <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
+        <div className="flex items-center justify-between border border-[#51513d]/16 bg-[#e3dcc2]/46 px-3 py-2.5">
           <div className="space-y-0.5">
-            <Label htmlFor="include-visuals" className="text-sm font-medium">
+            <Label htmlFor="include-visuals" className="text-sm font-black text-[#1b2021]">
               Gaze visualizations
             </Label>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-[#1b2021]/60">
               Generate PNG images of gaze patterns per test
             </p>
           </div>
@@ -227,6 +229,7 @@ export function ExportDialog({ open, onOpenChange, filters }: ExportDialogProps)
             type="button"
             variant="outline"
             disabled={status === 'exporting'}
+            className="border-[#51513d]/28 bg-[#e3dcc2]/70 font-bold text-[#1b2021] hover:bg-[#e3dc95]/45"
             onClick={() => handleOpenChange(false)}
           >
             Cancel
@@ -234,6 +237,7 @@ export function ExportDialog({ open, onOpenChange, filters }: ExportDialogProps)
           <Button
             type="button"
             disabled={status === 'exporting' || status === 'success'}
+            className="bg-[#1b2021] font-bold text-[#e3dcc2] hover:bg-[#51513d]"
             onClick={handleExport}
           >
             {status === 'exporting' ? (
