@@ -13,7 +13,7 @@ import {
 } from '../lib/hardware';
 
 interface SupportedHardwareProps {
-  onContinue: () => void;
+  onContinue?: () => void;
 }
 
 const STATUS_STYLES: Record<DeviceInfo['status'], string> = {
@@ -97,33 +97,39 @@ function DeviceGroup({
 
 export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
   return (
-    <div className="mx-auto grid w-full max-w-5xl gap-8 px-4 py-8 lg:grid-cols-[0.8fr_1.2fr]">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8">
       <motion.section
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden bg-[#51513d] p-7 text-[#e3dcc2] shadow-[12px_12px_0_rgba(81,81,61,.12)]"
+        className="relative overflow-hidden bg-[#51513d] p-7 text-[#e3dcc2] shadow-[12px_12px_0_rgba(81,81,61,.12)] md:p-12"
       >
-        <div className="absolute right-0 bottom-0 h-32 w-32 translate-x-10 translate-y-10 rounded-full bg-[#a6a867]/22" />
-        <LexoraLogo
-          size="md"
-          className="mb-16 [&_img]:brightness-0 [&_img]:invert [&_span]:text-[#e3dcc2]"
-        />
-        <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#e3dc95] uppercase">
-          Tobii hardware
-        </p>
-        <h1 className="text-4xl leading-tight font-black text-balance">
-          Confirm the tracker first.
-        </h1>
-        <p className="mt-5 leading-7 text-[#e3dcc2]/70">
-          Lexora&apos;s Tobii flow is tuned for screen-based Tobii Pro devices. Consumer and
-          wearable trackers are listed separately so the setup starts with the right expectation.
-        </p>
-        <div className="mt-8 flex h-16 w-16 items-center justify-center bg-[#a6a867] text-[#1b2021]">
-          <Eye className="h-8 w-8" />
+        <div className="absolute right-0 bottom-0 h-48 w-48 translate-x-12 translate-y-12 rounded-full bg-[#a6a867]/22" />
+
+        <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl">
+            <LexoraLogo
+              size="lg"
+              className="mb-8 [&_img]:h-auto [&_img]:w-full [&_img]:max-w-[14rem] [&_img]:brightness-0 [&_img]:invert [&_span]:text-[#e3dcc2]"
+            />
+            <p className="mb-4 text-xs font-black tracking-[0.3em] text-[#e3dc95] uppercase">
+              Tobii hardware
+            </p>
+            <h1 className="text-4xl leading-tight font-black text-balance md:text-5xl">
+              Confirm the tracker first.
+            </h1>
+            <p className="mt-5 leading-7 text-[#e3dcc2]/70">
+              Lexora&apos;s Tobii flow is tuned for screen-based Tobii Pro devices. Consumer and
+              wearable trackers are listed separately so the setup starts with the right
+              expectation.
+            </p>
+          </div>
+          <div className="hidden shrink-0 items-center justify-center rounded-full bg-[#a6a867] p-8 text-[#1b2021] md:flex">
+            <Eye className="h-16 w-16" />
+          </div>
         </div>
       </motion.section>
 
-      <div className="flex flex-col gap-7">
+      <div className="grid grid-cols-1 gap-7 md:grid-cols-2 lg:grid-cols-3">
         <DeviceGroup
           title="Fully supported"
           subtitle="Current models"
@@ -143,26 +149,28 @@ export function SupportedHardware({ onContinue }: SupportedHardwareProps) {
           devices={INCOMPATIBLE_DEVICES}
           offset={SUPPORTED_DEVICES.length + LEGACY_DEVICES.length}
         />
+      </div>
 
+      {onContinue && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="flex flex-col items-start gap-3 border border-[#51513d]/18 bg-[#f3edd7] p-5"
+          className="mt-4 flex flex-col items-center justify-center gap-3 border border-[#51513d]/18 bg-[#f3edd7] p-8 text-center"
         >
           <Button
             size="lg"
             onClick={onContinue}
-            className="bg-[#51513d] px-8 text-[#e3dcc2] hover:bg-[#1b2021]"
+            className="bg-[#51513d] px-8 py-6 text-lg text-[#e3dcc2] hover:bg-[#1b2021]"
           >
             I have a compatible device
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
-          <p className="text-xs leading-5 text-[#1b2021]/58">
+          <p className="mt-2 text-sm leading-5 text-[#1b2021]/58">
             No Tobii device? Use the webcam-based screening path from the landing page.
           </p>
         </motion.div>
-      </div>
+      )}
     </div>
   );
 }

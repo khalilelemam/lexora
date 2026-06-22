@@ -105,7 +105,9 @@ export const MODE_OPTIONS: CalibrationModeOption[] = [
     key: 'star',
     label: 'Gentle Star',
     description: 'Follow a friendly star that appears at magical points. Calm and engaging.',
-    ageHint: 'Recommended for ages 7–9',
+    ageHint: 'Coming soon',
     image: '/images/calibration/star-mode.svg',
+    disabled: true,
+    comingSoon: true,
   },
 ];

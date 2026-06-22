@@ -309,7 +309,13 @@ export function DeviceCheck({ onReady }: DeviceCheckProps) {
             {isConnected && (
               <button
                 type="button"
-                onClick={() => (window.location.href = 'lexora://open')}
+                onClick={() => {
+                  const iframe = document.createElement('iframe');
+                  iframe.style.display = 'none';
+                  iframe.src = 'lexora://open';
+                  document.body.appendChild(iframe);
+                  setTimeout(() => iframe.remove(), 2000);
+                }}
                 className="border border-[#51513d]/25 bg-[#e3dc95]/40 px-4 py-2.5 text-xs font-black text-[#51513d] transition-colors hover:bg-[#e3dc95]/60"
               >
                 Open Service
@@ -364,7 +370,7 @@ function StepBlock({
         {complete ? '✓' : num}
       </span>
       <span
-        className={`text-[10px] font-black tracking-[0.1em] uppercase ${
+        className={`text-[10px] font-black tracking-widest uppercase ${
           active ? 'text-[#1b2021]' : complete ? 'text-[#51513d]' : 'text-[#51513d]/40'
         }`}
       >

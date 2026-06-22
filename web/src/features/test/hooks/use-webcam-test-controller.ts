@@ -83,6 +83,11 @@ export function useWebcamTestController() {
     enterFullscreen();
   }, [dispatch, enterFullscreen]);
 
+  const completeSetup = useCallback(() => {
+    dispatch({ type: 'SETUP_COMPLETE' });
+    enterFullscreen();
+  }, [dispatch, enterFullscreen]);
+
   const handleCalibrationComplete = useCallback(
     (
       result: CalibrationResult,
@@ -95,14 +100,14 @@ export function useWebcamTestController() {
       }
 
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
-      setTaskContent(getWebcamTaskContent());
+      setTaskContent(getWebcamTaskContent(participantAge));
       gazeDataRef.current = [];
       setGazePointCount(0);
       setReviewGazeData([]);
       lastTaskGazePositionRef.current = null;
       setLastTaskGazePosition(null);
     },
-    [dispatch, webcamGaze],
+    [dispatch, webcamGaze, participantAge],
   );
 
   const handleTaskDone = useCallback(() => {
@@ -236,6 +241,7 @@ export function useWebcamTestController() {
     showStepIndicator: !STEP_INDICATOR_HIDDEN_STATES.has(webcamState.currentState),
     canRetrySubmission: gazePointCount >= MIN_GAZE_POINTS,
     handleCameraReady,
+    completeSetup,
     handleCalibrationComplete,
     handleTaskDone,
     handleRetake,
@@ -244,7 +250,6 @@ export function useWebcamTestController() {
     handleNewTest,
     handleExit,
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
-    completeEducation: () => dispatch({ type: 'EDUCATION_COMPLETE' }),
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
   };
