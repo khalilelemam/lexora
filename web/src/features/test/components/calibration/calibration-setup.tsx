@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { CheckCircle2, Maximize, Monitor, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -382,35 +383,40 @@ function CalibrationPointPreview() {
       })}
 
       {/* 2. Active Animated Point */}
-      <div
+      <motion.div
         key={`active-${activeIndex}`}
-        className="absolute z-10"
+        className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
         style={{
           left: `${activePoint[0]}%`,
           top: `${activePoint[1]}%`,
-          animation: 'mini-shrink 1.5s linear forwards',
         }}
       >
         <div className="relative flex h-8 w-8 items-center justify-center rounded-full">
-          <div
+          <motion.div
             className="absolute inset-0 rounded-full bg-[#a6a867]/15 shadow-[0_0_12px_rgba(166,168,103,0.24)]"
-            style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}
+            animate={{ scale: [1, 1.08, 1], opacity: [1, 0.85, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           />
           <div className="absolute inset-1 rounded-full border border-[#a6a867]/30" />
-          <div className="relative z-10 h-2 w-2 rounded-full border border-[#e3dcc2] bg-[#a6a867] shadow-sm scale-110" />
+          <motion.div 
+            initial={{ scale: 1 }}
+            animate={{ scale: 0 }}
+            transition={{ duration: 1.5, ease: 'linear' }}
+            className="absolute inset-0.5 rounded-full border border-[#e3dcc2] bg-[#a6a867] shadow-sm"
+          />
           <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(81,81,61,0.03)" strokeWidth="4" />
-            <circle cx="50" cy="50" r="44" fill="none" stroke="#51513d" strokeWidth="4" strokeDasharray="276" strokeDashoffset="138" strokeLinecap="round" />
+            <motion.circle 
+              cx="50" cy="50" r="44" fill="none" stroke="#a6a867" strokeWidth="4" 
+              strokeDasharray={276} 
+              initial={{ strokeDashoffset: 276 }}
+              animate={{ strokeDashoffset: 0 }}
+              transition={{ duration: 1.5, ease: 'linear' }}
+              strokeLinecap="round" 
+            />
           </svg>
         </div>
-      </div>
-
-      <style jsx>{`
-        @keyframes mini-shrink {
-          0% { transform: translate(-50%, -50%) scale(1); }
-          100% { transform: translate(-50%, -50%) scale(0); }
-        }
-      `}</style>
+      </motion.div>
     </div>
   );
 }

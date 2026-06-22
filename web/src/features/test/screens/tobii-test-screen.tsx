@@ -261,8 +261,6 @@ export default function TobiiTestScreen() {
         // Inject mock result data if accessed via debug menu
         if (!resultToDisplay && process.env.NODE_ENV === 'development') {
           resultToDisplay = {
-            id: 'mock-debug-tobii-123',
-            createdAt: new Date().toISOString(),
             dyslexiaProbability: 0.25,
             riskLevel: 'medium',
             confidence: 0.78,

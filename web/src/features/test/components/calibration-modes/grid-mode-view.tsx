@@ -91,18 +91,9 @@ export const GridModeView = React.memo(
             );
           })}
 
-        {/* 5. Active Target (Instant Spawn -> Smooth Continuous Shrink) */}
-        <motion.div
+        {/* 5. Active Target (Static Container -> Inner Dot Shrinks) */}
+        <div
           key={`grid-target-${collectionStep}`}
-          initial={{ scale: 1, opacity: 1 }}
-          animate={{ scale: 0 }}
-          transition={{
-            duration: animationDuration,
-            ease: 'linear',
-          }}
-          onAnimationComplete={() => {
-            onSampleCollected?.();
-          }}
           style={{
             left: `${currentPoint.x * 100}%`,
             top: `${currentPoint.y * 100}%`,
@@ -125,12 +116,21 @@ export const GridModeView = React.memo(
             {/* Solid Accent Ring */}
             <div className="absolute inset-2 rounded-full border border-[#a6a867]/30 transition-colors duration-200" />
 
-            {/* Calibration Target Dot (Sage on stable, Dark Charcoal on moving) */}
-            <div
+            {/* Calibration Target Dot (Starts full size, shrinks to 0 to reveal outer rings) */}
+            <motion.div
+              initial={{ scale: 1, opacity: 1 }}
+              animate={{ scale: 0 }}
+              transition={{
+                duration: animationDuration,
+                ease: 'linear',
+              }}
+              onAnimationComplete={() => {
+                onSampleCollected?.();
+              }}
               className={cn(
-                'relative z-10 h-4.5 w-4.5 rounded-full transition-all duration-200 border border-[#e3dcc2]',
+                'absolute inset-1 rounded-full transition-colors duration-200 border border-[#e3dcc2]',
                 isStableFixation
-                  ? 'bg-[#a6a867] shadow-[0_0_12px_rgba(166,168,103,0.65)] scale-110'
+                  ? 'bg-[#a6a867] shadow-[0_0_12px_rgba(166,168,103,0.65)]'
                   : 'bg-[#1b2021] shadow-sm',
               )}
             />
@@ -176,7 +176,7 @@ export const GridModeView = React.memo(
               )}
             </AnimatePresence>
           </div>
-        </motion.div>
+        </div>
 
         {/* 6. Floating HUD Bar (bottom) */}
         <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-24 items-end justify-between px-6 pb-6">

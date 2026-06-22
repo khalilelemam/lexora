@@ -173,8 +173,6 @@ export default function WebcamTestScreen() {
         // Inject mock result data if accessed via debug menu
         if (!resultToDisplay && process.env.NODE_ENV === 'development') {
           resultToDisplay = {
-            id: 'mock-debug-123',
-            createdAt: new Date().toISOString(),
             dyslexiaProbability: 0.12,
             riskLevel: 'low',
             confidence: 0.89,
