@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Lexend } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/shared/theme-provider';
 import { QueryProvider } from '@/components/shared/query-provider';
@@ -11,6 +11,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
+
+const lexend = Lexend({
+  variable: '--font-lexend',
   subsets: ['latin'],
 });
 
@@ -59,7 +64,7 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${lexend.variable} antialiased`}>
         <ThemeProvider>
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>

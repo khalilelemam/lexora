@@ -189,12 +189,12 @@ export function TaskDisplay({
         <p
           className={cn(
             'leading-loose whitespace-pre-line text-[#1b2021] sm:leading-loose md:leading-loose',
-            'text-left font-normal select-none',
+            'text-left font-[family-name:var(--font-lexend)] select-none',
           )}
           style={{
             fontSize: `calc(${fontScale} * clamp(1.15rem, 2.5vw, 1.875rem))`,
-            letterSpacing: '0.05em',
-            wordSpacing: '0.12em',
+            letterSpacing: '0.1em',
+            wordSpacing: '0.3em',
           }}
         >
           {words.map((word, idx) => {
