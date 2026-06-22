@@ -8,7 +8,7 @@ export default async function Page() {
     await requireAttemptsUser();
   } catch (error) {
     if (error instanceof AttemptsAuthError) {
-      // BYPASS FOR TESTING: redirect('/sign-in?callbackUrl=/history');
+      redirect('/sign-in?callbackUrl=/history');
     }
 
     throw error;
