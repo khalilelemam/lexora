@@ -30,10 +30,10 @@ export function FilterSelect<T extends string>({
     <div className="grid gap-2">
       <Label className="text-xs">{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full border-[#51513d]/22 bg-[#e3dcc2]/75 text-[#1b2021] focus:ring-[#51513d]/35">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="border-[#51513d]/22 bg-[#f3edd7] text-[#1b2021]">
           <SelectItem value={allValue}>{allLabel}</SelectItem>
           {Object.entries(options).map(([optionValue, optionLabel]) => (
             <SelectItem key={optionValue} value={optionValue}>
