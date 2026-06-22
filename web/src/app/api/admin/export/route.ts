@@ -9,49 +9,31 @@ import type { ExportContentMode } from '@/features/attempts/server/export/export
 const VALID_CONTENT_MODES = new Set<ExportContentMode>(['raw', 'derived', 'both']);
 
 /**
- * POST /api/admin/export
+ * GET /api/admin/export
  *
  * Generates a ZIP archive of test attempt data based on the current
  * dashboard filters and content selection (raw, derived, or both).
  *
  * The response streams the ZIP directly — no temporary files are created.
  */
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     await requireAdminAttemptsUser();
 
-    const body = (await request.json()) as {
-      filters?: Record<string, string>;
-      include?: string;
-      includeVisuals?: boolean;
-    };
-
-    // Parse filters from the request body using the same logic
-    // as the dashboard list endpoint.
-    const filterParams = new URLSearchParams();
-    if (body.filters) {
-      for (const [key, value] of Object.entries(body.filters)) {
-        if (Array.isArray(value)) {
-          for (const v of value) {
-            filterParams.append(key, String(v));
-          }
-        } else if (value !== undefined && value !== null) {
-          filterParams.set(key, String(value));
-        }
-      }
-    }
-    const filters = parseAttemptFilters(filterParams);
+    const searchParams = request.nextUrl.searchParams;
+    const filters = parseAttemptFilters(searchParams);
 
     // Validate content mode.
-    const include = (body.include ?? 'both') as ExportContentMode;
+    const include = (searchParams.get('include') ?? 'both') as ExportContentMode;
     if (!VALID_CONTENT_MODES.has(include)) {
       return NextResponse.json(
-        { error: `Invalid content mode: ${body.include}. Use 'raw', 'derived', or 'both'.` },
+        { error: `Invalid content mode: ${include}. Use 'raw', 'derived', or 'both'.` },
         { status: 400 },
       );
     }
 
-    const includeVisuals = body.includeVisuals !== false;
+    const includeVisualsStr = searchParams.get('includeVisuals');
+    const includeVisuals = includeVisualsStr !== 'false';
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const filename = `lexora-export-${timestamp}.zip`;
 

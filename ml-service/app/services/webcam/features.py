@@ -350,6 +350,7 @@ class WebcamFeatureProcessor:
                 "fixation_x": float(row[1]),
                 "fixation_y": float(row[2]),
                 "saccade_amplitude": float(row[3]),
+                "efficiency_ratio": float(row[5]),
                 "is_regression": bool(row[4]),
                 "is_return_sweep": bool(row[6]),
             }

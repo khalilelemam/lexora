@@ -24,6 +24,7 @@ class WebcamFeatureRow(BaseModel):
     fixation_x: float
     fixation_y: float
     saccade_amplitude: float
+    efficiency_ratio: float
     is_regression: bool
     is_return_sweep: Optional[bool] = False
 

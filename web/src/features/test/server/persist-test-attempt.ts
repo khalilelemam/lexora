@@ -1,5 +1,9 @@
 import 'server-only';
 
+import { after } from 'next/server';
+
+import { generateAttemptExportArtifacts } from '@/features/attempts/server/export/export-artifacts';
+
 import type { AttemptContentSnapshot, CalibrationMode, RiskLevel, TestMode } from '../types';
 import {
   createAttemptBlobContainerClient,
@@ -7,7 +11,11 @@ import {
   uploadAttemptJson,
   uploadAttemptImage,
 } from './attempt-blob-storage';
-import { upsertTestAttemptRecord } from './test-attempt-repository';
+import {
+  markAttemptExportArtifactFailed,
+  markAttemptExportArtifactReady,
+  upsertTestAttemptRecord,
+} from './test-attempt-repository';
 
 const ATTEMPT_ID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -33,6 +41,7 @@ export interface PersistTestAttemptParams {
 export async function persistTestAttempt(params: PersistTestAttemptParams): Promise<void> {
   validateAttemptPayload(params);
   const submittedAt = new Date();
+  const label = resolveAttemptLabel(params.label, params.testType, submittedAt);
 
   const containerClient = createAttemptBlobContainerClient();
   await ensureAttemptBlobContainer(containerClient);
@@ -92,10 +101,38 @@ export async function persistTestAttempt(params: PersistTestAttemptParams): Prom
     modelVersion: params.modelVersion,
     calibrationMode: params.calibrationMode,
     age: params.age,
-    label: resolveAttemptLabel(params.label, params.testType, submittedAt),
+    label,
     rawDataConsented: params.rawDataConsented,
     rawBlobUrl: !params.rawDataConsented ? null : rawBlobUrl,
     derivedBlobUrl,
+  });
+
+  after(async () => {
+    try {
+      const result = await generateAttemptExportArtifacts({
+        ...params,
+        label,
+        submittedAt,
+      });
+
+      await markAttemptExportArtifactReady(params.attemptId, result.manifestPath);
+    } catch (error) {
+      console.error('[persistTestAttempt] export artifact generation failed', {
+        attemptId: params.attemptId,
+        userId: params.userId,
+        error,
+      });
+
+      try {
+        await markAttemptExportArtifactFailed(params.attemptId, error);
+      } catch (statusError) {
+        console.error('[persistTestAttempt] export artifact status update failed', {
+          attemptId: params.attemptId,
+          userId: params.userId,
+          statusError,
+        });
+      }
+    }
   });
 }
 

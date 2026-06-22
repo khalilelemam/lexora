@@ -267,6 +267,7 @@ POST /v1/webcam/predict
       "fixationX": 0.25, 
       "fixationY": 0.35,
       "saccadeAmplitude": 0.0, 
+      "efficiencyRatio": 0.0,
       "isRegression": false,
       "isReturnSweep": false
     },
@@ -276,6 +277,7 @@ POST /v1/webcam/predict
       "fixationX": 0.38, 
       "fixationY": 0.36, 
       "saccadeAmplitude": 0.13, 
+      "efficiencyRatio": 7.26,
       "isRegression": false,
       "isReturnSweep": false
     },
@@ -285,6 +287,7 @@ POST /v1/webcam/predict
       "fixationX": 0.22, 
       "fixationY": 0.35, 
       "saccadeAmplitude": 0.16, 
+      "efficiencyRatio": 6.84,
       "isRegression": true,
       "isReturnSweep": false
     }
@@ -311,6 +314,7 @@ POST /v1/webcam/predict
 | `fixationX` | float | Normalized fixation X (0-1) |
 | `fixationY` | float | Normalized fixation Y (0-1) |
 | `saccadeAmplitude` | float | Saccade distance from previous fixation |
+| `efficiencyRatio` | float | Per-fixation duration-to-saccade efficiency feature used by the webcam model |
 | `isRegression` | boolean | True if eye moved backward (right-to-left) |
 | `isReturnSweep` | boolean | True if fixation moved to a later text line |
 
