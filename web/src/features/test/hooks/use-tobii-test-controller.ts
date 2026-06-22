@@ -86,15 +86,19 @@ export function useTobiiTestController() {
 
   const handleDeviceReady = useCallback(() => {
     dispatch({ type: 'DEVICE_READY' });
+  }, [dispatch]);
+
+  const completeSetup = useCallback(() => {
+    dispatch({ type: 'SETUP_COMPLETE' });
     enterFullscreen();
   }, [dispatch, enterFullscreen]);
 
   const handleCalibrationComplete = useCallback(
     (result: CalibrationResult) => {
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
-      activateTask('syllables', getTobiiTaskContent('syllables'));
+      activateTask('syllables', getTobiiTaskContent('syllables', participantAge));
     },
-    [activateTask, dispatch],
+    [activateTask, dispatch, participantAge],
   );
 
   const handleTaskDone = useCallback(() => {
@@ -108,13 +112,13 @@ export function useTobiiTestController() {
 
   const handleContinue = useCallback(() => {
     if (tobiiState.currentState === 'review-syllables') {
-      activateTask('pseudo-words', getTobiiTaskContent('pseudo-words'));
+      activateTask('pseudo-words', getTobiiTaskContent('pseudo-words', participantAge));
     } else if (tobiiState.currentState === 'review-pseudo-words') {
-      activateTask('meaningful-text', getTobiiTaskContent('meaningful-text'));
+      activateTask('meaningful-text', getTobiiTaskContent('meaningful-text', participantAge));
     }
 
     dispatch({ type: 'CONTINUE' });
-  }, [activateTask, dispatch, tobiiState.currentState]);
+  }, [activateTask, dispatch, tobiiState.currentState, participantAge]);
 
   const retrySubmission = useCallback(() => {
     dispatch({ type: 'RETRY_SUBMIT' });
@@ -196,6 +200,15 @@ export function useTobiiTestController() {
     }
   }, [exitFullscreen, tobiiState.currentState]);
 
+  useEffect(() => {
+    if (tobiiState.currentState === 'device-setup') {
+      if (tobiiStatus?.connected && tobiiStatus.device) {
+        // Automatically proceed if device is connected
+        handleDeviceReady();
+      }
+    }
+  }, [tobiiState.currentState, tobiiStatus, handleDeviceReady]);
+
   return {
     state: tobiiState,
     dispatch,
@@ -208,7 +221,7 @@ export function useTobiiTestController() {
     serviceChecking,
     serviceError,
     checkStatus,
-    serviceRunning: tobiiStatus?.connected === true,
+    serviceRunning: tobiiStatus != null,
     serviceDevice: tobiiStatus?.device,
     lastGazeRef,
     gazePointCount,
@@ -232,8 +245,7 @@ export function useTobiiTestController() {
     handleNewTest,
     handleExit,
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
-    confirmHardware: () => dispatch({ type: 'HARDWARE_CONFIRMED' }),
-    completeEducation: () => dispatch({ type: 'EDUCATION_COMPLETE' }),
+    completeSetup,
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
   };

@@ -40,15 +40,12 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
       return { ...state, currentState: 'intake', error: null };
 
     case 'INTAKE_COMPLETE':
-      return { ...state, currentState: 'hardware-check', intake: action.data };
-
-    case 'HARDWARE_CONFIRMED':
-      return { ...state, currentState: 'pre-test-education' };
-
-    case 'EDUCATION_COMPLETE':
-      return { ...state, currentState: 'device-check' };
+      return { ...state, currentState: 'device-setup', intake: action.data };
 
     case 'DEVICE_READY':
+      return { ...state, currentState: 'calibration-setup' };
+
+    case 'SETUP_COMPLETE':
       return { ...state, currentState: 'calibrating' };
 
     case 'CALIBRATION_COMPLETE':
@@ -137,12 +134,12 @@ function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTe
       return { ...state, currentState: 'intake', error: null };
 
     case 'INTAKE_COMPLETE':
-      return { ...state, currentState: 'pre-test-education', intake: action.data };
-
-    case 'EDUCATION_COMPLETE':
-      return { ...state, currentState: 'camera-setup' };
+      return { ...state, currentState: 'device-setup', intake: action.data };
 
     case 'CAMERA_READY':
+      return { ...state, currentState: 'calibration-setup' };
+
+    case 'SETUP_COMPLETE':
       return { ...state, currentState: 'calibrating' };
 
     case 'CALIBRATION_COMPLETE':

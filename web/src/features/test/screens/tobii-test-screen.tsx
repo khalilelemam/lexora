@@ -5,12 +5,10 @@ import { useMemo } from 'react';
 import { FullscreenShell, LoadingScreen, StepIndicator } from '@/components/shared';
 import {
   CalibrationScreen,
-  DeviceCheck,
   ErrorScreen,
   ResultsDisplay,
   ReviewPanel,
   ScreenGuard,
-  SupportedHardware,
   TaskDisplay,
   TestErrorBoundary,
   TobiiServiceStatusCard,
@@ -22,6 +20,7 @@ import { useTobiiTestController } from '@/features/test/hooks';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { buildTobiiResultVisualizations } from '@/features/test/lib/build-tobii-visualizations';
 import type { IntakeData } from '@/features/test/types';
+import Image from 'next/image';
 
 export default function TobiiTestScreen() {
   const {
@@ -44,7 +43,6 @@ export default function TobiiTestScreen() {
     currentStepKey,
     showStepIndicator,
     canRetrySubmission,
-    handleDeviceReady,
     handleCalibrationComplete,
     handleTaskDone,
     handleRetake,
@@ -53,8 +51,7 @@ export default function TobiiTestScreen() {
     handleNewTest,
     handleExit,
     completeIntake,
-    confirmHardware,
-    completeEducation,
+    completeSetup,
     startFromIdle,
     setScreenshot,
   } = useTobiiTestController();
@@ -70,24 +67,14 @@ export default function TobiiTestScreen() {
   const renderState = () => {
     switch (state.currentState) {
       case 'idle':
-        return (
-          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
-            {/* Hero heading */}
-            <div className="text-center">
-              <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
-                Tobii Eye Tracking
-              </p>
-              <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
-                Eye Tracker Test
-              </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-[#1b2021]/64">
-                This test uses a Tobii eye tracker to screen for dyslexia indicators. It consists of
-                3 reading tasks: syllables, pseudo-words, and meaningful text.
-              </p>
-            </div>
+        return <PreTestSlides mode="tobii" onComplete={startFromIdle} onSkip={startFromIdle} />;
+      case 'intake':
+        return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
 
-            {/* Service Status & Supported Devices */}
-            <div className="grid w-full gap-5 md:grid-cols-[1.2fr_0.8fr]">
+      case 'device-setup':
+        return (
+          <div className="grid h-[min(640px,calc(100dvh-5.5rem))] min-h-0 w-full max-w-6xl gap-4 pt-10 lg:grid-cols-[1.25fr_0.75fr]">
+            <section className="min-h-0">
               <TobiiServiceStatusCard
                 serviceChecking={serviceChecking}
                 serviceRunning={serviceRunning}
@@ -95,59 +82,84 @@ export default function TobiiTestScreen() {
                 serviceError={serviceError}
                 onRefresh={checkStatus}
               />
+            </section>
 
-              {/* Supported devices card */}
-              <div className="border border-[#51513d]/18 bg-[#f3edd7] p-6 shadow-[10px_10px_0_rgba(81,81,61,.08)]">
-                <p className="mb-1 text-xs font-black tracking-[0.2em] text-[#51513d] uppercase">
-                  Supported Devices
+            <div className="relative flex min-h-0 flex-col overflow-hidden border border-[#51513d]/18 bg-[#1b2021] text-[#e3dcc2] shadow-[10px_10px_0_rgba(81,81,61,.08)]">
+              {/* Premium Hero Visual Section */}
+              <div className="relative flex-1 overflow-hidden border-b border-[#51513d]/18">
+                <Image
+                  src="/images/service-tray.png"
+                  alt="Lexora Eye Tracker Service in System Tray"
+                  className="absolute inset-0 h-full w-full object-cover"
+                  width={800}
+                  height={600}
+                />
+
+                {/* Simulated Pulse around the tray area (adjusting position) */}
+                <div className="absolute right-[36.5%] bottom-[20%] h-12 w-12 -translate-x-1/2 rounded-full border-2 border-[#a6a867] opacity-80">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-[#a6a867]/40" />
+                </div>
+              </div>
+
+              {/* Instructions Section */}
+              <div className="relative z-10 p-6">
+                <div className="mb-4 inline-flex items-center gap-2 bg-[#a6a867]/20 px-3 py-1 text-[10px] font-black tracking-widest text-[#e3dc95] uppercase">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#e3dc95] opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[#e3dc95]" />
+                  </span>
+                  Action Required
+                </div>
+
+                <h1 className="text-3xl leading-tight font-black tracking-tight text-[#e3dcc2]">
+                  Start the Lexora Service
+                </h1>
+                <p className="mt-3 text-sm leading-relaxed text-[#e3dcc2]/70">
+                  To connect your eye tracker to the browser, the Lexora helper app must be running
+                  on your machine.
                 </p>
-                <p className="mb-5 text-xs leading-relaxed text-[#1b2021]/58">
-                  Tobii Pro devices with SDK support. Consumer trackers (e.g. Eye Tracker 5) are not
-                  compatible.
-                </p>
-                <div className="grid gap-px overflow-hidden border border-[#51513d]/18 bg-[#51513d]/18">
-                  {['Tobii Pro Fusion', 'Tobii Pro Spectrum', 'Tobii Pro Nano'].map(
-                    (device, idx) => (
-                      <div key={device} className="grid grid-cols-[3rem_1fr] bg-[#e3dcc2]">
-                        <div className="bg-[#a6a867] p-3 font-mono text-xs font-black text-[#1b2021]">
-                          0{idx + 1}
-                        </div>
-                        <div className="p-3 text-sm font-black text-[#1b2021]">{device}</div>
-                      </div>
-                    ),
-                  )}
+
+                <div className="mt-6 flex flex-col gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center bg-[#51513d] text-sm font-black text-[#e3dcc2]">
+                      1
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#e3dcc2]">Open from System Tray</p>
+                      <p className="mt-1 text-xs text-[#e3dcc2]/60">
+                        Click the Lexora icon in your Windows taskbar cascade menu.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center bg-[#51513d] text-sm font-black text-[#e3dcc2]">
+                      2
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#e3dcc2]">Click Start</p>
+                      <p className="mt-1 text-xs text-[#e3dcc2]/60">
+                        Inside the desktop app, click the Start button to begin tracking.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Calibration Mode Selection */}
-            <CalibrationSetup
-              resolvedMode={requestedCalibrationMode}
-              onSelectMode={setSelectedMode}
-              onStart={startFromIdle}
-              startButtonText="Continue to Instructions"
-            />
           </div>
         );
 
-      case 'intake':
-        return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
-
-      case 'hardware-check':
-        return <SupportedHardware onContinue={confirmHardware} />;
-
-      case 'pre-test-education':
+      case 'calibration-setup':
         return (
-          <PreTestSlides
-            mode="tobii"
-            isStarMode={requestedCalibrationMode === 'star'}
-            onComplete={completeEducation}
-            onSkip={completeEducation}
-          />
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
+            <CalibrationSetup
+              tracker="tobii"
+              resolvedMode={requestedCalibrationMode}
+              onSelectMode={setSelectedMode}
+              onStart={completeSetup}
+              startButtonText="Enter Fullscreen & Start Calibration"
+            />
+          </div>
         );
-
-      case 'device-check':
-        return <DeviceCheck onReady={handleDeviceReady} />;
 
       case 'calibrating':
         return (
@@ -275,7 +287,7 @@ export default function TobiiTestScreen() {
       <ScreenGuard>
         <FullscreenShell onExit={handleExit} showExit={state.currentState !== 'results'}>
           {showStepIndicator && (
-            <div className="mb-8">
+            <div className="sticky top-0 z-50 mb-8 pt-4 pb-2">
               <StepIndicator steps={steps} currentStepKey={currentStepKey} />
             </div>
           )}

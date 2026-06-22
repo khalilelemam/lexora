@@ -25,7 +25,7 @@ interface Slide {
   highlight?: string;
 }
 
-const WelcomeVisual = () => (
+export const WelcomeVisual = () => (
   <div className="relative flex h-full w-full items-center justify-center bg-[#51513d]/5">
     <motion.div
       className="relative flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#51513d] bg-[#f3edd7] shadow-sm"
@@ -42,7 +42,7 @@ const WelcomeVisual = () => (
   </div>
 );
 
-const CalibrationVisual = () => (
+export const CalibrationVisual = () => (
   <div className="relative h-full w-full bg-[#51513d]/5">
     <div
       className="absolute h-4 w-4 rounded-full bg-[#51513d]/30"
@@ -80,7 +80,7 @@ const CalibrationVisual = () => (
   </div>
 );
 
-const StarGameVisual = () => (
+export const StarGameVisual = () => (
   <div className="relative h-full w-full bg-[#e3dc95]/10">
     <div
       className="absolute h-4 w-4 rounded-full bg-[#e3dc95]/40"
@@ -184,33 +184,7 @@ const PrivacyVisual = () => (
   </div>
 );
 
-function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
-  const whatYoullDoSlide: Slide = isStarMode
-    ? {
-        visual: <StarGameVisual />,
-        title: 'Catch the Stars!',
-        description:
-          'Look directly at the glowing stars when they appear on the screen. They will magically shrink and vanish when you catch them with your eyes!',
-        tips: [
-          'Keep your eyes fixed on the star until it disappears',
-          'Have fun and try to catch all of them!',
-          'After the stars, just read the short story naturally',
-        ],
-      }
-    : {
-        visual: <CalibrationVisual />,
-        title: "What You'll Do",
-        description:
-          mode === 'tobii'
-            ? 'Follow the dots to calibrate, then complete 3 short reading tasks.'
-            : 'Follow the dots to calibrate, then read a short paragraph naturally.',
-        tips: [
-          'Follow the calibration dots with your eyes',
-          "Read the text naturally — don't rush",
-          'Get instant results immediately after',
-        ],
-      };
-
+function getSlides(mode: 'tobii' | 'webcam'): Slide[] {
   const common: Slide[] = [
     {
       visual: <WelcomeVisual />,
@@ -219,7 +193,6 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
         'We analyze your eye movements while you read to screen for signs of dyslexia. Non-invasive, quick, and research-backed.',
       highlight: 'The whole process takes about 5 minutes.',
     },
-    whatYoullDoSlide,
     {
       visual: <PositionVisual />,
       title: 'Prepare Your Space',
@@ -243,7 +216,7 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
           tips: [
             'We will ask for Camera permission next',
             'No video is recorded or stored',
-            'Only abstract coordinates are used',
+            'We only track where you look on the screen, not your face',
           ],
         }
       : {
@@ -260,13 +233,13 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
 
   const privacySlide: Slide = {
     visual: <PrivacyVisual />,
-    title: 'Your Privacy',
+    title: 'Your Privacy Comes First',
     description:
-      'Privacy first. Webcam video stays in your browser, while authenticated test attempts can save gaze coordinates and ML results for research and follow-up.',
+      'Everything happens right here on your device. We never record video or capture images of your face — we only measure where you look on the screen.',
     tips: [
-      'No video recordings or face images stored',
-      'Raw gaze JSON is saved only when you explicitly opted in during registration',
-      'Attempt history is linked to your signed-in account',
+      'No camera footage is saved or sent anywhere',
+      'Your results are private and tied to your account only',
+      'You are always in control of your data',
     ],
   };
 
@@ -278,13 +251,8 @@ function getSlides(mode: 'tobii' | 'webcam', isStarMode: boolean): Slide[] {
  * Shown after "Start Test" but before camera setup / device check.
  * Ensures users understand what the test involves before proceeding.
  */
-export function PreTestSlides({
-  mode,
-  isStarMode = false,
-  onComplete,
-  onSkip,
-}: PreTestSlidesProps) {
-  const slides = getSlides(mode, isStarMode);
+export function PreTestSlides({ mode, onComplete, onSkip }: PreTestSlidesProps) {
+  const slides = getSlides(mode);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
 
@@ -315,7 +283,7 @@ export function PreTestSlides({
         <button
           type="button"
           onClick={onSkip}
-          className="absolute top-6 right-6 text-xs text-[#51513d]/60 transition-colors hover:text-[#1b2021]"
+          className="absolute top-20 right-6 text-xs text-[#51513d]/60 transition-colors hover:text-[#1b2021]"
         >
           Skip introduction →
         </button>

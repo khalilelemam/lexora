@@ -31,16 +31,6 @@ export function GridModeView({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-[#e3dcc2]">
-      {/* Subtle grid pattern for depth — very faint, no distraction */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, #1b2021 0px, #1b2021 1px, transparent 1px, transparent 40px),' +
-            'repeating-linear-gradient(90deg, #1b2021 0px, #1b2021 1px, transparent 1px, transparent 40px)',
-        }}
-      />
-
       {/* Completed point markers — only for full calibration runs */}
       {collectionTotal === points.length &&
         points.map((point, index) => {
@@ -105,13 +95,13 @@ export function GridModeView({
           {/* Outer ring */}
           <div className="absolute inset-2 rounded-full border-2 border-[#a6a867]/40 transition-colors duration-200" />
 
-          {/* Center dot — charcoal on cream */}
+          {/* Center dot — dark olive on cream */}
           <div
             className={cn(
               'relative z-10 h-4 w-4 rounded-full transition-all duration-200',
               isStableFixation
                 ? 'bg-[#a6a867] shadow-[0_0_10px_rgba(166,168,103,0.5)]'
-                : 'bg-[#1b2021] shadow-sm',
+                : 'bg-[#51513d] shadow-sm',
             )}
           />
 
