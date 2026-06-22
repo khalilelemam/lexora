@@ -1,4 +1,9 @@
-import type { AttemptOutcome, CalibrationMode, TestMode } from '@/generated/prisma/client';
+import type {
+  AttemptOutcome,
+  CalibrationMode,
+  ExportArtifactStatus,
+  TestMode,
+} from '@/generated/prisma/client';
 
 // ── Content mode ────────────────────────────────────────────
 
@@ -17,6 +22,8 @@ export interface ExportAttemptRow {
   raw_data_consented: boolean;
   raw_blob_url: string | null;
   derived_blob_url: string;
+  export_artifact_status: ExportArtifactStatus;
+  export_manifest_path: string | null;
   created_at: Date | string;
   deleted_at: Date | string | null;
   user_id: string;

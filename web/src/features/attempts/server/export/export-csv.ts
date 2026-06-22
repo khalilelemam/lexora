@@ -22,6 +22,7 @@ const DERIVED_HEADERS = [
   'fixation_x',
   'fixation_y',
   'saccade_amplitude',
+  'efficiency_ratio',
   'is_regression',
   'is_return_sweep',
 ] as const;
@@ -43,6 +44,7 @@ export function featuresToCsv(features: GazeFeature[]): string {
         f.fixationX,
         f.fixationY,
         f.saccadeAmplitude,
+        typeof f.efficiencyRatio === 'number' ? f.efficiencyRatio : '',
         f.isRegression,
         f.isReturnSweep ?? false,
       ]),

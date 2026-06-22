@@ -200,6 +200,7 @@ class TestPredictWebcamEndpoint:
                     "fixation_x": 0.5,
                     "fixation_y": 0.3,
                     "saccade_amplitude": 0.0,
+                    "efficiency_ratio": 0.0,
                     "is_regression": False,
                 },
                 {
@@ -208,6 +209,7 @@ class TestPredictWebcamEndpoint:
                     "fixation_x": 0.6,
                     "fixation_y": 0.3,
                     "saccade_amplitude": 0.1,
+                    "efficiency_ratio": 1.5,
                     "is_regression": False,
                 },
             ],
@@ -288,6 +290,7 @@ class TestPredictWebcamEndpoint:
         assert len(response.features) == 2
         assert response.features[0].fixation_x == 0.5
         assert response.features[1].saccade_amplitude == 0.1
+        assert response.features[1].efficiency_ratio == 1.5
 
     # --- Service Interaction Tests ---
 
