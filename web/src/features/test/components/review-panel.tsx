@@ -1,18 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import {
-  CheckCircle2,
-  RotateCcw,
-  ArrowRight,
-  AlertTriangle,
-  Eye,
-  X,
-  Play,
-  Pause,
-} from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { CheckCircle2, RotateCcw, ArrowRight, AlertTriangle, Eye } from 'lucide-react';
 import { MIN_GAZE_POINTS } from '../lib/constants';
-import { TaskDisplay } from './task-display';
+import { calculateReadingAnalysis } from '../lib/gaze-analysis';
+import { FullscreenRawGazeReplay } from './fullscreen-gaze-replay';
 import type { WebcamGazePoint } from '../types';
 
 interface ReviewPanelProps {
@@ -26,9 +18,6 @@ interface ReviewPanelProps {
   /** Raw gaze data collected during the reading task (screen-pixel coords) */
   rawGazeData?: WebcamGazePoint[];
 }
-
-const TRAIL_LENGTH = 30;
-const REPLAY_SPEED = 4;
 
 /**
  * Post-task review screen.
@@ -51,255 +40,27 @@ export function ReviewPanel({
   // Stabilize to avoid re-renders on every parent render
   const rawGazeData = useMemo(() => rawGazeDataProp ?? [], [rawGazeDataProp]);
 
-  // ── Reading Metrics (Phase 1) ──
-  const coreMetrics = useMemo(() => {
-    if (!readingContent || rawGazeData.length < 2) return null;
-
-    const wordCount = readingContent.trim().split(/\s+/).length;
-    const totalMs = rawGazeData[rawGazeData.length - 1].timestamp - rawGazeData[0].timestamp;
-    const totalSeconds = totalMs / 1000;
-    const wpm = totalSeconds > 0 ? Math.round(wordCount / (totalSeconds / 60)) : 0;
-
-    return {
-      wordCount,
-      totalSeconds: Math.round(totalSeconds),
-      wpm,
-    };
-  }, [readingContent, rawGazeData]);
-
-  // ── Advanced Metrics (Phases 2 & 3) ──
-  const advancedMetrics = useMemo(() => {
-    if (rawGazeData.length < 2) return null;
-
-    // Phase 2: Focus Time (Average Fixation Duration via simplified I-DT)
-    const FIXATION_RADIUS = 50; // pixels
-    const MIN_FIXATION_MS = 100; // milliseconds
-
-    const fixations: { duration: number; x: number; y: number }[] = [];
-    let windowStart = 0;
-
-    while (windowStart < rawGazeData.length) {
-      let windowEnd = windowStart;
-      let minX = rawGazeData[windowStart].x;
-      let maxX = rawGazeData[windowStart].x;
-      let minY = rawGazeData[windowStart].y;
-      let maxY = rawGazeData[windowStart].y;
-
-      while (windowEnd + 1 < rawGazeData.length) {
-        const nextPt = rawGazeData[windowEnd + 1];
-        const newMinX = Math.min(minX, nextPt.x);
-        const newMaxX = Math.max(maxX, nextPt.x);
-        const newMinY = Math.min(minY, nextPt.y);
-        const newMaxY = Math.max(maxY, nextPt.y);
-
-        const dispersion = newMaxX - newMinX + (newMaxY - newMinY);
-        if (dispersion <= FIXATION_RADIUS * 2) {
-          minX = newMinX;
-          maxX = newMaxX;
-          minY = newMinY;
-          maxY = newMaxY;
-          windowEnd++;
-        } else {
-          break;
-        }
-      }
-
-      const duration = rawGazeData[windowEnd].timestamp - rawGazeData[windowStart].timestamp;
-      if (duration >= MIN_FIXATION_MS) {
-        const centerX = (minX + maxX) / 2;
-        const centerY = (minY + maxY) / 2;
-        fixations.push({ duration, x: centerX, y: centerY });
-      }
-
-      windowStart = windowEnd + 1;
-    }
-
-    const avgFocus =
-      fixations.length > 0
-        ? Math.round(fixations.reduce((sum, f) => sum + f.duration, 0) / fixations.length)
-        : 0;
-
-    // Phase 3: Re-reads (Regressions)
-    let reReads = 0;
-    const REGRESSION_X_THRESHOLD = 80;
-    const NEW_LINE_Y_THRESHOLD = 40;
-
-    let currentLineY = fixations[0]?.y ?? 0;
-
-    for (let i = 1; i < fixations.length; i++) {
-      const fix = fixations[i];
-      const prevFix = fixations[i - 1];
-
-      // New line detection (moving down)
-      if (fix.y > currentLineY + NEW_LINE_Y_THRESHOLD) {
-        currentLineY = fix.y;
-        continue;
-      }
-
-      // Regression detection: jumped significantly left from the previous fixation
-      if (prevFix.x - fix.x > REGRESSION_X_THRESHOLD) {
-        // Did not jump up a line
-        if (Math.abs(fix.y - currentLineY) < NEW_LINE_Y_THRESHOLD) {
-          reReads++;
-        }
-      }
-    }
-
-    return {
-      avgFocus,
-      reReads,
-      fixations,
-    };
-  }, [rawGazeData]);
+  const readingAnalysis = useMemo(
+    () => calculateReadingAnalysis(readingContent, rawGazeData),
+    [readingContent, rawGazeData],
+  );
 
   // ── Gaze preview state ──
   const [showGazePreview, setShowGazePreview] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const rafRef = useRef(0);
-  const startTimeRef = useRef(0);
-  const baseIndexRef = useRef(0);
-
-  const trail = useMemo(() => {
-    if (currentIndex <= 0) return [];
-    const start = Math.max(0, currentIndex - TRAIL_LENGTH);
-    return rawGazeData.slice(start, currentIndex + 1);
-  }, [rawGazeData, currentIndex]);
-
-  // Animation loop
-  useEffect(() => {
-    if (!isPlaying || rawGazeData.length < 2) return;
-
-    const baseIdx = baseIndexRef.current;
-    const baseTs = rawGazeData[baseIdx]?.timestamp ?? rawGazeData[0].timestamp;
-    startTimeRef.current = performance.now();
-
-    const tick = () => {
-      const elapsed = (performance.now() - startTimeRef.current) * REPLAY_SPEED;
-      const targetTs = baseTs + elapsed;
-
-      let idx = baseIdx;
-      while (idx < rawGazeData.length - 1 && rawGazeData[idx + 1].timestamp <= targetTs) {
-        idx++;
-      }
-
-      if (idx >= rawGazeData.length - 1) {
-        setCurrentIndex(rawGazeData.length - 1);
-        setIsPlaying(false);
-        return;
-      }
-
-      setCurrentIndex(idx);
-      rafRef.current = requestAnimationFrame(tick);
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying, rawGazeData]);
-
-  const handleOpenGaze = useCallback(() => {
-    setShowGazePreview(true);
-    setCurrentIndex(0);
-    baseIndexRef.current = 0;
-    setIsPlaying(true);
-  }, []);
-
-  const handleCloseGaze = useCallback(() => {
-    setShowGazePreview(false);
-    setIsPlaying(false);
-    cancelAnimationFrame(rafRef.current);
-  }, []);
-
-  const handlePlayPause = useCallback(() => {
-    if (currentIndex >= rawGazeData.length - 1) {
-      setCurrentIndex(0);
-      baseIndexRef.current = 0;
-      setIsPlaying(true);
-    } else if (isPlaying) {
-      setIsPlaying(false);
-      cancelAnimationFrame(rafRef.current);
-    } else {
-      baseIndexRef.current = currentIndex;
-      setIsPlaying(true);
-    }
-  }, [currentIndex, rawGazeData.length, isPlaying]);
-
-  const progress =
-    rawGazeData.length > 1 ? Math.round((currentIndex / (rawGazeData.length - 1)) * 100) : 0;
 
   // ═══════════════════════════════════════════════════════
   //  FULLSCREEN GAZE PREVIEW
   // ═══════════════════════════════════════════════════════
   if (showGazePreview && readingContent) {
     return (
-      <div className="fixed inset-0 z-50">
-        <TaskDisplay
-          taskType={taskType}
-          content={readingContent}
-          pointCount={pointCount}
-          isCollecting={false}
-          onDone={() => {}}
-          preview={true}
-        />
-
-        {/* Raw gaze trail dots */}
-        {trail.map((point, idx) => {
-          const age = trail.length - idx;
-          const opacity = Math.max(0.1, 1 - (age / TRAIL_LENGTH) * 0.9);
-          const isLatest = idx === trail.length - 1;
-          const size = isLatest ? 14 : 5;
-
-          return (
-            <div
-              key={`${point.timestamp}-${idx}`}
-              className="pointer-events-none fixed"
-              style={{
-                left: `${point.x}px`,
-                top: `${point.y}px`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 60,
-              }}
-            >
-              <div
-                className="rounded-full"
-                style={{
-                  width: size,
-                  height: size,
-                  backgroundColor: isLatest ? 'rgba(239, 68, 68, 0.85)' : 'rgba(239, 68, 68, 0.5)',
-                  opacity,
-                  boxShadow: isLatest ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none',
-                }}
-              />
-            </div>
-          );
-        })}
-
-        {/* Bottom controls */}
-        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
-          <button
-            type="button"
-            onClick={handlePlayPause}
-            className="text-[#51513d] hover:text-[#1b2021]"
-          >
-            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          </button>
-          <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
-            <div
-              className="h-full bg-[#51513d] transition-all duration-75"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{progress}%</span>
-          <div className="h-4 w-px bg-[#51513d]" />
-          <button
-            type="button"
-            onClick={handleCloseGaze}
-            className="text-[#1b2021] hover:text-[#1b2021]"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
+      <FullscreenRawGazeReplay
+        taskType={taskType}
+        content={readingContent}
+        points={rawGazeData}
+        coordinateSpace="screen-pixels"
+        title="Child vision replay"
+        onClose={() => setShowGazePreview(false)}
+      />
     );
   }
 
@@ -346,14 +107,14 @@ export function ReviewPanel({
             <h3 className="mb-6 text-center text-xs font-black tracking-widest text-[#51513d] uppercase md:text-left">
               Key Metrics
             </h3>
-            {coreMetrics && (
+            {readingAnalysis && (
               <div className="mx-auto grid max-w-sm grid-cols-2 gap-px border border-[#51513d]/18 bg-[#51513d]/18 shadow-sm">
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
                   <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
                     Reading Speed
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
-                    {coreMetrics.wpm}{' '}
+                    {readingAnalysis.readingWpm}{' '}
                     <span className="text-[10px] font-bold text-[#51513d]/60">WPM</span>
                   </p>
                 </div>
@@ -362,7 +123,7 @@ export function ReviewPanel({
                     Focus Time
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
-                    {advancedMetrics?.avgFocus ?? 0}{' '}
+                    {readingAnalysis.avgFixationMs}{' '}
                     <span className="text-[10px] font-bold text-[#51513d]/60">MS</span>
                   </p>
                 </div>
@@ -371,7 +132,7 @@ export function ReviewPanel({
                     Re-reads
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
-                    {advancedMetrics?.reReads ?? 0}
+                    {readingAnalysis.regressionCount}
                   </p>
                 </div>
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
@@ -379,7 +140,7 @@ export function ReviewPanel({
                     Total Time
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
-                    {coreMetrics.totalSeconds}{' '}
+                    {readingAnalysis.totalSeconds}{' '}
                     <span className="text-[10px] font-bold text-[#51513d]/60">SEC</span>
                   </p>
                 </div>
@@ -392,40 +153,40 @@ export function ReviewPanel({
             <h3 className="mb-6 text-center text-xs font-black tracking-widest text-[#51513d] uppercase md:text-left">
               Your Reading Insights
             </h3>
-            {coreMetrics && advancedMetrics && (
+            {readingAnalysis && (
               <div className="flex flex-col gap-5 text-sm leading-relaxed font-medium text-[#1b2021] md:text-[15px]">
                 <p>
-                  {coreMetrics.wpm > 200 ? (
+                  {readingAnalysis.readingWpm > 200 ? (
                     <>You blazed through the text at a fast </>
-                  ) : coreMetrics.wpm > 120 ? (
+                  ) : readingAnalysis.readingWpm > 120 ? (
                     <>You read at a steady, conversational pace of </>
                   ) : (
                     <>You took your time, reading at a careful pace of </>
                   )}
                   <strong className="font-black text-[#51513d]">
-                    {coreMetrics.wpm} words per minute
+                    {readingAnalysis.readingWpm} words per minute
                   </strong>
                   , completing the entire passage in just{' '}
                   <strong className="font-black text-[#51513d]">
-                    {coreMetrics.totalSeconds} seconds
+                    {readingAnalysis.totalSeconds} seconds
                   </strong>
                   .
                 </p>
                 <p>
-                  {advancedMetrics.avgFocus < 200 ? (
+                  {readingAnalysis.avgFixationMs < 200 ? (
                     <>Your eyes scanned quickly, spending only </>
-                  ) : advancedMetrics.avgFocus < 300 ? (
+                  ) : readingAnalysis.avgFixationMs < 300 ? (
                     <>You maintained a very typical and healthy rhythm, spending </>
                   ) : (
                     <>You were deeply processing the words, spending </>
                   )}
                   <strong className="font-black text-[#51513d]">
-                    {advancedMetrics.avgFocus}ms
+                    {readingAnalysis.avgFixationMs}ms
                   </strong>{' '}
                   on average focusing on each point.
                 </p>
                 <p>
-                  {advancedMetrics.reReads === 0 ? (
+                  {readingAnalysis.regressionCount === 0 ? (
                     <>
                       Incredibly, you did not jump backward to re-read at all! You maintained{' '}
                       <strong className="font-black text-[#51513d]">
@@ -433,11 +194,12 @@ export function ReviewPanel({
                       </strong>
                       .
                     </>
-                  ) : advancedMetrics.reReads <= 3 ? (
+                  ) : readingAnalysis.regressionCount <= 3 ? (
                     <>
                       You only had to backtrack and re-read{' '}
                       <strong className="font-black text-[#51513d]">
-                        {advancedMetrics.reReads} time{advancedMetrics.reReads > 1 ? 's' : ''}
+                        {readingAnalysis.regressionCount} time
+                        {readingAnalysis.regressionCount > 1 ? 's' : ''}
                       </strong>
                       , showing very strong comprehension.
                     </>
@@ -445,7 +207,7 @@ export function ReviewPanel({
                     <>
                       We noticed you naturally jumped back to re-read{' '}
                       <strong className="font-black text-[#51513d]">
-                        {advancedMetrics.reReads} times
+                        {readingAnalysis.regressionCount} times
                       </strong>
                       , which is a great strategy for double-checking meaning.
                     </>
@@ -470,7 +232,8 @@ export function ReviewPanel({
             </button>
             <button
               type="button"
-              onClick={() => {}}
+              onClick={() => setShowGazePreview(true)}
+              disabled={rawGazeData.length < 2 || !readingContent}
               className="flex flex-1 items-center justify-center gap-2 border-2 border-[#1b2021] bg-[#a6a867] px-6 py-4 text-sm font-black text-[#1b2021] uppercase shadow-[4px_4px_0_0_#1b2021] transition-colors hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1b2021]"
             >
               <Eye className="h-4 w-4" />
@@ -490,7 +253,7 @@ export function ReviewPanel({
           {rawGazeData.length > 1 && readingContent && (
             <button
               type="button"
-              onClick={handleOpenGaze}
+              onClick={() => setShowGazePreview(true)}
               className="mx-auto flex items-center gap-2 text-xs font-black tracking-widest text-[#51513d]/70 uppercase transition-colors hover:text-[#51513d]"
             >
               <Eye className="h-4 w-4" />

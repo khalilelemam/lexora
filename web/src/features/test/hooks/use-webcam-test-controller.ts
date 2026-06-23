@@ -53,12 +53,14 @@ export function useWebcamTestController() {
   const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const [paragraphScreenshot, setParagraphScreenshot] = useState<string | null>(null);
 
   // Screenshot captured from TaskDisplay for export visualizations.
   const screenshotRef = useRef<string | null>(null);
 
   const setScreenshot = useCallback((_taskType: string, dataUrl: string) => {
     screenshotRef.current = dataUrl;
+    setParagraphScreenshot(dataUrl);
   }, []);
 
   const webcamGaze = useWebcamGaze({
@@ -187,6 +189,7 @@ export function useWebcamTestController() {
     setLastTaskGazePosition(null);
     setTaskContent('');
     screenshotRef.current = null;
+    setParagraphScreenshot(null);
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
   }, [dispatch, resetAttemptId]);
@@ -236,6 +239,7 @@ export function useWebcamTestController() {
     gazePointCount,
     reviewGazeData,
     lastTaskGazePosition,
+    paragraphScreenshot,
     steps: WEBCAM_STEPS.map((step) => ({ key: step.key, label: step.label })),
     currentStepKey: getStepKeyForState(webcamState.currentState),
     showStepIndicator: !STEP_INDICATOR_HIDDEN_STATES.has(webcamState.currentState),

@@ -61,6 +61,7 @@ export interface TaskDisplayProps {
    */
   onResumeCollection?: () => void;
   debugOpenDoneDialog?: boolean;
+  onReadingContentNode?: (node: HTMLDivElement | null) => void;
 }
 
 /**
@@ -85,6 +86,7 @@ export function TaskDisplay({
   onPauseCollection,
   onResumeCollection,
   debugOpenDoneDialog = false,
+  onReadingContentNode,
   preview = false,
 }: TaskDisplayProps) {
   const [showDialog, setShowDialog] = useState(debugOpenDoneDialog);
@@ -195,11 +197,19 @@ export function TaskDisplay({
 
   // ─── Render paragraph with word wrapping for measurement ───
 
+  const setTextContentRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      textContentRef.current = node;
+      onReadingContentNode?.(node);
+    },
+    [onReadingContentNode],
+  );
+
   const renderParagraphWithWords = () => {
     const words = content.split(/(\s+)/);
 
     return (
-      <div ref={textContentRef}>
+      <div ref={setTextContentRefs}>
         <p
           className={cn(
             'leading-loose whitespace-pre-line text-[#1b2021] sm:leading-loose md:leading-loose',

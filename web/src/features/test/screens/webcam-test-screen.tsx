@@ -13,6 +13,7 @@ import {
   TaskDisplay,
   TestErrorBoundary,
   DebugTestNavigation,
+  isTestDebugNavigationEnabled,
   type CalibrationDebugView,
   type DebugTestShortcut,
 } from '@/features/test/components';
@@ -24,8 +25,9 @@ import { DEBUG_GAZE_OVERLAY } from '@/features/test/lib/debug-config';
 import { MIN_GAZE_POINTS } from '@/features/test/lib/constants';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
 import type { IntakeData, WebcamGazePoint } from '@/features/test/types';
+import type { GazeFeature } from '@/features/test/types';
 
-type WebcamDebugView = CalibrationDebugView | 'reading-dialog' | null;
+type WebcamDebugView = CalibrationDebugView | 'reading-dialog' | 'submitting' | null;
 
 const DEBUG_REVIEW_GAZE_DATA: WebcamGazePoint[] = [
   { x: 100, y: 100, timestamp: 0 },
@@ -34,6 +36,101 @@ const DEBUG_REVIEW_GAZE_DATA: WebcamGazePoint[] = [
   { x: 400, y: 100, timestamp: 1500 },
   { x: 100, y: 150, timestamp: 2000 },
   { x: 200, y: 150, timestamp: 2500 },
+];
+
+const DEBUG_RESULT_FEATURES: GazeFeature[] = [
+  {
+    timestamp: 0,
+    durationMs: 180,
+    fixationX: 0.24,
+    fixationY: 0.2,
+    saccadeAmplitude: 0.08,
+    efficiencyRatio: 0.82,
+    isRegression: false,
+  },
+  {
+    timestamp: 190,
+    durationMs: 230,
+    fixationX: 0.38,
+    fixationY: 0.21,
+    saccadeAmplitude: 0.11,
+    efficiencyRatio: 0.78,
+    isRegression: false,
+  },
+  {
+    timestamp: 430,
+    durationMs: 310,
+    fixationX: 0.58,
+    fixationY: 0.22,
+    saccadeAmplitude: 0.14,
+    efficiencyRatio: 0.7,
+    isRegression: false,
+  },
+  {
+    timestamp: 760,
+    durationMs: 260,
+    fixationX: 0.77,
+    fixationY: 0.23,
+    saccadeAmplitude: 0.13,
+    efficiencyRatio: 0.74,
+    isRegression: false,
+  },
+  {
+    timestamp: 1040,
+    durationMs: 190,
+    fixationX: 0.28,
+    fixationY: 0.34,
+    saccadeAmplitude: 0.18,
+    efficiencyRatio: 0.68,
+    isRegression: false,
+    isReturnSweep: true,
+  },
+  {
+    timestamp: 1240,
+    durationMs: 340,
+    fixationX: 0.46,
+    fixationY: 0.35,
+    saccadeAmplitude: 0.12,
+    efficiencyRatio: 0.66,
+    isRegression: false,
+  },
+  {
+    timestamp: 1600,
+    durationMs: 300,
+    fixationX: 0.36,
+    fixationY: 0.35,
+    saccadeAmplitude: 0.1,
+    efficiencyRatio: 0.58,
+    isRegression: true,
+  },
+  {
+    timestamp: 1920,
+    durationMs: 220,
+    fixationX: 0.62,
+    fixationY: 0.36,
+    saccadeAmplitude: 0.17,
+    efficiencyRatio: 0.76,
+    isRegression: false,
+  },
+  {
+    timestamp: 2160,
+    durationMs: 240,
+    fixationX: 0.25,
+    fixationY: 0.49,
+    saccadeAmplitude: 0.2,
+    efficiencyRatio: 0.72,
+    isRegression: false,
+    isReturnSweep: true,
+  },
+  {
+    timestamp: 2420,
+    durationMs: 280,
+    fixationX: 0.52,
+    fixationY: 0.5,
+    saccadeAmplitude: 0.16,
+    efficiencyRatio: 0.8,
+    isRegression: false,
+  },
 ];
 
 export default function WebcamTestScreen() {
@@ -49,6 +146,7 @@ export default function WebcamTestScreen() {
     gazePointCount,
     reviewGazeData,
     lastTaskGazePosition,
+    paragraphScreenshot,
     steps,
     currentStepKey,
     showStepIndicator,
@@ -69,6 +167,11 @@ export default function WebcamTestScreen() {
   } = useWebcamTestController();
 
   const forceDebugState = (nextState: Parameters<typeof forceState>[0]) => {
+    if (nextState === 'submitting') {
+      setDebugView('submitting');
+      return;
+    }
+
     setDebugView(null);
     forceState(nextState);
   };
@@ -148,6 +251,10 @@ export default function WebcamTestScreen() {
   ];
 
   const renderState = () => {
+    if (debugView === 'submitting') {
+      return <LoadingScreen message="Analyzing eye movement data..." />;
+    }
+
     switch (state.currentState) {
       case 'idle':
         return <PreTestSlides mode="webcam" onComplete={startFromIdle} onSkip={startFromIdle} />;
@@ -269,7 +376,7 @@ export default function WebcamTestScreen() {
               sequencesAnalyzed: 120,
               totalFixations: 85,
             },
-            features: [],
+            features: DEBUG_RESULT_FEATURES,
           };
         }
 
@@ -283,6 +390,9 @@ export default function WebcamTestScreen() {
             mode="webcam"
             onNewTest={handleNewTest}
             readingContent={taskContent || getWebcamTaskContent()}
+            rawGazeData={reviewGazeData.length > 1 ? reviewGazeData : DEBUG_REVIEW_GAZE_DATA}
+            rawGazeCoordinateSpace="screen-pixels"
+            taskScreenshot={paragraphScreenshot}
           />
         );
       }
@@ -322,7 +432,7 @@ export default function WebcamTestScreen() {
             <GazeDebugDot active={webcamGaze.collecting} getPosition={() => lastTaskGazePosition} />
           )}
 
-          {process.env.NODE_ENV === 'development' && (
+          {isTestDebugNavigationEnabled() && (
             <DebugTestNavigation
               states={[
                 'idle',
@@ -336,7 +446,7 @@ export default function WebcamTestScreen() {
                 'results',
                 'error',
               ]}
-              currentState={state.currentState}
+              currentState={debugView === 'submitting' ? 'submitting' : state.currentState}
               onForceState={forceDebugState}
               shortcuts={debugShortcuts}
             />

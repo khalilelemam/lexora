@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 
 import { submitTobiiTest } from '@/features/test/actions/submit-tobii-test';
 import type { CalibrationVisualMode } from '@/features/test/lib/calibration-mode';
-import type { CalibrationResult, IntakeData, TobiiTestFlowState } from '@/features/test/types';
+import type {
+  CalibrationResult,
+  IntakeData,
+  TobiiGazePoint,
+  TobiiTestFlowState,
+} from '@/features/test/types';
 
 import { useCalibrationQueryParams } from './use-calibration-query-params';
 import { useFullscreen } from './use-fullscreen';
@@ -66,9 +71,14 @@ export function useTobiiTestController() {
 
   // Screenshots captured from TaskDisplay for export visualizations.
   const screenshotsRef = useRef<Record<string, string>>({});
+  const [screenshots, setScreenshots] = useState<Record<string, string>>({});
+  const [resultsRawMeaningfulTextGazeData, setResultsRawMeaningfulTextGazeData] = useState<
+    TobiiGazePoint[]
+  >([]);
 
   const setScreenshot = useCallback((taskType: string, dataUrl: string) => {
     screenshotsRef.current[taskType] = dataUrl;
+    setScreenshots((prev) => ({ ...prev, [taskType]: dataUrl }));
   }, []);
 
   useEffect(() => {
@@ -102,8 +112,11 @@ export function useTobiiTestController() {
   );
 
   const handleTaskDone = useCallback(() => {
+    if (tobiiState.currentState === 'task-meaningful-text') {
+      setResultsRawMeaningfulTextGazeData([...meaningfulTextRef.current]);
+    }
     dispatch({ type: 'TASK_COMPLETE' });
-  }, [dispatch]);
+  }, [dispatch, meaningfulTextRef, tobiiState.currentState]);
 
   const handleRetake = useCallback(() => {
     clearActiveBuffer();
@@ -179,6 +192,8 @@ export function useTobiiTestController() {
     resetAttemptId();
     resetAll();
     screenshotsRef.current = {};
+    setScreenshots({});
+    setResultsRawMeaningfulTextGazeData([]);
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
   }, [dispatch, resetAll, resetAttemptId]);
@@ -228,6 +243,8 @@ export function useTobiiTestController() {
     taskPointCounts,
     lastTaskGazePosition,
     taskContent,
+    rawMeaningfulTextGazeData: resultsRawMeaningfulTextGazeData,
+    screenshots,
     activateTask,
     steps: TOBII_STEPS.map((step) => ({ key: step.key, label: step.label })),
     currentStepKey: getStepKeyForState(tobiiState.currentState),

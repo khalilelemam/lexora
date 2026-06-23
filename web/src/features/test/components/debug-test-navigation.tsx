@@ -18,6 +18,13 @@ interface DebugTestNavigationProps {
   shortcuts?: DebugTestShortcut[];
 }
 
+export function isTestDebugNavigationEnabled(): boolean {
+  if (process.env.NODE_ENV !== 'development') return false;
+
+  const flag = process.env.NEXT_PUBLIC_TEST_DEBUG_NAVIGATION?.toLowerCase();
+  return flag !== 'false' && flag !== '0' && flag !== 'off';
+}
+
 export function DebugTestNavigation({
   states,
   currentState,
@@ -35,7 +42,7 @@ export function DebugTestNavigation({
   );
 
   // Only render in development mode
-  if (process.env.NODE_ENV !== 'development') {
+  if (!isTestDebugNavigationEnabled()) {
     return null;
   }
 
