@@ -10,7 +10,7 @@ The repository is structured as a monorepo containing the web application, machi
 
 *   **`web/`**: The core Next.js web application (frontend + backend). Built with TypeScript, React, Tailwind CSS, Better Auth, and Prisma. It handles the user flow (calibration, reading tasks, visualization, results, and persistence).
 *   **`ml-service/`**: A FastAPI backend service written in Python that handles dyslexia screening prediction using TensorFlow models. It processes webcam gaze data or Tobii eye tracker data.
-*   **`tobii-service/`**: A local desktop helper application (Python + PySide/Tkinter GUI) designed to run on the client machine to bridge connection to a physical Tobii eye tracker hardware via WebSockets.
+*   **`tobii-service/`**: A local desktop helper application (Python + customtkinter GUI) designed to run on the client machine to bridge connection to a physical Tobii eye tracker hardware via WebSockets.
 *   **`ml-work/`**: Jupyter notebooks, model training scripts, and experimental work for the machine learning models.
 *   **`docs/`**: Diagrams, specification documentation, and design assets.
 
