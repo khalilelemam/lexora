@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { FullscreenShell, LoadingScreen, StepIndicator } from '@/components/shared';
 import {
@@ -12,6 +12,10 @@ import {
   TaskDisplay,
   TestErrorBoundary,
   TobiiServiceStatusCard,
+  DebugTestNavigation,
+  isTestDebugNavigationEnabled,
+  type CalibrationDebugView,
+  type DebugTestShortcut,
 } from '@/features/test/components';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { PreTestIntake } from '@/features/test/components/pre-test-intake';
@@ -19,10 +23,81 @@ import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useTobiiTestController } from '@/features/test/hooks';
 import { getTobiiTaskContent } from '@/features/test/lib/test-content';
 import { buildTobiiResultVisualizations } from '@/features/test/lib/build-tobii-visualizations';
-import type { IntakeData } from '@/features/test/types';
+import type { GazeFeature, IntakeData } from '@/features/test/types';
 import Image from 'next/image';
 
+type TobiiDebugView = CalibrationDebugView | 'reading-dialog' | 'submitting' | null;
+
+const DEBUG_RESULT_FEATURES: GazeFeature[] = [
+  {
+    timestamp: 0,
+    durationMs: 190,
+    fixationX: 0.23,
+    fixationY: 0.21,
+    saccadeAmplitude: 0.08,
+    isRegression: false,
+  },
+  {
+    timestamp: 210,
+    durationMs: 250,
+    fixationX: 0.4,
+    fixationY: 0.22,
+    saccadeAmplitude: 0.12,
+    isRegression: false,
+  },
+  {
+    timestamp: 480,
+    durationMs: 330,
+    fixationX: 0.62,
+    fixationY: 0.23,
+    saccadeAmplitude: 0.15,
+    isRegression: false,
+  },
+  {
+    timestamp: 830,
+    durationMs: 220,
+    fixationX: 0.79,
+    fixationY: 0.24,
+    saccadeAmplitude: 0.11,
+    isRegression: false,
+  },
+  {
+    timestamp: 1080,
+    durationMs: 210,
+    fixationX: 0.26,
+    fixationY: 0.36,
+    saccadeAmplitude: 0.2,
+    isRegression: false,
+    isReturnSweep: true,
+  },
+  {
+    timestamp: 1310,
+    durationMs: 300,
+    fixationX: 0.48,
+    fixationY: 0.37,
+    saccadeAmplitude: 0.14,
+    isRegression: false,
+  },
+  {
+    timestamp: 1640,
+    durationMs: 310,
+    fixationX: 0.35,
+    fixationY: 0.37,
+    saccadeAmplitude: 0.1,
+    isRegression: true,
+  },
+  {
+    timestamp: 1970,
+    durationMs: 240,
+    fixationX: 0.66,
+    fixationY: 0.38,
+    saccadeAmplitude: 0.17,
+    isRegression: false,
+  },
+];
+
 export default function TobiiTestScreen() {
+  const [debugView, setDebugView] = useState<TobiiDebugView>(null);
   const {
     state,
     connected,
@@ -39,6 +114,8 @@ export default function TobiiTestScreen() {
     taskPointCounts,
     lastTaskGazePosition,
     taskContent,
+    rawMeaningfulTextGazeData,
+    screenshots,
     steps,
     currentStepKey,
     showStepIndicator,
@@ -54,7 +131,92 @@ export default function TobiiTestScreen() {
     completeSetup,
     startFromIdle,
     setScreenshot,
+    forceState,
   } = useTobiiTestController();
+
+  const forceDebugState = (nextState: Parameters<typeof forceState>[0]) => {
+    if (nextState === 'submitting') {
+      setDebugView('submitting');
+      return;
+    }
+
+    setDebugView(null);
+    forceState(nextState);
+  };
+
+  const showCalibrationDebugView = (view: CalibrationDebugView) => {
+    setDebugView(view);
+    forceState('calibrating');
+  };
+
+  const debugShortcuts: DebugTestShortcut[] = [
+    {
+      key: 'calibration-static-countdown',
+      label: 'Static Countdown',
+      group: 'Calibration',
+      active: debugView === 'static-countdown',
+      onSelect: () => showCalibrationDebugView('static-countdown'),
+    },
+    {
+      key: 'calibration-static-points',
+      label: 'Static Points',
+      group: 'Calibration',
+      active: debugView === 'static-points',
+      onSelect: () => showCalibrationDebugView('static-points'),
+    },
+    {
+      key: 'calibration-pursuit-countdown',
+      label: 'Pursuit Countdown',
+      group: 'Calibration',
+      active: debugView === 'pursuit-countdown',
+      onSelect: () => showCalibrationDebugView('pursuit-countdown'),
+    },
+    {
+      key: 'calibration-pursuit-active',
+      label: 'Pursuit Active',
+      group: 'Calibration',
+      active: debugView === 'pursuit-active',
+      onSelect: () => showCalibrationDebugView('pursuit-active'),
+    },
+    {
+      key: 'calibration-validation-countdown',
+      label: 'Validation Countdown',
+      group: 'Calibration',
+      active: debugView === 'validation-countdown',
+      onSelect: () => showCalibrationDebugView('validation-countdown'),
+    },
+    {
+      key: 'calibration-validation-active',
+      label: 'Validation Active',
+      group: 'Calibration',
+      active: debugView === 'validation-active',
+      onSelect: () => showCalibrationDebugView('validation-active'),
+    },
+    {
+      key: 'calibration-accuracy-result',
+      label: 'Accuracy Result',
+      group: 'Calibration',
+      active: debugView === 'accuracy-result',
+      onSelect: () => showCalibrationDebugView('accuracy-result'),
+    },
+    {
+      key: 'calibration-reading-prep',
+      label: 'Reading Prep Countdown',
+      group: 'Calibration',
+      active: debugView === 'reading-prep',
+      onSelect: () => showCalibrationDebugView('reading-prep'),
+    },
+    {
+      key: 'reading-done-dialog',
+      label: 'Done Reading Dialog',
+      group: 'Reading',
+      active: debugView === 'reading-dialog',
+      onSelect: () => {
+        setDebugView('reading-dialog');
+        forceState('task-meaningful-text');
+      },
+    },
+  ];
 
   const visualizations = useMemo(
     () =>
@@ -63,8 +225,14 @@ export default function TobiiTestScreen() {
         : [],
     [state.currentState, state.results, taskContent],
   );
+  const screenWidth = typeof window !== 'undefined' ? window.screen.width : 1920;
+  const screenHeight = typeof window !== 'undefined' ? window.screen.height : 1080;
 
   const renderState = () => {
+    if (debugView === 'submitting') {
+      return <LoadingScreen message="Analyzing eye movement data..." />;
+    }
+
     switch (state.currentState) {
       case 'idle':
         return <PreTestSlides mode="tobii" onComplete={startFromIdle} onSkip={startFromIdle} />;
@@ -170,6 +338,7 @@ export default function TobiiTestScreen() {
             onGetGazeSample={() => lastGazeRef.current}
             onComplete={handleCalibrationComplete}
             blockOnPoor={true}
+            debugView={debugView === 'reading-dialog' ? null : debugView}
           />
         );
 
@@ -229,10 +398,11 @@ export default function TobiiTestScreen() {
             taskType="meaningful-text"
             content={taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')}
             pointCount={gazePointCount}
-            isCollecting={connected}
+            isCollecting={debugView === 'reading-dialog' ? true : connected}
             onDone={handleTaskDone}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('meaningful-text', dataUrl)}
+            debugOpenDoneDialog={debugView === 'reading-dialog'}
           />
         );
 
@@ -253,22 +423,46 @@ export default function TobiiTestScreen() {
       case 'submitting':
         return <LoadingScreen message="Analyzing eye movement data..." />;
 
-      case 'results':
-        if (!state.results) {
+      case 'results': {
+        let resultToDisplay = state.results;
+
+        // Inject mock result data if accessed via debug menu
+        if (!resultToDisplay && process.env.NODE_ENV === 'development') {
+          resultToDisplay = {
+            dyslexiaProbability: 0.25,
+            riskLevel: 'medium',
+            confidence: 0.78,
+            metadata: {
+              sequencesAnalyzed: 180,
+              totalFixations: 130,
+            },
+            features: DEBUG_RESULT_FEATURES,
+          };
+        }
+
+        if (!resultToDisplay) {
           return null;
         }
 
         return (
           <ResultsDisplay
-            result={state.results}
+            result={resultToDisplay}
             mode="tobii"
             onNewTest={handleNewTest}
             readingContent={
               taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')
             }
             visualizations={visualizations}
+            rawGazeData={rawMeaningfulTextGazeData.map((point) => ({
+              x: point.fixationX * screenWidth,
+              y: point.fixationY * screenHeight,
+              timestamp: Math.round(point.timestamp / 1000),
+            }))}
+            rawGazeCoordinateSpace="screen-pixels"
+            taskScreenshot={screenshots['meaningful-text']}
           />
         );
+      }
 
       case 'error':
         return (
@@ -292,6 +486,30 @@ export default function TobiiTestScreen() {
             </div>
           )}
           {renderState()}
+
+          {isTestDebugNavigationEnabled() && (
+            <DebugTestNavigation
+              states={[
+                'idle',
+                'intake',
+                'device-setup',
+                'calibration-setup',
+                'calibrating',
+                'task-syllables',
+                'review-syllables',
+                'task-pseudo-words',
+                'review-pseudo-words',
+                'task-meaningful-text',
+                'review-meaningful-text',
+                'submitting',
+                'results',
+                'error',
+              ]}
+              currentState={debugView === 'submitting' ? 'submitting' : state.currentState}
+              onForceState={forceDebugState}
+              shortcuts={debugShortcuts}
+            />
+          )}
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

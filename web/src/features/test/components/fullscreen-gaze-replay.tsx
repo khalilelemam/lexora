@@ -19,6 +19,7 @@ import {
 } from '../lib/constants';
 import { TaskDisplay } from './task-display';
 import { useGazeReplay } from '../hooks/use-gaze-replay';
+import { sanitizeRawGaze, type RawReadingGazePoint } from '../lib/gaze-analysis';
 import type { GazeFeature } from '../types';
 
 function getAOIXBounds() {
@@ -40,6 +41,15 @@ interface FullscreenGazeReplayProps {
   /** Called when user closes the overlay */
   onClose: () => void;
   toolbarSlot?: ReactNode;
+}
+
+interface FullscreenRawGazeReplayProps {
+  taskType: string;
+  content: string;
+  points: RawReadingGazePoint[];
+  coordinateSpace?: 'screen-pixels' | 'normalized';
+  onClose: () => void;
+  title?: string;
 }
 
 /**
@@ -82,14 +92,12 @@ export function FullscreenGazeReplay({
   const zoneH = screenH * (1 - READING_ZONE_BOUNDS.top - READING_ZONE_BOUNDS.bottom);
 
   const [lineCenters, setLineCenters] = useState<number[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const textContentRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
-    if (!containerRef.current) return;
-
     const measure = () => {
-      if (!containerRef.current) return;
-      const wordSpans = containerRef.current.querySelectorAll('[data-word]');
+      if (!textContentRef.current) return;
+      const wordSpans = textContentRef.current.querySelectorAll('[data-word]');
       if (wordSpans.length === 0) return;
 
       const lineMap = new Map<number, Array<{ top: number; bottom: number }>>();
@@ -117,10 +125,10 @@ export function FullscreenGazeReplay({
       setLineCenters(centers);
     };
 
-    const timer = setTimeout(measure, 100);
+    const timer = window.setTimeout(measure, 100);
     window.addEventListener('resize', measure);
     return () => {
-      clearTimeout(timer);
+      window.clearTimeout(timer);
       window.removeEventListener('resize', measure);
     };
   }, [content, taskType]);
@@ -200,7 +208,7 @@ export function FullscreenGazeReplay({
   }, [features, lineCenters, zoneTop, zoneH, mapY, snappingMode]);
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-50">
       {/* TaskDisplay in preview mode — identical text layout */}
       <TaskDisplay
         taskType={taskType}
@@ -209,6 +217,9 @@ export function FullscreenGazeReplay({
         isCollecting={false}
         onDone={() => {}}
         preview={true}
+        onReadingContentNode={(node) => {
+          textContentRef.current = node;
+        }}
       />
 
       {/* Saccade lines — rendered under the bubbles */}
@@ -371,6 +382,199 @@ export function FullscreenGazeReplay({
         <div className="flex items-center gap-1.5">
           <span>Bubble size = fixation duration</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function FullscreenRawGazeReplay({
+  taskType,
+  content,
+  points,
+  coordinateSpace = 'screen-pixels',
+  onClose,
+  title = 'Raw gaze replay',
+}: FullscreenRawGazeReplayProps) {
+  const sortedPoints = useMemo(() => sanitizeRawGaze(points), [points]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const rafRef = useRef(0);
+  const startTimeRef = useRef(0);
+  const baseIndexRef = useRef(0);
+
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = original;
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying || sortedPoints.length < 2) return;
+
+    const baseIndex = baseIndexRef.current;
+    const baseTimestamp = sortedPoints[baseIndex]?.timestamp ?? sortedPoints[0].timestamp;
+    startTimeRef.current = performance.now();
+
+    const tick = () => {
+      const targetTimestamp = baseTimestamp + (performance.now() - startTimeRef.current) * 4;
+      let nextIndex = baseIndex;
+
+      while (
+        nextIndex < sortedPoints.length - 1 &&
+        sortedPoints[nextIndex + 1].timestamp <= targetTimestamp
+      ) {
+        nextIndex += 1;
+      }
+
+      setCurrentIndex(nextIndex);
+
+      if (nextIndex >= sortedPoints.length - 1) {
+        setIsPlaying(false);
+        return;
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [isPlaying, sortedPoints]);
+
+  const visibleTrail = useMemo(() => {
+    const end = Math.min(currentIndex + 1, sortedPoints.length);
+    return sortedPoints.slice(Math.max(0, end - 42), end);
+  }, [currentIndex, sortedPoints]);
+
+  const toViewportPoint = useCallback(
+    (point: RawReadingGazePoint) => {
+      const viewportW = typeof window !== 'undefined' ? window.innerWidth || 1 : 1920;
+      const viewportH = typeof window !== 'undefined' ? window.innerHeight || 1 : 1080;
+
+      if (coordinateSpace === 'normalized') {
+        return {
+          x: point.x * viewportW,
+          y: point.y * viewportH,
+        };
+      }
+
+      return {
+        x:
+          point.x *
+          (viewportW /
+            (typeof window !== 'undefined' ? window.screen.width || viewportW : viewportW)),
+        y:
+          point.y *
+          (viewportH /
+            (typeof window !== 'undefined' ? window.screen.height || viewportH : viewportH)),
+      };
+    },
+    [coordinateSpace],
+  );
+
+  const progress =
+    sortedPoints.length > 1 ? Math.round((currentIndex / (sortedPoints.length - 1)) * 100) : 0;
+
+  const togglePlay = () => {
+    if (currentIndex >= sortedPoints.length - 1) {
+      setCurrentIndex(0);
+      baseIndexRef.current = 0;
+      setIsPlaying(true);
+      return;
+    }
+
+    if (isPlaying) {
+      setIsPlaying(false);
+      cancelAnimationFrame(rafRef.current);
+      return;
+    }
+
+    baseIndexRef.current = currentIndex;
+    setIsPlaying(true);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <TaskDisplay
+        taskType={taskType}
+        content={content}
+        pointCount={0}
+        isCollecting={false}
+        onDone={() => {}}
+        preview={true}
+      />
+
+      <svg className="pointer-events-none fixed inset-0 h-full w-full" style={{ zIndex: 59 }}>
+        {visibleTrail.slice(1).map((point, index) => {
+          const previous = visibleTrail[index];
+          const from = toViewportPoint(previous);
+          const to = toViewportPoint(point);
+
+          return (
+            <line
+              key={`${previous.timestamp}-${point.timestamp}`}
+              x1={from.x}
+              y1={from.y}
+              x2={to.x}
+              y2={to.y}
+              stroke="#51513d"
+              strokeWidth="1.5"
+              opacity="0.38"
+            />
+          );
+        })}
+      </svg>
+
+      {visibleTrail.map((point, index) => {
+        const position = toViewportPoint(point);
+        const age = visibleTrail.length - index;
+        const isCurrent = index === visibleTrail.length - 1;
+        const opacity = Math.max(0.12, 1 - (age / 42) * 0.82);
+        const size = isCurrent ? 18 : 10;
+
+        return (
+          <div
+            key={`${point.timestamp}-${index}`}
+            className="pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1f6f6b]"
+            style={{
+              left: position.x,
+              top: position.y,
+              zIndex: 60,
+              width: size,
+              height: size,
+              opacity,
+              boxShadow: isCurrent ? '0 0 0 8px rgba(31,111,107,0.18)' : undefined,
+            }}
+          />
+        );
+      })}
+
+      <div className="fixed top-4 left-4 z-70 border border-[#51513d]/18 bg-[#f3edd7]/92 px-4 py-2.5 text-[#1b2021] shadow-sm backdrop-blur-md">
+        <p className="text-[10px] font-black tracking-[0.2em] text-[#51513d] uppercase">{title}</p>
+        <p className="mt-1 text-xs text-[#51513d]/75">
+          Teal trail = raw eye samples before model smoothing.
+        </p>
+      </div>
+
+      <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+        <button type="button" onClick={togglePlay} className="text-[#51513d] hover:text-[#1b2021]">
+          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+        </button>
+
+        <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
+          <div
+            className="h-full bg-[#51513d] transition-all duration-75"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{progress}%</span>
+        <div className="h-4 w-px bg-[#51513d]" />
+        <button type="button" onClick={onClose} className="text-[#1b2021] hover:text-[#1b2021]">
+          <X className="h-5 w-5" />
+        </button>
       </div>
     </div>
   );

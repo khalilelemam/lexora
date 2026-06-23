@@ -4,7 +4,6 @@ import { headers } from 'next/headers';
 
 import { Role } from '@/generated/prisma/client';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 
 export class AttemptsAuthError extends Error {
   constructor(message = 'You must be signed in to view tests.') {
@@ -30,21 +29,14 @@ export async function requireAttemptsUser(): Promise<AttemptsUser> {
     headers: await headers(),
   });
 
-  const userId = session?.user?.id;
-  if (!userId) {
+  if (!session?.user) {
     throw new AttemptsAuthError();
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, role: true },
-  });
-
-  if (!user) {
-    throw new AttemptsAuthError('Your account could not be found. Please sign in again.');
-  }
-
-  return user;
+  return {
+    id: session.user.id,
+    role: session.user.role as Role,
+  };
 }
 
 export async function requireAdminAttemptsUser() {

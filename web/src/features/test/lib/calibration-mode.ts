@@ -1,8 +1,10 @@
 export type CalibrationVisualMode = 'grid' | 'stickman' | 'star';
 
 export function resolveCalibrationMode(
-  _requestedMode?: CalibrationVisualMode,
-  _participantAge?: number,
+  requestedMode?: CalibrationVisualMode,
+  participantAge?: number,
 ): CalibrationVisualMode {
+  void requestedMode;
+  void participantAge;
   return 'grid';
 }

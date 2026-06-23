@@ -175,7 +175,8 @@ export type TestAction =
   | { type: 'SUBMIT_ERROR'; error: string }
   | { type: 'RETRY_SUBMIT' }
   | { type: 'RESET' }
-  | { type: 'ERROR'; error: string };
+  | { type: 'ERROR'; error: string }
+  | { type: 'FORCE_STATE'; state: TestState };
 
 // ─── Full Test Flow State ────────────────────────────────
 export interface TobiiTestFlowState {

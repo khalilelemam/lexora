@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 import { COUNTDOWN_SECONDS } from '../../lib/calibration-engine-constants';
 
 interface CalibrationCountdownProps {
   countdown: number;
   resolvedMode: CalibrationVisualMode;
+  audioEnabled: boolean;
+  onToggleAudio: () => void;
 }
 
 const MODE_CONFIG: Record<
@@ -44,70 +47,190 @@ const MODE_CONFIG: Record<
 };
 
 /**
- * Pre-calibration countdown with mode-specific instructions and live preview.
+ * Premium, scroll-free countdown transition screen before calibration starts.
  *
  * Design decisions:
- * - 5 second countdown — gives children time to read and prepare
- * - Mode-specific instructions explain what to expect
- * - Animated mini preview shows what the target looks like (canvas-based)
- * - "Move only your eyes" reminder at the bottom
+ * - Concentric calming target rings at the exact center of the viewport to focus gaze
+ * - Seamless integration of the active target preview inside the countdown progress ring
+ * - Pure Flexbox layout bounded to h-svh to prevent scrolling or clipping
+ * - Calming pulsing and rotating motion representing active focus calibration
  */
-export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCountdownProps) {
+export function CalibrationCountdown({
+  countdown,
+  resolvedMode,
+  audioEnabled,
+  onToggleAudio,
+}: CalibrationCountdownProps) {
   const config = MODE_CONFIG[resolvedMode];
 
   return (
-    <div className="fixed inset-0 z-50 flex cursor-none flex-col items-center justify-center bg-[#e3dcc2]">
+    <div className="fixed inset-0 z-50 flex h-svh w-full flex-col justify-between overflow-hidden bg-[#e3dcc2] p-6 select-none md:p-12">
+      {/* Grid Overlay & Calming Glow */}
       <div
-        className="flex max-w-lg flex-col items-center gap-5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-10 py-8 shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm"
-        style={{ animation: 'float-up 0.4s ease-out' }}
-      >
-        <h2 className="text-2xl font-bold tracking-tight text-[#1b2021]">Get Ready</h2>
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg, rgba(81,81,61,.05) 1px, transparent 1px), linear-gradient(rgba(81,81,61,.05) 1px, transparent 1px)',
+          backgroundSize: '44px 44px',
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(166,168,103,0.12)_0%,_transparent_60%)]" />
 
-        {/* Mode badge */}
-        <div className="flex items-center gap-2 border border-[#51513d]/18 bg-[#e3dcc2]/70 px-4 py-1.5">
-          <span className="font-mono text-[10px] font-black tracking-[0.18em] text-[#51513d]">
-            {config.icon}
-          </span>
-          <span className="text-sm font-medium" style={{ color: config.accentColor }}>
-            {config.label}
+      {/* Decorative architectural layout frames (matching login redesign) */}
+      <div className="pointer-events-none absolute top-8 left-8 hidden h-12 w-12 border border-[#51513d]/10 md:block" />
+      <div className="pointer-events-none absolute right-8 bottom-8 hidden h-16 w-16 border border-[#51513d]/10 md:block" />
+
+      {/* Top Header */}
+      <div className="relative z-10 flex w-full items-center justify-between border-b border-[#51513d]/10 pb-4">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center bg-[#1b2021]">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#e3dcc2"
+              strokeWidth="2.5"
+              className="h-4 w-4"
+            >
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <span className="text-sm font-black tracking-widest text-[#1b2021] uppercase">
+            Lexora
           </span>
         </div>
 
-        {/* Instructions */}
-        <div className="max-w-sm space-y-2 text-center">
-          <p className="text-sm leading-relaxed text-[#1b2021]">{config.instruction}</p>
-          <p className="text-xs leading-relaxed text-[#1b2021]">
-            <span className="font-medium text-[#1b2021]">How: </span>
-            {config.howTo}
+        <button
+          type="button"
+          onClick={onToggleAudio}
+          className="flex items-center gap-2 border border-[#51513d]/18 bg-[#f3edd7]/70 px-3 py-2 text-[#51513d] transition-colors hover:bg-[#e3dcc2]"
+          aria-pressed={audioEnabled}
+          aria-label={audioEnabled ? 'Turn calibration sound off' : 'Turn calibration sound on'}
+        >
+          {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a6a867]" />
+          <span className="font-mono text-[9px] font-black tracking-wider text-[#51513d] uppercase">
+            Sound {audioEnabled ? 'on' : 'off'}
+          </span>
+        </button>
+      </div>
+
+      {/* Center Area: Concentric Calming Target */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center p-4">
+        {/* Concentric rings wrapper */}
+        <div className="relative flex items-center justify-center">
+          {/* Outer Dashed Rotating Ring (calming) */}
+          <div className="absolute h-64 w-64 animate-[spin_40s_linear_infinite] rounded-full border border-dashed border-[#51513d]/15" />
+
+          {/* Middle Accent Solid Ring */}
+          <div className="absolute h-52 w-52 rounded-full border border-[#51513d]/8" />
+
+          {/* Inner Glowing Aura */}
+          <div className="absolute h-40 w-40 animate-[pulse_3s_ease-in-out_infinite] rounded-full bg-[#f3edd7]/60 shadow-[0_0_30px_rgba(166,168,103,0.15)]" />
+
+          {/* Circular Countdown Progress Ring Wrapper */}
+          <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[#51513d]/10 bg-[#f3edd7] shadow-[inset_0_2px_8px_rgba(81,81,61,0.06)]">
+            {/* SVG Countdown Ring */}
+            <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 160 160">
+              {/* Background circle */}
+              <circle
+                cx="80"
+                cy="80"
+                r="74"
+                fill="none"
+                stroke="rgba(81,81,61,0.04)"
+                strokeWidth="3"
+              />
+              {/* Foreground progress circle */}
+              <circle
+                cx="80"
+                cy="80"
+                r="74"
+                fill="none"
+                stroke={config.accentColor === '#51513d' ? '#a6a867' : config.accentColor}
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeDasharray={`${74 * 2 * Math.PI}`}
+                strokeDashoffset={`${74 * 2 * Math.PI * (1 - countdown / COUNTDOWN_SECONDS)}`}
+                className="transition-all duration-700 ease-out"
+              />
+            </svg>
+
+            {/* Target Canvas inside the progress ring */}
+            <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-[#51513d]/10 bg-[#e3dcc2]/30">
+              <ModePreview mode={resolvedMode} accentColor={config.accentColor} />
+            </div>
+          </div>
+        </div>
+
+        {/* Big countdown indicator underneath */}
+        <div className="mt-8 space-y-1 text-center">
+          <div className="inline-flex items-center gap-2">
+            <span className="font-mono text-xs font-bold tracking-widest text-[#51513d]/60 uppercase">
+              Starting In
+            </span>
+            <span className="animate-scale flex h-7 w-7 items-center justify-center rounded-full bg-[#1b2021] text-xs font-bold text-[#e3dcc2]">
+              {countdown}
+            </span>
+          </div>
+          <h2 className="text-xl font-bold tracking-tight text-[#1b2021] md:text-2xl">
+            Prepare Your Focus
+          </h2>
+          <p className="max-w-xs text-[11px] leading-relaxed text-[#51513d]/80">
+            Keep your head still and look directly at the target in the center.
           </p>
         </div>
+      </div>
 
-        {/* Mini animated preview — shows what the target looks like */}
-        <ModePreview mode={resolvedMode} accentColor={config.accentColor} />
+      {/* Bottom Instructions Card */}
+      <div className="relative z-10 mx-auto w-full max-w-md border border-[#51513d]/15 bg-[#f3edd7]/95 p-5 shadow-[8px_8px_0_rgba(81,81,61,0.08)] backdrop-blur-sm">
+        <div className="flex items-start gap-4">
+          {/* Mini icon/indicator */}
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#51513d]/15 bg-[#e3dcc2]">
+            {resolvedMode === 'grid' && (
+              <svg
+                className="h-5 w-5 text-[#51513d]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="12" r="3" fill="currentColor" />
+                <circle cx="12" cy="12" r="8" />
+              </svg>
+            )}
+            {resolvedMode === 'star' && (
+              <svg className="h-5 w-5 text-[#a6a867]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+              </svg>
+            )}
+            {resolvedMode === 'stickman' && (
+              <svg
+                className="h-5 w-5 text-[#51513d]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="12" cy="5" r="2" />
+                <path d="M12 7v8M9 10h6M10 20l2-5 2 5" />
+              </svg>
+            )}
+          </div>
 
-        {/* Countdown ring */}
-        <div className="relative flex h-20 w-20 items-center justify-center">
-          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 96 96">
-            <circle cx="48" cy="48" r="44" fill="none" stroke="#51513d" strokeWidth="4" />
-            <circle
-              cx="48"
-              cy="48"
-              r="44"
-              fill="none"
-              stroke={config.accentColor}
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray={`${44 * 2 * Math.PI}`}
-              strokeDashoffset={`${44 * 2 * Math.PI * (1 - countdown / COUNTDOWN_SECONDS)}`}
-              className="transition-all duration-700 ease-out"
-            />
-          </svg>
-          <span className="text-3xl font-bold" style={{ color: config.accentColor }}>
-            {countdown}
-          </span>
+          <div className="space-y-1">
+            <h3 className="text-xs font-black tracking-wider text-[#1b2021] uppercase">
+              Calibration Instructions
+            </h3>
+            <p className="text-[11px] leading-relaxed text-[#51513d]">{config.instruction}</p>
+            <p className="text-[10px] leading-relaxed text-[#51513d]/70">
+              <span className="font-bold text-[#1b2021]">Action: </span>
+              {config.howTo}
+            </p>
+          </div>
         </div>
-
-        <p className="text-xs text-[#1b2021]">Keep your head still - move only your eyes</p>
       </div>
     </div>
   );
@@ -115,14 +238,6 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
 
 /* ─── Mode Preview — animated canvas showing the target ─────────────────── */
 
-/**
- * Tiny canvas-based animated preview that demonstrates what the calibration
- * target looks like for each mode. Loops continuously during the countdown.
- *
- * - Grid: dot with progress ring filling
- * - Star: golden star with shimmer
- * - Stickman: simple ninja stickman with headband
- */
 function ModePreview({ mode, accentColor }: { mode: CalibrationVisualMode; accentColor: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef(0);
@@ -134,8 +249,8 @@ function ModePreview({ mode, accentColor }: { mode: CalibrationVisualMode; accen
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    const w = 200;
-    const h = 80;
+    const w = 112;
+    const h = 112;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width = `${w}px`;
@@ -165,12 +280,7 @@ function ModePreview({ mode, accentColor }: { mode: CalibrationVisualMode; accen
     return () => cancelAnimationFrame(animRef.current);
   }, [mode, accentColor]);
 
-  return (
-    <div className="overflow-hidden rounded-xl border border-[#51513d] bg-[#e3dcc2]">
-      <canvas ref={canvasRef} className="block" />
-      <p className="pb-1.5 text-center text-[9px] text-[#51513d]">Preview</p>
-    </div>
-  );
+  return <canvas ref={canvasRef} className="block rounded-full" />;
 }
 
 function drawGridPreview(

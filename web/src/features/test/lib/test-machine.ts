@@ -1,4 +1,50 @@
-import type { TobiiTestFlowState, WebcamTestFlowState, TestFlowState, TestAction } from '../types';
+import type {
+  TobiiTestFlowState,
+  TobiiTestState,
+  WebcamTestFlowState,
+  WebcamTestState,
+  TestFlowState,
+  TestAction,
+  TestState,
+} from '../types';
+
+const TOBII_TEST_STATES = new Set<TestState>([
+  'idle',
+  'intake',
+  'device-setup',
+  'calibration-setup',
+  'calibrating',
+  'task-syllables',
+  'review-syllables',
+  'task-pseudo-words',
+  'review-pseudo-words',
+  'task-meaningful-text',
+  'review-meaningful-text',
+  'submitting',
+  'results',
+  'error',
+]);
+
+const WEBCAM_TEST_STATES = new Set<TestState>([
+  'idle',
+  'intake',
+  'device-setup',
+  'calibration-setup',
+  'calibrating',
+  'task-paragraph',
+  'review-paragraph',
+  'submitting',
+  'results',
+  'error',
+]);
+
+function isTobiiTestState(state: TestState): state is TobiiTestState {
+  return TOBII_TEST_STATES.has(state);
+}
+
+function isWebcamTestState(state: TestState): state is WebcamTestState {
+  return WEBCAM_TEST_STATES.has(state);
+}
 
 // ─── Initial States ──────────────────────────────────────
 
@@ -121,6 +167,9 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
     case 'ERROR':
       return { ...state, currentState: 'error', error: action.error };
 
+    case 'FORCE_STATE':
+      return isTobiiTestState(action.state) ? { ...state, currentState: action.state } : state;
+
     default:
       return state;
   }
@@ -188,6 +237,9 @@ function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTe
 
     case 'ERROR':
       return { ...state, currentState: 'error', error: action.error };
+
+    case 'FORCE_STATE':
+      return isWebcamTestState(action.state) ? { ...state, currentState: action.state } : state;
 
     default:
       return state;

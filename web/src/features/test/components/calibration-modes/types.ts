@@ -11,4 +11,5 @@ export interface CalibrationModeViewProps {
   capturePulse: boolean;
   motionDurationMs: number;
   holdDurationMs: number;
+  onSampleCollected?: () => void;
 }

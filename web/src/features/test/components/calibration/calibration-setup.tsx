@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { CheckCircle2, Maximize, Monitor, Sparkles, Target } from 'lucide-react';
+import { CheckCircle2, Maximize, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
@@ -129,8 +130,35 @@ export function CalibrationSetup({
               </div>
             </div>
 
-            <div className="mt-5 flex min-h-80 flex-1 items-center justify-center overflow-hidden border border-[#51513d]/18 bg-[#f3edd7] p-4 shadow-[8px_8px_0_rgba(81,81,61,.08)] sm:min-h-96 lg:min-h-0">
-              <div className="relative aspect-4/3 w-full max-w-136 overflow-hidden border border-[#51513d]/16 bg-[#e3dcc2]">
+            <div className="mt-5 flex min-h-80 flex-1 flex-col items-center justify-center overflow-hidden border border-[#51513d]/18 bg-[#f3edd7] p-4 shadow-[8px_8px_0_rgba(81,81,61,.08)] sm:min-h-96 lg:min-h-0">
+              <div className="mb-5 w-full max-w-136 sm:mb-7">
+                <p className="mb-3 text-center text-[10px] font-black tracking-[0.2em] text-[#51513d]/50 uppercase">
+                  What to expect in the test
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col items-center border border-[#51513d]/12 bg-[#e3dcc2]/40 p-4 text-center sm:items-start sm:text-left">
+                    <div className="mb-2.5 h-2 w-2 animate-pulse rounded-full bg-[#a6a867]" />
+                    <p className="text-xs font-bold text-[#1b2021]">1. Popping Dots</p>
+                    <p className="mt-1 text-[11px] leading-relaxed font-medium text-[#1b2021]/60">
+                      Look directly at the shrinking dots as they appear. This helps the camera
+                      learn your unique eye movements.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center border border-[#51513d]/12 bg-[#e3dcc2]/40 p-4 text-center sm:items-start sm:text-left">
+                    <div className="mb-2.5 flex w-[28px] items-center">
+                      <div className="h-2 w-2 rounded-full bg-[#1b2021]" />
+                      <div className="ml-1 h-[1px] flex-1 bg-[#1b2021]/20" />
+                    </div>
+                    <p className="text-xs font-bold text-[#1b2021]">2. Moving Target</p>
+                    <p className="mt-1 text-[11px] leading-relaxed font-medium text-[#1b2021]/60">
+                      Follow the dark dot smoothly across the screen. This checks how your eyes will
+                      track along lines of text.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative aspect-4/3 w-full max-w-136 overflow-hidden border border-[#51513d]/16 bg-[#e3dcc2] shadow-sm">
                 <DualPhaseVisual resolvedMode={resolvedMode} />
               </div>
             </div>
@@ -279,11 +307,6 @@ function DualPhaseVisual({ resolvedMode }: { resolvedMode: CalibrationVisualMode
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#e3dcc2]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(227,220,149,0.38),transparent_28%),radial-gradient(circle_at_80%_78%,rgba(166,168,103,0.24),transparent_30%)]" />
-      <div className="absolute inset-x-6 top-6 flex items-center justify-between text-[#51513d]/45">
-        <Monitor className="h-5 w-5" />
-        <div className="h-px flex-1 bg-[#51513d]/12" />
-        <Target className="h-5 w-5" />
-      </div>
 
       <div
         className="absolute inset-0 transition-opacity duration-700 ease-in-out"
@@ -318,98 +341,169 @@ function DualPhaseVisual({ resolvedMode }: { resolvedMode: CalibrationVisualMode
 }
 
 function CalibrationPointPreview() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
   const points = [
-    [15, 15],
-    [33, 15],
+    [20, 15],
+    [35, 15],
     [50, 15],
-    [67, 15],
-    [85, 15],
-    [15, 35],
-    [33, 35],
-    [50, 35],
-    [67, 35],
-    [85, 35],
-    [15, 55],
-    [33, 55],
-    [50, 55],
-    [67, 55],
-    [85, 55],
-    [15, 75],
-    [33, 75],
-    [50, 75],
-    [67, 75],
-    [85, 75],
+    [65, 15],
+    [80, 15],
+    [20, 30],
+    [35, 30],
+    [50, 30],
+    [65, 30],
+    [80, 30],
+    [20, 45],
+    [35, 45],
+    [50, 45],
+    [65, 45],
+    [80, 45],
+    [20, 60],
+    [35, 60],
+    [50, 60],
+    [65, 60],
+    [80, 60],
   ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % points.length);
+    }, 1500); // Fast miniature preview
+    return () => clearInterval(timer);
+  }, [points.length]);
+
+  const activePoint = points[activeIndex] ?? [50, 50];
 
   return (
     <div className="absolute inset-0">
+      {/* 1. Base Grid Points */}
       {points.map(([left, top], index) => {
-        const active = index === 7;
-        const visited = index < 7;
+        const visited = index < activeIndex;
+        if (index === activeIndex) return null; // Don't render base point for active
 
         return (
           <div
-            key={`${left}-${top}`}
-            className={cn(
-              'absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-all',
-              active
-                ? 'h-9 w-9 border-4 border-[#51513d] bg-[#f3edd7] shadow-[0_0_0_8px_rgba(166,168,103,.2)]'
-                : visited
-                  ? 'h-3.5 w-3.5 border border-[#51513d]/45 bg-[#a6a867]'
-                  : 'h-3 w-3 border border-[#51513d]/22 bg-[#f3edd7]',
-            )}
+            key={`base-${left}-${top}`}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${left}%`, top: `${top}%` }}
           >
-            {active && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-3 w-3 rounded-full bg-[#51513d]" />
-                <div className="absolute h-full w-full animate-ping rounded-full bg-[#a6a867]/35" />
+            {visited ? (
+              <div className="relative flex h-2 w-2 items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-[#a6a867]/20 bg-[#a6a867]/10" />
+                <div className="h-1 w-1 rounded-full bg-[#a6a867]/60" />
               </div>
+            ) : (
+              <div className="h-1 w-1 rounded-full bg-[#51513d]/25" />
             )}
           </div>
         );
       })}
+
+      {/* 2. Active Animated Point */}
+      <motion.div
+        key={`active-${activeIndex}`}
+        className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          left: `${activePoint[0]}%`,
+          top: `${activePoint[1]}%`,
+        }}
+      >
+        <div className="relative flex h-8 w-8 items-center justify-center rounded-full">
+          <motion.div
+            className="absolute inset-0 rounded-full bg-[#a6a867]/15 shadow-[0_0_12px_rgba(166,168,103,0.24)]"
+            animate={{ scale: [1, 1.08, 1], opacity: [1, 0.85, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <div className="absolute inset-1 rounded-full border border-[#a6a867]/30" />
+          <motion.div
+            initial={{ scale: 1 }}
+            animate={{ scale: 0 }}
+            transition={{ duration: 1.5, ease: 'linear' }}
+            className="absolute inset-0.5 rounded-full border border-[#e3dcc2] bg-[#a6a867] shadow-sm"
+          />
+          <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              fill="none"
+              stroke="rgba(81,81,61,0.03)"
+              strokeWidth="4"
+            />
+            <motion.circle
+              cx="50"
+              cy="50"
+              r="44"
+              fill="none"
+              stroke="#a6a867"
+              strokeWidth="4"
+              strokeDasharray={276}
+              initial={{ strokeDashoffset: 276 }}
+              animate={{ strokeDashoffset: 0 }}
+              transition={{ duration: 1.5, ease: 'linear' }}
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </motion.div>
     </div>
   );
 }
 
 function PursuitVisual() {
+  const [lineIndex, setLineIndex] = useState(0);
+
+  // 5 lines matching real AOI constraints
+  const lines = [15, 26.25, 37.5, 48.75, 60];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLineIndex((prev) => (prev + 1) % lines.length);
+    }, 2000); // 1.5s sweep + 0.5s pause
+    return () => clearInterval(timer);
+  }, [lines.length]);
+
+  const currentY = lines[lineIndex] ?? 15;
+
   return (
-    <div className="relative flex h-full w-full items-center justify-center bg-[#e3dcc2]">
-      {[0.3, 0.5, 0.7].map((y) => (
+    <div className="relative h-full w-full overflow-hidden bg-[#e3dcc2]">
+      {/* 5 Guide Lines */}
+      {lines.map((y) => (
         <div
           key={y}
-          className="absolute h-px w-3/4 bg-[#51513d]/18"
-          style={{ top: `${y * 100}%`, left: '12.5%' }}
+          className="absolute h-[2px] bg-[#1b2021]/10"
+          style={{ top: `${y}%`, left: '20%', width: '60%' }}
         />
       ))}
 
+      {/* Target Dot */}
       <div
-        className="absolute h-8 w-8 rounded-full border-4 border-[#51513d] bg-[#f3edd7] shadow-[0_0_0_8px_rgba(166,168,103,.18)]"
+        key={`pursuit-dot-${lineIndex}`}
+        className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[3px_3px_0_0_#1b2021]"
         style={{
-          top: '50%',
-          transform: 'translateY(-50%)',
-          animation: 'pursuit-sweep 3s ease-in-out infinite alternate',
+          top: `${currentY}%`,
+          animation: 'pursuit-sweep 1.5s ease-in-out forwards',
         }}
-      />
-
-      <div
-        className="absolute h-3 w-3 rounded-full bg-[#51513d]"
-        style={{
-          top: '50%',
-          transform: 'translateY(-50%)',
-          animation: 'pursuit-sweep 3s ease-in-out infinite alternate',
-          animationDelay: '-0.15s',
-        }}
-      />
+      >
+        <div className="h-1.5 w-1.5 rounded-full bg-[#1b2021]" />
+      </div>
 
       <style jsx>{`
         @keyframes pursuit-sweep {
           0% {
-            left: 10%;
+            left: 20%;
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
           }
           100% {
-            left: 85%;
+            left: 80%;
+            opacity: 0;
           }
         }
       `}</style>

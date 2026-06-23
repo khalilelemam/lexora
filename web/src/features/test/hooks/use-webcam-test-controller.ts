@@ -32,7 +32,7 @@ const STEP_INDICATOR_HIDDEN_STATES = new Set([
 
 export function useWebcamTestController() {
   const router = useRouter();
-  const { state, dispatch } = useTestFlow({ mode: 'webcam' });
+  const { state, dispatch, forceState } = useTestFlow({ mode: 'webcam' });
   const webcamState = state as WebcamTestFlowState;
   const { mode: initialCalibrationMode, age: participantAge } = useCalibrationQueryParams();
   const { getOrCreateAttemptId, resetAttemptId } = useStableAttemptId();
@@ -53,12 +53,14 @@ export function useWebcamTestController() {
   const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const [paragraphScreenshot, setParagraphScreenshot] = useState<string | null>(null);
 
   // Screenshot captured from TaskDisplay for export visualizations.
   const screenshotRef = useRef<string | null>(null);
 
   const setScreenshot = useCallback((_taskType: string, dataUrl: string) => {
     screenshotRef.current = dataUrl;
+    setParagraphScreenshot(dataUrl);
   }, []);
 
   const webcamGaze = useWebcamGaze({
@@ -187,6 +189,7 @@ export function useWebcamTestController() {
     setLastTaskGazePosition(null);
     setTaskContent('');
     screenshotRef.current = null;
+    setParagraphScreenshot(null);
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
   }, [dispatch, resetAttemptId]);
@@ -236,6 +239,7 @@ export function useWebcamTestController() {
     gazePointCount,
     reviewGazeData,
     lastTaskGazePosition,
+    paragraphScreenshot,
     steps: WEBCAM_STEPS.map((step) => ({ key: step.key, label: step.label })),
     currentStepKey: getStepKeyForState(webcamState.currentState),
     showStepIndicator: !STEP_INDICATOR_HIDDEN_STATES.has(webcamState.currentState),
@@ -252,5 +256,6 @@ export function useWebcamTestController() {
     completeIntake: (data: IntakeData) => dispatch({ type: 'INTAKE_COMPLETE', data }),
     startFromIdle: () => dispatch({ type: 'START' }),
     setScreenshot,
+    forceState,
   };
 }
