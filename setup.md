@@ -31,7 +31,7 @@ npm install
 
 # 2. Configure environment variables
 cp .env.example .env.local
-# (Configure DATABASE_URL and Auth provider secrets inside .env.local as needed)
+# (For local Docker: set DATABASE_URL to `postgresql://lexora:lexora_dev@localhost:5433/lexora` — see `.env.example` for all required vars)
 
 # 3. Start local Postgres database & local Azure Blob Storage emulator (Azurite)
 docker compose up -d
