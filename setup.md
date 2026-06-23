@@ -79,8 +79,8 @@ Only required if you are connecting to a physical Tobii Eye Tracker hardware.
 # Navigate to the tobii-service directory
 cd tobii-service
 
-# 1. Create and activate virtual environment, then install dependencies
-python -m venv .venv
+# 1. Create and activate virtual environment (Python 3.10), then install dependencies
+python -m venv .venv  # ensure `python` is 3.10 (Windows: `py -3.10 -m venv .venv`)
 # Activate virtual environment (.venv\Scripts\Activate.ps1 on Windows)
 pip install -r requirements.txt
 
