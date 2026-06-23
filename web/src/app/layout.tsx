@@ -64,7 +64,9 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
-      <body className={`${geistSans.variable} ${geistMono.variable} ${lexend.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${lexend.variable} antialiased`}
+      >
         <ThemeProvider>
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>

@@ -11,7 +11,6 @@ import {
   Play,
   Pause,
 } from 'lucide-react';
-import { TASK_LABELS } from '../lib/test-content';
 import { MIN_GAZE_POINTS } from '../lib/constants';
 import { TaskDisplay } from './task-display';
 import type { WebcamGazePoint } from '../types';
@@ -48,7 +47,6 @@ export function ReviewPanel({
   rawGazeData: rawGazeDataProp,
 }: ReviewPanelProps) {
   const hasEnoughData = pointCount >= MIN_GAZE_POINTS;
-  const label = TASK_LABELS[taskType] ?? taskType;
 
   // Stabilize to avoid re-renders on every parent render
   const rawGazeData = useMemo(() => rawGazeDataProp ?? [], [rawGazeDataProp]);
@@ -76,52 +74,56 @@ export function ReviewPanel({
     // Phase 2: Focus Time (Average Fixation Duration via simplified I-DT)
     const FIXATION_RADIUS = 50; // pixels
     const MIN_FIXATION_MS = 100; // milliseconds
-    
+
     const fixations: { duration: number; x: number; y: number }[] = [];
     let windowStart = 0;
-    
+
     while (windowStart < rawGazeData.length) {
       let windowEnd = windowStart;
       let minX = rawGazeData[windowStart].x;
       let maxX = rawGazeData[windowStart].x;
       let minY = rawGazeData[windowStart].y;
       let maxY = rawGazeData[windowStart].y;
-      
+
       while (windowEnd + 1 < rawGazeData.length) {
         const nextPt = rawGazeData[windowEnd + 1];
         const newMinX = Math.min(minX, nextPt.x);
         const newMaxX = Math.max(maxX, nextPt.x);
         const newMinY = Math.min(minY, nextPt.y);
         const newMaxY = Math.max(maxY, nextPt.y);
-        
-        const dispersion = (newMaxX - newMinX) + (newMaxY - newMinY);
+
+        const dispersion = newMaxX - newMinX + (newMaxY - newMinY);
         if (dispersion <= FIXATION_RADIUS * 2) {
-          minX = newMinX; maxX = newMaxX; minY = newMinY; maxY = newMaxY;
+          minX = newMinX;
+          maxX = newMaxX;
+          minY = newMinY;
+          maxY = newMaxY;
           windowEnd++;
         } else {
           break;
         }
       }
-      
+
       const duration = rawGazeData[windowEnd].timestamp - rawGazeData[windowStart].timestamp;
       if (duration >= MIN_FIXATION_MS) {
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
         fixations.push({ duration, x: centerX, y: centerY });
       }
-      
+
       windowStart = windowEnd + 1;
     }
-    
-    const avgFocus = fixations.length > 0 
-      ? Math.round(fixations.reduce((sum, f) => sum + f.duration, 0) / fixations.length) 
-      : 0;
+
+    const avgFocus =
+      fixations.length > 0
+        ? Math.round(fixations.reduce((sum, f) => sum + f.duration, 0) / fixations.length)
+        : 0;
 
     // Phase 3: Re-reads (Regressions)
     let reReads = 0;
     const REGRESSION_X_THRESHOLD = 80;
     const NEW_LINE_Y_THRESHOLD = 40;
-    
+
     let currentLineY = fixations[0]?.y ?? 0;
 
     for (let i = 1; i < fixations.length; i++) {
@@ -306,18 +308,17 @@ export function ReviewPanel({
   // ═══════════════════════════════════════════════════════
   return (
     <div
-      className="fixed inset-0 z-50 flex h-[100dvh] w-[100vw] flex-col items-center justify-center overflow-hidden bg-[#e3dcc2] p-6 text-[#1b2021] md:p-12"
+      className="fixed inset-0 z-50 flex h-dvh w-screen flex-col items-center justify-center overflow-hidden bg-[#e3dcc2] p-6 text-[#1b2021] md:p-12"
       style={{ animation: 'float-up 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
     >
       {/* Background Glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-[#e3dc95]/40 blur-[100px]" />
+        <div className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-[#e3dc95]/40 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 flex min-h-0 w-full max-w-5xl flex-col border border-[#51513d]/20 bg-[#f3edd7] shadow-[12px_12px_0_rgba(81,81,61,.14)] max-h-[90dvh]">
-        
+      <div className="relative z-10 flex max-h-[90dvh] min-h-0 w-full max-w-5xl flex-col border border-[#51513d]/20 bg-[#f3edd7] shadow-[12px_12px_0_rgba(81,81,61,.14)]">
         {/* Header - Fixed at top */}
-        <div className="flex shrink-0 flex-col items-center text-center border-b border-[#51513d]/18 bg-[#e3dcc2]/40 p-6 md:p-8">
+        <div className="flex shrink-0 flex-col items-center border-b border-[#51513d]/18 bg-[#e3dcc2]/40 p-6 text-center md:p-8">
           {hasEnoughData ? (
             <div className="mb-4 flex h-12 w-12 items-center justify-center bg-[#a6a867] text-[#1b2021]">
               <CheckCircle2 className="h-6 w-6" />
@@ -339,37 +340,47 @@ export function ReviewPanel({
         </div>
 
         {/* 2-Column Split Content - Scrollable if needed */}
-        <div className="flex flex-col md:flex-row min-h-0 overflow-y-auto">
-          
+        <div className="flex min-h-0 flex-col overflow-y-auto md:flex-row">
           {/* Left Side: Stats Grid */}
-          <div className="flex-1 border-b border-[#51513d]/18 md:border-b-0 md:border-r p-6 md:p-8">
+          <div className="flex-1 border-b border-[#51513d]/18 p-6 md:border-r md:border-b-0 md:p-8">
             <h3 className="mb-6 text-center text-xs font-black tracking-widest text-[#51513d] uppercase md:text-left">
               Key Metrics
             </h3>
             {coreMetrics && (
-              <div className="mx-auto max-w-sm grid grid-cols-2 gap-px border border-[#51513d]/18 bg-[#51513d]/18 shadow-sm">
+              <div className="mx-auto grid max-w-sm grid-cols-2 gap-px border border-[#51513d]/18 bg-[#51513d]/18 shadow-sm">
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
-                  <p className="max-w-full break-words text-[9px] font-black uppercase tracking-widest text-[#51513d] sm:text-[10px]">Reading Speed</p>
+                  <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
+                    Reading Speed
+                  </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
-                    {coreMetrics.wpm} <span className="text-[10px] font-bold text-[#51513d]/60">WPM</span>
+                    {coreMetrics.wpm}{' '}
+                    <span className="text-[10px] font-bold text-[#51513d]/60">WPM</span>
                   </p>
                 </div>
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
-                  <p className="max-w-full break-words text-[9px] font-black uppercase tracking-widest text-[#51513d] sm:text-[10px]">Focus Time</p>
+                  <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
+                    Focus Time
+                  </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
-                    {advancedMetrics?.avgFocus ?? 0} <span className="text-[10px] font-bold text-[#51513d]/60">MS</span>
+                    {advancedMetrics?.avgFocus ?? 0}{' '}
+                    <span className="text-[10px] font-bold text-[#51513d]/60">MS</span>
                   </p>
                 </div>
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
-                  <p className="max-w-full break-words text-[9px] font-black uppercase tracking-widest text-[#51513d] sm:text-[10px]">Re-reads</p>
+                  <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
+                    Re-reads
+                  </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
                     {advancedMetrics?.reReads ?? 0}
                   </p>
                 </div>
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
-                  <p className="max-w-full break-words text-[9px] font-black uppercase tracking-widest text-[#51513d] sm:text-[10px]">Total Time</p>
+                  <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
+                    Total Time
+                  </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
-                    {coreMetrics.totalSeconds} <span className="text-[10px] font-bold text-[#51513d]/60">SEC</span>
+                    {coreMetrics.totalSeconds}{' '}
+                    <span className="text-[10px] font-bold text-[#51513d]/60">SEC</span>
                   </p>
                 </div>
               </div>
@@ -382,7 +393,7 @@ export function ReviewPanel({
               Your Reading Insights
             </h3>
             {coreMetrics && advancedMetrics && (
-              <div className="flex flex-col gap-5 text-sm font-medium leading-relaxed text-[#1b2021] md:text-[15px]">
+              <div className="flex flex-col gap-5 text-sm leading-relaxed font-medium text-[#1b2021] md:text-[15px]">
                 <p>
                   {coreMetrics.wpm > 200 ? (
                     <>You blazed through the text at a fast </>
@@ -391,7 +402,14 @@ export function ReviewPanel({
                   ) : (
                     <>You took your time, reading at a careful pace of </>
                   )}
-                  <strong className="font-black text-[#51513d]">{coreMetrics.wpm} words per minute</strong>, completing the entire passage in just <strong className="font-black text-[#51513d]">{coreMetrics.totalSeconds} seconds</strong>.
+                  <strong className="font-black text-[#51513d]">
+                    {coreMetrics.wpm} words per minute
+                  </strong>
+                  , completing the entire passage in just{' '}
+                  <strong className="font-black text-[#51513d]">
+                    {coreMetrics.totalSeconds} seconds
+                  </strong>
+                  .
                 </p>
                 <p>
                   {advancedMetrics.avgFocus < 200 ? (
@@ -401,15 +419,36 @@ export function ReviewPanel({
                   ) : (
                     <>You were deeply processing the words, spending </>
                   )}
-                  <strong className="font-black text-[#51513d]">{advancedMetrics.avgFocus}ms</strong> on average focusing on each point.
+                  <strong className="font-black text-[#51513d]">
+                    {advancedMetrics.avgFocus}ms
+                  </strong>{' '}
+                  on average focusing on each point.
                 </p>
                 <p>
                   {advancedMetrics.reReads === 0 ? (
-                    <>Incredibly, you didn't jump backward to re-read at all! You maintained <strong className="font-black text-[#51513d]">perfect forward momentum</strong>.</>
+                    <>
+                      Incredibly, you did not jump backward to re-read at all! You maintained{' '}
+                      <strong className="font-black text-[#51513d]">
+                        perfect forward momentum
+                      </strong>
+                      .
+                    </>
                   ) : advancedMetrics.reReads <= 3 ? (
-                    <>You only had to backtrack and re-read <strong className="font-black text-[#51513d]">{advancedMetrics.reReads} time{advancedMetrics.reReads > 1 ? 's' : ''}</strong>, showing very strong comprehension.</>
+                    <>
+                      You only had to backtrack and re-read{' '}
+                      <strong className="font-black text-[#51513d]">
+                        {advancedMetrics.reReads} time{advancedMetrics.reReads > 1 ? 's' : ''}
+                      </strong>
+                      , showing very strong comprehension.
+                    </>
                   ) : (
-                    <>We noticed you naturally jumped back to re-read <strong className="font-black text-[#51513d]">{advancedMetrics.reReads} times</strong>, which is a great strategy for double-checking meaning.</>
+                    <>
+                      We noticed you naturally jumped back to re-read{' '}
+                      <strong className="font-black text-[#51513d]">
+                        {advancedMetrics.reReads} times
+                      </strong>
+                      , which is a great strategy for double-checking meaning.
+                    </>
                   )}
                 </p>
               </div>
@@ -432,7 +471,7 @@ export function ReviewPanel({
             <button
               type="button"
               onClick={() => {}}
-              className="flex flex-1 items-center justify-center gap-2 border-2 border-[#1b2021] bg-[#a6a867] px-6 py-4 text-sm font-black uppercase text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] transition-colors hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#1b2021]"
+              className="flex flex-1 items-center justify-center gap-2 border-2 border-[#1b2021] bg-[#a6a867] px-6 py-4 text-sm font-black text-[#1b2021] uppercase shadow-[4px_4px_0_0_#1b2021] transition-colors hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1b2021]"
             >
               <Eye className="h-4 w-4" />
               See my child vision

@@ -45,8 +45,9 @@ function createMLClient() {
 // ─── Error Handling ──────────────────────────────────────
 
 interface MLErrorResponse {
-  code: string;
-  message: string;
+  code?: string;
+  message?: string;
+  detail?: string | Array<{ field: string; message: string }>;
   details?: Array<{ field: string; message: string }>;
 }
 
@@ -66,7 +67,7 @@ async function handleMLError(error: unknown): Promise<never> {
 
   if (error instanceof HTTPError) {
     // FastAPI usually returns { detail: string | array }
-    const errorBody = (await error.response.json().catch(() => null)) as any;
+    const errorBody = (await error.response.json().catch(() => null)) as MLErrorResponse | null;
     const statusCode = error.response.status;
 
     let code = errorBody?.code ?? `HTTP_${statusCode}`;
@@ -74,35 +75,43 @@ async function handleMLError(error: unknown): Promise<never> {
 
     if (statusCode === 422) {
       code = 'VALIDATION_ERROR';
-      friendlyMessage = "Hmm, the eye tracking data we received wasn't quite right. Make sure your face is clearly visible and try the test again.";
+      friendlyMessage =
+        "Hmm, the eye tracking data we received wasn't quite right. Make sure your face is clearly visible and try the test again.";
     } else if (statusCode === 404) {
       code = 'NOT_FOUND';
-      friendlyMessage = "We couldn't reach the analysis engine. It might be taking a quick nap. Give it another try!";
+      friendlyMessage =
+        "We couldn't reach the analysis engine. It might be taking a quick nap. Give it another try!";
     } else if (statusCode >= 500) {
       code = 'SERVER_ERROR';
-      friendlyMessage = "Our analysis servers are currently taking a breather. Please try again in a few moments!";
+      friendlyMessage =
+        'Our analysis servers are currently taking a breather. Please try again in a few moments!';
     } else if (statusCode === 429) {
       code = 'RATE_LIMITED';
-      friendlyMessage = "Whoa, slow down! We're processing a lot of tests right now. Please wait a minute before trying again.";
+      friendlyMessage =
+        "Whoa, slow down! We're processing a lot of tests right now. Please wait a minute before trying again.";
     } else if (errorBody?.detail && typeof errorBody.detail === 'string') {
       friendlyMessage = errorBody.detail;
     } else if (errorBody?.message) {
       friendlyMessage = errorBody.message;
     }
 
-    throw new MLServiceError(code, friendlyMessage, errorBody?.detail);
+    throw new MLServiceError(
+      code,
+      friendlyMessage,
+      Array.isArray(errorBody?.detail) ? errorBody.detail : errorBody?.details,
+    );
   }
 
   if (error instanceof DOMException && error.name === 'AbortError') {
     throw new MLServiceError(
       'TIMEOUT',
-      "The analysis took a bit too long and timed out. This usually happens if the connection is slow. Please try again!"
+      'The analysis took a bit too long and timed out. This usually happens if the connection is slow. Please try again!',
     );
   }
 
   throw new MLServiceError(
     'NETWORK_ERROR',
-    "We couldn't connect to our analysis servers. Please check your internet connection and try again."
+    "We couldn't connect to our analysis servers. Please check your internet connection and try again.",
   );
 }
 

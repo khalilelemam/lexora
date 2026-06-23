@@ -39,10 +39,10 @@ export const GridModeView = React.memo(
     return (
       <div className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-[#e3dcc2] select-none">
         <AudioWidget src="/audio/fixation-audio.mp4" />
-        
+
         {/* 1. Backdrop Grid Overlay */}
         <div
-          className="absolute inset-0 opacity-40 pointer-events-none"
+          className="pointer-events-none absolute inset-0 opacity-40"
           style={{
             backgroundImage:
               'linear-gradient(90deg, rgba(81,81,61,.05) 1px, transparent 1px), linear-gradient(rgba(81,81,61,.05) 1px, transparent 1px)',
@@ -52,15 +52,15 @@ export const GridModeView = React.memo(
 
         {/* 2. Interactive Coordinate-Tracking Glow */}
         <div
-          className="absolute inset-0 transition-all duration-700 ease-out pointer-events-none"
+          className="pointer-events-none absolute inset-0 transition-all duration-700 ease-out"
           style={{
             background: `radial-gradient(circle at ${currentPoint.x * 100}% ${currentPoint.y * 100}%, rgba(166,168,103,0.22), transparent 22rem)`,
           }}
         />
 
         {/* Decorative Minimal Corner Borders */}
-        <div className="absolute top-6 left-6 hidden h-8 w-8 border border-[#51513d]/10 md:block pointer-events-none" />
-        <div className="absolute bottom-24 right-6 hidden h-8 w-8 border border-[#51513d]/10 md:block pointer-events-none" />
+        <div className="pointer-events-none absolute top-6 left-6 hidden h-8 w-8 border border-[#51513d]/10 md:block" />
+        <div className="pointer-events-none absolute right-6 bottom-24 hidden h-8 w-8 border border-[#51513d]/10 md:block" />
 
         {/* 3. Completed Point Markers (calibrated history) */}
         {collectionTotal === points.length &&
@@ -102,7 +102,7 @@ export const GridModeView = React.memo(
             left: `${currentPoint.x * 100}%`,
             top: `${currentPoint.y * 100}%`,
           }}
-          className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 z-10"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
         >
           <div className="relative flex h-20 w-20 items-center justify-center rounded-full">
             {/* Breathing Glow Aura */}
@@ -132,7 +132,7 @@ export const GridModeView = React.memo(
                 onSampleCollected?.();
               }}
               className={cn(
-                'absolute inset-1 rounded-full transition-colors duration-200 border border-[#e3dcc2]',
+                'absolute inset-1 rounded-full border border-[#e3dcc2] transition-colors duration-200',
                 isStableFixation
                   ? 'bg-[#a6a867] shadow-[0_0_12px_rgba(166,168,103,0.65)]'
                   : 'bg-[#1b2021] shadow-sm',
@@ -185,30 +185,30 @@ export const GridModeView = React.memo(
         {/* 6. Floating HUD Bar (bottom) */}
         <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-24 items-end justify-between px-6 pb-6">
           {/* Active Mode Label */}
-          <div className="flex items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest text-[#1b2021] shadow-[4px_4px_0_0_#1b2021]">
+          <div className="flex items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 text-[10px] font-black tracking-widest text-[#1b2021] uppercase shadow-[4px_4px_0_0_#1b2021] sm:text-xs">
             <span className="h-2 w-2 animate-pulse rounded-full border border-[#1b2021] bg-[#a6a867]" />
             Grid Calibration
           </div>
 
           {/* Dynamic Compact Progress Dots */}
-          <div className="hidden sm:flex items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-5 py-2.5 shadow-[4px_4px_0_0_#1b2021]">
+          <div className="hidden items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-5 py-2.5 shadow-[4px_4px_0_0_#1b2021] sm:flex">
             {Array.from({ length: collectionTotal }).map((_, idx) => (
               <div
                 key={idx}
                 className={cn(
-                  'rounded-full transition-all duration-300 border',
+                  'rounded-full border transition-all duration-300',
                   idx < activeIndex
-                    ? 'h-2 w-2 bg-[#a6a867] border-[#1b2021]'
+                    ? 'h-2 w-2 border-[#1b2021] bg-[#a6a867]'
                     : idx === activeIndex
-                      ? 'h-2.5 w-2.5 scale-125 bg-[#a6a867] border-[#1b2021] shadow-[1px_1px_0_0_#1b2021]'
-                      : 'h-1.5 w-1.5 bg-transparent border-[#1b2021]/30',
+                      ? 'h-2.5 w-2.5 scale-125 border-[#1b2021] bg-[#a6a867] shadow-[1px_1px_0_0_#1b2021]'
+                      : 'h-1.5 w-1.5 border-[#1b2021]/30 bg-transparent',
                 )}
               />
             ))}
           </div>
 
           {/* Numeric Step Counter */}
-          <div className="border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 text-[10px] sm:text-xs font-mono font-black tracking-wider text-[#1b2021] shadow-[4px_4px_0_0_#1b2021]">
+          <div className="border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 font-mono text-[10px] font-black tracking-wider text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] sm:text-xs">
             STEP <span className="text-[#a6a867]">{collectionStep}</span> / {collectionTotal}
           </div>
         </div>
@@ -225,5 +225,5 @@ export const GridModeView = React.memo(
       prevProps.currentPoint.x === nextProps.currentPoint.x &&
       prevProps.currentPoint.y === nextProps.currentPoint.y
     );
-  }
+  },
 );

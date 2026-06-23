@@ -306,19 +306,19 @@ export function PursuitCalibrationView({
   return (
     <div className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-[#e3dcc2] select-none">
       <AudioWidget src="/audio/pursuit-audio.mp4" />
-      
+
       {/* 1. Backdrop Grid Overlay */}
-      <div 
+      <div
         className={cn(
-          "absolute inset-x-0 top-6 flex justify-center px-4 z-40 transition-opacity duration-500",
-          stage === 'instruction' ? "opacity-100" : "opacity-0 pointer-events-none"
+          'absolute inset-x-0 top-6 z-40 flex justify-center px-4 transition-opacity duration-500',
+          stage === 'instruction' ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        <div className="border-2 border-[#1b2021] bg-[#e3dcc2] px-6 py-4 text-center shadow-[4px_4px_0_0_#1b2021] max-w-lg w-full">
-          <p className="text-sm sm:text-base font-black uppercase tracking-tight text-[#1b2021]">
+        <div className="w-full max-w-lg border-2 border-[#1b2021] bg-[#e3dcc2] px-6 py-4 text-center shadow-[4px_4px_0_0_#1b2021]">
+          <p className="text-sm font-black tracking-tight text-[#1b2021] uppercase sm:text-base">
             Follow the dot with your eyes as it moves across the screen
           </p>
-          <p className="mt-1 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#51513d]">
+          <p className="mt-1 text-[10px] font-bold tracking-widest text-[#51513d] uppercase sm:text-xs">
             Starting shortly…
           </p>
         </div>
@@ -326,7 +326,7 @@ export function PursuitCalibrationView({
 
       {dotPos && stage === 'sweeping' && (
         <div
-          className="pointer-events-none absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[4px_4px_0_0_rgba(27,32,33,0.3)] transition-[opacity] duration-150"
+          className="pointer-events-none absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[4px_4px_0_0_rgba(27,32,33,0.3)] transition-[opacity] duration-150"
           style={{
             left: `${dotPos.x * 100}%`,
             top: `${dotPos.y * 100}%`,
@@ -352,7 +352,7 @@ export function PursuitCalibrationView({
           variant="outline"
           size="sm"
           onClick={onCancel}
-          className="rounded-none border-2 border-[#1b2021] bg-[#e3dcc2] text-xs font-black uppercase tracking-wider text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#1b2021]"
+          className="rounded-none border-2 border-[#1b2021] bg-[#e3dcc2] text-xs font-black tracking-wider text-[#1b2021] uppercase shadow-[4px_4px_0_0_#1b2021] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#1b2021]"
         >
           Skip
         </Button>

@@ -23,7 +23,8 @@ const QUALITY_UI = {
     bg: 'bg-[#a6a867]/15',
     border: 'border-[#a6a867]/45',
     ringColor: '#a6a867',
-    message: "The camera has learned your eye movements perfectly. You're all set to begin the test.",
+    message:
+      "The camera has learned your eye movements perfectly. You're all set to begin the test.",
   },
   acceptable: {
     icon: AlertTriangle,
@@ -32,7 +33,8 @@ const QUALITY_UI = {
     bg: 'bg-[#e3dc95]/25',
     border: 'border-[#e3dc95]',
     ringColor: '#e3dc95',
-    message: "We got an okay reading. You can continue, but giving it one more quick try might help us get a better score.",
+    message:
+      'We got an okay reading. You can continue, but giving it one more quick try might help us get a better score.',
   },
   poor: {
     icon: XCircle,
@@ -41,7 +43,8 @@ const QUALITY_UI = {
     bg: 'bg-red-50',
     border: 'border-red-200',
     ringColor: '#ef4444',
-    message: "Hmm, the camera had a little trouble catching your eyes that time. Let's give it another quick try!",
+    message:
+      "Hmm, the camera had a little trouble catching your eyes that time. Let's give it another quick try!",
   },
 } as const;
 
@@ -132,14 +135,17 @@ export function CalibrationResult({
           {/* Validation warning */}
           {quickValidationAccuracy != null && !quickValidationPassed && (
             <div className="rounded-xl border border-[#e3dc95] bg-[#e3dc95]/25 p-3 text-sm leading-relaxed text-[#51513d]">
-              Your tracking score was a bit low. We can still move forward, but trying once more usually clears this up!
+              Your tracking score was a bit low. We can still move forward, but trying once more
+              usually clears this up!
             </div>
           )}
 
           {/* Tips for poor calibration */}
           {result.quality === 'poor' && (
             <div className="rounded-xl border border-[#51513d] bg-[#f3edd7]/90 p-4 text-sm text-[#1b2021]">
-              <p className="mb-2 font-semibold text-[#1b2021]">A few quick tips for a perfect score:</p>
+              <p className="mb-2 font-semibold text-[#1b2021]">
+                A few quick tips for a perfect score:
+              </p>
               <ul className="list-inside list-disc space-y-1.5 text-[13px]">
                 <li>Try to keep your head nice and still</li>
                 <li>Make sure your face is well-lit from the front</li>
@@ -171,7 +177,7 @@ export function CalibrationResult({
 
           {result.quality === 'poor' && blockOnPoor && (
             <p className="text-xs text-red-600">
-              We need a slightly better reading before we can start the test. Let's try again!
+              We need a slightly better reading before we can start the test. Let&apos;s try again!
             </p>
           )}
         </div>

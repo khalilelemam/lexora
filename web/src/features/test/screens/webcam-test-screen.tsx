@@ -19,7 +19,16 @@ import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useWebcamTestController } from '@/features/test/hooks';
 import { DEBUG_GAZE_OVERLAY } from '@/features/test/lib/debug-config';
 import { getWebcamTaskContent } from '@/features/test/lib/test-content';
-import type { IntakeData } from '@/features/test/types';
+import type { IntakeData, WebcamGazePoint } from '@/features/test/types';
+
+const DEBUG_REVIEW_GAZE_DATA: WebcamGazePoint[] = [
+  { x: 100, y: 100, timestamp: 0 },
+  { x: 200, y: 100, timestamp: 500 },
+  { x: 300, y: 100, timestamp: 1000 },
+  { x: 400, y: 100, timestamp: 1500 },
+  { x: 100, y: 150, timestamp: 2000 },
+  { x: 200, y: 150, timestamp: 2500 },
+];
 
 export default function WebcamTestScreen() {
   const {
@@ -140,15 +149,7 @@ export default function WebcamTestScreen() {
         let gazeDataToDisplay = reviewGazeData;
         // Inject mock gaze data if accessed via debug menu
         if (gazeDataToDisplay.length === 0 && process.env.NODE_ENV === 'development') {
-          const now = Date.now();
-          gazeDataToDisplay = [
-            { x: 100, y: 100, timestamp: now },
-            { x: 200, y: 100, timestamp: now + 500 },
-            { x: 300, y: 100, timestamp: now + 1000 },
-            { x: 400, y: 100, timestamp: now + 1500 },
-            { x: 100, y: 150, timestamp: now + 2000 }, // simulated return sweep
-            { x: 200, y: 150, timestamp: now + 2500 },
-          ];
+          gazeDataToDisplay = DEBUG_REVIEW_GAZE_DATA;
         }
 
         return (
@@ -169,7 +170,7 @@ export default function WebcamTestScreen() {
 
       case 'results': {
         let resultToDisplay = state.results;
-        
+
         // Inject mock result data if accessed via debug menu
         if (!resultToDisplay && process.env.NODE_ENV === 'development') {
           resultToDisplay = {
@@ -232,7 +233,7 @@ export default function WebcamTestScreen() {
           {DEBUG_GAZE_OVERLAY && state.currentState === 'task-paragraph' && (
             <GazeDebugDot active={webcamGaze.collecting} getPosition={() => lastTaskGazePosition} />
           )}
-          
+
           <DebugTestNavigation
             states={[
               'idle',

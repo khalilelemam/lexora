@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { CheckCircle2, Maximize, Monitor, Sparkles, Target } from 'lucide-react';
+import { CheckCircle2, Maximize, Sparkles, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LexoraLogo } from '@/components/shared/lexora-logo';
@@ -132,15 +132,16 @@ export function CalibrationSetup({
 
             <div className="mt-5 flex min-h-80 flex-1 flex-col items-center justify-center overflow-hidden border border-[#51513d]/18 bg-[#f3edd7] p-4 shadow-[8px_8px_0_rgba(81,81,61,.08)] sm:min-h-96 lg:min-h-0">
               <div className="mb-5 w-full max-w-136 sm:mb-7">
-                <p className="mb-3 text-center text-[10px] font-black uppercase tracking-[0.2em] text-[#51513d]/50">
+                <p className="mb-3 text-center text-[10px] font-black tracking-[0.2em] text-[#51513d]/50 uppercase">
                   What to expect in the test
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="flex flex-col items-center border border-[#51513d]/12 bg-[#e3dcc2]/40 p-4 text-center sm:items-start sm:text-left">
                     <div className="mb-2.5 h-2 w-2 animate-pulse rounded-full bg-[#a6a867]" />
                     <p className="text-xs font-bold text-[#1b2021]">1. Popping Dots</p>
-                    <p className="mt-1 text-[11px] font-medium leading-relaxed text-[#1b2021]/60">
-                      Look directly at the shrinking dots as they appear. This helps the camera learn your unique eye movements.
+                    <p className="mt-1 text-[11px] leading-relaxed font-medium text-[#1b2021]/60">
+                      Look directly at the shrinking dots as they appear. This helps the camera
+                      learn your unique eye movements.
                     </p>
                   </div>
                   <div className="flex flex-col items-center border border-[#51513d]/12 bg-[#e3dcc2]/40 p-4 text-center sm:items-start sm:text-left">
@@ -149,13 +150,14 @@ export function CalibrationSetup({
                       <div className="ml-1 h-[1px] flex-1 bg-[#1b2021]/20" />
                     </div>
                     <p className="text-xs font-bold text-[#1b2021]">2. Moving Target</p>
-                    <p className="mt-1 text-[11px] font-medium leading-relaxed text-[#1b2021]/60">
-                      Follow the dark dot smoothly across the screen. This checks how your eyes will track along lines of text.
+                    <p className="mt-1 text-[11px] leading-relaxed font-medium text-[#1b2021]/60">
+                      Follow the dark dot smoothly across the screen. This checks how your eyes will
+                      track along lines of text.
                     </p>
                   </div>
                 </div>
               </div>
-              
+
               <div className="relative aspect-4/3 w-full max-w-136 overflow-hidden border border-[#51513d]/16 bg-[#e3dcc2] shadow-sm">
                 <DualPhaseVisual resolvedMode={resolvedMode} />
               </div>
@@ -342,10 +344,26 @@ function CalibrationPointPreview() {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const points = [
-    [20, 15], [35, 15], [50, 15], [65, 15], [80, 15],
-    [20, 30], [35, 30], [50, 30], [65, 30], [80, 30],
-    [20, 45], [35, 45], [50, 45], [65, 45], [80, 45],
-    [20, 60], [35, 60], [50, 60], [65, 60], [80, 60],
+    [20, 15],
+    [35, 15],
+    [50, 15],
+    [65, 15],
+    [80, 15],
+    [20, 30],
+    [35, 30],
+    [50, 30],
+    [65, 30],
+    [80, 30],
+    [20, 45],
+    [35, 45],
+    [50, 45],
+    [65, 45],
+    [80, 45],
+    [20, 60],
+    [35, 60],
+    [50, 60],
+    [65, 60],
+    [80, 60],
   ];
 
   useEffect(() => {
@@ -398,21 +416,33 @@ function CalibrationPointPreview() {
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           />
           <div className="absolute inset-1 rounded-full border border-[#a6a867]/30" />
-          <motion.div 
+          <motion.div
             initial={{ scale: 1 }}
             animate={{ scale: 0 }}
             transition={{ duration: 1.5, ease: 'linear' }}
             className="absolute inset-0.5 rounded-full border border-[#e3dcc2] bg-[#a6a867] shadow-sm"
           />
           <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(81,81,61,0.03)" strokeWidth="4" />
-            <motion.circle 
-              cx="50" cy="50" r="44" fill="none" stroke="#a6a867" strokeWidth="4" 
-              strokeDasharray={276} 
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              fill="none"
+              stroke="rgba(81,81,61,0.03)"
+              strokeWidth="4"
+            />
+            <motion.circle
+              cx="50"
+              cy="50"
+              r="44"
+              fill="none"
+              stroke="#a6a867"
+              strokeWidth="4"
+              strokeDasharray={276}
               initial={{ strokeDashoffset: 276 }}
               animate={{ strokeDashoffset: 0 }}
               transition={{ duration: 1.5, ease: 'linear' }}
-              strokeLinecap="round" 
+              strokeLinecap="round"
             />
           </svg>
         </div>
@@ -437,7 +467,7 @@ function PursuitVisual() {
   const currentY = lines[lineIndex] ?? 15;
 
   return (
-    <div className="relative h-full w-full bg-[#e3dcc2] overflow-hidden">
+    <div className="relative h-full w-full overflow-hidden bg-[#e3dcc2]">
       {/* 5 Guide Lines */}
       {lines.map((y) => (
         <div
@@ -450,7 +480,7 @@ function PursuitVisual() {
       {/* Target Dot */}
       <div
         key={`pursuit-dot-${lineIndex}`}
-        className="absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[3px_3px_0_0_#1b2021]"
+        className="absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[3px_3px_0_0_#1b2021]"
         style={{
           top: `${currentY}%`,
           animation: 'pursuit-sweep 1.5s ease-in-out forwards',
@@ -461,10 +491,20 @@ function PursuitVisual() {
 
       <style jsx>{`
         @keyframes pursuit-sweep {
-          0% { left: 20%; opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { left: 80%; opacity: 0; }
+          0% {
+            left: 20%;
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            left: 80%;
+            opacity: 0;
+          }
         }
       `}</style>
     </div>

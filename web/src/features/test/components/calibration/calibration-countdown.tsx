@@ -56,28 +56,34 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
   const config = MODE_CONFIG[resolvedMode];
 
   return (
-    <div className="fixed inset-0 z-50 flex h-svh w-full flex-col justify-between overflow-hidden bg-[#e3dcc2] p-6 md:p-12 select-none">
+    <div className="fixed inset-0 z-50 flex h-svh w-full flex-col justify-between overflow-hidden bg-[#e3dcc2] p-6 select-none md:p-12">
       {/* Grid Overlay & Calming Glow */}
       <div
-        className="absolute inset-0 opacity-40 pointer-events-none"
+        className="pointer-events-none absolute inset-0 opacity-40"
         style={{
           backgroundImage:
             'linear-gradient(90deg, rgba(81,81,61,.05) 1px, transparent 1px), linear-gradient(rgba(81,81,61,.05) 1px, transparent 1px)',
           backgroundSize: '44px 44px',
         }}
       />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(166,168,103,0.12)_0%,_transparent_60%)] pointer-events-none" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(166,168,103,0.12)_0%,_transparent_60%)]" />
 
       {/* Decorative architectural layout frames (matching login redesign) */}
-      <div className="absolute top-8 left-8 hidden h-12 w-12 border border-[#51513d]/10 md:block pointer-events-none" />
-      <div className="absolute bottom-8 right-8 hidden h-16 w-16 border border-[#51513d]/10 md:block pointer-events-none" />
+      <div className="pointer-events-none absolute top-8 left-8 hidden h-12 w-12 border border-[#51513d]/10 md:block" />
+      <div className="pointer-events-none absolute right-8 bottom-8 hidden h-16 w-16 border border-[#51513d]/10 md:block" />
 
       {/* Top Header */}
       <div className="relative z-10 flex w-full items-center justify-between border-b border-[#51513d]/10 pb-4">
         {/* Brand Logo */}
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center bg-[#1b2021]">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#e3dcc2" strokeWidth="2.5" className="h-4 w-4">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#e3dcc2"
+              strokeWidth="2.5"
+              className="h-4 w-4"
+            >
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
               <path d="M2 12l10 5 10-5" />
@@ -89,8 +95,8 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
         </div>
 
         {/* Current Active Mode Status Badge */}
-        <div className="flex items-center gap-2 border border-[#51513d]/15 bg-[#f3edd7]/50 px-3 py-1 rounded-sm">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#a6a867] animate-pulse" />
+        <div className="flex items-center gap-2 rounded-sm border border-[#51513d]/15 bg-[#f3edd7]/50 px-3 py-1">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a6a867]" />
           <span className="font-mono text-[9px] font-black tracking-wider text-[#51513d] uppercase">
             Mode: {config.label.replace(' Mode', '')}
           </span>
@@ -102,20 +108,27 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
         {/* Concentric rings wrapper */}
         <div className="relative flex items-center justify-center">
           {/* Outer Dashed Rotating Ring (calming) */}
-          <div className="absolute h-64 w-64 rounded-full border border-dashed border-[#51513d]/15 animate-[spin_40s_linear_infinite]" />
-          
+          <div className="absolute h-64 w-64 animate-[spin_40s_linear_infinite] rounded-full border border-dashed border-[#51513d]/15" />
+
           {/* Middle Accent Solid Ring */}
           <div className="absolute h-52 w-52 rounded-full border border-[#51513d]/8" />
-          
+
           {/* Inner Glowing Aura */}
-          <div className="absolute h-40 w-40 rounded-full bg-[#f3edd7]/60 shadow-[0_0_30px_rgba(166,168,103,0.15)] animate-[pulse_3s_ease-in-out_infinite]" />
+          <div className="absolute h-40 w-40 animate-[pulse_3s_ease-in-out_infinite] rounded-full bg-[#f3edd7]/60 shadow-[0_0_30px_rgba(166,168,103,0.15)]" />
 
           {/* Circular Countdown Progress Ring Wrapper */}
-          <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-[#f3edd7] shadow-[inset_0_2px_8px_rgba(81,81,61,0.06)] border border-[#51513d]/10">
+          <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-[#51513d]/10 bg-[#f3edd7] shadow-[inset_0_2px_8px_rgba(81,81,61,0.06)]">
             {/* SVG Countdown Ring */}
             <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 160 160">
               {/* Background circle */}
-              <circle cx="80" cy="80" r="74" fill="none" stroke="rgba(81,81,61,0.04)" strokeWidth="3" />
+              <circle
+                cx="80"
+                cy="80"
+                r="74"
+                fill="none"
+                stroke="rgba(81,81,61,0.04)"
+                strokeWidth="3"
+              />
               {/* Foreground progress circle */}
               <circle
                 cx="80"
@@ -132,21 +145,25 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
             </svg>
 
             {/* Target Canvas inside the progress ring */}
-            <div className="relative h-28 w-28 overflow-hidden rounded-full border border-[#51513d]/10 bg-[#e3dcc2]/30 flex items-center justify-center">
+            <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-[#51513d]/10 bg-[#e3dcc2]/30">
               <ModePreview mode={resolvedMode} accentColor={config.accentColor} />
             </div>
           </div>
         </div>
 
         {/* Big countdown indicator underneath */}
-        <div className="mt-8 text-center space-y-1">
+        <div className="mt-8 space-y-1 text-center">
           <div className="inline-flex items-center gap-2">
-            <span className="text-xs font-mono font-bold tracking-widest text-[#51513d]/60 uppercase">Starting In</span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1b2021] text-xs font-bold text-[#e3dcc2] animate-scale">
+            <span className="font-mono text-xs font-bold tracking-widest text-[#51513d]/60 uppercase">
+              Starting In
+            </span>
+            <span className="animate-scale flex h-7 w-7 items-center justify-center rounded-full bg-[#1b2021] text-xs font-bold text-[#e3dcc2]">
               {countdown}
             </span>
           </div>
-          <h2 className="text-xl font-bold tracking-tight text-[#1b2021] md:text-2xl">Prepare Your Focus</h2>
+          <h2 className="text-xl font-bold tracking-tight text-[#1b2021] md:text-2xl">
+            Prepare Your Focus
+          </h2>
           <p className="max-w-xs text-[11px] leading-relaxed text-[#51513d]/80">
             Keep your head still and look directly at the target in the center.
           </p>
@@ -154,12 +171,18 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
       </div>
 
       {/* Bottom Instructions Card */}
-      <div className="relative z-10 w-full max-w-md mx-auto border border-[#51513d]/15 bg-[#f3edd7]/95 p-5 shadow-[8px_8px_0_rgba(81,81,61,0.08)] backdrop-blur-sm">
+      <div className="relative z-10 mx-auto w-full max-w-md border border-[#51513d]/15 bg-[#f3edd7]/95 p-5 shadow-[8px_8px_0_rgba(81,81,61,0.08)] backdrop-blur-sm">
         <div className="flex items-start gap-4">
           {/* Mini icon/indicator */}
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#e3dcc2] border border-[#51513d]/15">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#51513d]/15 bg-[#e3dcc2]">
             {resolvedMode === 'grid' && (
-              <svg className="h-5 w-5 text-[#51513d]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                className="h-5 w-5 text-[#51513d]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <circle cx="12" cy="12" r="3" fill="currentColor" />
                 <circle cx="12" cy="12" r="8" />
               </svg>
@@ -170,7 +193,13 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
               </svg>
             )}
             {resolvedMode === 'stickman' && (
-              <svg className="h-5 w-5 text-[#51513d]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                className="h-5 w-5 text-[#51513d]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <circle cx="12" cy="5" r="2" />
                 <path d="M12 7v8M9 10h6M10 20l2-5 2 5" />
               </svg>
@@ -181,9 +210,7 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
             <h3 className="text-xs font-black tracking-wider text-[#1b2021] uppercase">
               Calibration Instructions
             </h3>
-            <p className="text-[11px] leading-relaxed text-[#51513d]">
-              {config.instruction}
-            </p>
+            <p className="text-[11px] leading-relaxed text-[#51513d]">{config.instruction}</p>
             <p className="text-[10px] leading-relaxed text-[#51513d]/70">
               <span className="font-bold text-[#1b2021]">Action: </span>
               {config.howTo}

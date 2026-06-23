@@ -32,8 +32,8 @@ export function LoadingScreen({
         </div>
 
         <div className="flex flex-col items-center gap-3 text-center">
-          <p className="text-xl font-black uppercase tracking-tight text-[#1b2021]">{message}</p>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#51513d]">
+          <p className="text-xl font-black tracking-tight text-[#1b2021] uppercase">{message}</p>
+          <p className="text-xs font-bold tracking-widest text-[#51513d] uppercase">
             Processing results
           </p>
 

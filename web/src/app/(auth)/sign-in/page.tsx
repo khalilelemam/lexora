@@ -1,10 +1,8 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { LexoraLogo } from '@/components/shared/lexora-logo';
 import { auth } from '@/lib/auth';
 
-import { FloatingOrbs } from './_components/floating-orbs';
 import { SignInCard } from './_components/sign-in-card';
 
 interface SignInPageProps {

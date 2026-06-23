@@ -79,7 +79,6 @@ export function CalibrationScreen({
     canFinalize,
     mapping,
     beginCalibration,
-    resetEngine,
     ingestSampleForTarget,
     ingestPursuitSample,
     finishPursuit,
@@ -172,7 +171,8 @@ export function CalibrationScreen({
     previousPointRef.current = currentPoint;
     resetFixationState();
 
-    const isCanvasMode = resolvedMode === 'stickman' || resolvedMode === 'star' || resolvedMode === 'grid';
+    const isCanvasMode =
+      resolvedMode === 'stickman' || resolvedMode === 'star' || resolvedMode === 'grid';
     const timing = getModeTiming(resolvedMode);
 
     const sampleInterval = setInterval(() => {

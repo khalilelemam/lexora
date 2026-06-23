@@ -257,7 +257,7 @@ export default function TobiiTestScreen() {
 
       case 'results': {
         let resultToDisplay = state.results;
-        
+
         // Inject mock result data if accessed via debug menu
         if (!resultToDisplay && process.env.NODE_ENV === 'development') {
           resultToDisplay = {
@@ -311,7 +311,7 @@ export default function TobiiTestScreen() {
             </div>
           )}
           {renderState()}
-          
+
           <DebugTestNavigation
             states={[
               'idle',

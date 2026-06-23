@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface AudioWidgetProps {
   src: string;
@@ -33,7 +32,10 @@ export function AudioWidget({ src }: AudioWidgetProps) {
     audio.addEventListener('timeupdate', setAudioTime);
 
     // Auto-play on mount
-    audio.play().then(() => setIsPlaying(true)).catch(console.error);
+    audio
+      .play()
+      .then(() => setIsPlaying(true))
+      .catch(console.error);
 
     return () => {
       audio.removeEventListener('loadedmetadata', setAudioData);
@@ -75,16 +77,20 @@ export function AudioWidget({ src }: AudioWidgetProps) {
   };
 
   return (
-    <div className="fixed bottom-24 right-6 z-[100] flex items-center gap-3 border-2 border-[#1b2021] bg-[#f3edd7] px-3 py-2 shadow-[4px_4px_0_0_#1b2021]">
+    <div className="fixed right-6 bottom-24 z-100 flex items-center gap-3 border-2 border-[#1b2021] bg-[#f3edd7] px-3 py-2 shadow-[4px_4px_0_0_#1b2021]">
       <button
         onClick={togglePlay}
         className="flex h-8 w-8 items-center justify-center border-2 border-[#1b2021] bg-[#a6a867] text-[#1b2021] transition-transform hover:-translate-y-0.5 hover:shadow-[2px_2px_0_0_#1b2021] active:translate-y-0 active:shadow-none"
       >
-        {isPlaying ? <Pause className="h-4 w-4" strokeWidth={2.5} /> : <Play className="h-4 w-4 ml-0.5" strokeWidth={2.5} />}
+        {isPlaying ? (
+          <Pause className="h-4 w-4" strokeWidth={2.5} />
+        ) : (
+          <Play className="ml-0.5 h-4 w-4" strokeWidth={2.5} />
+        )}
       </button>
 
       <div className="flex w-32 flex-col gap-1.5">
-        <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-[#1b2021] tabular-nums">
+        <div className="flex justify-between text-[10px] font-black tracking-widest text-[#1b2021] uppercase tabular-nums">
           <span>{formatTime(progress)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -94,7 +100,7 @@ export function AudioWidget({ src }: AudioWidgetProps) {
           max={duration || 100}
           value={progress}
           onChange={handleSeek}
-          className="h-2 w-full appearance-none border-2 border-[#1b2021] bg-[#e3dcc2] [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#1b2021] [&::-webkit-slider-thumb]:bg-[#1b2021] hover:cursor-grab active:cursor-grabbing"
+          className="h-2 w-full appearance-none border-2 border-[#1b2021] bg-[#e3dcc2] hover:cursor-grab active:cursor-grabbing [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#1b2021] [&::-webkit-slider-thumb]:bg-[#1b2021]"
         />
       </div>
 
@@ -102,7 +108,11 @@ export function AudioWidget({ src }: AudioWidgetProps) {
         onClick={toggleMute}
         className="flex h-8 w-8 items-center justify-center border-2 border-[#1b2021] bg-white text-[#1b2021] transition-transform hover:-translate-y-0.5 hover:shadow-[2px_2px_0_0_#1b2021] active:translate-y-0 active:shadow-none"
       >
-        {isMuted ? <VolumeX className="h-4 w-4" strokeWidth={2.5} /> : <Volume2 className="h-4 w-4" strokeWidth={2.5} />}
+        {isMuted ? (
+          <VolumeX className="h-4 w-4" strokeWidth={2.5} />
+        ) : (
+          <Volume2 className="h-4 w-4" strokeWidth={2.5} />
+        )}
       </button>
     </div>
   );

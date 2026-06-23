@@ -4,7 +4,6 @@ import { headers } from 'next/headers';
 
 import { Role } from '@/generated/prisma/client';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 
 export class AttemptsAuthError extends Error {
   constructor(message = 'You must be signed in to view tests.') {
