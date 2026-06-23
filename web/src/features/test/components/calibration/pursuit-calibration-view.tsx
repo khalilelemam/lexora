@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Volume2, VolumeX } from 'lucide-react';
 import type { CalibrationPoint } from '../../types';
 import type { CollectedSample } from '../../lib/calibration-samples';
+import { getCalibrationAudio } from '../../lib/calibration-audio';
 import { STABLE_VELOCITY_NORM_PER_SEC } from '../../lib/calibration-engine-constants';
 import { AOI_X_BOUNDS, AOI_Y_BOUNDS } from '../../lib/constants';
 import { calibrationLogger } from '../../lib/debug-config';
@@ -30,6 +32,8 @@ interface PursuitCalibrationViewProps {
   onSampleReady: (sample: CollectedSample) => void;
   onComplete: (validationTargets: CalibrationPoint[]) => void;
   onCancel: () => void;
+  audioEnabled: boolean;
+  onToggleAudio: () => void;
 }
 
 type PursuitStage = 'instruction' | 'sweeping' | 'line-pause' | 'complete';
@@ -73,8 +77,6 @@ function interpolateLaggedPoint(
   return buffer[buffer.length - 1] ?? null;
 }
 
-import { AudioWidget } from '@/components/shared/audio-widget';
-
 export function PursuitCalibrationView({
   gridPointCount,
   aoiBounds,
@@ -83,8 +85,11 @@ export function PursuitCalibrationView({
   onSampleReady,
   onComplete,
   onCancel,
+  audioEnabled,
+  onToggleAudio,
 }: PursuitCalibrationViewProps) {
   const bounds = useMemo(() => aoiBounds ?? { x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS }, [aoiBounds]);
+  const calibrationAudio = useMemo(() => getCalibrationAudio(), []);
   const lineYs = useMemo(() => {
     const span = bounds.y.max - bounds.y.min;
     return Array.from(
@@ -111,6 +116,9 @@ export function PursuitCalibrationView({
   }, [lineYs, bounds]);
 
   const [stage, setStage] = useState<PursuitStage>('instruction');
+  const [instructionCountdown, setInstructionCountdown] = useState(
+    Math.ceil(INSTRUCTION_MS / 1000),
+  );
   const [lineIndex, setLineIndex] = useState(0);
   const [lineProgress, setLineProgress] = useState(0);
   const [dotPos, setDotPos] = useState<{ x: number; y: number } | null>(null);
@@ -124,6 +132,30 @@ export function PursuitCalibrationView({
   const rafRef = useRef<number | null>(null);
 
   const pointIndex = pursuitPointIndex(lineIndex, gridPointCount);
+
+  useEffect(() => {
+    if (stage !== 'instruction') return;
+
+    const startedAt = performance.now();
+    const interval = window.setInterval(() => {
+      const elapsed = performance.now() - startedAt;
+      setInstructionCountdown(Math.max(1, Math.ceil((INSTRUCTION_MS - elapsed) / 1000)));
+    }, 150);
+
+    return () => window.clearInterval(interval);
+  }, [stage]);
+
+  useEffect(() => {
+    calibrationAudio.setMuted(!audioEnabled);
+
+    if ((stage === 'sweeping' || stage === 'line-pause') && audioEnabled) {
+      calibrationAudio.startPhase('pursuit');
+    } else {
+      calibrationAudio.stopPhase();
+    }
+
+    return () => calibrationAudio.stopPhase();
+  }, [audioEnabled, calibrationAudio, stage]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -305,22 +337,68 @@ export function PursuitCalibrationView({
 
   return (
     <div className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-[#e3dcc2] select-none">
-      <AudioWidget src="/audio/pursuit-audio.mp4" />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg, rgba(81,81,61,.05) 1px, transparent 1px), linear-gradient(rgba(81,81,61,.05) 1px, transparent 1px)',
+          backgroundSize: '44px 44px',
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(166,168,103,0.12)_0%,_transparent_58%)]" />
 
-      {/* 1. Backdrop Grid Overlay */}
       <div
         className={cn(
-          'absolute inset-x-0 top-6 z-40 flex justify-center px-4 transition-opacity duration-500',
+          'absolute inset-0 z-40 flex items-center justify-center px-5 transition-opacity duration-500',
           stage === 'instruction' ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        <div className="w-full max-w-lg border-2 border-[#1b2021] bg-[#e3dcc2] px-6 py-4 text-center shadow-[4px_4px_0_0_#1b2021]">
-          <p className="text-sm font-black tracking-tight text-[#1b2021] uppercase sm:text-base">
-            Follow the dot with your eyes as it moves across the screen
+        <div className="flex w-full max-w-xl flex-col items-center border border-[#51513d]/18 bg-[#f3edd7]/92 px-7 py-8 text-center shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm">
+          <div className="mb-5 flex w-full items-center justify-between gap-3 border-b border-[#51513d]/12 pb-4">
+            <p className="text-xs font-black tracking-[0.28em] text-[#51513d] uppercase">
+              Smooth Pursuit
+            </p>
+            <button
+              type="button"
+              onClick={onToggleAudio}
+              className="flex items-center gap-2 border border-[#51513d]/18 bg-[#e3dcc2]/70 px-3 py-2 text-[#51513d] transition-colors hover:bg-[#e3dcc2]"
+              aria-pressed={audioEnabled}
+              aria-label={audioEnabled ? 'Turn pursuit sound off' : 'Turn pursuit sound on'}
+            >
+              {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              <span className="font-mono text-[9px] font-black tracking-widest uppercase">
+                {audioEnabled ? 'Sound on' : 'Sound off'}
+              </span>
+            </button>
+          </div>
+
+          <div className="relative mb-6 flex h-32 w-32 items-center justify-center">
+            <div className="absolute h-32 w-32 rounded-full border border-[#51513d]/12" />
+            <div className="absolute h-24 w-24 rounded-full border border-[#a6a867]/40 bg-[#e3dcc2]/40" />
+            <div className="absolute h-px w-32 bg-[#51513d]/30" />
+            <div className="absolute h-32 w-px bg-[#51513d]/30" />
+            <span className="relative font-mono text-5xl font-black text-[#1b2021]">
+              {instructionCountdown}
+            </span>
+          </div>
+
+          <h2 className="text-2xl font-black tracking-tight text-[#1b2021]">
+            Track one smooth motion
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-[#51513d]">
+            Keep your head still. Follow the moving dot with your eyes only, left to right, across
+            each line.
           </p>
-          <p className="mt-1 text-[10px] font-bold tracking-widest text-[#51513d] uppercase sm:text-xs">
-            Starting shortly…
-          </p>
+          <div className="mt-6 grid w-full gap-3 sm:grid-cols-3">
+            {['Eyes follow dot', 'Head stays still', 'Blink normally'].map((item, index) => (
+              <div key={item} className="border border-[#51513d]/14 bg-[#e3dcc2]/55 px-3 py-3">
+                <span className="font-mono text-[10px] font-black text-[#a6a867]">
+                  0{index + 1}
+                </span>
+                <p className="mt-1 text-xs font-bold text-[#1b2021]">{item}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

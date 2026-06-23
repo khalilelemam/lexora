@@ -1,6 +1,7 @@
 export { DeviceCheck } from './device-check';
 export { CameraSetup } from './camera-setup';
 export { CalibrationScreen } from './calibration-screen';
+export type { CalibrationDebugView } from './calibration-screen';
 export { TaskDisplay } from './task-display';
 export { ReviewPanel } from './review-panel';
 export { ResultsDisplay } from './results-display';
@@ -12,4 +13,5 @@ export { GazeReplayViewer } from './gaze-replay-viewer';
 export { FullscreenGazeReplay } from './fullscreen-gaze-replay';
 export { GazeDebugDot } from './gaze-debug-dot';
 export { DebugTestNavigation } from './debug-test-navigation';
+export type { DebugTestShortcut } from './debug-test-navigation';
 export { TestErrorBoundary } from './test-error-boundary';

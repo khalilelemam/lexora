@@ -19,7 +19,6 @@ import type { CalibrationModeViewProps } from './types';
  *   movements (gazeX, gazeY) and raw fixation progress updates. This reduces re-renders
  *   during the shrink animation to absolute zero, guaranteeing 60fps frame-rate smoothness.
  */
-import { AudioWidget } from '@/components/shared/audio-widget';
 
 export const GridModeView = React.memo(
   function GridModeView({
@@ -38,8 +37,6 @@ export const GridModeView = React.memo(
 
     return (
       <div className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-[#e3dcc2] select-none">
-        <AudioWidget src="/audio/fixation-audio.mp4" />
-
         {/* 1. Backdrop Grid Overlay */}
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
@@ -104,11 +101,11 @@ export const GridModeView = React.memo(
           }}
           className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
         >
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full">
+          <div className="relative flex h-24 w-24 items-center justify-center">
             {/* Breathing Glow Aura */}
             <motion.div
               className={cn(
-                'absolute inset-0 rounded-full',
+                'absolute inset-4 rounded-full',
                 isStableFixation
                   ? 'bg-[#a6a867]/15 shadow-[0_0_24px_rgba(166,168,103,0.24)]'
                   : 'bg-[#a6a867]/6 shadow-[0_0_16px_rgba(166,168,103,0.16)]',
@@ -117,10 +114,13 @@ export const GridModeView = React.memo(
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             />
 
-            {/* Solid Accent Ring */}
-            <div className="absolute inset-2 rounded-full border border-[#a6a867]/30 transition-colors duration-200" />
+            {/* Static focus target */}
+            <div className="absolute h-16 w-16 rounded-full border-2 border-[#1b2021]/80" />
+            <div className="absolute h-px w-24 bg-[#1b2021]/75" />
+            <div className="absolute h-24 w-px bg-[#1b2021]/75" />
+            <div className="absolute h-8 w-8 rounded-full border border-[#1b2021]/30" />
 
-            {/* Calibration Target Dot (Starts full size, shrinks to 0 to reveal outer rings) */}
+            {/* Calibration target dot: starts large, then shrinks to complete capture. */}
             <motion.div
               initial={{ scale: 1, opacity: 1 }}
               animate={{ scale: 0 }}
@@ -132,40 +132,12 @@ export const GridModeView = React.memo(
                 onSampleCollected?.();
               }}
               className={cn(
-                'absolute inset-1 rounded-full border border-[#e3dcc2] transition-colors duration-200',
+                'absolute h-12 w-12 rounded-full border-2 border-[#e3dcc2] transition-colors duration-200',
                 isStableFixation
                   ? 'bg-[#a6a867] shadow-[0_0_12px_rgba(166,168,103,0.65)]'
                   : 'bg-[#1b2021] shadow-sm',
               )}
             />
-
-            {/* Circular Fixation Progress Arc (synchronized with continuous shrink) */}
-            <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="44"
-                fill="none"
-                stroke="rgba(81,81,61,0.03)"
-                strokeWidth="2.5"
-              />
-              <motion.circle
-                cx="50"
-                cy="50"
-                r="44"
-                fill="none"
-                stroke="#a6a867"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeDasharray={276.5}
-                initial={{ strokeDashoffset: 276.5 }}
-                animate={{ strokeDashoffset: 0 }}
-                transition={{
-                  duration: animationDuration,
-                  ease: 'linear',
-                }}
-              />
-            </svg>
 
             {/* Capture Success Ripple */}
             <AnimatePresence>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { FullscreenShell, LoadingScreen, StepIndicator } from '@/components/shared';
 import {
@@ -13,6 +13,8 @@ import {
   TestErrorBoundary,
   TobiiServiceStatusCard,
   DebugTestNavigation,
+  type CalibrationDebugView,
+  type DebugTestShortcut,
 } from '@/features/test/components';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
 import { PreTestIntake } from '@/features/test/components/pre-test-intake';
@@ -23,7 +25,10 @@ import { buildTobiiResultVisualizations } from '@/features/test/lib/build-tobii-
 import type { IntakeData } from '@/features/test/types';
 import Image from 'next/image';
 
+type TobiiDebugView = CalibrationDebugView | 'reading-dialog' | null;
+
 export default function TobiiTestScreen() {
+  const [debugView, setDebugView] = useState<TobiiDebugView>(null);
   const {
     state,
     connected,
@@ -57,6 +62,85 @@ export default function TobiiTestScreen() {
     setScreenshot,
     forceState,
   } = useTobiiTestController();
+
+  const forceDebugState = (nextState: Parameters<typeof forceState>[0]) => {
+    setDebugView(null);
+    forceState(nextState);
+  };
+
+  const showCalibrationDebugView = (view: CalibrationDebugView) => {
+    setDebugView(view);
+    forceState('calibrating');
+  };
+
+  const debugShortcuts: DebugTestShortcut[] = [
+    {
+      key: 'calibration-static-countdown',
+      label: 'Static Countdown',
+      group: 'Calibration',
+      active: debugView === 'static-countdown',
+      onSelect: () => showCalibrationDebugView('static-countdown'),
+    },
+    {
+      key: 'calibration-static-points',
+      label: 'Static Points',
+      group: 'Calibration',
+      active: debugView === 'static-points',
+      onSelect: () => showCalibrationDebugView('static-points'),
+    },
+    {
+      key: 'calibration-pursuit-countdown',
+      label: 'Pursuit Countdown',
+      group: 'Calibration',
+      active: debugView === 'pursuit-countdown',
+      onSelect: () => showCalibrationDebugView('pursuit-countdown'),
+    },
+    {
+      key: 'calibration-pursuit-active',
+      label: 'Pursuit Active',
+      group: 'Calibration',
+      active: debugView === 'pursuit-active',
+      onSelect: () => showCalibrationDebugView('pursuit-active'),
+    },
+    {
+      key: 'calibration-validation-countdown',
+      label: 'Validation Countdown',
+      group: 'Calibration',
+      active: debugView === 'validation-countdown',
+      onSelect: () => showCalibrationDebugView('validation-countdown'),
+    },
+    {
+      key: 'calibration-validation-active',
+      label: 'Validation Active',
+      group: 'Calibration',
+      active: debugView === 'validation-active',
+      onSelect: () => showCalibrationDebugView('validation-active'),
+    },
+    {
+      key: 'calibration-accuracy-result',
+      label: 'Accuracy Result',
+      group: 'Calibration',
+      active: debugView === 'accuracy-result',
+      onSelect: () => showCalibrationDebugView('accuracy-result'),
+    },
+    {
+      key: 'calibration-reading-prep',
+      label: 'Reading Prep Countdown',
+      group: 'Calibration',
+      active: debugView === 'reading-prep',
+      onSelect: () => showCalibrationDebugView('reading-prep'),
+    },
+    {
+      key: 'reading-done-dialog',
+      label: 'Done Reading Dialog',
+      group: 'Reading',
+      active: debugView === 'reading-dialog',
+      onSelect: () => {
+        setDebugView('reading-dialog');
+        forceState('task-meaningful-text');
+      },
+    },
+  ];
 
   const visualizations = useMemo(
     () =>
@@ -172,6 +256,7 @@ export default function TobiiTestScreen() {
             onGetGazeSample={() => lastGazeRef.current}
             onComplete={handleCalibrationComplete}
             blockOnPoor={true}
+            debugView={debugView === 'reading-dialog' ? null : debugView}
           />
         );
 
@@ -231,10 +316,11 @@ export default function TobiiTestScreen() {
             taskType="meaningful-text"
             content={taskContent['meaningful-text'] ?? getTobiiTaskContent('meaningful-text')}
             pointCount={gazePointCount}
-            isCollecting={connected}
+            isCollecting={debugView === 'reading-dialog' ? true : connected}
             onDone={handleTaskDone}
             getLastGazePosition={() => lastTaskGazePosition}
             onScreenshotReady={(dataUrl) => setScreenshot('meaningful-text', dataUrl)}
+            debugOpenDoneDialog={debugView === 'reading-dialog'}
           />
         );
 
@@ -312,26 +398,29 @@ export default function TobiiTestScreen() {
           )}
           {renderState()}
 
-          <DebugTestNavigation
-            states={[
-              'idle',
-              'intake',
-              'device-setup',
-              'calibration-setup',
-              'calibrating',
-              'task-syllables',
-              'review-syllables',
-              'task-pseudo-words',
-              'review-pseudo-words',
-              'task-meaningful-text',
-              'review-meaningful-text',
-              'submitting',
-              'results',
-              'error',
-            ]}
-            currentState={state.currentState}
-            onForceState={forceState}
-          />
+          {process.env.NODE_ENV === 'development' && (
+            <DebugTestNavigation
+              states={[
+                'idle',
+                'intake',
+                'device-setup',
+                'calibration-setup',
+                'calibrating',
+                'task-syllables',
+                'review-syllables',
+                'task-pseudo-words',
+                'review-pseudo-words',
+                'task-meaningful-text',
+                'review-meaningful-text',
+                'submitting',
+                'results',
+                'error',
+              ]}
+              currentState={state.currentState}
+              onForceState={forceDebugState}
+              shortcuts={debugShortcuts}
+            />
+          )}
         </FullscreenShell>
       </ScreenGuard>
     </TestErrorBoundary>

@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import type { CalibrationVisualMode } from '../../lib/calibration-mode';
 import { COUNTDOWN_SECONDS } from '../../lib/calibration-engine-constants';
 
 interface CalibrationCountdownProps {
   countdown: number;
   resolvedMode: CalibrationVisualMode;
+  audioEnabled: boolean;
+  onToggleAudio: () => void;
 }
 
 const MODE_CONFIG: Record<
@@ -52,7 +55,12 @@ const MODE_CONFIG: Record<
  * - Pure Flexbox layout bounded to h-svh to prevent scrolling or clipping
  * - Calming pulsing and rotating motion representing active focus calibration
  */
-export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCountdownProps) {
+export function CalibrationCountdown({
+  countdown,
+  resolvedMode,
+  audioEnabled,
+  onToggleAudio,
+}: CalibrationCountdownProps) {
   const config = MODE_CONFIG[resolvedMode];
 
   return (
@@ -94,13 +102,19 @@ export function CalibrationCountdown({ countdown, resolvedMode }: CalibrationCou
           </span>
         </div>
 
-        {/* Current Active Mode Status Badge */}
-        <div className="flex items-center gap-2 rounded-sm border border-[#51513d]/15 bg-[#f3edd7]/50 px-3 py-1">
+        <button
+          type="button"
+          onClick={onToggleAudio}
+          className="flex items-center gap-2 border border-[#51513d]/18 bg-[#f3edd7]/70 px-3 py-2 text-[#51513d] transition-colors hover:bg-[#e3dcc2]"
+          aria-pressed={audioEnabled}
+          aria-label={audioEnabled ? 'Turn calibration sound off' : 'Turn calibration sound on'}
+        >
+          {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a6a867]" />
           <span className="font-mono text-[9px] font-black tracking-wider text-[#51513d] uppercase">
-            Mode: {config.label.replace(' Mode', '')}
+            Sound {audioEnabled ? 'on' : 'off'}
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Center Area: Concentric Calming Target */}

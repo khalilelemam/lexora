@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { BookOpen, Clock } from 'lucide-react';
+import { BookOpen, CheckCircle2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { captureTaskScreenshot } from '@/features/test/lib/capture-task-screenshot';
 import {
@@ -60,6 +60,7 @@ export interface TaskDisplayProps {
    * so the parent can resume gaze collection.
    */
   onResumeCollection?: () => void;
+  debugOpenDoneDialog?: boolean;
 }
 
 /**
@@ -83,9 +84,10 @@ export function TaskDisplay({
   onScreenshotReady,
   onPauseCollection,
   onResumeCollection,
+  debugOpenDoneDialog = false,
   preview = false,
 }: TaskDisplayProps) {
-  const [showDialog, setShowDialog] = useState(false);
+  const [showDialog, setShowDialog] = useState(debugOpenDoneDialog);
   const [fontScale, setFontScale] = useState(1);
   const autoDetectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimeRef = useRef(0);
@@ -115,6 +117,18 @@ export function TaskDisplay({
   const isSyllables = taskType === 'syllables';
   const isPseudoWords = taskType === 'pseudo-words';
   const isShortContent = isSyllables || isPseudoWords;
+
+  useEffect(() => {
+    if (!debugOpenDoneDialog || preview) return;
+
+    const timer = window.setTimeout(() => {
+      dialogTriggeredRef.current = true;
+      onPauseCollection?.();
+      setShowDialog(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [debugOpenDoneDialog, onPauseCollection, preview]);
 
   // ─── Screenshot capture ────────────────────────────
   // Fires once when isCollecting becomes true (text is rendered,
@@ -338,33 +352,50 @@ export function TaskDisplay({
         <Dialog open={showDialog} onOpenChange={(open) => !open && handleContinueReading()}>
           <DialogContent
             showCloseButton={false}
-            className="border-[#51513d]/18 bg-[#f3edd7] text-[#1b2021] sm:max-w-md"
+            className="border-[#51513d]/18 bg-[#f3edd7] p-0 text-[#1b2021] shadow-[14px_14px_0_rgba(81,81,61,.12)] sm:max-w-lg"
           >
-            <DialogHeader>
-              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center border border-[#e3dc95] bg-[#e3dc95]/30">
-                <BookOpen className="h-6 w-6 text-[#51513d]" />
+            <DialogHeader className="border-b border-[#51513d]/12 px-6 pt-6 pb-5 text-left">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div className="flex h-12 w-12 items-center justify-center border border-[#51513d]/18 bg-[#e3dcc2]">
+                  <BookOpen className="h-6 w-6 text-[#51513d]" />
+                </div>
+                <div className="border border-[#51513d]/14 bg-[#e3dcc2]/70 px-3 py-1.5 font-mono text-[10px] font-black tracking-widest text-[#51513d] uppercase">
+                  Reading checkpoint
+                </div>
               </div>
-              <DialogTitle className="text-center text-[#1b2021]">
-                Has the reader finished?
+              <DialogTitle className="text-2xl font-black tracking-tight text-[#1b2021]">
+                Done reading?
               </DialogTitle>
-              <DialogDescription className="text-center text-[#1b2021]/62">
-                It looks like enough time has passed for this passage. Is the child done reading?
+              <DialogDescription className="pt-2 text-sm leading-relaxed text-[#51513d]">
+                Confirm only when the reader has reached the final word. If they are still reading,
+                keep collecting gaze data.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="flex-row justify-center gap-3 sm:justify-center">
+            <div className="grid gap-3 px-6 py-5 sm:grid-cols-2">
+              <div className="border border-[#51513d]/14 bg-[#e3dcc2]/55 p-3">
+                <span className="font-mono text-[10px] font-black text-[#a6a867]">01</span>
+                <p className="mt-1 text-xs font-bold text-[#1b2021]">More time keeps recording</p>
+              </div>
+              <div className="border border-[#51513d]/14 bg-[#e3dcc2]/55 p-3">
+                <span className="font-mono text-[10px] font-black text-[#a6a867]">02</span>
+                <p className="mt-1 text-xs font-bold text-[#1b2021]">Done submits this passage</p>
+              </div>
+            </div>
+            <DialogFooter className="flex-row justify-center gap-3 border-t border-[#51513d]/12 px-6 pt-5 pb-6 sm:justify-end">
               <Button
                 variant="outline"
                 onClick={handleContinueReading}
-                className="border-[#51513d]/30 text-[#51513d] hover:bg-[#e3dcc2]"
+                className="border-[#51513d]/30 bg-[#f3edd7] text-[#51513d] hover:bg-[#e3dcc2] hover:text-[#1b2021]"
               >
                 <Clock className="mr-2 h-4 w-4" />
-                Need more time
+                Keep Reading
               </Button>
               <Button
                 onClick={handleConfirmDone}
                 className="bg-[#51513d] text-[#f3edd7] hover:bg-[#1b2021]"
               >
-                Yes, done reading
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Done Reading
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -32,6 +32,7 @@ interface CalibrationScreenProps {
   tracker: 'tobii' | 'webcam';
   mode?: CalibrationVisualMode;
   participantAge?: number;
+  debugView?: CalibrationDebugView | null;
   onGetGazeSample?: () => { x: number; y: number } | null;
   onGetIrisSample?: () => WebcamCalibrationSample | null;
   onGetHeadPoseSample?: () => {
@@ -47,6 +48,16 @@ interface CalibrationScreenProps {
   blockOnPoor?: boolean;
 }
 
+export type CalibrationDebugView =
+  | 'static-countdown'
+  | 'static-points'
+  | 'pursuit-countdown'
+  | 'pursuit-active'
+  | 'validation-countdown'
+  | 'validation-active'
+  | 'accuracy-result'
+  | 'reading-prep';
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -55,6 +66,7 @@ export function CalibrationScreen({
   tracker,
   mode,
   participantAge,
+  debugView,
   onGetGazeSample,
   onGetIrisSample,
   onGetHeadPoseSample,
@@ -63,6 +75,7 @@ export function CalibrationScreen({
 }: CalibrationScreenProps) {
   /* ---- local state ---- */
   const [collectionIssue, setCollectionIssue] = useState<'no-signal' | 'low-samples' | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(true);
 
   /* ---- engine ---- */
   const {
@@ -133,28 +146,26 @@ export function CalibrationScreen({
     }
   }, [finishPursuit, phase, tracker]);
 
-  /* ---- audio sync (calibration-audio engine mute is independent of voice now) ---- */
-  useEffect(() => {
-    calibrationAudio.setMuted(false);
-  }, [calibrationAudio]);
-
   /* ---- subtle capture pulse sound ---- */
   useEffect(() => {
+    if (!audioEnabled) return;
     if (phase === 'pursuit') return;
     if (captureCount <= 0 || captureCount % 8 !== 0) return;
     playSoftSound(isStableFixation ? 760 : 520, 70, 0.015);
-  }, [captureCount, isStableFixation, phase]);
+  }, [audioEnabled, captureCount, isStableFixation, phase]);
 
   /* ---- phase audio ---- */
   useEffect(() => {
+    calibrationAudio.setMuted(!audioEnabled);
+
     if (phase === 'collecting' || phase === 'recalibrating') {
       calibrationAudio.startPhase('grid');
-    } else if (phase === 'pursuit') {
-      calibrationAudio.startPhase('pursuit');
-    } else {
+    } else if (phase !== 'pursuit') {
       calibrationAudio.stopPhase();
     }
-  }, [phase, calibrationAudio]);
+
+    return () => calibrationAudio.stopPhase();
+  }, [audioEnabled, phase, calibrationAudio]);
 
   const capturePulse = captureCount % 2 === 1;
 
@@ -283,13 +294,132 @@ export function CalibrationScreen({
   const quickValidationPassed =
     quickValidation.accuracyPercent == null || quickValidation.accuracyPercent >= 70;
 
+  if (process.env.NODE_ENV === 'development' && debugView) {
+    const debugPoint = { x: 0.5, y: 0.42, phase: 'STATIC' as const, label: 'debug-center' };
+    const debugResult: CalibrationResult = {
+      quality: 'good',
+      averageError: 0.08,
+      pointAccuracies: [93, 91, 95, 90, 94],
+    };
+
+    if (debugView === 'static-countdown') {
+      return (
+        <CalibrationCountdown
+          countdown={3}
+          resolvedMode={resolvedMode}
+          audioEnabled={audioEnabled}
+          onToggleAudio={() => setAudioEnabled((enabled) => !enabled)}
+        />
+      );
+    }
+
+    if (debugView === 'static-points') {
+      return (
+        <CalibrationCollecting
+          tracker={tracker}
+          collectionIssue={null}
+          gazeCursor={null}
+          onSkip={() => {}}
+          modeSurface={
+            <GridModeView
+              points={CALIBRATION_POINTS}
+              currentPoint={debugPoint}
+              previousPoint={debugPoint}
+              collectionStep={7}
+              collectionTotal={CALIBRATION_POINTS.length}
+              fixationProgress={0.55}
+              isStableFixation={false}
+              capturePulse={false}
+              motionDurationMs={getModeTiming('grid').motionDurationMs}
+              holdDurationMs={getModeTiming('grid').holdDurationMs}
+              onSampleCollected={() => {}}
+            />
+          }
+        />
+      );
+    }
+
+    if (debugView === 'pursuit-countdown') {
+      return (
+        <PursuitCalibrationView
+          gridPointCount={CALIBRATION_POINTS.length}
+          aoiBounds={{ x: AOI_X_BOUNDS, y: AOI_Y_BOUNDS }}
+          irisStream={() => ({ x: 0.45, y: 0.45, rawIrisLandmarks: [], screenHint: null })}
+          headPoseStream={() => ({ yaw: 0, pitch: 0 })}
+          onSampleReady={() => {}}
+          onComplete={() => {}}
+          onCancel={() => {}}
+          audioEnabled={audioEnabled}
+          onToggleAudio={() => setAudioEnabled((enabled) => !enabled)}
+        />
+      );
+    }
+
+    if (debugView === 'pursuit-active') {
+      return <DebugPursuitActive />;
+    }
+
+    if (debugView === 'validation-countdown') {
+      return <CalibrationPreValidation resolvedMode={resolvedMode} onReady={() => {}} />;
+    }
+
+    if (debugView === 'validation-active') {
+      return (
+        <CalibrationValidation
+          currentStep={2}
+          totalSteps={5}
+          holdProgress={0.62}
+          target={{ x: 0.58, y: 0.34 }}
+          gazeCursor={{ x: 0, y: 0 }}
+          resolvedMode={resolvedMode}
+        />
+      );
+    }
+
+    if (debugView === 'reading-prep') {
+      return (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-[#e3dcc2] py-8">
+          <CalibrationResultView
+            result={debugResult}
+            quickValidationAccuracy={93}
+            quickValidationPassed={true}
+            blockOnPoor={false}
+            onRetry={() => {}}
+            onContinue={() => {}}
+            initialLaunchCountdown={4}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-auto bg-[#e3dcc2] py-8">
+        <CalibrationResultView
+          result={debugResult}
+          quickValidationAccuracy={93}
+          quickValidationPassed={true}
+          blockOnPoor={false}
+          onRetry={() => {}}
+          onContinue={() => {}}
+        />
+      </div>
+    );
+  }
+
   /* ================================================================ */
   /*  RENDER — delegates to extracted sub-components                   */
   /* ================================================================ */
 
   /* 2. Countdown */
   if (showCountdown) {
-    return <CalibrationCountdown countdown={countdown} resolvedMode={resolvedMode} />;
+    return (
+      <CalibrationCountdown
+        countdown={countdown}
+        resolvedMode={resolvedMode}
+        audioEnabled={audioEnabled}
+        onToggleAudio={() => setAudioEnabled((enabled) => !enabled)}
+      />
+    );
   }
 
   /* 3. Collecting / Recalibrating */
@@ -339,6 +469,8 @@ export function CalibrationScreen({
         onSampleReady={handlePursuitSample}
         onComplete={finishPursuit}
         onCancel={() => finishPursuit([])}
+        audioEnabled={audioEnabled}
+        onToggleAudio={() => setAudioEnabled((enabled) => !enabled)}
       />
     );
   }
@@ -409,4 +541,34 @@ export function CalibrationScreen({
 
   /* Fallback — should never display */
   return null;
+}
+
+function DebugPursuitActive() {
+  return (
+    <div className="fixed inset-0 z-50 h-screen w-screen overflow-hidden bg-[#e3dcc2] select-none">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            'linear-gradient(90deg, rgba(81,81,61,.05) 1px, transparent 1px), linear-gradient(rgba(81,81,61,.05) 1px, transparent 1px)',
+          backgroundSize: '44px 44px',
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(166,168,103,0.12)_0%,_transparent_58%)]" />
+
+      <div className="pointer-events-none absolute top-[42%] left-[20%] h-px w-[60%] bg-[#51513d]/20" />
+      <div className="pointer-events-none absolute top-[42%] left-[20%] h-2 w-[38%] -translate-y-1/2 bg-[#a6a867]/45" />
+      <div className="pointer-events-none absolute top-[42%] left-[58%] flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#1b2021] bg-[#a6a867] shadow-[4px_4px_0_0_rgba(27,32,33,0.3)]">
+        <div className="h-2 w-2 rounded-full bg-[#1b2021]" />
+      </div>
+
+      <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-12 items-center justify-center px-6">
+        <div className="w-[min(520px,90vw)]">
+          <div className="h-4 overflow-hidden border-2 border-[#1b2021] bg-[#e3dcc2] shadow-[4px_4px_0_0_#1b2021]">
+            <div className="h-full w-[42%] border-r-2 border-[#1b2021] bg-[#a6a867]" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
