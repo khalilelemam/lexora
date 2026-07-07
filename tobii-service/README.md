@@ -1,6 +1,6 @@
 # Lexora Eye Tracker Service
 
-Local desktop application that connects to your Tobii Pro eye tracker and provides real-time gaze data to web applications.
+Local desktop application that connects to your Tobii Pro eye tracker and provides real-time gaze data to web applications. Part of the [Lexora](../README.md) platform — the [web app](../web/README.md) uses it for research-grade Tobii Mode screening.
 
 ## What It Does
 
@@ -149,6 +149,52 @@ ws.onerror = (error) => {
 ws.onclose = () => {
   console.log('Disconnected from Tobii service');
 };
+```
+
+## Running from Source (Development)
+
+Requires **Python 3.10** (the `tobii_research` SDK does not support newer versions).
+
+```bash
+cd tobii-service
+
+# Create and activate a Python 3.10 virtual environment
+py -3.10 -m venv .venv          # Windows
+.venv\Scripts\Activate.ps1
+# python3.10 -m venv .venv && source .venv/bin/activate   # Linux/Mac
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the app (tray icon + control window)
+python main.py
+```
+
+### Project Layout
+
+```
+tobii-service/
+├── main.py                 # Entry point — tray icon + GUI + service lifecycle
+├── gui_window.py           # Control window (customtkinter)
+├── gui/                    # GUI components and assets
+├── app/
+│   ├── api.py              # FastAPI app (status endpoint + gaze WebSocket)
+│   ├── config.py           # Settings (port, CORS, batching)
+│   ├── models/             # Pydantic models
+│   ├── routers/            # /tobii/status and /tobii/gaze routes
+│   └── services/           # Tobii SDK integration and gaze streaming
+├── assets/                 # Icons
+├── requirements.txt
+└── lexora-*.spec           # PyInstaller build specs (Windows / macOS / Linux)
+```
+
+### Building Executables
+
+Release builds are produced by the [`build-release.yml`](../.github/workflows/build-release.yml) GitHub Actions workflow using the platform-specific PyInstaller spec files (`lexora-windows.spec`, `lexora-macos.spec`, `lexora-linux.spec`). To build locally:
+
+```bash
+pip install pyinstaller
+pyinstaller lexora-windows.spec   # use the spec matching your platform
 ```
 
 ## Troubleshooting

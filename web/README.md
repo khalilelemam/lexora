@@ -1,13 +1,15 @@
 # Lexora Web — Dyslexia Screening Platform
 
-Lexora is a web-based dyslexia screening tool that uses eye tracking to detect reading difficulty indicators. It supports two modes:
+The Next.js application at the heart of [Lexora](../README.md): a web-based dyslexia screening tool that uses eye tracking to detect reading difficulty indicators. It supports two modes:
 
 - **Webcam Mode** — Uses MediaPipe FaceLandmarker to track iris position via a standard webcam. No special hardware needed.
-- **Tobii Mode** — Connects to a Tobii eye tracker through a local helper service for research-grade accuracy.
+- **Tobii Mode** — Connects to a Tobii eye tracker through a [local helper service](../tobii-service/README.md) for research-grade accuracy.
 
 Both modes guide the user through **calibration → reading task → review → ML analysis → results**.
 For authenticated users, successful submissions can also persist attempt metadata in Postgres and
 store raw/derived JSON artifacts in Azure Blob Storage.
+
+**Stack:** Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · Better Auth · Prisma · TanStack Query
 
 ## Getting Started
 
@@ -67,6 +69,19 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in a Chromium-based browser (Chrome/Edge recommended for WebGL + MediaPipe support).
 
+### NPM Scripts
+
+| Script | What It Does |
+| ------ | ------------ |
+| `npm run dev` | Start the Next.js dev server |
+| `npm run build` | Production build (regenerates the Prisma client first) |
+| `npm run start` | Serve the production build |
+| `npm run lint` | Run ESLint |
+| `npm run prisma:generate` | Regenerate the Prisma client (also runs on `postinstall`) |
+| `npm run db:migrate:deploy` | Apply pending migrations (production-style, no prompts) |
+| `npm run db:seed:tobii` | Seed sample Tobii test attempts |
+| `npm run blobs:export` | Download Azurite blobs to a local folder (see below) |
+
 ### Local Blob Storage
 
 The local Docker stack includes Azurite, the Azure Storage emulator.
@@ -94,6 +109,29 @@ Optional overrides:
 
 ```bash
 node scripts/export-azurite-blobs.mjs --container test-attempts --output ./tmp/azurite-export
+```
+
+## Project Structure
+
+```
+web/
+├── prisma/               # Prisma schema + migrations
+├── scripts/              # Helper scripts (blob export, Tobii seed)
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── (auth)/       # Sign-in / auth pages
+│   │   ├── (marketing)/  # Landing pages
+│   │   ├── (test)/       # Screening test flow
+│   │   ├── admin/        # Admin area
+│   │   ├── api/          # API routes (auth, submission, ML proxy, downloads)
+│   │   └── history/      # Past attempts for authenticated users
+│   ├── components/       # Shared UI components (shadcn-based)
+│   ├── emails/           # React Email templates (magic links)
+│   ├── features/         # Feature modules — test flow, calibration engine, gaze pipeline
+│   ├── hooks/            # Shared React hooks
+│   ├── lib/              # Auth, database, blob storage, utilities
+│   └── types/            # Shared TypeScript types
+└── docker-compose.yml    # Local PostgreSQL + Azurite
 ```
 
 ## How It Works
@@ -147,6 +185,7 @@ Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to
 | ----------------------- | -------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `DATABASE_URL`          | **Yes**  | —                                 | PostgreSQL connection string. Neon (production) or local Docker.                                                               |
 | `DATABASE_URL_UNPOOLED` | No       | Falls back to `DATABASE_URL`      | Direct / non-pooled PostgreSQL connection string used for production Prisma migrations. Local Docker can reuse `DATABASE_URL`. |
+| `SHADOW_DATABASE_URL`   | No       | —                                 | Optional local/CI shadow database used by Prisma migration generation.                                                         |
 | `DATABASE_ADAPTER`      | No       | Auto-detected from `DATABASE_URL` | `neon` (serverless WebSocket) or `pg` (standard TCP). Set explicitly if auto-detection doesn't match your setup.               |
 | `BETTER_AUTH_SECRET`    | **Yes**  | —                                 | Secret key for Better Auth (min 32 chars). Generate: `openssl rand -base64 32`                                                 |
 | `BETTER_AUTH_URL`       | No       | `http://localhost:3000`           | Base URL of the app (used for OAuth callbacks, magic link URLs).                                                               |
@@ -154,6 +193,7 @@ Copy `.env.example` to `.env.local`. All `NEXT_PUBLIC_` variables are exposed to
 | `GOOGLE_CLIENT_SECRET`  | **Yes**  | —                                 | Google OAuth client secret.                                                                                                    |
 | `RESEND_API_KEY`        | **Yes**  | —                                 | Resend API key for sending magic link emails.                                                                                  |
 | `EMAIL_FROM`            | No       | `Lexora <noreply@lexora.page>`    | Email sender address for magic links.                                                                                          |
+| `LEXORA_RELEASES_TOKEN` | No       | —                                 | GitHub token used by the download proxy to serve Tobii desktop builds from private releases.                                   |
 
 ### Backend Services
 

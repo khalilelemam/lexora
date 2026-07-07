@@ -1,6 +1,6 @@
 # ML Service
 
-FastAPI service for dyslexia screening using eye-tracking and webcam-based gaze data.
+FastAPI service for dyslexia screening using eye-tracking and webcam-based gaze data. Part of the [Lexora](../README.md) platform — the [web app](../web/README.md) calls this service to analyze gaze data collected during reading tasks.
 
 ## Overview
 
@@ -8,6 +8,8 @@ This service analyzes eye movement patterns during reading tasks to predict dysl
 
 - **Eye Tracker** - High-precision eye tracker data from three reading tasks (syllables, meaningful text, pseudo-words)
 - **Webcam** - Lower-cost webcam gaze tracking using One Euro smoothing + I-DT fixation detection
+
+The TensorFlow models served here are trained in [`ml-work/`](../ml-work/README.md).
 
 ## Quick Start
 
@@ -40,6 +42,24 @@ See [API.md](API.md) for detailed documentation with examples.
 Both endpoints return dyslexia probability (0.0-1.0), risk level (low/medium/high),
 confidence score, and `modelVersion` sourced from the service version in `pyproject.toml`.
 
+## Project Structure
+
+```
+ml-service/
+├── server.py             # Entry point (uvicorn runner)
+├── app/
+│   ├── api.py            # FastAPI app factory
+│   ├── config.py         # Settings (env vars + locked ClassVar model contracts)
+│   ├── core/             # Lifespan, middleware, exception handlers
+│   ├── routers/          # /health and /v1/*/predict endpoints
+│   ├── schemas/          # Pydantic request/response models
+│   └── services/         # eye_tracker and webcam prediction pipelines
+├── models/               # Trained model artifacts (see below)
+├── tests/                # Unit tests + integration tests (real models)
+├── Dockerfile
+└── pyproject.toml        # Metadata, dependencies, tooling config
+```
+
 ## Configuration
 
 Copy `.env.example` to `.env` and configure as needed:
@@ -68,14 +88,14 @@ See `.env.example` for complete documentation of all options.
 
 Application metadata (`name`, `version`, `description`) is sourced from `pyproject.toml`.
 
-Dependency management is now fully pyproject-based:
+Dependency management is fully pyproject-based:
 - `pyproject.toml`: project metadata, runtime dependencies, dev extras, and tool configuration
 - Install runtime deps: `pip install .`
 - Install dev/test deps: `pip install -e .[dev]`
 
 ## Model Files
 
-Place trained models in `models/`:
+Place trained models in `models/` (produced by the training pipelines in [`ml-work/`](../ml-work/README.md)):
 
 ```
 models/
@@ -150,7 +170,7 @@ docker run -p 8001:8001 lexora-ml
 
 ## Azure Deployment (Container Apps)
 
-The ML workflow includes an Azure Container Apps deploy path (best fit for your student credits).
+The ML workflow includes an Azure Container Apps deploy path.
 
 Required GitHub environment secrets in `ml-production`:
 - `AZURE_CLIENT_ID`
@@ -192,4 +212,3 @@ Use `.github/workflows/ml-service-azure-bootstrap.yml` (manual dispatch from `ma
 After this one-time bootstrap:
 - Use `.github/workflows/ml-service.yml` release tags (`lexora-ml-v*`) for production image deployments.
 - Use `.github/workflows/ml-service-sync-env.yml` to sync GitHub `ml-production` environment values to the running Container App, optionally with a specific image tag.
-
