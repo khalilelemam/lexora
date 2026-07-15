@@ -44,13 +44,23 @@ Users can run either a webcam-based screening or a Tobii-based screening. Both f
   <img src="docs/diagrams/architecture/01-system-architecture.svg" alt="Lexora system architecture" width="900">
 </p>
 
-The architecture is split into focused diagrams so each layer stays readable:
+Lexora is built around a deliberate separation of concerns:
 
-- [System architecture](docs/diagrams/architecture/01-system-architecture.svg)
-- [Client and device architecture](docs/diagrams/architecture/02-client-device-architecture.svg)
-- [Backend architecture](docs/diagrams/architecture/03-backend-architecture.svg)
-- [ML service architecture](docs/diagrams/architecture/04-ml-service-architecture.svg)
-- [Deployment and CI/CD architecture](docs/diagrams/architecture/05-deployment-cicd-architecture.svg)
+- **Browser first:** the screening experience, calibration UI, dashboards, and admin workflows live in the Next.js app.
+- **ML behind a service boundary:** model inference is isolated in FastAPI so the web app does not need TensorFlow runtime dependencies.
+- **Device integration stays local:** Tobii hardware access runs through a desktop helper because browser apps cannot talk directly to the Tobii SDK.
+- **Large gaze artifacts stay out of Postgres:** relational tables store users, attempts, predictions, and metadata; raw/derived gaze payloads go to Azure Blob Storage or Azurite.
+- **Deployment is split by runtime:** Vercel serves the web app, Azure Container Apps serves the ML API, and GitHub Releases ship the desktop bridge.
+
+Focused architecture diagrams:
+
+| View | What It Explains |
+| --- | --- |
+| [System architecture](docs/diagrams/architecture/01-system-architecture.svg) | Top-level client, cloud, ML, storage, and external-service boundaries |
+| [Client and device architecture](docs/diagrams/architecture/02-client-device-architecture.svg) | Webcam flow, Tobii desktop bridge, local status API, and live gaze stream |
+| [Backend architecture](docs/diagrams/architecture/03-backend-architecture.svg) | Auth, API routes, prediction requests, attempt persistence, and exports |
+| [ML service architecture](docs/diagrams/architecture/04-ml-service-architecture.svg) | Request validation, feature processors, model loading, and inference services |
+| [Deployment and CI/CD architecture](docs/diagrams/architecture/05-deployment-cicd-architecture.svg) | Vercel, Azure Container Apps, GHCR images, GitHub Actions, and desktop releases |
 
 ## Pipelines
 
