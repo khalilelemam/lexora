@@ -1,0 +1,52 @@
+textSize small
+title Lexora - Client Device Architecture
+
+Client Device [color: blue, icon: laptop] {
+  Next.js Frontend [icon: nextdotjs] {
+    Authentication [icon: key]
+    Dashboard [icon: dashboard]
+    Admin Portal [icon: shield]
+    Screening [icon: activity] {
+      Webcam Pipeline [icon: camera]
+      Eye Tracker Pipeline [icon: eye]
+    }
+  }
+
+  Lexora Desktop [icon: app-window] {
+
+    Status API [icon: radio, label: "GET /tobii/status"]
+
+    WebSocket Server [icon: websocket, label: "WS /tobii/gaze"]
+
+    Tobii SDK [icon: cpu]
+  }
+
+  Tobii Pro Eye Tracker [icon: eye]
+}
+
+Lexora Cloud [color: green, icon: cloud] {
+
+  Cloud Services [icon: cloud]
+}
+
+
+Authentication > Lexora Cloud : Authentication
+
+Dashboard > Lexora Cloud : Attempts & Results
+
+Admin Portal > Lexora Cloud : Export & Management
+
+Webcam Pipeline > Lexora Cloud : Prediction Request
+
+Eye Tracker Pipeline > Lexora Cloud : Prediction Request
+
+
+Eye Tracker Pipeline > Status API : Device Status
+
+Eye Tracker Pipeline <> WebSocket Server : Live Gaze Stream
+
+Status API > Tobii SDK
+
+WebSocket Server > Tobii SDK
+
+Tobii SDK > Tobii Pro Eye Tracker

@@ -1,0 +1,55 @@
+textSize small
+title Lexora - Deployment Architecture
+
+Source Code [color: gray, icon: github] {
+
+  GitHub Repository [icon: github]
+
+  GitHub Actions [icon: githubactions]
+
+  GHCR [icon: package]
+
+  GitHub Releases [icon: upload]
+}
+
+Client Device [color: blue, icon: laptop] {
+
+  Next.js Frontend [icon: nextdotjs]
+
+  Lexora Desktop [icon: app-window]
+}
+
+Cloud Infrastructure [color: green, icon: cloud] {
+
+  Vercel [icon: vercel]
+
+  Azure Container Apps [icon: azure-container-apps-environments]
+
+  PostgreSQL [icon: postgresql]
+
+  Azure Blob Storage [icon: azure-Blob]
+}
+
+
+GitHub Repository > GitHub Actions : Push / PR
+
+
+GitHub Actions > Vercel : Deploy Web
+
+GitHub Actions > GHCR : Build & Push ML Image
+
+GHCR > Azure Container Apps : Deploy ML Service
+
+GitHub Actions > GitHub Releases : Publish Desktop
+
+
+Next.js Frontend > Vercel : HTTPS
+
+Lexora Desktop <> Next.js Frontend : HTTP + WebSocket
+
+
+Vercel > PostgreSQL : Metadata
+
+Vercel > Azure Blob Storage : Raw & Derived Data
+
+Vercel > Azure Container Apps : Prediction Requests

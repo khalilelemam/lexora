@@ -1,0 +1,70 @@
+textSize small
+title Lexora - Backend Architecture
+
+Lexora Cloud [color: green, icon: cloud] {
+
+  Next.js API [icon: nextdotjs]
+
+  Better Auth [icon: key]
+
+  API Routes [icon: route]
+
+  Prediction Service [icon: cpu]
+
+  Attempt Service [icon: service]
+
+  Export Service [icon: file-export]
+
+  Attempt Blob Storage [icon: service]
+
+  Prisma ORM [icon: prisma]
+
+  FastAPI ML Service [icon: fastapi]
+
+  PostgreSQL [icon: postgresql]
+
+  Azure Blob Storage [icon: azure-storage-blobs]
+}
+
+External Services [color: gray, icon: globe] {
+
+  Google OAuth [icon: google]
+
+  Resend [icon: resend]
+}
+
+
+Next.js API > Better Auth : Authentication
+
+Next.js API > API Routes : HTTP Requests
+
+
+Better Auth > Google OAuth : OAuth
+
+Better Auth > Resend : Magic Link Emails
+
+
+API Routes > Prediction Service
+
+API Routes > Attempt Service
+
+API Routes > Export Service
+
+
+Prediction Service > FastAPI ML Service : Prediction Request
+
+
+Attempt Service > Prisma ORM
+
+Attempt Service > Attempt Blob Storage
+
+
+Export Service > Prisma ORM
+
+Export Service > Attempt Blob Storage
+
+
+Attempt Blob Storage > Azure Blob Storage
+
+
+Prisma ORM > PostgreSQL

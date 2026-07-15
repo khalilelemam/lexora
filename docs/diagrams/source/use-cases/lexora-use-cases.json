@@ -1,0 +1,1157 @@
+{
+  "title": "Lexora System Use Cases and User Interactions",
+  "diagramX": -227.37396240234375,
+  "diagramY": 85,
+  "elements": [
+    {
+      "tag": "Textbox",
+      "text": "# Lexora Current Use Cases",
+      "fontSize": 18,
+      "hAlign": "center",
+      "id": "title",
+      "x": 15.37396240234375,
+      "y": 15,
+      "width": 330.4375,
+      "height": 35
+    },
+    {
+      "tag": "Icon",
+      "icon": "user",
+      "size": "lg",
+      "texts": [
+        {
+          "text": "Visitor",
+          "fontSize": 14
+        }
+      ],
+      "color": "#7EC8E3",
+      "id": "visitor",
+      "x": 35.37396240234375,
+      "y": 315,
+      "width": 72,
+      "height": 72
+    },
+    {
+      "tag": "Icon",
+      "icon": "user-lock",
+      "size": "lg",
+      "texts": [
+        {
+          "text": "Authenticated User",
+          "fontSize": 14
+        }
+      ],
+      "color": "green",
+      "id": "authUser",
+      "x": 35.37396240234375,
+      "y": 535,
+      "width": 72,
+      "height": 72
+    },
+    {
+      "tag": "Icon",
+      "icon": "user-cog",
+      "size": "lg",
+      "texts": [
+        {
+          "text": "Admin",
+          "fontSize": 14
+        }
+      ],
+      "color": "red",
+      "id": "admin",
+      "x": 35.37396240234375,
+      "y": 1275,
+      "width": 72,
+      "height": 72
+    },
+    {
+      "tag": "Relationship",
+      "from": "admin",
+      "to": "authUser",
+      "fromPort": "top",
+      "toPort": "bottom",
+      "lineStyle": "solid",
+      "lineWidth": 0.75,
+      "color": "#1c1c1c",
+      "endArrowhead": "triangle",
+      "label": "inherits",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -21.5,
+        "y": -250.625,
+        "width": 43,
+        "height": 16
+      },
+      "id": "rAdminInherits",
+      "x": 71.37396240234375,
+      "y": 1275,
+      "width": 0,
+      "height": 647,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          -647
+        ]
+      ]
+    },
+    {
+      "tag": "Icon",
+      "icon": "monitor",
+      "size": "lg",
+      "texts": [
+        {
+          "text": "Lexora Desktop Helper",
+          "fontSize": 14
+        }
+      ],
+      "color": "gray",
+      "id": "helper",
+      "x": 1415.3739624023438,
+      "y": 715,
+      "width": 72,
+      "height": 72
+    },
+    {
+      "tag": "Group",
+      "title": {
+        "text": "Lexora System",
+        "icon": "box",
+        "fontSize": 16,
+        "width": "full",
+        "hAlign": "center"
+      },
+      "bgColor": "#F7F9FC",
+      "borderColor": "gray",
+      "id": "system",
+      "x": 235.37396240234375,
+      "y": 75,
+      "width": 1140,
+      "height": 1225
+    },
+    {
+      "tag": "Group",
+      "title": {
+        "text": "Account",
+        "icon": "key",
+        "fontSize": 14
+      },
+      "color": "#7EC8E3",
+      "id": "grpAccount",
+      "x": 275.37396240234375,
+      "y": 155,
+      "width": 488,
+      "height": 320,
+      "containerId": "system"
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Sign In With Google",
+          "fontSize": 13
+        }
+      ],
+      "icon": "google",
+      "id": "ucGoogle",
+      "x": 305.37396240234375,
+      "y": 215,
+      "width": 180,
+      "height": 70,
+      "containerId": "grpAccount"
+    },
+    {
+      "tag": "Relationship",
+      "from": "visitor",
+      "fromPort": "right",
+      "to": "ucGoogle",
+      "toPort": "left",
+      "endArrowhead": "triangle",
+      "lineStyle": "solid",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r1",
+      "x": 107.37396240234375,
+      "y": 345,
+      "width": 196,
+      "height": 95,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          74,
+          0
+        ],
+        [
+          74,
+          -95
+        ],
+        [
+          196,
+          -95
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Sign In With Magic Link",
+          "fontSize": 13
+        }
+      ],
+      "icon": "mail",
+      "id": "ucMagic",
+      "x": 525.3739624023438,
+      "y": 215,
+      "width": 180,
+      "height": 70,
+      "containerId": "grpAccount"
+    },
+    {
+      "tag": "Relationship",
+      "from": "visitor",
+      "fromPort": "right",
+      "to": "ucMagic",
+      "toPort": "left",
+      "endArrowhead": "triangle",
+      "lineStyle": "solid",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "label": "",
+      "id": "r2",
+      "x": 109.37396240234375,
+      "y": 351,
+      "width": 414,
+      "height": 101,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          98.30768839518237,
+          0
+        ],
+        [
+          98.30768839518237,
+          -36
+        ],
+        [
+          396,
+          -36
+        ],
+        [
+          396,
+          -101
+        ],
+        [
+          414,
+          -101
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Accept Consent",
+          "fontSize": 13
+        }
+      ],
+      "icon": "file-check",
+      "id": "ucConsent",
+      "x": 415.37396240234375,
+      "y": 355,
+      "width": 180,
+      "height": 70,
+      "containerId": "grpAccount"
+    },
+    {
+      "tag": "Relationship",
+      "from": "authUser",
+      "fromPort": "right",
+      "to": "ucConsent",
+      "toPort": "left",
+      "endArrowhead": "triangle",
+      "lineStyle": "solid",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r3",
+      "x": 107.37396240234375,
+      "y": 557,
+      "width": 306,
+      "height": 167,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          30,
+          0
+        ],
+        [
+          30,
+          -167
+        ],
+        [
+          306,
+          -167
+        ]
+      ]
+    },
+    {
+      "tag": "Group",
+      "title": {
+        "text": "Screening",
+        "icon": "clipboard-check",
+        "fontSize": 14
+      },
+      "color": "purple",
+      "id": "grpScreening",
+      "x": 803.3739624023438,
+      "y": 155,
+      "width": 500,
+      "height": 695,
+      "containerId": "system"
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Start Webcam Test",
+          "fontSize": 13
+        }
+      ],
+      "icon": "camera",
+      "id": "ucWebcam",
+      "x": 833.3739624023438,
+      "y": 215,
+      "width": 200,
+      "height": 65,
+      "containerId": "grpScreening"
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Start Tobii Test",
+          "fontSize": 13
+        }
+      ],
+      "icon": "scan-eye",
+      "id": "ucTobii",
+      "x": 1077.3739624023438,
+      "y": 215,
+      "width": 200,
+      "height": 65,
+      "containerId": "grpScreening"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucTobii",
+      "fromPort": "right",
+      "to": "helper",
+      "toPort": "left",
+      "label": "«requires»",
+      "lineStyle": "dashed",
+      "endArrowhead": "arrow",
+      "labelPlacement": {
+        "x": 27.10595238094993,
+        "y": -8,
+        "width": 60,
+        "height": 16
+      },
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r12",
+      "x": 1279.2680100213938,
+      "y": 248,
+      "width": 134.10595238094993,
+      "height": 503,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          116.10595238094993,
+          0
+        ],
+        [
+          116.10595238094993,
+          503
+        ],
+        [
+          134.10595238094993,
+          503
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Complete Calibration",
+          "fontSize": 13
+        }
+      ],
+      "icon": "crosshair",
+      "id": "ucCalib",
+      "x": 953.3739624023438,
+      "y": 325,
+      "width": 220,
+      "height": 65,
+      "containerId": "grpScreening"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucWebcam",
+      "fromPort": "bottom",
+      "to": "ucCalib",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": 23.75,
+        "y": 13,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r13",
+      "x": 933.3739624023438,
+      "y": 282,
+      "width": 124,
+      "height": 41,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          21
+        ],
+        [
+          124,
+          21
+        ],
+        [
+          124,
+          41
+        ]
+      ]
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucTobii",
+      "fromPort": "bottom",
+      "to": "ucCalib",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -84.5,
+        "y": 13,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r14",
+      "x": 1177.3739624023438,
+      "y": 282,
+      "width": 108,
+      "height": 41,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          21
+        ],
+        [
+          -108,
+          21
+        ],
+        [
+          -108,
+          41
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Read Test Passage",
+          "fontSize": 13
+        }
+      ],
+      "icon": "book-open",
+      "id": "ucRead",
+      "x": 953.3739624023438,
+      "y": 435,
+      "width": 220,
+      "height": 65,
+      "containerId": "grpScreening"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucCalib",
+      "fromPort": "bottom",
+      "to": "ucRead",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -27.5,
+        "y": 12.5,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r15",
+      "x": 1063.3739624023438,
+      "y": 392,
+      "width": 0,
+      "height": 41,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          41
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Review Reading Session",
+          "fontSize": 13
+        }
+      ],
+      "icon": "route",
+      "id": "ucReview",
+      "x": 953.3739624023438,
+      "y": 545,
+      "width": 220,
+      "height": 65,
+      "containerId": "grpScreening"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucRead",
+      "fromPort": "bottom",
+      "to": "ucReview",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -27.5,
+        "y": 12.5,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r16",
+      "x": 1063.3739624023438,
+      "y": 502,
+      "width": 0,
+      "height": 41,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          41
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Submit Screening",
+          "fontSize": 13
+        }
+      ],
+      "icon": "send",
+      "id": "ucSubmit",
+      "x": 953.3739624023438,
+      "y": 655,
+      "width": 220,
+      "height": 65,
+      "containerId": "grpScreening"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucReview",
+      "fromPort": "bottom",
+      "to": "ucSubmit",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -27.5,
+        "y": 12.5,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r17",
+      "x": 1063.3739624023438,
+      "y": 612,
+      "width": 0,
+      "height": 41,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          41
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "View Screening Result",
+          "fontSize": 13
+        }
+      ],
+      "icon": "badge-check",
+      "id": "ucViewResult",
+      "x": 953.3739624023438,
+      "y": 765,
+      "width": 220,
+      "height": 65,
+      "containerId": "grpScreening"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucSubmit",
+      "fromPort": "bottom",
+      "to": "ucViewResult",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -27.5,
+        "y": 12.5,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r18",
+      "x": 1063.3739624023438,
+      "y": 722,
+      "width": 0,
+      "height": 41,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          41
+        ]
+      ]
+    },
+    {
+      "tag": "Relationship",
+      "from": "authUser",
+      "to": "grpScreening",
+      "endArrowhead": "triangle",
+      "lineStyle": "solid",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "fromPort": "right",
+      "id": "r4",
+      "x": 107.37396240234375,
+      "y": 579,
+      "width": 696,
+      "height": 76,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          660,
+          0
+        ],
+        [
+          660,
+          -76
+        ],
+        [
+          696,
+          -76
+        ]
+      ]
+    },
+    {
+      "tag": "Group",
+      "title": {
+        "text": "History",
+        "icon": "list",
+        "fontSize": 14
+      },
+      "color": "orange",
+      "id": "grpHistory",
+      "x": 275.37396240234375,
+      "y": 915,
+      "width": 488,
+      "height": 305,
+      "containerId": "system"
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "View Attempt History",
+          "fontSize": 13
+        }
+      ],
+      "icon": "clock",
+      "id": "ucHistory",
+      "x": 429.37396240234375,
+      "y": 965,
+      "width": 200,
+      "height": 65,
+      "containerId": "grpHistory"
+    },
+    {
+      "tag": "Relationship",
+      "from": "authUser",
+      "fromPort": "bottom",
+      "to": "ucHistory",
+      "toPort": "left",
+      "endArrowhead": "triangle",
+      "lineStyle": "solid",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r11",
+      "x": 71.37396240234375,
+      "y": 628,
+      "width": 356,
+      "height": 370,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          370
+        ],
+        [
+          356,
+          370
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Filter Attempts",
+          "fontSize": 13
+        }
+      ],
+      "icon": "filter",
+      "id": "ucFilter",
+      "x": 295.37396240234375,
+      "y": 1085,
+      "width": 140,
+      "height": 65,
+      "containerId": "grpHistory"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucHistory",
+      "fromPort": "bottom",
+      "to": "ucFilter",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -97.5,
+        "y": 18,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r19",
+      "x": 517.3739624023438,
+      "y": 1032,
+      "width": 152,
+      "height": 51,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          26
+        ],
+        [
+          -152,
+          26
+        ],
+        [
+          -152,
+          51
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Replay Attempt",
+          "fontSize": 13
+        }
+      ],
+      "icon": "play",
+      "id": "ucReplay",
+      "x": 459.37396240234375,
+      "y": 1085,
+      "width": 140,
+      "height": 65,
+      "containerId": "grpHistory"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucHistory",
+      "fromPort": "bottom",
+      "to": "ucReplay",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": -27.5,
+        "y": 17.5,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r20",
+      "x": 529.3739624023438,
+      "y": 1032,
+      "width": 0,
+      "height": 51,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          51
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Delete Attempt",
+          "fontSize": 13
+        }
+      ],
+      "icon": "trash",
+      "id": "ucDelete",
+      "x": 623.3739624023438,
+      "y": 1085,
+      "width": 130,
+      "height": 65,
+      "containerId": "grpHistory"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucHistory",
+      "fromPort": "bottom",
+      "to": "ucDelete",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": 40,
+        "y": 18,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r21",
+      "x": 541.3739624023438,
+      "y": 1032,
+      "width": 147,
+      "height": 51,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          26
+        ],
+        [
+          147,
+          26
+        ],
+        [
+          147,
+          51
+        ]
+      ]
+    },
+    {
+      "tag": "Group",
+      "title": {
+        "text": "Admin Tools",
+        "icon": "shield",
+        "fontSize": 14
+      },
+      "color": "red",
+      "id": "grpAdmin",
+      "x": 803.3739624023438,
+      "y": 915,
+      "width": 500,
+      "height": 305,
+      "containerId": "system"
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "View All Tests",
+          "fontSize": 13
+        }
+      ],
+      "icon": "table",
+      "id": "ucAllTests",
+      "x": 833.3739624023438,
+      "y": 975,
+      "width": 180,
+      "height": 65,
+      "containerId": "grpAdmin"
+    },
+    {
+      "tag": "Relationship",
+      "from": "admin",
+      "fromPort": "right",
+      "to": "ucAllTests",
+      "toPort": "left",
+      "endArrowhead": "triangle",
+      "lineStyle": "solid",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r22",
+      "x": 107.37396240234375,
+      "y": 1305,
+      "width": 724,
+      "height": 297,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          18,
+          0
+        ],
+        [
+          18,
+          -20.205125075120122
+        ],
+        [
+          711,
+          -20.205125075120122
+        ],
+        [
+          711,
+          -297
+        ],
+        [
+          724,
+          -297
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Export Attempts",
+          "fontSize": 13
+        }
+      ],
+      "icon": "download",
+      "id": "ucExport",
+      "x": 1037.3739624023438,
+      "y": 975,
+      "width": 180,
+      "height": 65,
+      "containerId": "grpAdmin"
+    },
+    {
+      "tag": "Relationship",
+      "from": "admin",
+      "fromPort": "right",
+      "to": "ucExport",
+      "toPort": "left",
+      "endArrowhead": "triangle",
+      "lineStyle": "solid",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r23",
+      "x": 107.37396240234375,
+      "y": 1317,
+      "width": 928,
+      "height": 309,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          918,
+          0
+        ],
+        [
+          918,
+          -309
+        ],
+        [
+          928,
+          -309
+        ]
+      ]
+    },
+    {
+      "tag": "Shape",
+      "shape": "oval",
+      "texts": [
+        {
+          "text": "Download Export Artifact",
+          "fontSize": 13
+        }
+      ],
+      "icon": "archive",
+      "id": "ucDownload",
+      "x": 1037.3739624023438,
+      "y": 1095,
+      "width": 220,
+      "height": 65,
+      "containerId": "grpAdmin"
+    },
+    {
+      "tag": "Relationship",
+      "from": "ucExport",
+      "fromPort": "bottom",
+      "to": "ucDownload",
+      "toPort": "top",
+      "label": "«include»",
+      "lineStyle": "dashed",
+      "textSize": "small",
+      "labelPlacement": {
+        "x": 4,
+        "y": 5,
+        "width": 55,
+        "height": 16
+      },
+      "endArrowhead": "triangle",
+      "color": "#1c1c1c",
+      "lineWidth": 0.75,
+      "id": "r24",
+      "x": 1127.3739624023438,
+      "y": 1042,
+      "width": 20,
+      "height": 51,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          26
+        ],
+        [
+          20,
+          26
+        ],
+        [
+          20,
+          51
+        ]
+      ]
+    }
+  ]
+}

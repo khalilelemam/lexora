@@ -1,0 +1,52 @@
+textSize small
+title Lexora - ML Service Architecture
+
+FastAPI ML Service [color: purple, icon: fastapi] {
+
+  Prediction API [icon: api]
+
+  Request Validation [icon: shield-check]
+
+  Eye Tracker Pipeline [icon: eye] {
+
+    EyeTrackerFeatureProcessor [icon: cpu]
+
+    EyeTrackerPredictionService [icon: tensorflow]
+  }
+
+  Webcam Pipeline [icon: camera] {
+
+    WebcamFeatureProcessor [icon: cpu]
+
+    WebcamPredictionService [icon: tensorflow]
+  }
+
+  Model Loader [icon: package]
+
+  Eye Tracker Artifacts [icon: folder, label: ".keras + scaler.pkl"]
+
+  Webcam Artifacts [icon: folder, label: ".keras + target_domain_scaler.pkl"]
+}
+
+
+Prediction API > Request Validation : Validate Request
+
+
+Request Validation > Eye Tracker Pipeline : /v1/eye-tracker/predict
+
+Request Validation > Webcam Pipeline : /v1/webcam/predict
+
+
+EyeTrackerFeatureProcessor > EyeTrackerPredictionService : Feature Tensor
+
+WebcamFeatureProcessor > WebcamPredictionService : Sequence Tensor + Mask
+
+
+EyeTrackerPredictionService > Model Loader
+
+WebcamPredictionService > Model Loader
+
+
+Model Loader > Eye Tracker Artifacts
+
+Model Loader > Webcam Artifacts

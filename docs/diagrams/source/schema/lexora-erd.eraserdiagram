@@ -1,0 +1,78 @@
+title Lexora ERD
+
+users [icon: user, color: blue] {
+  id string pk
+  name string
+  email string unique
+  email_verified boolean
+  image string
+  role Role // USER | ADMIN
+  created_at timestamp
+  updated_at timestamp
+  terms_accepted_at timestamp
+  raw_data_consent boolean
+}
+
+sessions [icon: clock, color: blue] {
+  id string pk
+  expires_at timestamp
+  token string unique
+  ip_address string
+  user_agent string
+  created_at timestamp
+  updated_at timestamp
+  user_id string fk
+}
+
+accounts [icon: key, color: blue] {
+  id string pk
+  account_id string
+  provider_id string
+  user_id string fk
+  access_token string
+  refresh_token string
+  id_token string
+  access_token_expires_at timestamp
+  refresh_token_expires_at timestamp
+  scope string
+  password string
+  created_at timestamp
+  updated_at timestamp
+}
+
+verifications [icon: shield, color: blue] {
+  id string pk
+  identifier string
+  value string
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+test_attempts [icon: activity, color: green] {
+  attempt_id uuid pk
+  user_id string fk
+  test_type TestMode // TOBII | WEBCAM
+  outcome AttemptOutcome // LOW | MEDIUM | HIGH
+  model_version string
+  calibration_mode CalibrationMode // GRID | STAR | STICKMAN
+  age int
+  label string
+  raw_data_consented boolean
+  raw_blob_url string
+  derived_blob_url string
+  export_artifact_status ExportArtifactStatus // PENDING | READY | FAILED
+  export_manifest_path string
+  export_artifact_error string
+  export_artifact_ready_at timestamp
+  deleted_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+users.id < sessions.user_id
+users.id < accounts.user_id
+users.id < test_attempts.user_id
+
+// verifications is intentionally not connected —
+// Better Auth keys it off `identifier`, not a user_id FK
