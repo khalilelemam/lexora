@@ -1,0 +1,100 @@
+Lexora
+Copyright 2025-2026 Khalil Elemam and contributors
+
+This NOTICE file provides attribution and explains repository-level licensing.
+It does not replace LICENSE.
+
+================================================================================
+LAYERED LICENSING
+================================================================================
+
+1. Source code
+----------------
+
+Source code is licensed under the Apache License, Version 2.0.
+
+See LICENSE for full terms.
+
+Applies to:
+
+    web/
+    ml-service/
+    tobii-service/
+    ml-work/ notebooks and scripts
+    .github/
+
+2. Trained model weights
+------------------------
+
+The following trained model artifacts are licensed under Creative Commons
+Attribution-NonCommercial 4.0 International (CC BY-NC 4.0):
+
+    ml-service/models/eye-tracker/dyslexia_profile_model.keras
+    ml-service/models/eye-tracker/scaler.pkl
+    ml-service/models/webcam/dyslexia_uda_classifier.keras
+    ml-service/models/webcam/target_domain_scaler.pkl
+    ml-work/eye-tracker/models/*.keras
+    ml-work/eye-tracker/models/*.pkl
+    ml-work/webcam/models/*.keras
+    ml-work/webcam/models/*.pkl
+
+You may copy, adapt, and build upon these model weights for non-commercial
+purposes with attribution. Commercial use, including a paid screening service
+using these weights, requires separate written permission from the copyright
+holder.
+
+Full license text:
+
+    https://creativecommons.org/licenses/by-nc/4.0/
+
+3. Documentation
+----------------
+
+Documentation under docs/ is licensed under Creative Commons Attribution 4.0
+International (CC BY 4.0), unless a file states otherwise.
+
+Full license text:
+
+    https://creativecommons.org/licenses/by/4.0/
+
+================================================================================
+THIRD-PARTY ATTRIBUTIONS
+================================================================================
+
+This project depends on third-party software and services, each governed by its
+own license or terms:
+
+- MediaPipe tasks-vision - Apache 2.0 - https://github.com/google-ai-edge/mediapipe
+- TensorFlow - Apache 2.0 - https://github.com/tensorflow/tensorflow
+- Keras - Apache 2.0 - https://github.com/keras-team/keras
+- FastAPI - MIT - https://github.com/tiangolo/fastapi
+- Uvicorn - BSD-3-Clause - https://github.com/encode/uvicorn
+- Pydantic - MIT - https://github.com/pydantic/pydantic
+- pymovements - MIT - https://github.com/pymovements/pymovements
+- Next.js - MIT - https://github.com/vercel/next.js
+- React - MIT - https://github.com/facebook/react
+- Tailwind CSS - MIT - https://github.com/tailwindlabs/tailwindcss
+- shadcn/ui - MIT - https://github.com/shadcn-ui/ui
+- Prisma - Apache 2.0 - https://github.com/prisma/prisma
+- Better Auth - MIT - https://github.com/better-auth/better-auth
+- CustomTkinter - MIT - https://github.com/TomSchimansky/CustomTkinter
+- pystray - LGPL-3.0 - https://github.com/moses-palmer/pystray
+- Tobii Pro SDK - proprietary - https://developer.tobii.com/pro-sdk/
+
+The Tobii Pro SDK is not bundled in this repository. Users install it separately
+and must comply with Tobii's license terms.
+
+================================================================================
+DATASET ATTRIBUTION
+================================================================================
+
+Dataset provenance is documented in docs/DATASETS.md.
+
+Known datasets used in research/training notebooks:
+
+- OneStop Eye Movements - CC BY 4.0 for eye-tracking data; OneStopQA text
+  materials use CC BY-SA 4.0.
+- ETDD70 - CC BY 4.0.
+- WebQAmGaze - CC BY 4.0.
+- Project webcam calibration dataset - Kaggle source; license should be
+  verified on Kaggle before redistribution.
