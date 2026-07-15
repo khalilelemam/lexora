@@ -2,6 +2,8 @@
 
 FastAPI service for dyslexia screening using eye-tracking and webcam-based gaze data.
 
+Part of the [Lexora monorepo](../README.md). See [API.md](API.md) for endpoint details and [docs/DATASETS.md](../docs/DATASETS.md) for dataset provenance.
+
 ## Overview
 
 This service analyzes eye movement patterns during reading tasks to predict dyslexia risk. It supports two input methods:
@@ -106,20 +108,20 @@ The Docker image installs dependencies from `pyproject.toml` via `pip install .`
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/khalil-elemam/lexora-ml:latest
+docker pull ghcr.io/khalilelemam/lexora-ml:latest
 
 # Run container
-docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:latest
+docker run -p 8001:8001 ghcr.io/khalilelemam/lexora-ml:latest
 
 # Pin to a specific version
-docker pull ghcr.io/khalil-elemam/lexora-ml:1.2.1
-docker run -p 8001:8001 ghcr.io/khalil-elemam/lexora-ml:1.2.1
+docker pull ghcr.io/khalilelemam/lexora-ml:1.2.1
+docker run -p 8001:8001 ghcr.io/khalilelemam/lexora-ml:1.2.1
 
 # Pass environment variables
 docker run -p 8001:8001 \
   -e DEBUG=true \
   -e WEBCAM_MIN_SEQUENCES=1 \
-  ghcr.io/khalil-elemam/lexora-ml:latest
+  ghcr.io/khalilelemam/lexora-ml:latest
 ```
 
 ### Docker Compose
@@ -127,7 +129,7 @@ docker run -p 8001:8001 \
 ```yaml
 services:
   ml-service:
-    image: ghcr.io/khalil-elemam/lexora-ml:1.2.1
+    image: ghcr.io/khalilelemam/lexora-ml:1.2.1
     ports:
       - "8001:8001"
     environment:

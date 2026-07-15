@@ -1,5 +1,7 @@
 # Lexora Web — Dyslexia Screening Platform
 
+Part of the [Lexora monorepo](../README.md). See [docs/diagrams](../docs/diagrams/README.md) for architecture and pipeline diagrams.
+
 Lexora is a web-based dyslexia screening tool that uses eye tracking to detect reading difficulty indicators. It supports two modes:
 
 - **Webcam Mode** — Uses MediaPipe FaceLandmarker to track iris position via a standard webcam. No special hardware needed.

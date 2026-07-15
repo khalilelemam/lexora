@@ -2,6 +2,8 @@
 
 Local desktop application that connects to your Tobii Pro eye tracker and provides real-time gaze data to web applications.
 
+Part of the [Lexora monorepo](../README.md). See [API.md](API.md) for the local HTTP/WebSocket contract.
+
 ## What It Does
 
 This service runs quietly in your system tray and makes your Tobii eye tracker accessible to web browsers through a local WebSocket connection. Perfect for integrating eye tracking into web-based applications, research tools, or accessibility projects.
@@ -19,21 +21,20 @@ This service runs quietly in your system tray and makes your Tobii eye tracker a
 ### Setup
 
 #### Windows
-1. **Download** `Lexora-Windows.exe` from the [Releases page](https://github.com/khalilelemam/lexora/releases)
-2. **Run** the executable (no installation required)
+1. **Download** `Lexora-Setup.exe` from the [Releases page](https://github.com/khalilelemam/lexora/releases)
+2. **Run** the setup wizard
 3. The app will appear in your system tray (look for the eye icon 👁️)
 
 #### macOS
-1. **Download** `Lexora-macOS.dmg` from the [Releases page](https://github.com/khalilelemam/lexora/releases)
-2. **Open** the DMG file and drag Lexora.app to Applications
-3. **Run** from Applications folder
+1. **Download** `Lexora-macOS-Installer.pkg` from the [Releases page](https://github.com/khalilelemam/lexora/releases)
+2. **Run** the installer
+3. **Run** Lexora from Applications
 4. The app will appear in your menu bar
 
 #### Linux
-1. **Download** `Lexora-Linux.tar.gz` from the [Releases page](https://github.com/khalilelemam/lexora/releases)
-2. **Extract:** `tar -xzf Lexora-Linux.tar.gz`
-3. **Make executable:** `chmod +x Lexora`
-4. **Run:** `./Lexora`
+1. **Download** `Lexora-Linux-Installer.deb` from the [Releases page](https://github.com/khalilelemam/lexora/releases)
+2. **Install:** `sudo dpkg -i Lexora-Linux-Installer.deb`
+3. **Run:** `lexora`
 5. The app will appear in your system tray
 
 ## How to Use
@@ -63,7 +64,7 @@ This service runs quietly in your system tray and makes your Tobii eye tracker a
 
 To start the service automatically when you log in:
 1. Press `Win + R`, type `shell:startup`, press Enter
-2. Create a shortcut to `Lexora-Windows.exe` in this folder
+2. Create a shortcut to the installed Lexora executable in this folder
 3. Right-click shortcut → Properties → Add `--minimized` to Target field
 
 **macOS:** Add Lexora.app to System Preferences → Users & Groups → Login Items
