@@ -1,0 +1,72 @@
+textSize small
+title Tobii Gaze Acquisition Pipeline
+
+Hardware [color: gray] {
+  Tobii Eye Tracker [icon: scan-eye]
+
+  Tobii SDK [icon: settings]
+}
+
+Desktop Helper [color: blue] {
+  Lexora Desktop Helper [icon: monitor]
+
+  HTTP Status API [icon: globe, label: "Device Discovery"]
+
+  WebSocket Server [icon: wifi, label: "Live Gaze Stream"]
+}
+
+Web Application [color: green] {
+  Next.js Frontend [icon: nextjs]
+
+  Status Manager [icon: badge-info]
+
+  Gaze Stream Manager [icon: radio]
+
+  Reading Session [icon: book-open]
+
+  Task Router [icon: route]
+}
+
+Data Collection [color: orange] {
+  Gaze Samples [icon: database]
+
+  Task Buffers [icon: list]
+
+  Test Submission [icon: send]
+}
+
+
+
+Tobii Eye Tracker > Tobii SDK
+
+Tobii SDK > Lexora Desktop Helper
+
+
+
+Lexora Desktop Helper > HTTP Status API
+
+Lexora Desktop Helper > WebSocket Server
+
+
+
+HTTP Status API > Status Manager
+
+Status Manager > Next.js Frontend
+
+
+
+WebSocket Server > Gaze Stream Manager
+
+Next.js Frontend > Gaze Stream Manager
+
+
+
+Gaze Stream Manager > Reading Session
+
+Reading Session > Task Router
+
+Task Router > Gaze Samples
+
+Gaze Samples > Task Buffers
+
+Task Buffers > Test Submission

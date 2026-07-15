@@ -1,0 +1,94 @@
+textSize small
+title ML Prediction Pipeline
+
+Request Processing [color: blue] {
+  Prediction Request [icon: send]
+
+  Request Validation [icon: shield-check]
+}
+
+Model Artifacts [color: gray] {
+  Eye Tracker Model (.keras) [icon: tensorflow]
+
+  Eye Tracker Scaler (.pkl) [icon: database]
+
+  Webcam UDA Model (.keras) [icon: tensorflow]
+
+  Target Domain Scaler (.pkl) [icon: database]
+}
+
+Eye Tracker Pipeline [color: green] {
+  Eye Tracker Feature Processing [icon: combine]
+
+  Sequence Tensor Generation [icon: layers]
+
+  Feature  Standardization [icon: sliders]
+
+  Eye Tracker Inference [icon: brain]
+
+  Eye Tracker Probability [icon: gauge]
+}
+
+Webcam Pipeline [color: purple] {
+  Webcam Feature Processing [icon: combine]
+
+  Sequence & Mask Generation [icon: layers]
+
+  Target Domain Standardization [icon: sliders]
+
+  Webcam UDA Inference [icon: brain]
+
+  Webcam Probability [icon: gauge]
+}
+
+Prediction [color: orange] {
+  Risk Classification [icon: alert-circle]
+
+  Prediction Response [icon: check-circle]
+}
+
+
+
+Prediction Request > Request Validation
+
+
+
+Request Validation > Eye Tracker Feature Processing : Eye Tracker
+
+Eye Tracker Feature Processing > Sequence Tensor Generation
+
+Sequence Tensor Generation > Feature  Standardization
+
+Feature  Standardization > Eye Tracker Inference
+
+Eye Tracker Inference > Eye Tracker Probability
+
+
+
+Request Validation > Webcam Feature Processing : Webcam
+
+Webcam Feature Processing > Sequence & Mask Generation
+
+Sequence & Mask Generation > Target Domain Standardization
+
+Target Domain Standardization > Webcam UDA Inference
+
+Webcam UDA Inference > Webcam Probability
+
+
+
+Eye Tracker Scaler (.pkl) > Feature  Standardization
+
+Eye Tracker Model (.keras) > Eye Tracker Inference
+
+Target Domain Scaler (.pkl) > Target Domain Standardization
+
+Webcam UDA Model (.keras) > Webcam UDA Inference
+
+
+
+Eye Tracker Probability > Risk Classification
+
+Webcam Probability > Risk Classification
+
+Risk Classification > Prediction Response

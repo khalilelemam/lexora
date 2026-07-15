@@ -1,0 +1,72 @@
+textSize small
+title Webcam Gaze Acquisition Pipeline
+
+Dependencies [color: gray] {
+  Active Calibration Model [icon: brain, label: "From Calibration Pipeline"]
+}
+
+Capture [color: blue] {
+  Camera Stream [icon: camera]
+
+  MediaPipe Face Landmarker [icon: mediapipe]
+
+  Face Landmarks [icon: eye]
+}
+
+Feature Extraction [color: green] {
+  Iris Extraction [icon: target]
+
+  Head Pose Estimation [icon: rotate-3d]
+
+  Blink Validation [icon: eye-off]
+
+  Valid Gaze Features [icon: check-circle]
+}
+
+Gaze Estimation [color: purple] {
+  Screen Mapping [icon: grid-3x3]
+
+  Adaptive Kalman Filter [icon: waves]
+
+  Smoothed Screen Gaze [icon: crosshair]
+}
+
+Reading Session [color: orange] {
+  Gaze Sample Generation [icon: database]
+
+  Reading Task Buffer [icon:list]
+
+  Test Submission [icon: send]
+}
+
+
+
+Camera Stream > MediaPipe Face Landmarker
+
+MediaPipe Face Landmarker > Face Landmarks
+
+Face Landmarks > Iris Extraction
+
+Face Landmarks > Head Pose Estimation
+
+Face Landmarks > Blink Validation
+
+Iris Extraction > Valid Gaze Features
+
+Head Pose Estimation > Valid Gaze Features
+
+Blink Validation > Valid Gaze Features
+
+Valid Gaze Features > Screen Mapping
+
+Active Calibration Model > Screen Mapping
+
+Screen Mapping > Adaptive Kalman Filter
+
+Adaptive Kalman Filter > Smoothed Screen Gaze
+
+Smoothed Screen Gaze > Gaze Sample Generation
+
+Gaze Sample Generation > Reading Task Buffer
+
+Reading Task Buffer > Test Submission

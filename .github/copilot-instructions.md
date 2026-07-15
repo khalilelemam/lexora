@@ -52,7 +52,7 @@ npm run lint                                                 # ESLint check
 
 ## CI/CD
 
-- **ml-service:** `lexora-ml-v*` tags → lint → test → integration-test → Docker push to `ghcr.io/khalil-elemam/lexora-ml`.
+- **ml-service:** `lexora-ml-v*` tags → lint → test → integration-test → Docker push to `ghcr.io/khalilelemam/lexora-ml`.
 - **tobii-service:** `lexora-v*` tags → PyInstaller build (Win/Mac/Linux) → GitHub Release.
 - **web:** (CI/CD not yet configured)
 - Model files (`.keras`, `.pkl`) are in **Git LFS**.
@@ -61,7 +61,7 @@ npm run lint                                                 # ESLint check
 
 - **Three separate stacks:** ml-service (Python 3.12), tobii-service (Python 3.10, Tobii SDK constraint), web (Node.js/Next.js).
 - **Model files:** Use `.keras` format (not `.h5`). All tracked in Git LFS.
-- **Prediction responses:** Include raw `features` data (per-fixation vectors) for MinIO/S3 storage and bubble-replay visualization.
+- **Prediction responses:** Include raw `features` data (per-fixation vectors) for Azure Blob Storage/Azurite storage and bubble-replay visualization.
 - Webcam pipeline reuses `EYE_TRACKER_SEQUENCE_LENGTH` / `EYE_TRACKER_SEQUENCE_STEP` — intentional, same training params.
 - Startup calls `config.validate_model_files()` and fails fast if `.keras`/`.pkl` models are missing.
 - tobii-service PyInstaller builds: `None` stdout/stderr → `os.devnull`, app object passed directly to uvicorn (string import fails frozen), plain-text log config (no color formatter).

@@ -1,0 +1,112 @@
+textSize small
+title Calibration Pipeline
+
+Preparation [color: blue] {
+  Screen Guard [icon: monitor, label: "Minimum Screen Size"]
+
+  Device Setup [icon: camera, label: "Camera / Tobii Ready"]
+
+  Countdown [icon: timer, label: "5 s Countdown"]
+}
+
+Calibration Collection [color: green] {
+
+  Static Grid [icon: bullseye, label: "20-Point Serpentine Grid"]
+
+  Sample Quality Filter [icon: filter, label: "Velocity + Dwell Validation"]
+
+  Grid Samples [icon: database]
+}
+
+Webcam Calibration [color: purple] {
+
+  Pursuit Calibration [icon: route, label: "5 Pursuit Sweeps"]
+
+  Pursuit Samples [icon: database]
+
+  Calibration Dataset [icon: database]
+
+  Outlier Filtering [icon: filter]
+
+  Train Validation Split [icon: table, label: "80 / 20 Split"]
+
+  Model Candidates [icon: boxes]
+
+  IDW Model [icon: grid-3x3]
+
+  Polynomial Ridge [icon: chart-line]
+
+  Model Selection [icon: check-circle]
+
+  Calibration Model [icon: brain]
+}
+
+Tobii Calibration [color: cyan] {
+
+  Point Error Analysis [icon: chart-bar]
+
+  Calibration Quality [icon: circle-check-big]
+}
+
+Validation [color: orange] {
+
+  Quick Validation [icon: crosshair, label: "5 Random Targets"]
+
+  Accuracy Score [icon: gauge]
+
+  Calibration Result [icon: badge-check]
+}
+
+
+
+Screen Guard > Device Setup
+
+Device Setup > Countdown
+
+Countdown > Static Grid
+
+Static Grid > Sample Quality Filter
+
+Sample Quality Filter > Grid Samples
+
+
+
+Grid Samples > Pursuit Calibration : Webcam
+
+Pursuit Calibration > Pursuit Samples
+
+Grid Samples > Calibration Dataset
+
+Pursuit Samples > Calibration Dataset
+
+Calibration Dataset > Outlier Filtering
+
+Outlier Filtering > Train Validation Split
+
+Train Validation Split > Model Candidates
+
+Model Candidates > IDW Model
+
+Model Candidates > Polynomial Ridge
+
+IDW Model > Model Selection
+
+Polynomial Ridge > Model Selection
+
+Model Selection > Calibration Model
+
+Calibration Model > Quick Validation
+
+
+
+Grid Samples > Point Error Analysis : Tobii
+
+Point Error Analysis > Calibration Quality
+
+Calibration Quality > Quick Validation
+
+
+
+Quick Validation > Accuracy Score
+
+Accuracy Score > Calibration Result

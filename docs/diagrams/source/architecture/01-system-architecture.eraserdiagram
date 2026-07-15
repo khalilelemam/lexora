@@ -1,0 +1,48 @@
+textSize small
+colorMode out
+title Lexora - System Architecture
+
+Client Device [color: blue, icon: laptop, colorMode: "pastel"] {
+
+  Next.js Frontend [icon: nextdotjs]
+
+  Lexora Desktop [icon: app-window]
+
+  Tobii Pro Eye Tracker [icon: eye]
+}
+
+Lexora Cloud [color: green, icon: cloud, colorMode: "pastel"] {
+
+  Next.js API [icon: nextdotjs]
+
+  ML Service [icon: fastapi]
+
+  PostgreSQL [icon: postgresql]
+
+  Azure Blob Storage [icon: azure-Blob]
+}
+
+External Services [color: gray, icon: globe, colorMode: "pastel"] {
+
+  Google OAuth [icon: google]
+
+  Resend [icon: resend]
+}
+
+
+Next.js Frontend <> Lexora Desktop : HTTP + WebSocket
+
+Lexora Desktop > Tobii Pro Eye Tracker : Tobii SDK
+
+
+Next.js Frontend > Next.js API : HTTPS
+
+Next.js API > ML Service : Prediction Requests
+
+Next.js API > PostgreSQL : Metadata
+
+Next.js API > Azure Blob Storage : Raw & Derived Gaze Data
+
+Next.js API > Google OAuth : OAuth
+
+Next.js API > Resend : Magic Link Emails
