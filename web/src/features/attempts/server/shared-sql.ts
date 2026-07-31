@@ -32,14 +32,21 @@ export function decodeCursor(cursor?: string): AttemptCursor | null {
     return null;
   }
 
-  let decoded: { createdAt?: unknown; attemptId?: unknown };
+  let parsed: unknown;
 
   try {
-    decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
   } catch {
     throw new AttemptsBadRequestError('Invalid pagination cursor.');
   }
 
+  // `JSON.parse` happily returns primitives — `null` in particular, which would
+  // otherwise throw a TypeError below and surface as a 500 instead of a 400.
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new AttemptsBadRequestError('Invalid pagination cursor.');
+  }
+
+  const decoded = parsed as { createdAt?: unknown; attemptId?: unknown };
   const createdAt = typeof decoded.createdAt === 'string' ? new Date(decoded.createdAt) : null;
 
   if (
