@@ -213,18 +213,25 @@ export function useWebcamTestController() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- startCollecting is stable; avoid re-triggering on webcamGaze object identity changes
   }, [webcamState.currentState]);
 
+  // `webcamGaze` is a fresh object every render, so it is read through a ref
+  // here: keeping it in the dependency lists re-ran these effects on every
+  // render, which re-exited fullscreen whenever the results screen re-rendered
+  // — including while a gaze replay was open on top of it.
+  const webcamGazeRef = useRef(webcamGaze);
+  webcamGazeRef.current = webcamGaze;
+
   useEffect(() => {
     if (webcamState.currentState === 'results') {
-      webcamGaze.cleanup();
+      webcamGazeRef.current.cleanup();
       exitFullscreen();
     }
-  }, [exitFullscreen, webcamGaze, webcamState.currentState]);
+  }, [exitFullscreen, webcamState.currentState]);
 
   useEffect(() => {
     if (webcamState.currentState === 'error') {
-      webcamGaze.cleanup();
+      webcamGazeRef.current.cleanup();
     }
-  }, [webcamGaze, webcamState.currentState]);
+  }, [webcamState.currentState]);
 
   return {
     state: webcamState,
