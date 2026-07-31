@@ -9,6 +9,8 @@ import {
 import type { AttemptFilters } from '@/features/attempts/types';
 import type { CalibrationMode, RiskLevel, TestMode } from '@/features/test/types';
 
+import { AttemptsBadRequestError } from './errors';
+
 // ── Cursor ──────────────────────────────────────────────────
 
 export interface AttemptCursor {
@@ -18,31 +20,45 @@ export interface AttemptCursor {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Decodes a pagination cursor, or throws if the caller sent a malformed one.
+ *
+ * Absent cursor means "first page" and returns null. A *broken* cursor must not
+ * degrade to that: silently restarting from the top is what turned a corrupted
+ * cursor into a list that repeated the same page forever instead of failing.
+ */
 export function decodeCursor(cursor?: string): AttemptCursor | null {
   if (!cursor) {
     return null;
   }
 
+  let parsed: unknown;
+
   try {
-    const decoded = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as {
-      createdAt?: unknown;
-      attemptId?: unknown;
-    };
-    const createdAt = typeof decoded.createdAt === 'string' ? new Date(decoded.createdAt) : null;
-
-    if (
-      !createdAt ||
-      Number.isNaN(createdAt.getTime()) ||
-      typeof decoded.attemptId !== 'string' ||
-      !UUID_RE.test(decoded.attemptId)
-    ) {
-      return null;
-    }
-
-    return { createdAt, attemptId: decoded.attemptId };
+    parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
   } catch {
-    return null;
+    throw new AttemptsBadRequestError('Invalid pagination cursor.');
   }
+
+  // `JSON.parse` happily returns primitives — `null` in particular, which would
+  // otherwise throw a TypeError below and surface as a 500 instead of a 400.
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new AttemptsBadRequestError('Invalid pagination cursor.');
+  }
+
+  const decoded = parsed as { createdAt?: unknown; attemptId?: unknown };
+  const createdAt = typeof decoded.createdAt === 'string' ? new Date(decoded.createdAt) : null;
+
+  if (
+    !createdAt ||
+    Number.isNaN(createdAt.getTime()) ||
+    typeof decoded.attemptId !== 'string' ||
+    !UUID_RE.test(decoded.attemptId)
+  ) {
+    throw new AttemptsBadRequestError('Invalid pagination cursor.');
+  }
+
+  return { createdAt, attemptId: decoded.attemptId };
 }
 
 // ── WHERE clause builder ────────────────────────────────────

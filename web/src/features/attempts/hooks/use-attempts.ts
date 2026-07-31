@@ -9,13 +9,32 @@ import {
   getMyAttempt,
   getMyAttempts,
 } from '@/features/attempts/api';
-import type { AttemptFilters } from '@/features/attempts/types';
+import type { AttemptFilters, AttemptsListResponse } from '@/features/attempts/types';
+
+/**
+ * Stops paging when the server hands back the cursor it was just given.
+ *
+ * A cursor that does not advance means the next request would return the page
+ * we already have, so treating it as "no more pages" keeps a server-side
+ * pagination fault from turning into an endlessly repeating list.
+ */
+function getNextCursor(
+  lastPage: AttemptsListResponse,
+  _allPages: AttemptsListResponse[],
+  lastPageParam: string | undefined,
+) {
+  if (!lastPage.nextCursor || lastPage.nextCursor === lastPageParam) {
+    return undefined;
+  }
+
+  return lastPage.nextCursor;
+}
 
 export function useMyAttempts(filters: AttemptFilters) {
   return useInfiniteQuery({
     queryKey: ['attempts', 'mine', filters],
     queryFn: ({ pageParam }) => getMyAttempts({ ...filters, cursor: pageParam }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    getNextPageParam: getNextCursor,
     initialPageParam: undefined as string | undefined,
   });
 }
@@ -32,7 +51,7 @@ export function useAdminAttempts(filters: AttemptFilters) {
   return useInfiniteQuery({
     queryKey: ['attempts', 'admin', filters],
     queryFn: ({ pageParam }) => getAdminAttempts({ ...filters, cursor: pageParam }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    getNextPageParam: getNextCursor,
     initialPageParam: undefined as string | undefined,
   });
 }

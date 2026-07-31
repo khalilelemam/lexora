@@ -32,10 +32,16 @@ export function AttemptList({ attempts, scope }: AttemptListProps) {
 
   return (
     <Accordion type="single" collapsible value={openAttemptId} onValueChange={setOpenAttemptId}>
+      {/*
+       * Keyed by attempt id alone. Suffixing the index used to hide duplicate
+       * keys, which masked a pagination fault that served the same page over
+       * and over; a duplicate-key warning here is the signal we want, and the
+       * accordion identifies rows by attempt id anyway.
+       */}
       <div className="grid gap-3">
-        {attempts.map((attempt, index) => (
+        {attempts.map((attempt) => (
           <AttemptCard
-            key={`${attempt.attemptId}-${index}`}
+            key={attempt.attemptId}
             attempt={attempt}
             scope={scope}
             expanded={openAttemptId === attempt.attemptId}
