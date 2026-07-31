@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminAttempt, useMyAttempt } from '@/features/attempts/hooks/use-attempts';
+import { useReplayFullscreen } from '@/features/test/hooks/use-replay-fullscreen';
 import type { AttemptDetail, AttemptListItem } from '@/features/attempts/types';
 import {
   formatAttemptDate,
@@ -99,30 +100,18 @@ export function AttemptCard({ attempt, scope, expanded }: AttemptCardProps) {
 
 function AttemptSummary({ detail, scope }: { detail: AttemptDetail; scope: 'user' | 'admin' }) {
   const [visualizationOpen, setVisualizationOpen] = useState(false);
-  const [ownsFullscreen, setOwnsFullscreen] = useState(false);
+  const { enter: enterReplayFullscreen, exit: exitReplayFullscreen } = useReplayFullscreen();
   const hasReplay = detail.visualizations.length > 0;
 
   const openVisualization = useCallback(() => {
     setVisualizationOpen(true);
-
-    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-      void document.documentElement
-        .requestFullscreen()
-        .then(() => setOwnsFullscreen(true))
-        .catch(() => setOwnsFullscreen(false));
-    }
-  }, []);
+    enterReplayFullscreen();
+  }, [enterReplayFullscreen]);
 
   const closeVisualization = useCallback(() => {
     setVisualizationOpen(false);
-
-    if (ownsFullscreen && document.fullscreenElement && document.exitFullscreen) {
-      void document.exitFullscreen().finally(() => setOwnsFullscreen(false));
-      return;
-    }
-
-    setOwnsFullscreen(false);
-  }, [ownsFullscreen]);
+    exitReplayFullscreen();
+  }, [exitReplayFullscreen]);
 
   return (
     <div className="grid gap-4 border-t border-[#51513d]/16 pt-4">

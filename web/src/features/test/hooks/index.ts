@@ -6,6 +6,7 @@ export { useCalibrationEngine } from './use-calibration-engine';
 export { useQuickValidation } from './use-quick-validation';
 export { useFullscreen } from './use-fullscreen';
 export { useGazeReplay } from './use-gaze-replay';
+export { useReplayFullscreen } from './use-replay-fullscreen';
 export { useCalibrationQueryParams } from './use-calibration-query-params';
 export { useStableAttemptId } from './use-stable-attempt-id';
 export { useWebcamTestController } from './use-webcam-test-controller';

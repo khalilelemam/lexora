@@ -20,6 +20,9 @@ import {
   READING_ZONE_BOUNDS,
 } from '../lib/constants';
 
+/** Lower bound for the auto-fit font scale — below this the text stops being readable. */
+const MIN_FONT_SCALE = 0.7;
+
 /* ── Public types ──────────────────────────────────────── */
 
 export interface TaskDisplayProps {
@@ -40,8 +43,11 @@ export interface TaskDisplayProps {
   getLastGazePosition?: () => { x: number; y: number } | null;
   /**
    * When true, renders in read-only mode — no end-of-reading detection,
-   * no dialog. Used by the review panel and results page to display
-   * the exact same text layout for gaze overlay.
+   * no dialog, no screenshot capture. Used by the review panel, results page,
+   * and replay overlays.
+   *
+   * This flag must never change the reading surface's *layout*: replays draw
+   * gaze on top of it, so preview and live have to wrap the text identically.
    */
   preview?: boolean;
   /**
@@ -91,7 +97,18 @@ export function TaskDisplay({
 }: TaskDisplayProps) {
   const [showDialog, setShowDialog] = useState(debugOpenDoneDialog);
   const [fontScale, setFontScale] = useState(1);
+  const [fittedContent, setFittedContent] = useState(content);
+  const [zoneFitKey, setZoneFitKey] = useState(0);
+  const zoneBoxRef = useRef({ width: 0, height: 0 });
   const autoDetectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Re-fit from full size when the passage changes: the fit loop only ever
+  // shrinks, so a shorter passage would inherit the previous one's scale.
+  if (fittedContent !== content) {
+    setFittedContent(content);
+    setFontScale(1);
+  }
+
   const startTimeRef = useRef(0);
   const dismissCountRef = useRef(0);
   const dialogTriggeredRef = useRef(false);
@@ -173,20 +190,59 @@ export function TaskDisplay({
     setShowDialog(true);
   }, [preview, onPauseCollection]);
 
+  // ─── Track the reading zone box ─────────────────────
+  // The zone is sized in viewport percentages, so it changes whenever the
+  // window resizes or the browser enters/leaves fullscreen. Both restart the
+  // font fit: the fit can only shrink, so without a reset a replay opened
+  // before the fullscreen transition completes would keep the windowed scale.
+
+  useEffect(() => {
+    const zone = readingZoneRef.current;
+    if (!zone) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[entries.length - 1]?.contentRect;
+      if (!rect) return;
+
+      const width = Math.round(rect.width);
+      const height = Math.round(rect.height);
+      if (zoneBoxRef.current.width === width && zoneBoxRef.current.height === height) return;
+
+      zoneBoxRef.current = { width, height };
+      setFontScale(1);
+      setZoneFitKey((key) => key + 1);
+    });
+
+    observer.observe(zone);
+    return () => observer.disconnect();
+  }, []);
+
   // ─── Auto-scale font if text overflows the reading zone ───
+  //
+  // The fitted scale decides where every line break lands, so a replay that
+  // fits differently from the live task draws gaze on the wrong words.
+  //
+  // The text box is measured directly rather than through `zone.scrollHeight`:
+  // scroll height only reports overflow while nothing clips it, so a clipped
+  // variant of this surface would silently skip the fit and render the passage
+  // a third larger than the reader actually saw.
 
   useLayoutEffect(() => {
-    if (isShortContent || !readingZoneRef.current) return;
+    if (isShortContent) return;
 
     const zone = readingZoneRef.current;
-    const availableHeight = zone.clientHeight;
-    const contentHeight = zone.scrollHeight;
+    const text = textContentRef.current;
+    if (!zone || !text) return;
 
-    if (contentHeight > availableHeight && fontScale > 0.7) {
+    const availableHeight = zone.clientHeight;
+    const contentHeight = text.getBoundingClientRect().height;
+    if (availableHeight <= 0 || contentHeight <= 0) return;
+
+    if (contentHeight > availableHeight && fontScale > MIN_FONT_SCALE) {
       const ratio = availableHeight / contentHeight;
-      setFontScale(Math.max(0.7, ratio * fontScale));
+      setFontScale(Math.max(MIN_FONT_SCALE, ratio * fontScale));
     }
-  }, [isShortContent, content, fontScale]);
+  }, [isShortContent, content, fontScale, zoneFitKey]);
 
   // ─── Compute estimated reading time ─────────────────
 
@@ -213,7 +269,7 @@ export function TaskDisplay({
         <p
           className={cn(
             'leading-loose whitespace-pre-line text-[#1b2021] sm:leading-loose md:leading-loose',
-            'text-left font-[family-name:var(--font-lexend)] select-none',
+            'text-left font-(family-name:--font-lexend) select-none',
           )}
           style={{
             fontSize: `calc(${fontScale} * clamp(1.15rem, 2.5vw, 1.875rem))`,
@@ -318,13 +374,17 @@ export function TaskDisplay({
         }}
         dir="ltr"
       >
+        {/*
+         * Overflow stays `visible` in both modes on purpose. Clipping the
+         * preview would hide the font fit from the measurement above and let
+         * the replay wrap the passage differently from the live task, which
+         * puts every fixation bubble on the wrong line.
+         */}
         <div
           className={cn(
-            'min-h-0 w-full flex-1',
-            preview ? 'overflow-hidden' : 'overflow-visible',
+            'min-h-0 w-full flex-1 overflow-visible',
             isShortContent && 'flex items-center justify-center',
           )}
-          style={preview ? undefined : { scrollbarWidth: 'none' }}
         >
           {isShortContent ? (
             <div className="flex flex-col items-center justify-center gap-6">

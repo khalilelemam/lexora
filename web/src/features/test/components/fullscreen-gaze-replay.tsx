@@ -10,9 +10,11 @@ import {
   type ReactNode,
 } from 'react';
 import { X, Play, Pause } from 'lucide-react';
+import { OverlayPortal } from '@/components/shared/overlay-portal';
+import { useViewportSize } from '@/hooks/use-viewport-size';
 import { cn } from '@/lib/utils';
 import {
-  CALIBRATION_POINTS,
+  AOI_X_BOUNDS,
   AOI_Y_BOUNDS,
   READING_ZONE_BOUNDS,
   GAZE_SNAPPING_MODE,
@@ -22,13 +24,12 @@ import { useGazeReplay } from '../hooks/use-gaze-replay';
 import { sanitizeRawGaze, type RawReadingGazePoint } from '../lib/gaze-analysis';
 import type { GazeFeature } from '../types';
 
-function getAOIXBounds() {
-  const xs = CALIBRATION_POINTS.map((p) => p.x);
-  return { min: Math.min(...xs), max: Math.max(...xs) };
-}
-
 function mapToElement(raw: number, min: number, max: number): number {
   return Math.max(0, Math.min(1, (raw - min) / (max - min)));
+}
+
+function sameNumbers(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
 }
 
 interface FullscreenGazeReplayProps {
@@ -78,26 +79,37 @@ export function FullscreenGazeReplay({
     };
   }, []);
 
-  const aoiX = useMemo(() => getAOIXBounds(), []);
-  const aoiY = AOI_Y_BOUNDS;
-  const mapX = useCallback((raw: number) => mapToElement(raw, aoiX.min, aoiX.max), [aoiX]);
-  const mapY = useCallback((raw: number) => mapToElement(raw, aoiY.min, aoiY.max), [aoiY]);
+  const mapX = useCallback(
+    (raw: number) => mapToElement(raw, AOI_X_BOUNDS.min, AOI_X_BOUNDS.max),
+    [],
+  );
+  const mapY = useCallback(
+    (raw: number) => mapToElement(raw, AOI_Y_BOUNDS.min, AOI_Y_BOUNDS.max),
+    [],
+  );
 
-  // Reading zone pixel bounds (must match TaskDisplay layout)
-  const screenW = typeof window !== 'undefined' ? window.innerWidth : 1920;
-  const screenH = typeof window !== 'undefined' ? window.innerHeight : 1080;
+  // Reading zone pixel bounds (must match TaskDisplay layout). Taken from the
+  // live viewport rather than a render-time snapshot so the geometry survives
+  // the fullscreen transition the overlay is usually opened alongside.
+  const { width: screenW, height: screenH } = useViewportSize();
   const zoneLeft = screenW * READING_ZONE_BOUNDS.left;
   const zoneTop = screenH * READING_ZONE_BOUNDS.top;
   const zoneW = screenW * (1 - READING_ZONE_BOUNDS.left - READING_ZONE_BOUNDS.right);
   const zoneH = screenH * (1 - READING_ZONE_BOUNDS.top - READING_ZONE_BOUNDS.bottom);
 
   const [lineCenters, setLineCenters] = useState<number[]>([]);
-  const textContentRef = useRef<HTMLDivElement | null>(null);
+  const [textNode, setTextNode] = useState<HTMLDivElement | null>(null);
 
+  // Line centers are re-derived whenever the rendered text box changes size.
+  // TaskDisplay fits its font *after* mount, so a one-shot measurement would
+  // snap fixations to the pre-fit line positions.
   useLayoutEffect(() => {
+    // Short-content tasks (syllables, pseudo-words) render no word spans and
+    // never report a node — they fall back to unsnapped gaze positions.
+    if (!textNode) return;
+
     const measure = () => {
-      if (!textContentRef.current) return;
-      const wordSpans = textContentRef.current.querySelectorAll('[data-word]');
+      const wordSpans = textNode.querySelectorAll('[data-word]');
       if (wordSpans.length === 0) return;
 
       const lineMap = new Map<number, Array<{ top: number; bottom: number }>>();
@@ -122,16 +134,15 @@ export function FullscreenGazeReplay({
         centers.push((minTop + maxBottom) / 2);
       });
 
-      setLineCenters(centers);
+      setLineCenters((previous) => (sameNumbers(previous, centers) ? previous : centers));
     };
 
-    const timer = window.setTimeout(measure, 100);
-    window.addEventListener('resize', measure);
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener('resize', measure);
-    };
-  }, [content, taskType]);
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(textNode);
+    return () => observer.disconnect();
+  }, [textNode, content, taskType, screenW, screenH]);
 
   const snappedYCoordinates = useMemo(() => {
     if (snappingMode === 'raw' || lineCenters.length === 0 || features.length === 0) {
@@ -208,182 +219,182 @@ export function FullscreenGazeReplay({
   }, [features, lineCenters, zoneTop, zoneH, mapY, snappingMode]);
 
   return (
-    <div className="fixed inset-0 z-50">
-      {/* TaskDisplay in preview mode — identical text layout */}
-      <TaskDisplay
-        taskType={taskType}
-        content={content}
-        pointCount={0}
-        isCollecting={false}
-        onDone={() => {}}
-        preview={true}
-        onReadingContentNode={(node) => {
-          textContentRef.current = node;
-        }}
-      />
+    <OverlayPortal>
+      <div className="fixed inset-0 z-50">
+        {/* TaskDisplay in preview mode — identical text layout */}
+        <TaskDisplay
+          taskType={taskType}
+          content={content}
+          pointCount={0}
+          isCollecting={false}
+          onDone={() => {}}
+          preview={true}
+          onReadingContentNode={setTextNode}
+        />
 
-      {/* Saccade lines — rendered under the bubbles */}
-      <svg className="pointer-events-none fixed inset-0 h-full w-full" style={{ zIndex: 59 }}>
-        {replay.trail.length > 1 &&
-          replay.trail.slice(1).map((idx, i) => {
-            const prev = features[replay.trail[i]];
-            const curr = features[idx];
-            if (!prev || !curr) return null;
+        {/* Saccade lines — rendered under the bubbles */}
+        <svg className="pointer-events-none fixed inset-0 h-full w-full" style={{ zIndex: 59 }}>
+          {replay.trail.length > 1 &&
+            replay.trail.slice(1).map((idx, i) => {
+              const prev = features[replay.trail[i]];
+              const curr = features[idx];
+              if (!prev || !curr) return null;
 
-            const prevSnappedY = snappedYCoordinates[replay.trail[i]];
-            const currSnappedY = snappedYCoordinates[idx];
+              const prevSnappedY = snappedYCoordinates[replay.trail[i]];
+              const currSnappedY = snappedYCoordinates[idx];
 
-            const x1 = zoneLeft + mapX(prev.fixationX) * zoneW;
-            const y1 =
-              prevSnappedY !== undefined ? prevSnappedY : zoneTop + mapY(prev.fixationY) * zoneH;
-            const x2 = zoneLeft + mapX(curr.fixationX) * zoneW;
-            const y2 =
-              currSnappedY !== undefined ? currSnappedY : zoneTop + mapY(curr.fixationY) * zoneH;
+              const x1 = zoneLeft + mapX(prev.fixationX) * zoneW;
+              const y1 =
+                prevSnappedY !== undefined ? prevSnappedY : zoneTop + mapY(prev.fixationY) * zoneH;
+              const x2 = zoneLeft + mapX(curr.fixationX) * zoneW;
+              const y2 =
+                currSnappedY !== undefined ? currSnappedY : zoneTop + mapY(curr.fixationY) * zoneH;
 
-            const stroke = curr.isReturnSweep
-              ? '#d1d5db'
-              : curr.isRegression
-                ? '#f87171'
-                : '#86efac';
-            const dashArray = curr.isReturnSweep ? '3 4' : 'none';
-            const opacity = curr.isReturnSweep ? 0.35 : 0.45;
+              const stroke = curr.isReturnSweep
+                ? '#d1d5db'
+                : curr.isRegression
+                  ? '#f87171'
+                  : '#86efac';
+              const dashArray = curr.isReturnSweep ? '3 4' : 'none';
+              const opacity = curr.isReturnSweep ? 0.35 : 0.45;
 
-            return (
-              <line
-                key={`${replay.trail[i]}-${idx}`}
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                stroke={stroke}
-                strokeWidth={1.5}
-                strokeDasharray={dashArray}
-                opacity={opacity}
-              />
-            );
-          })}
-      </svg>
+              return (
+                <line
+                  key={`${replay.trail[i]}-${idx}`}
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
+                  stroke={stroke}
+                  strokeWidth={1.5}
+                  strokeDasharray={dashArray}
+                  opacity={opacity}
+                />
+              );
+            })}
+        </svg>
 
-      {/* Fixation bubbles */}
-      {replay.trail.map((idx) => {
-        const f = features[idx];
-        if (!f) return null;
-        const size = replay.getBubbleSize(f.durationMs);
-        const isCurrent = idx === replay.currentIndex;
-        const leftPx = zoneLeft + mapX(f.fixationX) * zoneW;
-        const topPx =
-          snappedYCoordinates[idx] !== undefined
-            ? snappedYCoordinates[idx]
-            : zoneTop + mapY(f.fixationY) * zoneH;
+        {/* Fixation bubbles */}
+        {replay.trail.map((idx) => {
+          const f = features[idx];
+          if (!f) return null;
+          const size = replay.getBubbleSize(f.durationMs);
+          const isCurrent = idx === replay.currentIndex;
+          const leftPx = zoneLeft + mapX(f.fixationX) * zoneW;
+          const topPx =
+            snappedYCoordinates[idx] !== undefined
+              ? snappedYCoordinates[idx]
+              : zoneTop + mapY(f.fixationY) * zoneH;
 
-        return (
-          <div
-            key={idx}
-            className="pointer-events-none fixed"
-            style={{
-              left: `${leftPx}px`,
-              top: `${topPx}px`,
-              transform: 'translate(-50%, -50%)',
-              zIndex: 60,
-            }}
-          >
+          return (
             <div
-              className={cn('rounded-full', f.isRegression ? 'bg-red-400' : 'bg-[#51513d]')}
+              key={idx}
+              className="pointer-events-none fixed"
               style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                opacity: isCurrent ? 0.75 : 0.2,
-                boxShadow: isCurrent
-                  ? f.isRegression
-                    ? '0 0 0 4px rgba(248, 113, 113, 0.25)'
-                    : '0 0 0 4px rgba(166, 168, 103, 0.24)'
-                  : undefined,
+                left: `${leftPx}px`,
+                top: `${topPx}px`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 60,
               }}
+            >
+              <div
+                className={cn('rounded-full', f.isRegression ? 'bg-red-400' : 'bg-[#51513d]')}
+                style={{
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  opacity: isCurrent ? 0.75 : 0.2,
+                  boxShadow: isCurrent
+                    ? f.isRegression
+                      ? '0 0 0 4px rgba(248, 113, 113, 0.25)'
+                      : '0 0 0 4px rgba(166, 168, 103, 0.24)'
+                    : undefined,
+                }}
+              />
+            </div>
+          );
+        })}
+
+        {/* Bottom control bar */}
+        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+          <button
+            type="button"
+            onClick={replay.togglePlayPause}
+            className="text-[#51513d] hover:text-[#1b2021]"
+          >
+            {replay.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          </button>
+
+          <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
+            <div
+              className="h-full bg-[#51513d] transition-all duration-75"
+              style={{ width: `${replay.progress}%` }}
             />
           </div>
-        );
-      })}
 
-      {/* Bottom control bar */}
-      <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
-        <button
-          type="button"
-          onClick={replay.togglePlayPause}
-          className="text-[#51513d] hover:text-[#1b2021]"
-        >
-          {replay.isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-        </button>
+          <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{replay.progress}%</span>
 
-        <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
-          <div
-            className="h-full bg-[#51513d] transition-all duration-75"
-            style={{ width: `${replay.progress}%` }}
-          />
+          {/* Speed selector */}
+          <div className="flex items-center gap-1">
+            {replay.speedOptions.map((s) => (
+              <button
+                key={s}
+                onClick={() => replay.setSpeed(s)}
+                className={cn(
+                  'rounded px-1.5 py-0.5 text-[10px] transition-colors',
+                  replay.speed === s
+                    ? 'bg-[#51513d] text-[#f3edd7]'
+                    : 'text-[#1b2021] hover:bg-[#e3dcc2]',
+                )}
+              >
+                {s}x
+              </button>
+            ))}
+          </div>
+
+          {toolbarSlot ? (
+            <>
+              <div className="h-4 w-px bg-[#51513d]" />
+              {toolbarSlot}
+            </>
+          ) : null}
+
+          <div className="h-4 w-px bg-[#51513d]" />
+
+          <button type="button" onClick={onClose} className="text-[#1b2021] hover:text-[#1b2021]">
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
-        <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{replay.progress}%</span>
-
-        {/* Speed selector */}
-        <div className="flex items-center gap-1">
-          {replay.speedOptions.map((s) => (
-            <button
-              key={s}
-              onClick={() => replay.setSpeed(s)}
-              className={cn(
-                'rounded px-1.5 py-0.5 text-[10px] transition-colors',
-                replay.speed === s
-                  ? 'bg-[#51513d] text-[#f3edd7]'
-                  : 'text-[#1b2021] hover:bg-[#e3dcc2]',
-              )}
-            >
-              {s}x
-            </button>
-          ))}
-        </div>
-
-        {toolbarSlot ? (
-          <>
-            <div className="h-4 w-px bg-[#51513d]" />
-            {toolbarSlot}
-          </>
-        ) : null}
-
-        <div className="h-4 w-px bg-[#51513d]" />
-
-        <button type="button" onClick={onClose} className="text-[#1b2021] hover:text-[#1b2021]">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Legend */}
-      <div className="fixed top-4 right-4 z-70 flex flex-col gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-4 py-2.5 text-[11px] text-[#1b2021] shadow-sm backdrop-blur-md">
-        <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-[#51513d] opacity-60" />
-          <span>Forward fixation</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-400 opacity-60" />
-          <span>Regression (backward)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <svg width="14" height="4">
-            <line
-              x1="0"
-              y1="2"
-              x2="14"
-              y2="2"
-              stroke="#d1d5db"
-              strokeWidth="1.5"
-              strokeDasharray="3 4"
-            />
-          </svg>
-          <span>Return sweep</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span>Bubble size = fixation duration</span>
+        {/* Legend */}
+        <div className="fixed top-4 right-4 z-70 flex flex-col gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-4 py-2.5 text-[11px] text-[#1b2021] shadow-sm backdrop-blur-md">
+          <div className="flex items-center gap-1.5">
+            <div className="h-2.5 w-2.5 rounded-full bg-[#51513d] opacity-60" />
+            <span>Forward fixation</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-2.5 w-2.5 rounded-full bg-red-400 opacity-60" />
+            <span>Regression (backward)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg width="14" height="4">
+              <line
+                x1="0"
+                y1="2"
+                x2="14"
+                y2="2"
+                stroke="#d1d5db"
+                strokeWidth="1.5"
+                strokeDasharray="3 4"
+              />
+            </svg>
+            <span>Return sweep</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>Bubble size = fixation duration</span>
+          </div>
         </div>
       </div>
-    </div>
+    </OverlayPortal>
   );
 }
 
@@ -396,6 +407,7 @@ export function FullscreenRawGazeReplay({
   title = 'Raw gaze replay',
 }: FullscreenRawGazeReplayProps) {
   const sortedPoints = useMemo(() => sanitizeRawGaze(points), [points]);
+  const { width: viewportW, height: viewportH } = useViewportSize();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const rafRef = useRef(0);
@@ -450,9 +462,6 @@ export function FullscreenRawGazeReplay({
 
   const toViewportPoint = useCallback(
     (point: RawReadingGazePoint) => {
-      const viewportW = typeof window !== 'undefined' ? window.innerWidth || 1 : 1920;
-      const viewportH = typeof window !== 'undefined' ? window.innerHeight || 1 : 1080;
-
       if (coordinateSpace === 'normalized') {
         return {
           x: point.x * viewportW,
@@ -460,18 +469,18 @@ export function FullscreenRawGazeReplay({
         };
       }
 
+      // Screen-pixel samples were captured fullscreen, where the viewport and
+      // the screen match. Scaling by their ratio keeps the trail correct if the
+      // replay ends up in a windowed viewport instead.
+      const screenW = (typeof window !== 'undefined' && window.screen.width) || viewportW;
+      const screenH = (typeof window !== 'undefined' && window.screen.height) || viewportH;
+
       return {
-        x:
-          point.x *
-          (viewportW /
-            (typeof window !== 'undefined' ? window.screen.width || viewportW : viewportW)),
-        y:
-          point.y *
-          (viewportH /
-            (typeof window !== 'undefined' ? window.screen.height || viewportH : viewportH)),
+        x: point.x * (viewportW / screenW),
+        y: point.y * (viewportH / screenH),
       };
     },
-    [coordinateSpace],
+    [coordinateSpace, viewportW, viewportH],
   );
 
   const progress =
@@ -496,86 +505,94 @@ export function FullscreenRawGazeReplay({
   };
 
   return (
-    <div className="fixed inset-0 z-50">
-      <TaskDisplay
-        taskType={taskType}
-        content={content}
-        pointCount={0}
-        isCollecting={false}
-        onDone={() => {}}
-        preview={true}
-      />
+    <OverlayPortal>
+      <div className="fixed inset-0 z-50">
+        <TaskDisplay
+          taskType={taskType}
+          content={content}
+          pointCount={0}
+          isCollecting={false}
+          onDone={() => {}}
+          preview={true}
+        />
 
-      <svg className="pointer-events-none fixed inset-0 h-full w-full" style={{ zIndex: 59 }}>
-        {visibleTrail.slice(1).map((point, index) => {
-          const previous = visibleTrail[index];
-          const from = toViewportPoint(previous);
-          const to = toViewportPoint(point);
+        <svg className="pointer-events-none fixed inset-0 h-full w-full" style={{ zIndex: 59 }}>
+          {visibleTrail.slice(1).map((point, index) => {
+            const previous = visibleTrail[index];
+            const from = toViewportPoint(previous);
+            const to = toViewportPoint(point);
+
+            return (
+              <line
+                key={`${previous.timestamp}-${point.timestamp}`}
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+                stroke="#51513d"
+                strokeWidth="1.5"
+                opacity="0.38"
+              />
+            );
+          })}
+        </svg>
+
+        {visibleTrail.map((point, index) => {
+          const position = toViewportPoint(point);
+          const age = visibleTrail.length - index;
+          const isCurrent = index === visibleTrail.length - 1;
+          const opacity = Math.max(0.12, 1 - (age / 42) * 0.82);
+          const size = isCurrent ? 18 : 10;
 
           return (
-            <line
-              key={`${previous.timestamp}-${point.timestamp}`}
-              x1={from.x}
-              y1={from.y}
-              x2={to.x}
-              y2={to.y}
-              stroke="#51513d"
-              strokeWidth="1.5"
-              opacity="0.38"
+            <div
+              key={`${point.timestamp}-${index}`}
+              className="pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1f6f6b]"
+              style={{
+                left: position.x,
+                top: position.y,
+                zIndex: 60,
+                width: size,
+                height: size,
+                opacity,
+                boxShadow: isCurrent ? '0 0 0 8px rgba(31,111,107,0.18)' : undefined,
+              }}
             />
           );
         })}
-      </svg>
 
-      {visibleTrail.map((point, index) => {
-        const position = toViewportPoint(point);
-        const age = visibleTrail.length - index;
-        const isCurrent = index === visibleTrail.length - 1;
-        const opacity = Math.max(0.12, 1 - (age / 42) * 0.82);
-        const size = isCurrent ? 18 : 10;
-
-        return (
-          <div
-            key={`${point.timestamp}-${index}`}
-            className="pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1f6f6b]"
-            style={{
-              left: position.x,
-              top: position.y,
-              zIndex: 60,
-              width: size,
-              height: size,
-              opacity,
-              boxShadow: isCurrent ? '0 0 0 8px rgba(31,111,107,0.18)' : undefined,
-            }}
-          />
-        );
-      })}
-
-      <div className="fixed top-4 left-4 z-70 border border-[#51513d]/18 bg-[#f3edd7]/92 px-4 py-2.5 text-[#1b2021] shadow-sm backdrop-blur-md">
-        <p className="text-[10px] font-black tracking-[0.2em] text-[#51513d] uppercase">{title}</p>
-        <p className="mt-1 text-xs text-[#51513d]/75">
-          Teal trail = raw eye samples before model smoothing.
-        </p>
-      </div>
-
-      <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
-        <button type="button" onClick={togglePlay} className="text-[#51513d] hover:text-[#1b2021]">
-          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-        </button>
-
-        <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
-          <div
-            className="h-full bg-[#51513d] transition-all duration-75"
-            style={{ width: `${progress}%` }}
-          />
+        <div className="fixed top-4 left-4 z-70 border border-[#51513d]/18 bg-[#f3edd7]/92 px-4 py-2.5 text-[#1b2021] shadow-sm backdrop-blur-md">
+          <p className="text-[10px] font-black tracking-[0.2em] text-[#51513d] uppercase">
+            {title}
+          </p>
+          <p className="mt-1 text-xs text-[#51513d]/75">
+            Teal trail = raw eye samples before model smoothing.
+          </p>
         </div>
 
-        <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{progress}%</span>
-        <div className="h-4 w-px bg-[#51513d]" />
-        <button type="button" onClick={onClose} className="text-[#1b2021] hover:text-[#1b2021]">
-          <X className="h-5 w-5" />
-        </button>
+        <div className="fixed bottom-4 left-1/2 z-70 flex -translate-x-1/2 items-center gap-4 border border-[#51513d]/18 bg-[#f3edd7]/90 px-5 py-2.5 shadow-lg backdrop-blur-md">
+          <button
+            type="button"
+            onClick={togglePlay}
+            className="text-[#51513d] hover:text-[#1b2021]"
+          >
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          </button>
+
+          <div className="h-1.5 w-32 overflow-hidden bg-[#51513d]/18">
+            <div
+              className="h-full bg-[#51513d] transition-all duration-75"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <span className="w-8 text-[11px] text-[#1b2021] tabular-nums">{progress}%</span>
+          <div className="h-4 w-px bg-[#51513d]" />
+          <button type="button" onClick={onClose} className="text-[#1b2021] hover:text-[#1b2021]">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
-    </div>
+    </OverlayPortal>
   );
 }

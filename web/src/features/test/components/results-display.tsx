@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import type { AttemptVisualization } from '@/features/attempts/types';
 import { AttemptVisualizationOverlay } from '@/features/attempts/components/attempt-visualization-overlay';
 import { AOI_X_BOUNDS, AOI_Y_BOUNDS, READING_ZONE_BOUNDS } from '@/features/test/lib/constants';
+import { useReplayFullscreen } from '@/features/test/hooks/use-replay-fullscreen';
 import {
   calculateDerivedGazeAnalysis,
   calculateReadingAnalysis,
@@ -112,7 +113,23 @@ export function ResultsDisplay({
   const hasTobiiReplay = Boolean(visualizations?.length);
   const hasModelReplay = Boolean(modelFeatures.length && (readingContent || hasTobiiReplay));
 
-  const handleCloseReplay = useCallback(() => setReplayMode(null), []);
+  // The reading task ran fullscreen and the results screen leaves it, so the
+  // replay has to go back in — otherwise the passage re-wraps at a different
+  // viewport size and the gaze no longer lines up with the words.
+  const { enter: enterReplayFullscreen, exit: exitReplayFullscreen } = useReplayFullscreen();
+
+  const handleOpenReplay = useCallback(
+    (mode: Exclude<ReplayMode, null>) => {
+      setReplayMode(mode);
+      enterReplayFullscreen();
+    },
+    [enterReplayFullscreen],
+  );
+
+  const handleCloseReplay = useCallback(() => {
+    setReplayMode(null);
+    exitReplayFullscreen();
+  }, [exitReplayFullscreen]);
 
   if (replayMode === 'raw' && hasRawReplay) {
     return (
@@ -297,13 +314,13 @@ export function ResultsDisplay({
                   title="Raw child vision"
                   body="Shows the points captured directly during reading before model grouping."
                   disabled={!hasRawReplay}
-                  onClick={() => setReplayMode('raw')}
+                  onClick={() => handleOpenReplay('raw')}
                 />
                 <ReplayChoice
                   title="Model interpretation"
                   body="Shows model-derived fixations, regressions, return sweeps, and pause length."
                   disabled={!hasModelReplay}
-                  onClick={() => setReplayMode('model')}
+                  onClick={() => handleOpenReplay('model')}
                 />
               </div>
             </div>
