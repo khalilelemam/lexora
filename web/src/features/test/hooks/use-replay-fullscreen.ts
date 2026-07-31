@@ -14,26 +14,15 @@ import { useCallback, useEffect, useRef } from 'react';
  * `requestFullscreen()` outside one.
  */
 export function useReplayFullscreen() {
-  // Only leave fullscreen again if *this* replay is what entered it; the test
-  // flow may already be fullscreen for its own reasons.
+  // Whether a replay currently wants fullscreen. Tracked separately from
+  // ownership because `requestFullscreen()` resolves asynchronously and the
+  // replay can be closed while that request is still in flight.
+  const wantsFullscreenRef = useRef(false);
+  // Whether we are the ones who put the browser into fullscreen. The test flow
+  // may already be fullscreen for its own reasons; that is not ours to undo.
   const ownsFullscreenRef = useRef(false);
 
-  const enter = useCallback(() => {
-    if (document.fullscreenElement || !document.documentElement.requestFullscreen) {
-      return;
-    }
-
-    void document.documentElement
-      .requestFullscreen()
-      .then(() => {
-        ownsFullscreenRef.current = true;
-      })
-      .catch(() => {
-        ownsFullscreenRef.current = false;
-      });
-  }, []);
-
-  const exit = useCallback(() => {
+  const release = useCallback(() => {
     if (!ownsFullscreenRef.current) {
       return;
     }
@@ -45,9 +34,40 @@ export function useReplayFullscreen() {
     }
   }, []);
 
+  const enter = useCallback(() => {
+    if (document.fullscreenElement || !document.documentElement.requestFullscreen) {
+      return;
+    }
+
+    wantsFullscreenRef.current = true;
+
+    void document.documentElement
+      .requestFullscreen()
+      .then(() => {
+        ownsFullscreenRef.current = true;
+
+        // The replay was closed while the request was still pending, so the
+        // close had nothing to undo. Leave fullscreen now instead of stranding
+        // the page there until the user presses Esc.
+        if (!wantsFullscreenRef.current) {
+          release();
+        }
+      })
+      .catch(() => {
+        ownsFullscreenRef.current = false;
+      });
+  }, [release]);
+
+  const exit = useCallback(() => {
+    wantsFullscreenRef.current = false;
+    release();
+  }, [release]);
+
   // Release fullscreen if the trigger unmounts while a replay is still open.
   useEffect(
     () => () => {
+      wantsFullscreenRef.current = false;
+
       if (ownsFullscreenRef.current && document.fullscreenElement) {
         void document.exitFullscreen().catch(() => {});
       }
