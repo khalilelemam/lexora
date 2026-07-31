@@ -2,15 +2,16 @@ import 'server-only';
 
 import sharp from 'sharp';
 
-import { READING_ZONE_BOUNDS } from '@/features/test/lib/constants';
+import { AOI_X_BOUNDS, AOI_Y_BOUNDS, READING_ZONE_BOUNDS } from '@/features/test/lib/constants';
 import type { GazeFeature } from '@/features/test/types';
 
 // ── AOI bounds — sourced from constants.ts ──────────────────
-// CALIBRATION_POINTS X range: [0.2, 0.8]
-// AOI_Y_BOUNDS: { min: 0.1, max: 0.65 }
+// Imported rather than copied: the local copy had drifted from the calibration
+// bounds the replay uses, so exported overlays placed gaze differently from the
+// on-screen replay of the same attempt.
 
-const AOI_X = { min: 0.2, max: 0.8 };
-const AOI_Y = { min: 0.1, max: 0.65 };
+const AOI_X = AOI_X_BOUNDS;
+const AOI_Y = AOI_Y_BOUNDS;
 
 // ── Virtual viewport ────────────────────────────────────────
 // Matches fullscreen layout: reading zone at 25%–75% X, 18%–62% Y
