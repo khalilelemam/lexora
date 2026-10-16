@@ -263,18 +263,20 @@ export function TaskDisplay({
 
   const renderParagraphWithWords = () => {
     const words = content.split(/(\s+)/);
+    const isArabic = /[\u0600-\u06FF]/.test(content);
 
     return (
       <div ref={setTextContentRefs}>
         <p
           className={cn(
-            'leading-loose whitespace-pre-line text-[#1b2021] sm:leading-loose md:leading-loose',
-            'text-left font-(family-name:--font-lexend) select-none',
+            'leading-[2.3] whitespace-pre-line text-[#1b2021]',
+            isArabic ? 'text-right font-sans' : 'text-left font-(family-name:--font-lexend)',
+            'select-none',
           )}
           style={{
-            fontSize: `calc(${fontScale} * clamp(1.15rem, 2.5vw, 1.875rem))`,
-            letterSpacing: '0.1em',
-            wordSpacing: '0.3em',
+            fontSize: `calc(${fontScale} * clamp(1.2rem, 2.6vw, 2rem))`,
+            letterSpacing: isArabic ? 'normal' : '0.1em',
+            wordSpacing: isArabic ? '0.35em' : '0.3em',
           }}
         >
           {words.map((word, idx) => {
@@ -354,7 +356,7 @@ export function TaskDisplay({
     onDone();
   }, [onDone]);
 
-  // ─── Render ─────────────────────────────────────────
+  const isArabic = /[\u0600-\u06FF]/.test(content);
 
   return (
     <div ref={rootRef} className={cn('fixed inset-0 z-40 bg-[#e3dcc2]', !preview && 'cursor-none')}>
@@ -372,7 +374,7 @@ export function TaskDisplay({
           right: `${READING_ZONE_BOUNDS.right * 100}%`,
           bottom: `${READING_ZONE_BOUNDS.bottom * 100}%`,
         }}
-        dir="ltr"
+        dir={isArabic ? 'rtl' : 'ltr'}
       >
         {/*
          * Overflow stays `visible` in both modes on purpose. Clipping the
@@ -424,48 +426,53 @@ export function TaskDisplay({
             showCloseButton={false}
             className="border-[#51513d]/18 bg-[#f3edd7] p-0 text-[#1b2021] shadow-[14px_14px_0_rgba(81,81,61,.12)] sm:max-w-lg"
           >
-            <DialogHeader className="border-b border-[#51513d]/12 px-6 pt-6 pb-5 text-left">
+            <DialogHeader className={cn("border-b border-[#51513d]/12 px-6 pt-6 pb-5", isArabic ? "text-right" : "text-left")}>
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div className="flex h-12 w-12 items-center justify-center border border-[#51513d]/18 bg-[#e3dcc2]">
                   <BookOpen className="h-6 w-6 text-[#51513d]" />
                 </div>
                 <div className="border border-[#51513d]/14 bg-[#e3dcc2]/70 px-3 py-1.5 font-mono text-[10px] font-black tracking-widest text-[#51513d] uppercase">
-                  Reading checkpoint
+                  {isArabic ? 'مرحلة القراءة' : 'Reading checkpoint'}
                 </div>
               </div>
               <DialogTitle className="text-2xl font-black tracking-tight text-[#1b2021]">
-                Done reading?
+                {isArabic ? 'هل انتهى طفلك من القراءة؟' : 'Done reading?'}
               </DialogTitle>
               <DialogDescription className="pt-2 text-sm leading-relaxed text-[#51513d]">
-                Confirm only when the reader has reached the final word. If they are still reading,
-                keep collecting gaze data.
+                {isArabic
+                  ? 'يرجى التأكيد فقط بعد أن يكمل الطفل قراءة المقطع بالكامل. إذا كان لا يزال يقرأ، اضغط على مواصلة القراءة.'
+                  : 'Confirm only when the reader has reached the final word. If they are still reading, keep collecting gaze data.'}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-3 px-6 py-5 sm:grid-cols-2">
-              <div className="border border-[#51513d]/14 bg-[#e3dcc2]/55 p-3">
+            <div className="grid gap-3 px-6 py-5 sm:grid-cols-2" dir={isArabic ? 'rtl' : 'ltr'}>
+              <div className="border border-[#51513d]/14 bg-[#e3dcc2]/55 p-3 text-right">
                 <span className="font-mono text-[10px] font-black text-[#a6a867]">01</span>
-                <p className="mt-1 text-xs font-bold text-[#1b2021]">More time keeps recording</p>
+                <p className="mt-1 text-xs font-bold text-[#1b2021]">
+                  {isArabic ? 'مواصلة القراءة تسجل وقتاً إضافياً' : 'More time keeps recording'}
+                </p>
               </div>
-              <div className="border border-[#51513d]/14 bg-[#e3dcc2]/55 p-3">
+              <div className="border border-[#51513d]/14 bg-[#e3dcc2]/55 p-3 text-right">
                 <span className="font-mono text-[10px] font-black text-[#a6a867]">02</span>
-                <p className="mt-1 text-xs font-bold text-[#1b2021]">Done submits this passage</p>
+                <p className="mt-1 text-xs font-bold text-[#1b2021]">
+                  {isArabic ? 'تأكيد الانتهاء يحفظ بيانات هذا المقطع' : 'Done submits this passage'}
+                </p>
               </div>
             </div>
-            <DialogFooter className="flex-row justify-center gap-3 border-t border-[#51513d]/12 px-6 pt-5 pb-6 sm:justify-end">
+            <DialogFooter className="flex-row justify-center gap-3 border-t border-[#51513d]/12 px-6 pt-5 pb-6 sm:justify-end" dir={isArabic ? 'rtl' : 'ltr'}>
               <Button
                 variant="outline"
                 onClick={handleContinueReading}
                 className="border-[#51513d]/30 bg-[#f3edd7] text-[#51513d] hover:bg-[#e3dcc2] hover:text-[#1b2021]"
               >
                 <Clock className="mr-2 h-4 w-4" />
-                Keep Reading
+                {isArabic ? 'مواصلة القراءة' : 'Keep Reading'}
               </Button>
               <Button
                 onClick={handleConfirmDone}
                 className="bg-[#51513d] text-[#f3edd7] hover:bg-[#1b2021]"
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Done Reading
+                {isArabic ? 'تمت القراءة بنجاح' : 'Done Reading'}
               </Button>
             </DialogFooter>
           </DialogContent>

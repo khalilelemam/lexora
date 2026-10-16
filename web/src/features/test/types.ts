@@ -1,28 +1,35 @@
 // ─── Test Modes ──────────────────────────────────────────
-export type TestMode = 'tobii' | 'webcam';
+export type TestMode = 'webcam' | 'tobii';
 export type CalibrationMode = 'grid' | 'star' | 'stickman';
 
 // ─── Pre-test Intake ─────────────────────────────────────
 export interface IntakeData {
   age: number;
   label?: string;
+  language?: 'ar' | 'en';
+  waitlistEntryId?: string;
 }
 
-// ─── Task Types ──────────────────────────────────────────
+// ─── Task Types (ETDD70 Standard: Syllables, Pseudo-words, Meaningful Text) ────
+export type WebcamTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
 export type TobiiTaskType = 'syllables' | 'pseudo-words' | 'meaningful-text';
-export type WebcamTaskType = 'paragraph';
-export type TaskType = TobiiTaskType | WebcamTaskType;
+export type TaskType = WebcamTaskType;
 
 // ─── Calibration ─────────────────────────────────────────
 export type CalibrationQuality = 'good' | 'acceptable' | 'poor';
 
-export type CalibrationPhaseType = 'STATIC' | 'PURSUIT_SAMPLE' | 'PURSUIT_VALIDATION';
+export type CalibrationPhaseType =
+  | 'STATIC'
+  | 'PURSUIT_SAMPLE'
+  | 'PURSUIT_VALIDATION'
+  | 'READING_ANCHOR'
+  | 'READING_VALIDATION';
 
 export interface CalibrationPoint {
   x: number; // normalized 0–1
   y: number; // normalized 0–1
   phase: CalibrationPhaseType;
-  label?: string; // optional human-readable label for debugging
+  label?: string;
 }
 
 export interface CalibrationResult {
@@ -37,6 +44,8 @@ export interface TobiiGazePoint {
   fixationX: number;
   fixationY: number;
   timestamp: number;
+  x?: number;
+  y?: number;
 }
 
 /** Webcam raw gaze point — pixel coords, millisecond timestamps */
@@ -44,51 +53,50 @@ export interface WebcamGazePoint {
   x: number;
   y: number;
   timestamp: number;
+  fixationX?: number;
+  fixationY?: number;
 }
 
 // ─── Gaze Buffers (per task) ─────────────────────────────
-export interface TobiiTaskGazeData {
-  taskType: TobiiTaskType;
-  gazePoints: TobiiGazePoint[];
-}
-
 export interface WebcamTaskGazeData {
   taskType: WebcamTaskType;
   gazePoints: WebcamGazePoint[];
 }
 
+export interface TobiiTaskGazeData {
+  taskType: TobiiTaskType;
+  gazePoints: TobiiGazePoint[];
+}
+
 // ─── Risk Levels ─────────────────────────────────────────
 export type RiskLevel = 'low' | 'medium' | 'high';
 
-// ─── ML Prediction Results ───────────────────────────────
-export interface PredictionMetadata {
-  sequencesAnalyzed: number;
-  totalFixations: number;
+// ─── Research Data Collection Results ────────────────────
+export interface DataCollectionResult {
+  success: boolean;
+  attemptId: string;
+  participantAge: number;
+  totalGazePoints: number;
+  taskCounts: {
+    syllables: number;
+    pseudoWords: number;
+    meaningfulText: number;
+  };
+  calibrationQuality: CalibrationQuality;
+  averageError?: number;
+  savedAt: string;
+  // Compatibility fields
+  dyslexiaProbability?: number;
+  riskLevel?: RiskLevel;
+  confidence?: number;
+  metadata?: any;
+  features?: GazeFeature[];
 }
-
-/** Per-fixation feature data returned by the ML service (for gaze replay) */
-export interface GazeFeature {
-  timestamp: number;
-  durationMs: number;
-  fixationX: number;
-  fixationY: number;
-  saccadeAmplitude: number;
-  /** Webcam-only per-fixation feature returned by the ML service. */
-  efficiencyRatio?: number;
-  isRegression: boolean;
-  isReturnSweep?: boolean;
-}
-
-export interface WebcamGazeFeature extends GazeFeature {
-  efficiencyRatio: number;
-}
-
 export interface PredictionResult {
-  dyslexiaProbability: number;
-  riskLevel: RiskLevel;
-  confidence: number;
-  metadata: PredictionMetadata;
-  /** Per-fixation features for gaze replay visualization */
+  dyslexiaProbability?: number;
+  riskLevel?: RiskLevel;
+  confidence?: number;
+  metadata?: any;
   features?: GazeFeature[];
 }
 
@@ -96,6 +104,8 @@ export interface AttemptMetadata {
   attemptId: string;
   age: number;
   label?: string;
+  language?: string;
+  waitlistEntryId?: string;
   calibrationMode: CalibrationMode;
   contentSnapshot?: AttemptContentSnapshot;
 }
@@ -106,27 +116,50 @@ export interface AttemptContentSnapshot {
   tasks: Partial<Record<TaskType, string>>;
 }
 
-export interface TobiiSubmissionInput {
+export interface WebcamSubmissionInput {
   attempt: AttemptMetadata;
-  syllables: TobiiGazePoint[];
-  pseudoWords: TobiiGazePoint[];
-  meaningfulText: TobiiGazePoint[];
+  waitlistEntryId?: string;
+  syllables: WebcamGazePoint[];
+  pseudoWords: WebcamGazePoint[];
+  meaningfulText: WebcamGazePoint[];
+  calibrationResult?: CalibrationResult;
   screenWidth: number;
   screenHeight: number;
-  /** Task screenshots captured during the test (taskType → JPEG data URL) */
+  devicePixelRatio?: number;
+  language?: string;
+  gazeData?: WebcamGazePoint[];
   screenshots?: Record<string, string>;
 }
 
-export interface WebcamSubmissionInput {
+export interface TobiiSubmissionInput {
   attempt: AttemptMetadata;
-  gazeData: WebcamGazePoint[];
+  waitlistEntryId?: string;
+  syllables: TobiiGazePoint[];
+  pseudoWords: TobiiGazePoint[];
+  meaningfulText: TobiiGazePoint[];
+  calibrationResult?: CalibrationResult;
   screenWidth: number;
   screenHeight: number;
-  /** Task screenshots captured during the test (taskType → JPEG data URL) */
   screenshots?: Record<string, string>;
 }
 
 // ─── Test Flow States ────────────────────────────────────
+export type WebcamTestState =
+  | 'idle'
+  | 'intake'
+  | 'device-setup'
+  | 'calibration-setup'
+  | 'calibrating'
+  | 'task-syllables'
+  | 'review-syllables'
+  | 'task-pseudo-words'
+  | 'review-pseudo-words'
+  | 'task-meaningful-text'
+  | 'review-meaningful-text'
+  | 'submitting'
+  | 'results'
+  | 'error';
+
 export type TobiiTestState =
   | 'idle'
   | 'intake'
@@ -143,19 +176,7 @@ export type TobiiTestState =
   | 'results'
   | 'error';
 
-export type WebcamTestState =
-  | 'idle'
-  | 'intake'
-  | 'device-setup'
-  | 'calibration-setup'
-  | 'calibrating'
-  | 'task-paragraph'
-  | 'review-paragraph'
-  | 'submitting'
-  | 'results'
-  | 'error';
-
-export type TestState = TobiiTestState | WebcamTestState;
+export type TestState = WebcamTestState;
 
 // ─── Test Flow Actions ───────────────────────────────────
 export type TestAction =
@@ -163,15 +184,15 @@ export type TestAction =
   | { type: 'INTAKE_COMPLETE'; data: IntakeData }
   | { type: 'HARDWARE_CONFIRMED' }
   | { type: 'SETUP_COMPLETE' }
-  | { type: 'DEVICE_READY' }
   | { type: 'CAMERA_READY' }
+  | { type: 'DEVICE_READY' }
   | { type: 'CALIBRATION_COMPLETE'; result: CalibrationResult }
   | { type: 'CALIBRATION_RETRY' }
   | { type: 'TASK_COMPLETE' }
   | { type: 'RETAKE' }
   | { type: 'CONTINUE' }
   | { type: 'SUBMIT' }
-  | { type: 'SUBMIT_SUCCESS'; result: PredictionResult }
+  | { type: 'SUBMIT_SUCCESS'; result: DataCollectionResult }
   | { type: 'SUBMIT_ERROR'; error: string }
   | { type: 'RETRY_SUBMIT' }
   | { type: 'RESET' }
@@ -179,6 +200,20 @@ export type TestAction =
   | { type: 'FORCE_STATE'; state: TestState };
 
 // ─── Full Test Flow State ────────────────────────────────
+export interface WebcamTestFlowState {
+  mode: 'webcam';
+  currentState: WebcamTestState;
+  intake: IntakeData | null;
+  calibration: CalibrationResult | null;
+  taskData: {
+    syllables: WebcamGazePoint[];
+    pseudoWords: WebcamGazePoint[];
+    meaningfulText: WebcamGazePoint[];
+  };
+  results: DataCollectionResult | null;
+  error: string | null;
+}
+
 export interface TobiiTestFlowState {
   mode: 'tobii';
   currentState: TobiiTestState;
@@ -189,23 +224,11 @@ export interface TobiiTestFlowState {
     pseudoWords: TobiiGazePoint[];
     meaningfulText: TobiiGazePoint[];
   };
-  results: PredictionResult | null;
+  results: DataCollectionResult | null;
   error: string | null;
 }
 
-export interface WebcamTestFlowState {
-  mode: 'webcam';
-  currentState: WebcamTestState;
-  intake: IntakeData | null;
-  calibration: CalibrationResult | null;
-  taskData: {
-    paragraph: WebcamGazePoint[];
-  };
-  results: PredictionResult | null;
-  error: string | null;
-}
-
-export type TestFlowState = TobiiTestFlowState | WebcamTestFlowState;
+export type TestFlowState = WebcamTestFlowState | TobiiTestFlowState;
 
 // ─── Screen Info ─────────────────────────────────────────
 export interface ScreenInfo {
@@ -225,4 +248,15 @@ export interface TobiiDevice {
 export interface TobiiStatus {
   connected: boolean;
   device: TobiiDevice | null;
+}
+
+export interface GazeFeature {
+  timestamp: number;
+  durationMs: number;
+  fixationX: number;
+  fixationY: number;
+  saccadeAmplitude: number;
+  efficiencyRatio?: number;
+  isRegression: boolean;
+  isReturnSweep?: boolean;
 }

@@ -1,6 +1,4 @@
 import type {
-  TobiiTestFlowState,
-  TobiiTestState,
   WebcamTestFlowState,
   WebcamTestState,
   TestFlowState,
@@ -8,7 +6,7 @@ import type {
   TestState,
 } from '../types';
 
-const TOBII_TEST_STATES = new Set<TestState>([
+const WEBCAM_TEST_STATES = new Set<TestState>([
   'idle',
   'intake',
   'device-setup',
@@ -25,32 +23,15 @@ const TOBII_TEST_STATES = new Set<TestState>([
   'error',
 ]);
 
-const WEBCAM_TEST_STATES = new Set<TestState>([
-  'idle',
-  'intake',
-  'device-setup',
-  'calibration-setup',
-  'calibrating',
-  'task-paragraph',
-  'review-paragraph',
-  'submitting',
-  'results',
-  'error',
-]);
-
-function isTobiiTestState(state: TestState): state is TobiiTestState {
-  return TOBII_TEST_STATES.has(state);
-}
-
 function isWebcamTestState(state: TestState): state is WebcamTestState {
   return WEBCAM_TEST_STATES.has(state);
 }
 
-// ─── Initial States ──────────────────────────────────────
+// ─── Initial State ───────────────────────────────────────
 
-export function createTobiiInitialState(): TobiiTestFlowState {
+export function createWebcamInitialState(): WebcamTestFlowState {
   return {
-    mode: 'tobii',
+    mode: 'webcam',
     currentState: 'idle',
     intake: null,
     calibration: null,
@@ -64,23 +45,11 @@ export function createTobiiInitialState(): TobiiTestFlowState {
   };
 }
 
-export function createWebcamInitialState(): WebcamTestFlowState {
-  return {
-    mode: 'webcam',
-    currentState: 'idle',
-    intake: null,
-    calibration: null,
-    taskData: {
-      paragraph: [],
-    },
-    results: null,
-    error: null,
-  };
-}
+export const createTobiiInitialState = createWebcamInitialState;
 
-// ─── Tobii Reducer ───────────────────────────────────────
+// ─── Webcam 3-Task Reducer (ETDD70 Pipeline) ─────────────
 
-function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestFlowState {
+function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTestFlowState {
   switch (action.type) {
     case 'START':
       return { ...state, currentState: 'intake', error: null };
@@ -88,6 +57,7 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
     case 'INTAKE_COMPLETE':
       return { ...state, currentState: 'device-setup', intake: action.data };
 
+    case 'CAMERA_READY':
     case 'DEVICE_READY':
       return { ...state, currentState: 'calibration-setup' };
 
@@ -162,77 +132,6 @@ function tobiiReducer(state: TobiiTestFlowState, action: TestAction): TobiiTestF
       return { ...state, currentState: 'submitting', error: null };
 
     case 'RESET':
-      return createTobiiInitialState();
-
-    case 'ERROR':
-      return { ...state, currentState: 'error', error: action.error };
-
-    case 'FORCE_STATE':
-      return isTobiiTestState(action.state) ? { ...state, currentState: action.state } : state;
-
-    default:
-      return state;
-  }
-}
-
-// ─── Webcam Reducer ──────────────────────────────────────
-
-function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTestFlowState {
-  switch (action.type) {
-    case 'START':
-      return { ...state, currentState: 'intake', error: null };
-
-    case 'INTAKE_COMPLETE':
-      return { ...state, currentState: 'device-setup', intake: action.data };
-
-    case 'CAMERA_READY':
-      return { ...state, currentState: 'calibration-setup' };
-
-    case 'SETUP_COMPLETE':
-      return { ...state, currentState: 'calibrating' };
-
-    case 'CALIBRATION_COMPLETE':
-      return {
-        ...state,
-        currentState: 'task-paragraph',
-        calibration: action.result,
-      };
-
-    case 'CALIBRATION_RETRY':
-      return { ...state, currentState: 'calibrating', calibration: null };
-
-    case 'TASK_COMPLETE':
-      if (state.currentState === 'task-paragraph') {
-        return { ...state, currentState: 'review-paragraph' };
-      }
-      return state;
-
-    case 'RETAKE':
-      if (state.currentState === 'review-paragraph') {
-        return {
-          ...state,
-          currentState: 'task-paragraph',
-          taskData: { paragraph: [] },
-        };
-      }
-      return state;
-
-    case 'CONTINUE':
-      if (state.currentState === 'review-paragraph') {
-        return { ...state, currentState: 'submitting' };
-      }
-      return state;
-
-    case 'SUBMIT_SUCCESS':
-      return { ...state, currentState: 'results', results: action.result, error: null };
-
-    case 'SUBMIT_ERROR':
-      return { ...state, currentState: 'error', error: action.error };
-
-    case 'RETRY_SUBMIT':
-      return { ...state, currentState: 'submitting', error: null };
-
-    case 'RESET':
       return createWebcamInitialState();
 
     case 'ERROR':
@@ -249,8 +148,5 @@ function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTe
 // ─── Combined Reducer ────────────────────────────────────
 
 export function testFlowReducer(state: TestFlowState, action: TestAction): TestFlowState {
-  if (state.mode === 'tobii') {
-    return tobiiReducer(state as TobiiTestFlowState, action);
-  }
   return webcamReducer(state as WebcamTestFlowState, action);
 }

@@ -45,3 +45,13 @@ next-env.d.ts
 components.json
 
 /src/generated/prisma
+
+# SQLite database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Research test recordings (JSONs saved locally on server)
+/data/tests/*
+!/data/tests/.gitkeep

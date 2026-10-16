@@ -64,6 +64,8 @@ export function ReviewPanel({
     );
   }
 
+  const isArabic = /[\u0600-\u06FF]/.test(readingContent || '');
+
   // ═══════════════════════════════════════════════════════
   //  DEFAULT VIEW — Status card
   // ═══════════════════════════════════════════════════════
@@ -71,6 +73,7 @@ export function ReviewPanel({
     <div
       className="fixed inset-0 z-50 flex h-dvh w-screen flex-col items-center justify-center overflow-hidden bg-[#e3dcc2] p-6 text-[#1b2021] md:p-12"
       style={{ animation: 'float-up 0.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
+      dir={isArabic ? 'rtl' : 'ltr'}
     >
       {/* Background Glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -91,12 +94,22 @@ export function ReviewPanel({
           )}
 
           <h2 className="text-3xl font-black tracking-tight md:text-4xl">
-            {hasEnoughData ? 'Wonderful reading!' : 'We had a little trouble seeing you.'}
+            {hasEnoughData
+              ? isArabic
+                ? 'قراءة رائعة! 🌟'
+                : 'Wonderful reading!'
+              : isArabic
+                ? 'واجهنا صعوبة بسيطة في تتبع حركة العين.'
+                : 'We had a little trouble seeing you.'}
           </h2>
           <p className="mt-3 max-w-lg text-sm leading-relaxed text-[#1b2021]/70">
             {hasEnoughData
-              ? "We've successfully captured a clear picture of your eye movements."
-              : 'You can submit this attempt, or try reading the paragraph once more for better results.'}
+              ? isArabic
+                ? 'تم التقاط مسار حركة العين بوضوح خلال هذه المرحلة.'
+                : "We've successfully captured a clear picture of your eye movements."
+              : isArabic
+                ? 'يمكنك المتابعة، أو إعادة قراءة المقطع لجمع بيانات أكثر دقة.'
+                : 'You can submit this attempt, or try reading the paragraph once more for better results.'}
           </p>
         </div>
 
@@ -228,7 +241,7 @@ export function ReviewPanel({
               className="flex flex-1 items-center justify-center gap-2 border border-[#51513d]/25 bg-[#e3dcc2] px-6 py-4 text-sm font-black text-[#51513d] transition-colors hover:bg-[#51513d]/10 active:translate-y-px active:shadow-none"
             >
               <RotateCcw className="h-4 w-4" />
-              Read Again
+              {isArabic ? 'إعادة المحاولة' : 'Read Again'}
             </button>
             <button
               type="button"
@@ -237,14 +250,20 @@ export function ReviewPanel({
               className="flex flex-1 items-center justify-center gap-2 border-2 border-[#1b2021] bg-[#a6a867] px-6 py-4 text-sm font-black text-[#1b2021] uppercase shadow-[4px_4px_0_0_#1b2021] transition-colors hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1b2021]"
             >
               <Eye className="h-4 w-4" />
-              See my child vision
+              {isArabic ? 'شاهد مسار حركة عين طفلك 👁️' : 'See my child vision'}
             </button>
             <button
               type="button"
               onClick={onContinue}
               className="flex flex-1 items-center justify-center gap-2 bg-[#51513d] px-6 py-4 text-sm font-black text-[#e3dcc2] transition-colors hover:bg-[#1b2021] active:translate-y-px active:shadow-none"
             >
-              {isLastTask ? 'Submit for Analysis' : 'Next Task'}
+              {isArabic
+                ? isLastTask
+                  ? 'حفظ البيانات وإنهاء الاختبار'
+                  : 'المرحلة التالية'
+                : isLastTask
+                  ? 'Submit for Analysis'
+                  : 'Next Task'}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

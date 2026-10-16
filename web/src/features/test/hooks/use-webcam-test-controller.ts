@@ -9,6 +9,7 @@ import type {
   CalibrationResult,
   IntakeData,
   WebcamGazePoint,
+  WebcamTaskType,
   WebcamTestFlowState,
 } from '@/features/test/types';
 
@@ -18,14 +19,24 @@ import { useCalibrationQueryParams } from './use-calibration-query-params';
 import { useTestFlow } from './use-test-flow';
 import { useWebcamGaze } from './use-webcam-gaze';
 import { WEBCAM_STEPS, getStepKeyForState, MIN_GAZE_POINTS } from '../lib/constants';
-import { getWebcamTaskContent } from '../lib/test-content';
+import { getTaskContent } from '../lib/test-content';
+
+const ACTIVE_TASK_STATES = new Set([
+  'task-syllables',
+  'task-pseudo-words',
+  'task-meaningful-text',
+]);
 
 const STEP_INDICATOR_HIDDEN_STATES = new Set([
   'idle',
   'camera-setup',
   'calibrating',
-  'task-paragraph',
-  'review-paragraph',
+  'task-syllables',
+  'task-pseudo-words',
+  'task-meaningful-text',
+  'review-syllables',
+  'review-pseudo-words',
+  'review-meaningful-text',
   'results',
   'submitting',
 ]);
@@ -41,43 +52,72 @@ export function useWebcamTestController() {
   const [selectedMode, setSelectedMode] = useState<CalibrationVisualMode | undefined>(
     initialCalibrationMode,
   );
-  const requestedCalibrationMode = selectedMode || 'grid';
+  const requestedCalibrationMode: CalibrationVisualMode = 'grid';
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const gazeDataRef = useRef<WebcamGazePoint[]>([]);
-  const lastTaskGazePositionRef = useRef<{ x: number; y: number } | null>(null);
 
-  const [gazePointCount, setGazePointCount] = useState(0);
+  // ─── 3 Task Gaze Buffers (ETDD70 Standard) ─────────────
+  const syllablesGazeRef = useRef<WebcamGazePoint[]>([]);
+  const pseudoWordsGazeRef = useRef<WebcamGazePoint[]>([]);
+  const meaningfulTextGazeRef = useRef<WebcamGazePoint[]>([]);
+
+  const lastTaskGazePositionRef = useRef<{ x: number; y: number } | null>(null);
+  const screenshotsRef = useRef<Record<string, string>>({});
+  const calibrationResultRef = useRef<CalibrationResult | null>(null);
+
+  const [taskPointCounts, setTaskPointCounts] = useState<Record<WebcamTaskType, number>>({
+    syllables: 0,
+    'pseudo-words': 0,
+    'meaningful-text': 0,
+  });
+
   const [reviewGazeData, setReviewGazeData] = useState<WebcamGazePoint[]>([]);
   const [taskContent, setTaskContent] = useState('');
+  const [activeTaskType, setActiveTaskType] = useState<WebcamTaskType>('syllables');
   const [lastTaskGazePosition, setLastTaskGazePosition] = useState<{ x: number; y: number } | null>(
     null,
   );
-  const [paragraphScreenshot, setParagraphScreenshot] = useState<string | null>(null);
 
-  // Screenshot captured from TaskDisplay for export visualizations.
-  const screenshotRef = useRef<string | null>(null);
+  const setScreenshot = useCallback((taskType: string, dataUrl: string) => {
+    screenshotsRef.current[taskType] = dataUrl;
+  }, []);
 
-  const setScreenshot = useCallback((_taskType: string, dataUrl: string) => {
-    screenshotRef.current = dataUrl;
-    setParagraphScreenshot(dataUrl);
+  const getCurrentTaskType = useCallback((currentState: string): WebcamTaskType | null => {
+    if (currentState.includes('syllables')) return 'syllables';
+    if (currentState.includes('pseudo-words')) return 'pseudo-words';
+    if (currentState.includes('meaningful-text')) return 'meaningful-text';
+    return null;
   }, []);
 
   const webcamGaze = useWebcamGaze({
     enabled: true,
-    onGazePoint: useCallback((point: WebcamGazePoint) => {
-      gazeDataRef.current.push(point);
-      setGazePointCount((prev) => prev + 1);
+    onGazePoint: useCallback(
+      (point: WebcamGazePoint) => {
+        const currentTask = getCurrentTaskType(webcamState.currentState);
+        if (!currentTask) return;
 
-      const previous = lastTaskGazePositionRef.current;
-      const dx = previous ? point.x - previous.x : Number.POSITIVE_INFINITY;
-      const dy = previous ? point.y - previous.y : Number.POSITIVE_INFINITY;
-      if (!previous || dx * dx + dy * dy > 1) {
-        const next = { x: point.x, y: point.y };
-        lastTaskGazePositionRef.current = next;
-        setLastTaskGazePosition(next);
-      }
-    }, []),
+        if (currentTask === 'syllables') {
+          syllablesGazeRef.current.push(point);
+          setTaskPointCounts((prev) => ({ ...prev, syllables: prev.syllables + 1 }));
+        } else if (currentTask === 'pseudo-words') {
+          pseudoWordsGazeRef.current.push(point);
+          setTaskPointCounts((prev) => ({ ...prev, 'pseudo-words': prev['pseudo-words'] + 1 }));
+        } else if (currentTask === 'meaningful-text') {
+          meaningfulTextGazeRef.current.push(point);
+          setTaskPointCounts((prev) => ({ ...prev, 'meaningful-text': prev['meaningful-text'] + 1 }));
+        }
+
+        const previous = lastTaskGazePositionRef.current;
+        const dx = previous ? point.x - previous.x : Number.POSITIVE_INFINITY;
+        const dy = previous ? point.y - previous.y : Number.POSITIVE_INFINITY;
+        if (!previous || dx * dx + dy * dy > 1) {
+          const next = { x: point.x, y: point.y };
+          lastTaskGazePositionRef.current = next;
+          setLastTaskGazePosition(next);
+        }
+      },
+      [getCurrentTaskType, webcamState.currentState],
+    ),
   });
 
   const handleCameraReady = useCallback(() => {
@@ -100,11 +140,14 @@ export function useWebcamTestController() {
       if (mapping) {
         webcamGaze.setCalibrationData(mapping);
       }
-
+      calibrationResultRef.current = result;
       dispatch({ type: 'CALIBRATION_COMPLETE', result });
-      setTaskContent(getWebcamTaskContent(participantAge));
-      gazeDataRef.current = [];
-      setGazePointCount(0);
+
+      // Start Task 1: Syllables
+      setActiveTaskType('syllables');
+      setTaskContent(getTaskContent('syllables', participantAge, 'ar'));
+      syllablesGazeRef.current = [];
+      setTaskPointCounts((prev) => ({ ...prev, syllables: 0 }));
       setReviewGazeData([]);
       lastTaskGazePositionRef.current = null;
       setLastTaskGazePosition(null);
@@ -114,18 +157,37 @@ export function useWebcamTestController() {
 
   const handleTaskDone = useCallback(() => {
     webcamGaze.stopCollecting();
-    setReviewGazeData([...gazeDataRef.current]);
+    const currentTask = getCurrentTaskType(webcamState.currentState);
+
+    if (currentTask === 'syllables') {
+      setReviewGazeData([...syllablesGazeRef.current]);
+    } else if (currentTask === 'pseudo-words') {
+      setReviewGazeData([...pseudoWordsGazeRef.current]);
+    } else if (currentTask === 'meaningful-text') {
+      setReviewGazeData([...meaningfulTextGazeRef.current]);
+    }
+
     dispatch({ type: 'TASK_COMPLETE' });
-  }, [dispatch, webcamGaze]);
+  }, [dispatch, getCurrentTaskType, webcamGaze, webcamState.currentState]);
 
   const handleRetake = useCallback(() => {
-    gazeDataRef.current = [];
-    setGazePointCount(0);
+    const currentTask = getCurrentTaskType(webcamState.currentState);
+    if (currentTask === 'syllables') {
+      syllablesGazeRef.current = [];
+      setTaskPointCounts((prev) => ({ ...prev, syllables: 0 }));
+    } else if (currentTask === 'pseudo-words') {
+      pseudoWordsGazeRef.current = [];
+      setTaskPointCounts((prev) => ({ ...prev, 'pseudo-words': 0 }));
+    } else if (currentTask === 'meaningful-text') {
+      meaningfulTextGazeRef.current = [];
+      setTaskPointCounts((prev) => ({ ...prev, 'meaningful-text': 0 }));
+    }
+
     setReviewGazeData([]);
     lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     dispatch({ type: 'RETAKE' });
-  }, [dispatch]);
+  }, [dispatch, getCurrentTaskType, webcamState.currentState]);
 
   const handleContinue = useCallback(() => {
     dispatch({ type: 'CONTINUE' });
@@ -136,10 +198,15 @@ export function useWebcamTestController() {
   }, [dispatch]);
 
   const handleSubmit = useCallback(async () => {
-    if (gazeDataRef.current.length < MIN_GAZE_POINTS) {
+    const totalGazePoints =
+      syllablesGazeRef.current.length +
+      pseudoWordsGazeRef.current.length +
+      meaningfulTextGazeRef.current.length;
+
+    if (totalGazePoints < MIN_GAZE_POINTS) {
       dispatch({
         type: 'SUBMIT_ERROR',
-        error: `Not enough gaze data collected (${gazeDataRef.current.length} points). Please ensure the camera has a clear view of your face and try again.`,
+        error: `بيانات التتبع المسجلة غير كافية (${totalGazePoints} نقطة). يرجى التأكد من وضوح الكاميرا أمام وجه الطفل وإعادة المحاولة.`,
       });
       return;
     }
@@ -147,29 +214,41 @@ export function useWebcamTestController() {
     if (!webcamState.intake) {
       dispatch({
         type: 'SUBMIT_ERROR',
-        error: 'Missing intake data. Please restart the test and try again.',
+        error: 'بيانات التسجيل مفقودة، يرجى إعادة بدء الاختبار.',
       });
       return;
     }
 
+    const language = webcamState.intake.language || 'ar';
+    const age = webcamState.intake.age;
+
     const result = await submitWebcamTest({
       attempt: {
         attemptId: getOrCreateAttemptId(),
-        age: webcamState.intake.age,
+        age,
         label: webcamState.intake.label,
-        calibrationMode: requestedCalibrationMode,
+        language,
+        calibrationMode: 'grid',
         contentSnapshot: {
           version: 1,
-          primaryTask: 'paragraph',
+          primaryTask: 'meaningful-text',
           tasks: {
-            paragraph: taskContent,
+            syllables: getTaskContent('syllables', age, language),
+            'pseudo-words': getTaskContent('pseudo-words', age, language),
+            'meaningful-text': getTaskContent('meaningful-text', age, language),
           },
         },
       },
-      gazeData: gazeDataRef.current,
+      waitlistEntryId: webcamState.intake.waitlistEntryId,
+      syllables: syllablesGazeRef.current,
+      pseudoWords: pseudoWordsGazeRef.current,
+      meaningfulText: meaningfulTextGazeRef.current,
+      calibrationResult: calibrationResultRef.current || webcamState.calibration || undefined,
       screenWidth: window.screen.width,
       screenHeight: window.screen.height,
-      screenshots: screenshotRef.current ? { paragraph: screenshotRef.current } : undefined,
+      devicePixelRatio: window.devicePixelRatio || 1,
+      language,
+      screenshots: screenshotsRef.current,
     });
 
     if (result.success) {
@@ -178,18 +257,24 @@ export function useWebcamTestController() {
     }
 
     dispatch({ type: 'SUBMIT_ERROR', error: result.error });
-  }, [dispatch, getOrCreateAttemptId, requestedCalibrationMode, taskContent, webcamState.intake]);
+  }, [dispatch, getOrCreateAttemptId, webcamState.calibration, webcamState.intake]);
 
   const handleNewTest = useCallback(() => {
     resetAttemptId();
-    gazeDataRef.current = [];
-    setGazePointCount(0);
+    syllablesGazeRef.current = [];
+    pseudoWordsGazeRef.current = [];
+    meaningfulTextGazeRef.current = [];
+    setTaskPointCounts({
+      syllables: 0,
+      'pseudo-words': 0,
+      'meaningful-text': 0,
+    });
     setReviewGazeData([]);
     lastTaskGazePositionRef.current = null;
     setLastTaskGazePosition(null);
     setTaskContent('');
-    screenshotRef.current = null;
-    setParagraphScreenshot(null);
+    screenshotsRef.current = {};
+    calibrationResultRef.current = null;
     dispatch({ type: 'RESET' });
     dispatch({ type: 'START' });
   }, [dispatch, resetAttemptId]);
@@ -200,23 +285,34 @@ export function useWebcamTestController() {
     router.push('/');
   }, [exitFullscreen, router, webcamGaze]);
 
+  // Handle auto-triggering submission when entering submitting state
   useEffect(() => {
     if (webcamState.currentState === 'submitting') {
       void handleSubmit();
     }
   }, [handleSubmit, webcamState.currentState]);
 
+  // Handle task content and collection start on task state transition
   useEffect(() => {
-    if (webcamState.currentState === 'task-paragraph') {
+    const age = webcamState.intake?.age ?? participantAge;
+    const lang = webcamState.intake?.language || 'ar';
+
+    if (webcamState.currentState === 'task-syllables') {
+      setActiveTaskType('syllables');
+      setTaskContent(getTaskContent('syllables', age, lang));
+      webcamGaze.startCollecting();
+    } else if (webcamState.currentState === 'task-pseudo-words') {
+      setActiveTaskType('pseudo-words');
+      setTaskContent(getTaskContent('pseudo-words', age, lang));
+      webcamGaze.startCollecting();
+    } else if (webcamState.currentState === 'task-meaningful-text') {
+      setActiveTaskType('meaningful-text');
+      setTaskContent(getTaskContent('meaningful-text', age, lang));
       webcamGaze.startCollecting();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- startCollecting is stable; avoid re-triggering on webcamGaze object identity changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run strictly on state transition
   }, [webcamState.currentState]);
 
-  // `webcamGaze` is a fresh object every render, so it is read through a ref
-  // here: keeping it in the dependency lists re-ran these effects on every
-  // render, which re-exited fullscreen whenever the results screen re-rendered
-  // — including while a gaze replay was open on top of it.
   const webcamGazeRef = useRef(webcamGaze);
   webcamGazeRef.current = webcamGaze;
 
@@ -233,6 +329,9 @@ export function useWebcamTestController() {
     }
   }, [webcamState.currentState]);
 
+  const currentTask = getCurrentTaskType(webcamState.currentState) || 'syllables';
+  const currentTaskGazeCount = taskPointCounts[currentTask] || 0;
+
   return {
     state: webcamState,
     dispatch,
@@ -243,14 +342,15 @@ export function useWebcamTestController() {
     selectedMode,
     setSelectedMode,
     taskContent,
-    gazePointCount,
+    activeTaskType,
+    gazePointCount: currentTaskGazeCount,
+    taskPointCounts,
     reviewGazeData,
     lastTaskGazePosition,
-    paragraphScreenshot,
     steps: WEBCAM_STEPS.map((step) => ({ key: step.key, label: step.label })),
     currentStepKey: getStepKeyForState(webcamState.currentState),
     showStepIndicator: !STEP_INDICATOR_HIDDEN_STATES.has(webcamState.currentState),
-    canRetrySubmission: gazePointCount >= MIN_GAZE_POINTS,
+    canRetrySubmission: currentTaskGazeCount >= MIN_GAZE_POINTS,
     handleCameraReady,
     completeSetup,
     handleCalibrationComplete,

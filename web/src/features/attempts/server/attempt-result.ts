@@ -90,7 +90,7 @@ export function getAttemptVisualizations(
     return [
       {
         taskType,
-        label: taskType === 'paragraph' ? 'Paragraph' : 'Reading Task',
+        label: (taskType as string) === 'paragraph' ? 'Paragraph' : 'Reading Task',
         content,
         features: toWebcamGazeFeatures(response.features),
       },

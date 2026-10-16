@@ -1,5 +1,5 @@
-import type { PredictionResult } from '../types';
+import type { DataCollectionResult } from '../types';
 
 export type SubmissionActionResult =
-  | { success: true; data: PredictionResult }
+  | { success: true; data: DataCollectionResult }
   | { success: false; error: string; code: string };

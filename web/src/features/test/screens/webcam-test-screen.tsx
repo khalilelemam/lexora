@@ -23,11 +23,9 @@ import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useWebcamTestController } from '@/features/test/hooks';
 import { DEBUG_GAZE_OVERLAY } from '@/features/test/lib/debug-config';
 import { MIN_GAZE_POINTS } from '@/features/test/lib/constants';
-import { getWebcamTaskContent } from '@/features/test/lib/test-content';
 import type { IntakeData, WebcamGazePoint } from '@/features/test/types';
-import type { GazeFeature } from '@/features/test/types';
 
-type WebcamDebugView = CalibrationDebugView | 'reading-dialog' | 'submitting' | null;
+type WebcamDebugView = CalibrationDebugView | 'submitting' | null;
 
 const DEBUG_REVIEW_GAZE_DATA: WebcamGazePoint[] = [
   { x: 100, y: 100, timestamp: 0 },
@@ -36,101 +34,6 @@ const DEBUG_REVIEW_GAZE_DATA: WebcamGazePoint[] = [
   { x: 400, y: 100, timestamp: 1500 },
   { x: 100, y: 150, timestamp: 2000 },
   { x: 200, y: 150, timestamp: 2500 },
-];
-
-const DEBUG_RESULT_FEATURES: GazeFeature[] = [
-  {
-    timestamp: 0,
-    durationMs: 180,
-    fixationX: 0.24,
-    fixationY: 0.2,
-    saccadeAmplitude: 0.08,
-    efficiencyRatio: 0.82,
-    isRegression: false,
-  },
-  {
-    timestamp: 190,
-    durationMs: 230,
-    fixationX: 0.38,
-    fixationY: 0.21,
-    saccadeAmplitude: 0.11,
-    efficiencyRatio: 0.78,
-    isRegression: false,
-  },
-  {
-    timestamp: 430,
-    durationMs: 310,
-    fixationX: 0.58,
-    fixationY: 0.22,
-    saccadeAmplitude: 0.14,
-    efficiencyRatio: 0.7,
-    isRegression: false,
-  },
-  {
-    timestamp: 760,
-    durationMs: 260,
-    fixationX: 0.77,
-    fixationY: 0.23,
-    saccadeAmplitude: 0.13,
-    efficiencyRatio: 0.74,
-    isRegression: false,
-  },
-  {
-    timestamp: 1040,
-    durationMs: 190,
-    fixationX: 0.28,
-    fixationY: 0.34,
-    saccadeAmplitude: 0.18,
-    efficiencyRatio: 0.68,
-    isRegression: false,
-    isReturnSweep: true,
-  },
-  {
-    timestamp: 1240,
-    durationMs: 340,
-    fixationX: 0.46,
-    fixationY: 0.35,
-    saccadeAmplitude: 0.12,
-    efficiencyRatio: 0.66,
-    isRegression: false,
-  },
-  {
-    timestamp: 1600,
-    durationMs: 300,
-    fixationX: 0.36,
-    fixationY: 0.35,
-    saccadeAmplitude: 0.1,
-    efficiencyRatio: 0.58,
-    isRegression: true,
-  },
-  {
-    timestamp: 1920,
-    durationMs: 220,
-    fixationX: 0.62,
-    fixationY: 0.36,
-    saccadeAmplitude: 0.17,
-    efficiencyRatio: 0.76,
-    isRegression: false,
-  },
-  {
-    timestamp: 2160,
-    durationMs: 240,
-    fixationX: 0.25,
-    fixationY: 0.49,
-    saccadeAmplitude: 0.2,
-    efficiencyRatio: 0.72,
-    isRegression: false,
-    isReturnSweep: true,
-  },
-  {
-    timestamp: 2420,
-    durationMs: 280,
-    fixationX: 0.52,
-    fixationY: 0.5,
-    saccadeAmplitude: 0.16,
-    efficiencyRatio: 0.8,
-    isRegression: false,
-  },
 ];
 
 export default function WebcamTestScreen() {
@@ -143,10 +46,10 @@ export default function WebcamTestScreen() {
     requestedCalibrationMode,
     setSelectedMode,
     taskContent,
+    activeTaskType,
     gazePointCount,
     reviewGazeData,
     lastTaskGazePosition,
-    paragraphScreenshot,
     steps,
     currentStepKey,
     showStepIndicator,
@@ -231,28 +134,11 @@ export default function WebcamTestScreen() {
       active: debugView === 'accuracy-result',
       onSelect: () => showCalibrationDebugView('accuracy-result'),
     },
-    {
-      key: 'calibration-reading-prep',
-      label: 'Reading Prep Countdown',
-      group: 'Calibration',
-      active: debugView === 'reading-prep',
-      onSelect: () => showCalibrationDebugView('reading-prep'),
-    },
-    {
-      key: 'reading-done-dialog',
-      label: 'Done Reading Dialog',
-      group: 'Reading',
-      active: debugView === 'reading-dialog',
-      onSelect: () => {
-        setDebugView('reading-dialog');
-        forceState('task-paragraph');
-      },
-    },
   ];
 
   const renderState = () => {
     if (debugView === 'submitting') {
-      return <LoadingScreen message="Analyzing eye movement data..." />;
+      return <LoadingScreen message="جاري حفظ وتجهيز بيانات القراءة وحركة العين..." />;
     }
 
     switch (state.currentState) {
@@ -267,10 +153,10 @@ export default function WebcamTestScreen() {
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
             <div className="text-center">
               <p className="mb-4 text-xs font-black tracking-[0.32em] text-[#51513d] uppercase">
-                Webcam Tracking
+                إعداد تتبع العين عبر الكاميرا
               </p>
               <h1 className="text-4xl leading-tight font-black tracking-tight text-[#1b2021] md:text-5xl">
-                Webcam Setup
+                تجهيز كاميرا الويب
               </h1>
             </div>
             <CameraSetup webcamGaze={webcamGaze} videoRef={videoRef} onReady={handleCameraReady} />
@@ -285,7 +171,7 @@ export default function WebcamTestScreen() {
               resolvedMode={requestedCalibrationMode}
               onSelectMode={setSelectedMode}
               onStart={completeSetup}
-              startButtonText="Start Calibration"
+              startButtonText="ابدأ المعايرة (Start Calibration)"
             />
           </div>
         );
@@ -294,7 +180,7 @@ export default function WebcamTestScreen() {
         return (
           <CalibrationScreen
             tracker="webcam"
-            mode={requestedCalibrationMode}
+            mode="grid"
             participantAge={participantAge}
             onGetIrisSample={() => {
               const iris = webcamGaze.getLastIrisPosition();
@@ -320,79 +206,143 @@ export default function WebcamTestScreen() {
             onGetHeadPoseSample={() => webcamGaze.getLastHeadPose()}
             onComplete={handleCalibrationComplete}
             blockOnPoor={true}
-            debugView={debugView === 'reading-dialog' ? null : debugView}
+            debugView={debugView}
           />
         );
 
-      case 'task-paragraph':
+      // ─── Task 1: Syllables ──────────────────────────────────
+      case 'task-syllables':
         return (
           <TaskDisplay
-            taskType="paragraph"
-            content={taskContent || getWebcamTaskContent()}
-            pointCount={debugView === 'reading-dialog' ? MIN_GAZE_POINTS : gazePointCount}
-            isCollecting={debugView === 'reading-dialog' ? true : webcamGaze.collecting}
+            taskType="syllables"
+            content={taskContent}
+            pointCount={gazePointCount}
+            isCollecting={webcamGaze.collecting}
             onDone={handleTaskDone}
             getLastGazePosition={() => lastTaskGazePosition}
-            onScreenshotReady={(dataUrl) => setScreenshot('paragraph', dataUrl)}
+            onScreenshotReady={(dataUrl) => setScreenshot('syllables', dataUrl)}
             onPauseCollection={webcamGaze.pauseCollecting}
             onResumeCollection={webcamGaze.resumeCollecting}
-            debugOpenDoneDialog={debugView === 'reading-dialog'}
           />
         );
 
-      case 'review-paragraph': {
-        let gazeDataToDisplay = reviewGazeData;
-        // Inject mock gaze data if accessed via debug menu
-        if (gazeDataToDisplay.length === 0 && process.env.NODE_ENV === 'development') {
-          gazeDataToDisplay = DEBUG_REVIEW_GAZE_DATA;
-        }
+      case 'review-syllables': {
+        const gazeDataToDisplay =
+          reviewGazeData.length > 0
+            ? reviewGazeData
+            : process.env.NODE_ENV === 'development'
+              ? DEBUG_REVIEW_GAZE_DATA
+              : [];
 
         return (
           <ReviewPanel
-            taskType="paragraph"
-            pointCount={gazePointCount || 100}
+            taskType="syllables"
+            pointCount={gazePointCount || gazeDataToDisplay.length}
+            isLastTask={false}
+            onRetake={handleRetake}
+            onContinue={handleContinue}
+            readingContent={taskContent}
+            rawGazeData={gazeDataToDisplay}
+          />
+        );
+      }
+
+      // ─── Task 2: Pseudo-words ───────────────────────────────
+      case 'task-pseudo-words':
+        return (
+          <TaskDisplay
+            taskType="pseudo-words"
+            content={taskContent}
+            pointCount={gazePointCount}
+            isCollecting={webcamGaze.collecting}
+            onDone={handleTaskDone}
+            getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('pseudo-words', dataUrl)}
+            onPauseCollection={webcamGaze.pauseCollecting}
+            onResumeCollection={webcamGaze.resumeCollecting}
+          />
+        );
+
+      case 'review-pseudo-words': {
+        const gazeDataToDisplay =
+          reviewGazeData.length > 0
+            ? reviewGazeData
+            : process.env.NODE_ENV === 'development'
+              ? DEBUG_REVIEW_GAZE_DATA
+              : [];
+
+        return (
+          <ReviewPanel
+            taskType="pseudo-words"
+            pointCount={gazePointCount || gazeDataToDisplay.length}
+            isLastTask={false}
+            onRetake={handleRetake}
+            onContinue={handleContinue}
+            readingContent={taskContent}
+            rawGazeData={gazeDataToDisplay}
+          />
+        );
+      }
+
+      // ─── Task 3: Meaningful Narrative Text ──────────────────
+      case 'task-meaningful-text':
+        return (
+          <TaskDisplay
+            taskType="meaningful-text"
+            content={taskContent}
+            pointCount={gazePointCount}
+            isCollecting={webcamGaze.collecting}
+            onDone={handleTaskDone}
+            getLastGazePosition={() => lastTaskGazePosition}
+            onScreenshotReady={(dataUrl) => setScreenshot('meaningful-text', dataUrl)}
+            onPauseCollection={webcamGaze.pauseCollecting}
+            onResumeCollection={webcamGaze.resumeCollecting}
+          />
+        );
+
+      case 'review-meaningful-text': {
+        const gazeDataToDisplay =
+          reviewGazeData.length > 0
+            ? reviewGazeData
+            : process.env.NODE_ENV === 'development'
+              ? DEBUG_REVIEW_GAZE_DATA
+              : [];
+
+        return (
+          <ReviewPanel
+            taskType="meaningful-text"
+            pointCount={gazePointCount || gazeDataToDisplay.length}
             isLastTask={true}
             onRetake={handleRetake}
             onContinue={handleContinue}
-            readingContent={taskContent || getWebcamTaskContent()}
+            readingContent={taskContent}
             rawGazeData={gazeDataToDisplay}
           />
         );
       }
 
       case 'submitting':
-        return <LoadingScreen message="Analyzing eye movement data..." />;
+        return <LoadingScreen message="جاري حفظ وتجهيز بيانات القراءة وحركة العين..." />;
 
       case 'results': {
-        let resultToDisplay = state.results;
-
-        // Inject mock result data if accessed via debug menu
-        if (!resultToDisplay && process.env.NODE_ENV === 'development') {
-          resultToDisplay = {
-            dyslexiaProbability: 0.12,
-            riskLevel: 'low',
-            confidence: 0.89,
-            metadata: {
-              sequencesAnalyzed: 120,
-              totalFixations: 85,
-            },
-            features: DEBUG_RESULT_FEATURES,
-          };
-        }
-
-        if (!resultToDisplay) {
-          return null;
-        }
+        const resultToDisplay = state.results || {
+          success: true,
+          attemptId: 'demo-sample-id',
+          participantAge: participantAge ?? 9,
+          totalGazePoints: 450,
+          taskCounts: {
+            syllables: 120,
+            pseudoWords: 140,
+            meaningfulText: 190,
+          },
+          calibrationQuality: 'good',
+          savedAt: new Date().toISOString(),
+        };
 
         return (
           <ResultsDisplay
             result={resultToDisplay}
-            mode="webcam"
             onNewTest={handleNewTest}
-            readingContent={taskContent || getWebcamTaskContent()}
-            rawGazeData={reviewGazeData.length > 1 ? reviewGazeData : DEBUG_REVIEW_GAZE_DATA}
-            rawGazeCoordinateSpace="screen-pixels"
-            taskScreenshot={paragraphScreenshot}
           />
         );
       }
@@ -400,7 +350,7 @@ export default function WebcamTestScreen() {
       case 'error':
         return (
           <ErrorScreen
-            error={state.error ?? 'An unexpected error occurred'}
+            error={state.error ?? 'حدث خطأ غير متوقع أثناء معالجة الجلسة'}
             onRetry={canRetrySubmission ? retrySubmission : undefined}
             onStartOver={handleNewTest}
             onGoHome={handleExit}
@@ -422,13 +372,13 @@ export default function WebcamTestScreen() {
           />
 
           {showStepIndicator && (
-            <div className="sticky top-0 z-50 mb-8 pt-4 pb-2">
+            <div className="sticky top-0 z-50 mb-8 pt-4 pb-2" dir="rtl">
               <StepIndicator steps={steps} currentStepKey={currentStepKey} />
             </div>
           )}
 
           {renderState()}
-          {DEBUG_GAZE_OVERLAY && state.currentState === 'task-paragraph' && (
+          {DEBUG_GAZE_OVERLAY && state.currentState.startsWith('task-') && (
             <GazeDebugDot active={webcamGaze.collecting} getPosition={() => lastTaskGazePosition} />
           )}
 
@@ -440,8 +390,12 @@ export default function WebcamTestScreen() {
                 'device-setup',
                 'calibration-setup',
                 'calibrating',
-                'task-paragraph',
-                'review-paragraph',
+                'task-syllables',
+                'review-syllables',
+                'task-pseudo-words',
+                'review-pseudo-words',
+                'task-meaningful-text',
+                'review-meaningful-text',
                 'submitting',
                 'results',
                 'error',

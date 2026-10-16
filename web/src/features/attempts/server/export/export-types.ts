@@ -1,9 +1,7 @@
-import type {
-  AttemptOutcome,
-  CalibrationMode,
-  ExportArtifactStatus,
-  TestMode,
-} from '@/generated/prisma/client';
+export type AttemptOutcome = 'LOW' | 'MEDIUM' | 'HIGH';
+export type CalibrationMode = 'GRID' | 'STAR' | 'STICKMAN';
+export type ExportArtifactStatus = 'PENDING' | 'READY' | 'FAILED';
+export type TestMode = 'TOBII' | 'WEBCAM';
 
 // ── Content mode ────────────────────────────────────────────
 

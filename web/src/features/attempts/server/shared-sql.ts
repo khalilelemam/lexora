@@ -1,11 +1,26 @@
 import 'server-only';
 
-import {
-  AttemptOutcome,
-  CalibrationMode as PrismaCalibrationMode,
-  Prisma,
-  TestMode as PrismaTestMode,
-} from '@/generated/prisma/client';
+import { Prisma } from '@/generated/prisma/client';
+
+export const AttemptOutcome = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+} as const;
+export type AttemptOutcome = (typeof AttemptOutcome)[keyof typeof AttemptOutcome];
+
+export const PrismaCalibrationMode = {
+  GRID: 'GRID',
+  STAR: 'STAR',
+  STICKMAN: 'STICKMAN',
+} as const;
+export type PrismaCalibrationMode = (typeof PrismaCalibrationMode)[keyof typeof PrismaCalibrationMode];
+
+export const PrismaTestMode = {
+  TOBII: 'TOBII',
+  WEBCAM: 'WEBCAM',
+} as const;
+export type PrismaTestMode = (typeof PrismaTestMode)[keyof typeof PrismaTestMode];
 import type { AttemptFilters } from '@/features/attempts/types';
 import type { CalibrationMode, RiskLevel, TestMode } from '@/features/test/types';
 
@@ -172,18 +187,20 @@ export function fromPrismaOutcome(outcome: AttemptOutcome): RiskLevel {
     case AttemptOutcome.MEDIUM:
       return 'medium';
     case AttemptOutcome.HIGH:
+    default:
       return 'high';
   }
 }
 
 export function fromPrismaCalibrationMode(calibrationMode: PrismaCalibrationMode): CalibrationMode {
   switch (calibrationMode) {
-    case PrismaCalibrationMode.GRID:
-      return 'grid';
     case PrismaCalibrationMode.STAR:
       return 'star';
     case PrismaCalibrationMode.STICKMAN:
       return 'stickman';
+    case PrismaCalibrationMode.GRID:
+    default:
+      return 'grid';
   }
 }
 

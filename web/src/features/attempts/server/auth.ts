@@ -2,7 +2,12 @@ import 'server-only';
 
 import { headers } from 'next/headers';
 
-import { Role } from '@/generated/prisma/client';
+export type Role = 'USER' | 'ADMIN';
+export const Role = {
+  USER: 'USER',
+  ADMIN: 'ADMIN',
+} as const;
+
 import { auth } from '@/lib/auth';
 
 export class AttemptsAuthError extends Error {

@@ -1,4 +1,4 @@
-export type CalibrationVisualMode = 'grid' | 'stickman' | 'star';
+export type CalibrationVisualMode = 'grid' | 'star' | 'stickman';
 
 export function resolveCalibrationMode(
   requestedMode?: CalibrationVisualMode,
