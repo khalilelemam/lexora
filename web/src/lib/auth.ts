@@ -1,30 +1,30 @@
-import { render } from 'react-email';
 import { APIError } from 'better-auth/api';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { magicLink } from 'better-auth/plugins';
-import { Resend } from 'resend';
 
 import { parseConsentCookie } from '@/lib/consent';
-import { MagicLinkEmail } from '@/emails/magic-link';
 import { prisma } from '@/lib/prisma';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: 'postgresql' }),
-  baseURL: process.env.BETTER_AUTH_URL,
+  database: prismaAdapter(prisma, { provider: 'sqlite' }),
+  secret: process.env.BETTER_AUTH_SECRET || 'lexora-waitlist-secret-auth-key-32chars',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
 
-  /* ── Social providers ─────────────────────────────────── */
+  /* ── Social providers (optional) ─────────────────────── */
   socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      mapProfileToUser: (profile) => ({
-        image: profile.picture,
-      }),
-    },
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            mapProfileToUser: (profile: { picture?: string }) => ({
+              image: profile.picture,
+            }),
+          },
+        }
+      : {}),
   },
 
   /* ── Account linking ──────────────────────────────────── */
@@ -109,14 +109,25 @@ export const auth = betterAuth({
   plugins: [
     magicLink({
       sendMagicLink: async ({ email, url }) => {
-        const html = await render(MagicLinkEmail({ url }));
-
-        await resend.emails.send({
-          from: process.env.EMAIL_FROM || 'Lexora <noreply@lexora.page>',
-          to: email,
-          subject: 'Sign in to Lexora',
-          html,
-        });
+        if (process.env.RESEND_API_KEY) {
+          try {
+            const { Resend } = await import('resend');
+            const { render } = await import('react-email');
+            const { MagicLinkEmail } = await import('@/emails/magic-link');
+            const resendClient = new Resend(process.env.RESEND_API_KEY);
+            const html = await render(MagicLinkEmail({ url }));
+            await resendClient.emails.send({
+              from: process.env.EMAIL_FROM || 'Lexora <noreply@lexora.page>',
+              to: email,
+              subject: 'Sign in to Lexora',
+              html,
+            });
+            return;
+          } catch (err) {
+            console.error('[Auth MagicLink] Error sending email:', err);
+          }
+        }
+        console.log(`[Auth MagicLink] ${email}: ${url}`);
       },
       expiresIn: 900,
       allowedAttempts: 1,

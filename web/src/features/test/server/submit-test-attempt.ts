@@ -8,9 +8,18 @@ import type { WebcamSubmissionInput, DataCollectionResult } from '../types';
 
 /**
  * Ensures the target data directory exists on the server.
+ * In serverless environments like Vercel, process.cwd() is read-only, so /tmp is used.
  */
 async function ensureDataDirectory(): Promise<string> {
-  const dataDir = path.resolve(process.cwd(), 'data', 'tests');
+  const customDir = process.env.DATA_DIR;
+  if (customDir) {
+    await fs.mkdir(customDir, { recursive: true });
+    return customDir;
+  }
+  const dataDir = process.env.VERCEL
+    ? path.join('/tmp', 'data', 'tests')
+    : path.resolve(process.cwd(), 'data', 'tests');
+
   await fs.mkdir(dataDir, { recursive: true });
   return dataDir;
 }
@@ -30,7 +39,10 @@ export async function submitWebcamTestAttempt(
     const dataDir = await ensureDataDirectory();
     const fileName = `${attemptId}.json`;
     const fullFilePath = path.join(dataDir, fileName);
-    const relativeFilePath = `data/tests/${fileName}`;
+    const relativeFilePath = path.join(
+      dataDir === path.resolve(process.cwd(), 'data', 'tests') ? 'data/tests' : dataDir,
+      fileName,
+    );
 
     const totalGazePoints =
       (input.syllables?.length || 0) +
@@ -79,7 +91,11 @@ export async function submitWebcamTestAttempt(
     };
 
     // 1. Write JSON file to server disk
-    await fs.writeFile(fullFilePath, JSON.stringify(fullPayload, null, 2), 'utf-8');
+    try {
+      await fs.writeFile(fullFilePath, JSON.stringify(fullPayload, null, 2), 'utf-8');
+    } catch (fsError) {
+      console.warn('[SubmitTest] Disk file write warning:', fsError);
+    }
 
     // 2. Persist record in SQLite
     try {
