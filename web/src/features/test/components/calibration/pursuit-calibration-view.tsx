@@ -356,18 +356,18 @@ export function PursuitCalibrationView({
         <div className="flex w-full max-w-xl flex-col items-center border border-[#51513d]/18 bg-[#f3edd7]/92 px-7 py-8 text-center shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm">
           <div className="mb-5 flex w-full items-center justify-between gap-3 border-b border-[#51513d]/12 pb-4">
             <p className="text-xs font-black tracking-[0.28em] text-[#51513d] uppercase">
-              Smooth Pursuit
+              التتبع الانسيابي
             </p>
             <button
               type="button"
               onClick={onToggleAudio}
               className="flex items-center gap-2 border border-[#51513d]/18 bg-[#e3dcc2]/70 px-3 py-2 text-[#51513d] transition-colors hover:bg-[#e3dcc2]"
               aria-pressed={audioEnabled}
-              aria-label={audioEnabled ? 'Turn pursuit sound off' : 'Turn pursuit sound on'}
+              aria-label={audioEnabled ? 'كتم الصوت' : 'تشغيل الصوت'}
             >
               {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               <span className="font-mono text-[9px] font-black tracking-widest uppercase">
-                {audioEnabled ? 'Sound on' : 'Sound off'}
+                {audioEnabled ? 'الصوت مفعّل' : 'الصوت معطّل'}
               </span>
             </button>
           </div>
@@ -383,14 +383,13 @@ export function PursuitCalibrationView({
           </div>
 
           <h2 className="text-2xl font-black tracking-tight text-[#1b2021]">
-            Track one smooth motion
+            تابع حركة النقطة بانسيابية
           </h2>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-[#51513d]">
-            Keep your head still. Follow the moving dot with your eyes only, left to right, across
-            each line.
+            أبقِ رأسك ثابتاً، وتابع النقطة المتحركة بعينيك فقط بهدوء.
           </p>
-          <div className="mt-6 grid w-full gap-3 sm:grid-cols-3">
-            {['Eyes follow dot', 'Head stays still', 'Blink normally'].map((item, index) => (
+          <div className="mt-6 grid w-full gap-3 sm:grid-cols-3 text-right">
+            {['تابع النقطة بعينيك', 'حافظ على ثبات الرأس', 'اطرف بعينيك بشكل طبيعي'].map((item, index) => (
               <div key={item} className="border border-[#51513d]/14 bg-[#e3dcc2]/55 px-3 py-3">
                 <span className="font-mono text-[10px] font-black text-[#a6a867]">
                   0{index + 1}

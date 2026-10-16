@@ -65,11 +65,11 @@ export function CalibrationCollecting({
                 strokeLinecap="round"
               />
             </svg>
-            <p className="text-sm font-semibold text-[#1b2021]">Face not detected</p>
+            <p className="text-sm font-semibold text-[#1b2021]">لم يتم التعرف على الوجه</p>
             <p className="text-xs leading-relaxed text-[#51513d]">
-              Make sure your face is visible and well-lit.
+              تأكد من وضوح وجه الطفل وإضاءته جيداً.
               <br />
-              Keep your head inside the camera frame.
+              أبقِ الرأس داخل إطار الكاميرا.
             </p>
           </div>
         </div>
@@ -81,21 +81,22 @@ export function CalibrationCollecting({
           variant="outline"
           size="sm"
           onClick={onSkip}
-          className="border-[#51513d] bg-[#f3edd7]/80 text-xs text-[#51513d] backdrop-blur-sm hover:text-[#1b2021]"
+          className="border-[#51513d] bg-[#f3edd7]/80 text-xs font-bold text-[#51513d] backdrop-blur-sm hover:text-[#1b2021]"
         >
-          Skip
+          تخطي
         </Button>
       </div>
 
       {/* Webcam collection-quality warnings — subtle top-center toast */}
       {tracker === 'webcam' && collectionIssue && !showFaceLost && (
         <div
-          className="pointer-events-none absolute top-4 left-1/2 z-20 -translate-x-1/2 border border-[#e3dc95] bg-[#e3dc95]/35 px-4 py-2 text-xs text-[#51513d] backdrop-blur-sm"
+          className="pointer-events-none absolute top-4 left-1/2 z-20 -translate-x-1/2 border border-[#e3dc95] bg-[#e3dc95]/35 px-4 py-2 text-xs font-bold text-[#51513d] backdrop-blur-sm"
           style={{ animation: 'float-up 0.3s ease-out' }}
+          dir="rtl"
         >
           {collectionIssue === 'no-signal'
-            ? 'No face detected - keep your face visible and well-lit'
-            : 'Signal unstable - hold your eyes steady on the target'}
+            ? 'لم يتم التعرف على الوجه - تأكد من وضوح إضاءة وجه الطفل'
+            : 'الإشارة غير مستقرة - ثبّت نظرك على النقطة'}
         </div>
       )}
 

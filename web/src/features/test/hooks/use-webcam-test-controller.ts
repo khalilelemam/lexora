@@ -45,7 +45,13 @@ export function useWebcamTestController() {
   const router = useRouter();
   const { state, dispatch, forceState } = useTestFlow({ mode: 'webcam' });
   const webcamState = state as WebcamTestFlowState;
-  const { mode: initialCalibrationMode, age: participantAge } = useCalibrationQueryParams();
+  const {
+    mode: initialCalibrationMode,
+    age: participantAge,
+    waitlistId: initialWaitlistId,
+    name: initialParticipantName,
+    email: initialEmail,
+  } = useCalibrationQueryParams();
   const { getOrCreateAttemptId, resetAttemptId } = useStableAttemptId();
   const { enterFullscreen, exitFullscreen } = useFullscreen();
 
@@ -211,22 +217,16 @@ export function useWebcamTestController() {
       return;
     }
 
-    if (!webcamState.intake) {
-      dispatch({
-        type: 'SUBMIT_ERROR',
-        error: 'بيانات التسجيل مفقودة، يرجى إعادة بدء الاختبار.',
-      });
-      return;
-    }
-
-    const language = webcamState.intake.language || 'ar';
-    const age = webcamState.intake.age;
+    const language = webcamState.intake?.language || 'ar';
+    const age = webcamState.intake?.age ?? participantAge ?? 9;
+    const waitlistEntryId = webcamState.intake?.waitlistEntryId ?? initialWaitlistId;
+    const label = webcamState.intake?.label ?? initialParticipantName;
 
     const result = await submitWebcamTest({
       attempt: {
         attemptId: getOrCreateAttemptId(),
         age,
-        label: webcamState.intake.label,
+        label,
         language,
         calibrationMode: 'grid',
         contentSnapshot: {
@@ -239,7 +239,7 @@ export function useWebcamTestController() {
           },
         },
       },
-      waitlistEntryId: webcamState.intake.waitlistEntryId,
+      waitlistEntryId,
       syllables: syllablesGazeRef.current,
       pseudoWords: pseudoWordsGazeRef.current,
       meaningfulText: meaningfulTextGazeRef.current,
@@ -338,6 +338,9 @@ export function useWebcamTestController() {
     videoRef,
     webcamGaze,
     participantAge,
+    initialWaitlistId,
+    initialParticipantName,
+    initialEmail,
     requestedCalibrationMode,
     selectedMode,
     setSelectedMode,

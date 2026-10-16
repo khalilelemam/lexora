@@ -16,10 +16,9 @@ import {
   isTestDebugNavigationEnabled,
   type CalibrationDebugView,
   type DebugTestShortcut,
+  WebcamTestIntro,
 } from '@/features/test/components';
 import { CalibrationSetup } from '@/features/test/components/calibration/calibration-setup';
-import { PreTestIntake } from '@/features/test/components/pre-test-intake';
-import { PreTestSlides } from '@/features/test/components/pre-test-slides';
 import { useWebcamTestController } from '@/features/test/hooks';
 import { DEBUG_GAZE_OVERLAY } from '@/features/test/lib/debug-config';
 import { MIN_GAZE_POINTS } from '@/features/test/lib/constants';
@@ -43,6 +42,9 @@ export default function WebcamTestScreen() {
     videoRef,
     webcamGaze,
     participantAge,
+    initialWaitlistId,
+    initialParticipantName,
+    initialEmail,
     requestedCalibrationMode,
     setSelectedMode,
     taskContent,
@@ -143,10 +145,16 @@ export default function WebcamTestScreen() {
 
     switch (state.currentState) {
       case 'idle':
-        return <PreTestSlides mode="webcam" onComplete={startFromIdle} onSkip={startFromIdle} />;
-
       case 'intake':
-        return <PreTestIntake onComplete={(data: IntakeData) => completeIntake(data)} />;
+        return (
+          <WebcamTestIntro
+            initialWaitlistId={initialWaitlistId}
+            initialAge={participantAge}
+            initialName={initialParticipantName}
+            initialEmail={initialEmail}
+            onStart={(data: IntakeData) => completeIntake(data)}
+          />
+        );
 
       case 'device-setup':
         return (

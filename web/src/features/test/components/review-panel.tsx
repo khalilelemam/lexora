@@ -117,32 +117,36 @@ export function ReviewPanel({
         <div className="flex min-h-0 flex-col overflow-y-auto md:flex-row">
           {/* Left Side: Stats Grid */}
           <div className="flex-1 border-b border-[#51513d]/18 p-6 md:border-r md:border-b-0 md:p-8">
-            <h3 className="mb-6 text-center text-xs font-black tracking-widest text-[#51513d] uppercase md:text-left">
-              Key Metrics
+            <h3 className="mb-6 text-center text-xs font-black tracking-widest text-[#51513d] uppercase md:text-right">
+              {isArabic ? 'مؤشرات القراءة الأساسية' : 'Key Metrics'}
             </h3>
             {readingAnalysis && (
               <div className="mx-auto grid max-w-sm grid-cols-2 gap-px border border-[#51513d]/18 bg-[#51513d]/18 shadow-sm">
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
                   <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
-                    Reading Speed
+                    {isArabic ? 'سرعة القراءة' : 'Reading Speed'}
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
                     {readingAnalysis.readingWpm}{' '}
-                    <span className="text-[10px] font-bold text-[#51513d]/60">WPM</span>
+                    <span className="text-[10px] font-bold text-[#51513d]/60">
+                      {isArabic ? 'كلمة/د' : 'WPM'}
+                    </span>
                   </p>
                 </div>
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
                   <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
-                    Focus Time
+                    {isArabic ? 'زمن التثبيت' : 'Focus Time'}
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
                     {readingAnalysis.avgFixationMs}{' '}
-                    <span className="text-[10px] font-bold text-[#51513d]/60">MS</span>
+                    <span className="text-[10px] font-bold text-[#51513d]/60">
+                      {isArabic ? 'مللي ثانية' : 'MS'}
+                    </span>
                   </p>
                 </div>
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
                   <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
-                    Re-reads
+                    {isArabic ? 'مرات التراجع' : 'Re-reads'}
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
                     {readingAnalysis.regressionCount}
@@ -150,11 +154,13 @@ export function ReviewPanel({
                 </div>
                 <div className="flex flex-col items-center justify-center bg-[#f3edd7] p-5 text-center transition-colors hover:bg-[#e3dcc2]/50">
                   <p className="max-w-full text-[9px] font-black tracking-widest wrap-break-word text-[#51513d] uppercase sm:text-[10px]">
-                    Total Time
+                    {isArabic ? 'الوقت المستغرق' : 'Total Time'}
                   </p>
                   <p className="mt-2 text-2xl font-black text-[#1b2021] sm:text-3xl">
                     {readingAnalysis.totalSeconds}{' '}
-                    <span className="text-[10px] font-bold text-[#51513d]/60">SEC</span>
+                    <span className="text-[10px] font-bold text-[#51513d]/60">
+                      {isArabic ? 'ثانية' : 'SEC'}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -163,66 +169,166 @@ export function ReviewPanel({
 
           {/* Right Side: Insights */}
           <div className="flex-1 bg-[#e3dcc2]/30 p-6 shadow-inner md:p-8">
-            <h3 className="mb-6 text-center text-xs font-black tracking-widest text-[#51513d] uppercase md:text-left">
-              Your Reading Insights
+            <h3 className="mb-6 text-center text-xs font-black tracking-widest text-[#51513d] uppercase md:text-right">
+              {isArabic ? 'ملاحظات القراءة والتركيز' : 'Your Reading Insights'}
             </h3>
             {readingAnalysis && (
-              <div className="flex flex-col gap-5 text-sm leading-relaxed font-medium text-[#1b2021] md:text-[15px]">
+              <div className="flex flex-col gap-5 text-sm leading-relaxed font-medium text-[#1b2021] md:text-[15px] text-right">
                 <p>
-                  {readingAnalysis.readingWpm > 200 ? (
-                    <>You blazed through the text at a fast </>
-                  ) : readingAnalysis.readingWpm > 120 ? (
-                    <>You read at a steady, conversational pace of </>
+                  {isArabic ? (
+                    readingAnalysis.readingWpm > 180 ? (
+                      <>
+                        انطلق طفلك في القراءة بسرعة لافتة بلغت{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.readingWpm} كلمة في الدقيقة
+                        </strong>
+                        ، منهياً قراءة النص في غضون{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.totalSeconds} ثانية
+                        </strong>
+                        .
+                      </>
+                    ) : readingAnalysis.readingWpm > 90 ? (
+                      <>
+                        قرأ طفلك بوتيرة متوازنة وطبيعية بلغت{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.readingWpm} كلمة في الدقيقة
+                        </strong>
+                        ، وأتم النص بالكامل خلال{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.totalSeconds} ثانية
+                        </strong>
+                        .
+                      </>
+                    ) : (
+                      <>
+                        قرأ طفلك بتمهل وتركيز متأنٍ بلغت سرعته{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.readingWpm} كلمة في الدقيقة
+                        </strong>
+                        ، مستغرقاً{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.totalSeconds} ثانية
+                        </strong>
+                        .
+                      </>
+                    )
                   ) : (
-                    <>You took your time, reading at a careful pace of </>
-                  )}
-                  <strong className="font-black text-[#51513d]">
-                    {readingAnalysis.readingWpm} words per minute
-                  </strong>
-                  , completing the entire passage in just{' '}
-                  <strong className="font-black text-[#51513d]">
-                    {readingAnalysis.totalSeconds} seconds
-                  </strong>
-                  .
-                </p>
-                <p>
-                  {readingAnalysis.avgFixationMs < 200 ? (
-                    <>Your eyes scanned quickly, spending only </>
-                  ) : readingAnalysis.avgFixationMs < 300 ? (
-                    <>You maintained a very typical and healthy rhythm, spending </>
-                  ) : (
-                    <>You were deeply processing the words, spending </>
-                  )}
-                  <strong className="font-black text-[#51513d]">
-                    {readingAnalysis.avgFixationMs}ms
-                  </strong>{' '}
-                  on average focusing on each point.
-                </p>
-                <p>
-                  {readingAnalysis.regressionCount === 0 ? (
                     <>
-                      Incredibly, you did not jump backward to re-read at all! You maintained{' '}
+                      {readingAnalysis.readingWpm > 200 ? (
+                        <>You blazed through the text at a fast </>
+                      ) : readingAnalysis.readingWpm > 120 ? (
+                        <>You read at a steady, conversational pace of </>
+                      ) : (
+                        <>You took your time, reading at a careful pace of </>
+                      )}
                       <strong className="font-black text-[#51513d]">
-                        perfect forward momentum
+                        {readingAnalysis.readingWpm} words per minute
+                      </strong>
+                      , completing the entire passage in just{' '}
+                      <strong className="font-black text-[#51513d]">
+                        {readingAnalysis.totalSeconds} seconds
                       </strong>
                       .
                     </>
-                  ) : readingAnalysis.regressionCount <= 3 ? (
-                    <>
-                      You only had to backtrack and re-read{' '}
-                      <strong className="font-black text-[#51513d]">
-                        {readingAnalysis.regressionCount} time
-                        {readingAnalysis.regressionCount > 1 ? 's' : ''}
-                      </strong>
-                      , showing very strong comprehension.
-                    </>
+                  )}
+                </p>
+                <p>
+                  {isArabic ? (
+                    readingAnalysis.avgFixationMs < 200 ? (
+                      <>
+                        تنقلت عيناه بخفة وسرعة بين الكلمات، بمتوسط زمن تثبيت قدره{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.avgFixationMs} مللي ثانية
+                        </strong>{' '}
+                        على كل نقطة نظر.
+                      </>
+                    ) : readingAnalysis.avgFixationMs < 320 ? (
+                      <>
+                        أظهر إيقاع نظر صحي وطبيعي جداً، بمتوسط زمن تثبيت قدره{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.avgFixationMs} مللي ثانية
+                        </strong>{' '}
+                        لكل نقطة.
+                      </>
+                    ) : (
+                      <>
+                        أبدى تركيزاً عميقاً في معالجة الحروف والكلمات، بمتوسط زمن تثبيت{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.avgFixationMs} مللي ثانية
+                        </strong>{' '}
+                        على نقاط التثبيت.
+                      </>
+                    )
                   ) : (
                     <>
-                      We noticed you naturally jumped back to re-read{' '}
+                      {readingAnalysis.avgFixationMs < 200 ? (
+                        <>Your eyes scanned quickly, spending only </>
+                      ) : readingAnalysis.avgFixationMs < 300 ? (
+                        <>You maintained a very typical and healthy rhythm, spending </>
+                      ) : (
+                        <>You were deeply processing the words, spending </>
+                      )}
                       <strong className="font-black text-[#51513d]">
-                        {readingAnalysis.regressionCount} times
-                      </strong>
-                      , which is a great strategy for double-checking meaning.
+                        {readingAnalysis.avgFixationMs}ms
+                      </strong>{' '}
+                      on average focusing on each point.
+                    </>
+                  )}
+                </p>
+                <p>
+                  {isArabic ? (
+                    readingAnalysis.regressionCount === 0 ? (
+                      <>
+                        رائع جداً! حافظ الطفل على{' '}
+                        <strong className="font-black text-[#51513d]">مسار قراءة أمامي مستمر</strong>{' '}
+                        دون الحاجة للعودة للوراء لإعادة قراءة أي كلمة.
+                      </>
+                    ) : readingAnalysis.regressionCount <= 3 ? (
+                      <>
+                        تراجع للوراء لإعادة التأكد من بعض الكلمات{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.regressionCount} {readingAnalysis.regressionCount === 1 ? 'مرة فقط' : 'مرات'}
+                        </strong>
+                        ، وهو مؤشر ممتاز على تدقيق الاستيعاب والفهم القرائي.
+                      </>
+                    ) : (
+                      <>
+                        أعاد النظر وتراجع للوراء{' '}
+                        <strong className="font-black text-[#51513d]">
+                          {readingAnalysis.regressionCount} مرات
+                        </strong>
+                        ، وهي استراتيجية طبيعية يلجأ إليها الطفل لتثبيت المعنى والتأكد من تهجئة الكلمات.
+                      </>
+                    )
+                  ) : (
+                    <>
+                      {readingAnalysis.regressionCount === 0 ? (
+                        <>
+                          Incredibly, you did not jump backward to re-read at all! You maintained{' '}
+                          <strong className="font-black text-[#51513d]">
+                            perfect forward momentum
+                          </strong>
+                          .
+                        </>
+                      ) : readingAnalysis.regressionCount <= 3 ? (
+                        <>
+                          You only had to backtrack and re-read{' '}
+                          <strong className="font-black text-[#51513d]">
+                            {readingAnalysis.regressionCount} time
+                            {readingAnalysis.regressionCount > 1 ? 's' : ''}
+                          </strong>
+                          , showing very strong comprehension.
+                        </>
+                      ) : (
+                        <>
+                          We noticed you naturally jumped back to re-read{' '}
+                          <strong className="font-black text-[#51513d]">
+                            {readingAnalysis.regressionCount} times
+                          </strong>
+                          , which is a great strategy for double-checking meaning.
+                        </>
+                      )}
                     </>
                   )}
                 </p>
@@ -247,7 +353,7 @@ export function ReviewPanel({
               type="button"
               onClick={() => setShowGazePreview(true)}
               disabled={rawGazeData.length < 2 || !readingContent}
-              className="flex flex-1 items-center justify-center gap-2 border-2 border-[#1b2021] bg-[#a6a867] px-6 py-4 text-sm font-black text-[#1b2021] uppercase shadow-[4px_4px_0_0_#1b2021] transition-colors hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1b2021]"
+              className="flex flex-1 items-center justify-center gap-2 border-2 border-[#1b2021] bg-[#a6a867] px-6 py-4 text-sm font-black text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] transition-colors hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#1b2021]"
             >
               <Eye className="h-4 w-4" />
               {isArabic ? 'شاهد مسار حركة عين طفلك 👁️' : 'See my child vision'}
@@ -264,7 +370,7 @@ export function ReviewPanel({
                 : isLastTask
                   ? 'Submit for Analysis'
                   : 'Next Task'}
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 rotate-180" />
             </button>
           </div>
 
@@ -273,10 +379,10 @@ export function ReviewPanel({
             <button
               type="button"
               onClick={() => setShowGazePreview(true)}
-              className="mx-auto flex items-center gap-2 text-xs font-black tracking-widest text-[#51513d]/70 uppercase transition-colors hover:text-[#51513d]"
+              className="mx-auto flex items-center gap-2 text-xs font-black tracking-widest text-[#51513d]/70 transition-colors hover:text-[#51513d]"
             >
               <Eye className="h-4 w-4" />
-              Eye Tracking Visualization
+              {isArabic ? 'عرض تفصيلي لمسار حركة العين' : 'Eye Tracking Visualization'}
             </button>
           )}
         </div>

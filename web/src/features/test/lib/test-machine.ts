@@ -1,5 +1,6 @@
 import type {
   WebcamTestFlowState,
+  TobiiTestFlowState,
   WebcamTestState,
   TestFlowState,
   TestAction,
@@ -45,21 +46,37 @@ export function createWebcamInitialState(): WebcamTestFlowState {
   };
 }
 
-export const createTobiiInitialState = createWebcamInitialState;
+export function createTobiiInitialState(): TobiiTestFlowState {
+  return {
+    mode: 'tobii',
+    currentState: 'idle',
+    intake: null,
+    calibration: null,
+    taskData: {
+      syllables: [],
+      pseudoWords: [],
+      meaningfulText: [],
+    },
+    results: null,
+    error: null,
+  };
+}
 
-// ─── Webcam 3-Task Reducer (ETDD70 Pipeline) ─────────────
+// ─── Webcam 3-Task Reducer ───────────────────────────────
 
 function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTestFlowState {
   switch (action.type) {
     case 'START':
-      return { ...state, currentState: 'intake', error: null };
+      // Move directly to camera device setup (intake is collected during waitlist registration)
+      return { ...state, currentState: 'device-setup', error: null };
 
     case 'INTAKE_COMPLETE':
       return { ...state, currentState: 'device-setup', intake: action.data };
 
     case 'CAMERA_READY':
     case 'DEVICE_READY':
-      return { ...state, currentState: 'calibration-setup' };
+      // Move directly to grid calibration (only grid mode is supported)
+      return { ...state, currentState: 'calibrating' };
 
     case 'SETUP_COMPLETE':
       return { ...state, currentState: 'calibrating' };
@@ -122,8 +139,16 @@ function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTe
           return state;
       }
 
+    case 'SUBMIT':
+      return { ...state, currentState: 'submitting' };
+
     case 'SUBMIT_SUCCESS':
-      return { ...state, currentState: 'results', results: action.result, error: null };
+      return {
+        ...state,
+        currentState: 'results',
+        results: action.result,
+        error: null,
+      };
 
     case 'SUBMIT_ERROR':
       return { ...state, currentState: 'error', error: action.error };
@@ -138,15 +163,18 @@ function webcamReducer(state: WebcamTestFlowState, action: TestAction): WebcamTe
       return { ...state, currentState: 'error', error: action.error };
 
     case 'FORCE_STATE':
-      return isWebcamTestState(action.state) ? { ...state, currentState: action.state } : state;
+      if (isWebcamTestState(action.state)) {
+        return { ...state, currentState: action.state };
+      }
+      return state;
 
     default:
       return state;
   }
 }
 
-// ─── Combined Reducer ────────────────────────────────────
-
-export function testFlowReducer(state: TestFlowState, action: TestAction): TestFlowState {
+export function testReducer(state: TestFlowState, action: TestAction): TestFlowState {
   return webcamReducer(state as WebcamTestFlowState, action);
 }
+
+export const testFlowReducer = testReducer;

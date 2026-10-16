@@ -131,7 +131,7 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
               <div className="absolute inset-2 animate-spin rounded-full border-2 border-[#a6a867] border-t-transparent" />
             </div>
             <p className="text-sm font-medium tracking-wide text-[#e3dcc2]/70">
-              {initializing ? 'Connecting camera...' : 'Camera not found'}
+              {initializing ? 'جاري الاتصال بالكاميرا...' : 'لم يتم العثور على كاميرا'}
             </p>
           </div>
         )}
@@ -148,39 +148,39 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
                 )}
               />
               <span className="text-xs font-medium text-[#e3dcc2]/90">
-                {faceDetected ? 'Face detected' : 'Looking for face...'}
+                {faceDetected ? 'تم التعرف على الوجه' : 'جاري البحث عن الوجه...'}
               </span>
             </div>
           </div>
         )}
       </div>
 
-      <div className="flex w-95 shrink-0 flex-col overflow-y-auto border-l border-[#51513d]/18 bg-[#f3edd7]">
-        <div className="border-b border-[#51513d]/18 px-8 pt-8 pb-6">
+      <div className="flex w-95 shrink-0 flex-col overflow-y-auto border-l border-[#51513d]/18 bg-[#f3edd7]" dir="rtl">
+        <div className="border-b border-[#51513d]/18 px-8 pt-8 pb-6 text-right">
           <LexoraLogo size="sm" className="mb-5" />
-          <h2 className="text-xl font-bold tracking-tight text-[#1b2021]">Camera Setup</h2>
+          <h2 className="text-xl font-bold tracking-tight text-[#1b2021]">تجهيز كاميرا الويب</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-[#1b2021]/65">
-            Position your face in the oval guide. The guide turns sage when the signal is ready.
+            اجعل وجه الطفل داخل الإطار البيضاوي. سيتحول لون الإطار للأخضر عند ثبات واستقرار الإشارة.
           </p>
         </div>
 
         <div className="space-y-3 border-b border-[#51513d]/18 px-8 py-5">
-          <p className="mb-4 text-[10px] font-semibold tracking-widest text-[#51513d]/65 uppercase">
-            Device Check
+          <p className="mb-4 text-[10px] font-bold tracking-wider text-[#51513d]/65 uppercase text-right">
+            فحص الكاميرا والأجهزة
           </p>
 
           <StatusItem
             done={cameraReady}
             loading={initializing && !cameraReady}
-            label="Camera"
-            doneText={cameraInfo?.label ?? 'Connected'}
-            loadingText="Connecting..."
-            pendingText="Not found"
+            label="كاميرا الويب"
+            doneText={cameraInfo?.label ?? 'متصلة بنجاح'}
+            loadingText="جاري الاتصال..."
+            pendingText="لم يتم العثور على كاميرا"
           />
 
           {cameraInfo && (
-            <div className="flex items-center justify-between pl-7 text-xs">
-              <span className="text-[#51513d]/65">Resolution</span>
+            <div className="flex items-center justify-between pr-7 text-xs" dir="rtl">
+              <span className="text-[#51513d]/70">دقة الكاميرا</span>
               <span
                 className={cn(
                   'font-medium tabular-nums',
@@ -192,12 +192,12 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
                 )}
               >
                 {cameraInfo.width}x{cameraInfo.height}
-                <span className="ml-1.5 font-normal text-[#51513d]/65">
+                <span className="mr-1.5 font-normal text-[#51513d]/70">
                   {resolutionQuality === 'poor'
-                    ? '(low - may affect accuracy)'
+                    ? '(دقة منخفضة)'
                     : resolutionQuality === 'excellent'
-                      ? '(HD OK)'
-                      : '(OK)'}
+                      ? '(عالية الوضوح)'
+                      : '(جيدة)'}
                 </span>
               </span>
             </div>
@@ -206,76 +206,72 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
           <StatusItem
             done={modelReady}
             loading={cameraReady && !modelReady}
-            label="Eye tracking"
-            doneText="Ready"
-            loadingText="Loading..."
-            pendingText="Waiting for camera"
+            label="نموذج تتبع العين"
+            doneText="جاهز"
+            loadingText="جاري التحميل..."
+            pendingText="بانتظار إذن الكاميرا"
           />
 
           <StatusItem
             done={faceDetected}
             loading={allReady && !faceDetected}
-            label="Face detected"
-            doneText="Looking good"
-            loadingText="Center your face in the oval"
-            pendingText="Waiting for camera"
+            label="التعرف على الوجه"
+            doneText="الموضع ممتاز"
+            loadingText="ضع وجه الطفل داخل الإطار البيضاوي"
+            pendingText="بانتظار الكاميرا"
           />
         </div>
 
-        <div className="flex-1 px-8 py-5">
-          <p className="mb-3 text-[10px] font-semibold tracking-widest text-[#51513d]/65 uppercase">
-            Position tips
+        <div className="flex-1 px-8 py-5" dir="rtl">
+          <p className="mb-3 text-[11px] font-black tracking-wider text-[#51513d] uppercase">
+            إرشادات لضبط الجلسة
           </p>
-          <ul className="space-y-2.5 text-[13px] text-[#1b2021]/65">
+          <ul className="space-y-2.5 text-[13px] text-[#1b2021]/80 font-medium">
             <TipItem>
-              Sit about <strong className="text-[#1b2021]">arm&apos;s length</strong> from the
-              screen
+              اجعل الطفل يجلس على بعد <strong className="text-[#1b2021]">ذراع تقريباً</strong> من الشاشة.
             </TipItem>
             <TipItem>
-              Make sure your face is <strong className="text-[#1b2021]">evenly lit</strong> - avoid
-              bright light behind you
+              تأكد من أن وجه الطفل <strong className="text-[#1b2021]">مضاء بوضوح</strong>، وتجنب وجود إضاءة قوية خلفه.
             </TipItem>
             <TipItem>
-              Keep your <strong className="text-[#1b2021]">head still</strong> - only move your eyes
-              during calibration
+              شجع طفلك على <strong className="text-[#1b2021]">إبقاء رأسه ثابتاً</strong> وتحريك عينيه فقط أثناء المتابعة.
             </TipItem>
-            <TipItem>Remove glasses if possible to reduce reflections</TipItem>
+            <TipItem>يمكن إزالة النظارة الطبية في حال تسببها في انعكاسات قوية تعيق الكاميرا.</TipItem>
           </ul>
 
           {resolutionQuality === 'poor' && (
-            <div className="mt-4 flex items-start gap-2.5 border border-[#e3dc95] bg-[#e3dc95]/25 p-3 text-xs leading-relaxed text-[#51513d]">
+            <div className="mt-4 flex items-start gap-2.5 border border-[#e3dc95] bg-[#e3dc95]/25 p-3 text-xs leading-relaxed text-[#51513d]" dir="rtl">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                Your camera resolution is below 640x480. Eye tracking accuracy may be reduced.
-                Consider using a higher-quality camera.
+                دقة الكاميرا الحالية منخفضة (أقل من 640x480). قد تؤثر على دقة التتبع. يُفضل استخدام كاميرا أعلى دقة إن أمكن.
               </span>
             </div>
           )}
         </div>
 
         {error && (
-          <div className="mx-8 mb-4 flex items-start gap-2.5 border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-700">
+          <div className="mx-8 mb-4 flex items-start gap-2.5 border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-700" dir="rtl">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="flex flex-col gap-3 px-8 pt-2 pb-8">
+        <div className="flex flex-col gap-3 px-8 pt-2 pb-8" dir="rtl">
           <Button
             onClick={onReady}
             disabled={!canProceed}
             size="lg"
-            className="w-full bg-[#51513d] text-[#f3edd7] hover:bg-[#1b2021] disabled:opacity-40"
+            className="w-full bg-[#51513d] text-[#f3edd7] hover:bg-[#1b2021] disabled:opacity-40 font-bold h-12"
           >
             {canProceed ? (
               <>
-                Continue to Calibration
-                <ArrowRight className="ml-2 h-4 w-4" />
+                المتابعة إلى المعايرة
+                <ArrowRight className="mr-2 h-4 w-4 rotate-180" />
               </>
             ) : !allReady ? (
-              'Setting up...'
+              'جاري تجهيز الكاميرا والنموذج...'
             ) : (
-              'Center your face to continue'
+              'اجعل وجه الطفل داخل الإطار للمتابعة'
             )}
           </Button>
 
@@ -283,10 +279,10 @@ export function CameraSetup({ webcamGaze, videoRef, onReady }: CameraSetupProps)
             type="button"
             onClick={() => void runInitialization()}
             disabled={initializing}
-            className="flex items-center justify-center gap-1.5 text-xs text-[#51513d]/65 transition-colors hover:text-[#1b2021] disabled:opacity-40"
+            className="flex items-center justify-center gap-1.5 text-xs text-[#51513d]/75 transition-colors hover:text-[#1b2021] disabled:opacity-40 font-medium"
           >
             <RefreshCw className={cn('h-3 w-3', initializing && 'animate-spin')} />
-            {initializing ? 'Retrying...' : 'Retry camera setup'}
+            {initializing ? 'جاري إعادة المحاولة...' : 'إعادة محاولة تشغيل الكاميرا'}
           </button>
         </div>
       </div>
@@ -361,7 +357,7 @@ function FaceGuideOverlay({
           fontWeight="700"
           opacity="0.98"
         >
-          {detected ? 'Looking good' : 'Center your face in the oval'}
+          {detected ? 'الموضع ممتاز' : 'ضع وجه الطفل داخل الإطار'}
         </text>
 
         {needsArrow && (

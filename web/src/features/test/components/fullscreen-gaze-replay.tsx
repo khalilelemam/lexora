@@ -366,14 +366,14 @@ export function FullscreenGazeReplay({
         </div>
 
         {/* Legend */}
-        <div className="fixed top-4 right-4 z-70 flex flex-col gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-4 py-2.5 text-[11px] text-[#1b2021] shadow-sm backdrop-blur-md">
+        <div className="fixed top-4 right-4 z-70 flex flex-col gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/90 px-4 py-2.5 text-[11px] text-[#1b2021] shadow-sm backdrop-blur-md" dir="rtl">
           <div className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full bg-[#51513d] opacity-60" />
-            <span>Forward fixation</span>
+            <span>تثبيت أمامي مستمر</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full bg-red-400 opacity-60" />
-            <span>Regression (backward)</span>
+            <span>تراجع للخلف (إعادة قراءة)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <svg width="14" height="4">
@@ -387,10 +387,10 @@ export function FullscreenGazeReplay({
                 strokeDasharray="3 4"
               />
             </svg>
-            <span>Return sweep</span>
+            <span>الانتقال إلى السطر التالي</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span>Bubble size = fixation duration</span>
+            <span>حجم الدائرة = مدة التثبيت</span>
           </div>
         </div>
       </div>
@@ -561,12 +561,12 @@ export function FullscreenRawGazeReplay({
           );
         })}
 
-        <div className="fixed top-4 left-4 z-70 border border-[#51513d]/18 bg-[#f3edd7]/92 px-4 py-2.5 text-[#1b2021] shadow-sm backdrop-blur-md">
+        <div className="fixed top-4 left-4 z-70 border border-[#51513d]/18 bg-[#f3edd7]/92 px-4 py-2.5 text-[#1b2021] shadow-sm backdrop-blur-md" dir="rtl">
           <p className="text-[10px] font-black tracking-[0.2em] text-[#51513d] uppercase">
-            {title}
+            {title === 'Child vision replay' || title === 'Raw gaze replay' ? 'عرض مسار حركة عين الطفل' : title}
           </p>
           <p className="mt-1 text-xs text-[#51513d]/75">
-            Teal trail = raw eye samples before model smoothing.
+            الخط الملون يوضح مسار حركة عين الطفل أثناء قراءة النص.
           </p>
         </div>
 

@@ -16,3 +16,4 @@ export { GazeDebugDot } from './gaze-debug-dot';
 export { DebugTestNavigation, isTestDebugNavigationEnabled } from './debug-test-navigation';
 export type { DebugTestShortcut } from './debug-test-navigation';
 export { TestErrorBoundary } from './test-error-boundary';
+export { WebcamTestIntro } from './webcam-test-intro';

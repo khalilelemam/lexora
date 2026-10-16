@@ -14,9 +14,9 @@ interface NavLink {
 }
 
 const NAV_LINKS: NavLink[] = [
-  { label: 'انضم للانتظار', href: '#waitlist' },
-  { label: 'فيديو المبادرة', href: '#video' },
-  { label: 'منهجية البحث', href: '#methodology' },
+  { label: 'عن المبادرة', href: '#about' },
+  { label: 'فيديو توضيحي', href: '#video' },
+  { label: 'كيف يعمل الاختبار', href: '#how-it-works' },
   { label: 'الأسئلة الشائعة', href: '#faq' },
 ];
 
@@ -62,7 +62,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-3 group">
             <LexoraLogo size="sm" />
             <span className="hidden sm:inline-block rounded-full border border-[#51513d]/18 bg-[#e3dcc2]/70 px-2.5 py-0.5 text-[10px] font-bold text-[#51513d]">
-              قائمة الانتظار والبحث العربي
+              قائمة الانتظار والأبحاث
             </span>
           </Link>
 
@@ -79,7 +79,7 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Action CTAs */}
+          {/* Action CTAs (No Login) */}
           <div className="hidden sm:flex items-center gap-3">
             <Link href="/test/webcam">
               <Button
@@ -88,27 +88,28 @@ export function Navbar() {
                 className="border-[#51513d]/30 bg-[#e3dcc2]/60 text-xs font-bold text-[#1b2021] hover:bg-[#e3dcc2]"
               >
                 <Camera className="ml-1.5 h-3.5 w-3.5 text-[#51513d]" />
-                شارك في الاختبار
+                تجربة القراءة
               </Button>
             </Link>
 
-            <Button
-              size="sm"
-              onClick={() => scrollTo('#waitlist')}
-              className="bg-[#51513d] text-xs font-bold text-[#e3dcc2] shadow-[4px_4px_0_rgba(81,81,61,.18)] hover:bg-[#1b2021] cursor-pointer"
-            >
-              <Sparkles className="ml-1.5 h-3.5 w-3.5 text-[#e3dc95]" />
-              سجّل الآن
-            </Button>
+            <Link href="/waitlist">
+              <Button
+                size="sm"
+                className="bg-[#51513d] text-xs font-bold text-[#e3dcc2] shadow-[4px_4px_0_rgba(81,81,61,.18)] hover:bg-[#1b2021] cursor-pointer"
+              >
+                <Sparkles className="ml-1.5 h-3.5 w-3.5 text-[#e3dc95]" />
+                انضم للانتظار
+              </Button>
+            </Link>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden flex h-10 w-10 items-center justify-center border border-[#51513d]/20 bg-[#e3dcc2] text-[#1b2021]"
-            aria-label="القائمة الرئيسية"
+            className="md:hidden p-2 text-[#1b2021] hover:text-[#51513d]"
+            aria-label="القائمة"
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </motion.nav>
@@ -117,42 +118,38 @@ export function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
+            className="fixed inset-0 z-40 bg-[#f3edd7] pt-24 px-6 pb-8 md:hidden flex flex-col justify-between"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-x-0 top-20 z-40 border-b border-[#51513d]/20 bg-[#f3edd7] p-6 shadow-xl md:hidden text-right"
+            transition={{ duration: 0.2 }}
             dir="rtl"
           >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               {NAV_LINKS.map((link) => (
                 <button
                   key={link.href}
                   onClick={() => scrollTo(link.href)}
-                  className="py-2 text-base font-bold text-[#1b2021]/80 hover:text-[#1b2021] text-right"
+                  className="text-right text-lg font-bold text-[#1b2021] border-b border-[#51513d]/10 pb-3"
                 >
                   {link.label}
                 </button>
               ))}
+            </div>
 
-              <div className="mt-4 pt-4 border-t border-[#51513d]/15 flex flex-col gap-3">
-                <Link href="/test/webcam" onClick={() => setMobileOpen(false)}>
-                  <Button
-                    variant="outline"
-                    className="w-full h-11 border-[#51513d]/30 text-sm font-bold text-[#1b2021]"
-                  >
-                    <Camera className="ml-2 h-4 w-4" />
-                    شارك في اختبار القراءة (3 دقائق)
-                  </Button>
-                </Link>
-
-                <Button
-                  onClick={() => scrollTo('#waitlist')}
-                  className="w-full h-11 bg-[#51513d] text-sm font-bold text-[#e3dcc2]"
-                >
+            <div className="flex flex-col gap-3 pt-6 border-t border-[#51513d]/20">
+              <Link href="/waitlist" onClick={() => setMobileOpen(false)}>
+                <Button className="w-full bg-[#51513d] text-[#e3dcc2] font-bold py-3 text-sm">
                   <Sparkles className="ml-2 h-4 w-4 text-[#e3dc95]" />
-                  انضم لقائمة الانتظار
+                  انضم إلى قائمة الانتظار
                 </Button>
-              </div>
+              </Link>
+              <Link href="/test/webcam" onClick={() => setMobileOpen(false)}>
+                <Button variant="outline" className="w-full border-[#51513d]/30 font-bold py-3 text-sm">
+                  <Camera className="ml-2 h-4 w-4 text-[#51513d]" />
+                  تجربة اختبار القراءة السريع
+                </Button>
+              </Link>
             </div>
           </motion.div>
         )}

@@ -22,27 +22,28 @@ const lexend = Lexend({
 export const metadata: Metadata = {
   metadataBase: new URL('https://lexora.page'),
   title: {
-    default: 'Lexora — Dyslexia Screening Platform',
-    template: '%s | Lexora',
+    default: 'ليكسورا — منصة تقييم وتتبع مهارات القراءة بالذكاء الاصطناعي',
+    template: '%s | ليكسورا Lexora',
   },
   description:
-    'Lexora is an eye-tracking-based dyslexia screening platform. Non-invasive, research-backed tools to help identify reading difficulties through gaze analysis.',
+    'ليكسورا هي منصة علمية متقدمة لتتبع حركة العين أثناء القراءة باللغة العربية، لدعم الأطفال وتطوير نماذج ذكاء اصطناعي تفهم خصوصية لغتنا.',
   keywords: [
-    'dyslexia',
-    'screening',
-    'eye tracking',
-    'reading assessment',
-    'gaze analysis',
-    'education',
+    'ليكسورا',
+    'قائمة الانتظار',
+    'تتبع العين',
+    'صعوبات القراءة',
+    'الديسلكسيا',
+    'تقييم القراءة للأطفال',
+    'قراءة اللغة العربية',
   ],
-  authors: [{ name: 'Lexora Team' }],
+  authors: [{ name: 'فريق ليكسورا Lexora' }],
   openGraph: {
-    title: 'Lexora — Dyslexia Screening Platform',
+    title: 'ليكسورا — منصة تقييم وتتبع مهارات القراءة',
     description:
-      'Non-invasive, research-backed dyslexia screening through eye-tracking technology.',
+      'شارك معنا في بناء أول قاعدة بيانات عربية لتتبع حركة العين أثناء القراءة.',
     type: 'website',
-    siteName: 'Lexora',
-    locale: 'en_US',
+    siteName: 'ليكسورا Lexora',
+    locale: 'ar_SA',
   },
 };
 
@@ -61,7 +62,8 @@ export default function RootLayout({
     <html
       className="scroll-smooth"
       data-scroll-behavior="smooth"
-      lang="en"
+      lang="ar"
+      dir="rtl"
       suppressHydrationWarning
     >
       <body

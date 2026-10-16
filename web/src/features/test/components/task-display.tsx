@@ -389,16 +389,21 @@ export function TaskDisplay({
           )}
         >
           {isShortContent ? (
-            <div className="flex flex-col items-center justify-center gap-6">
-              <pre
+            <div className="flex flex-col items-center justify-center gap-6" ref={setTextContentRefs}>
+              <div
                 className={cn(
-                  'text-center font-mono whitespace-pre-wrap text-[#1b2021]',
-                  'text-3xl leading-loose tracking-[0.25em] sm:text-4xl md:text-5xl',
+                  'text-center whitespace-pre-wrap text-[#1b2021]',
+                  isArabic ? 'font-sans' : 'font-(family-name:--font-lexend)',
+                  'text-3xl leading-[2.6] sm:text-4xl md:text-5xl font-bold',
                   'select-none',
                 )}
+                style={{
+                  letterSpacing: isArabic ? 'normal' : '0.15em',
+                  wordSpacing: isArabic ? '0.45em' : '0.3em',
+                }}
               >
                 {content}
-              </pre>
+              </div>
             </div>
           ) : (
             <div>{renderParagraphWithWords()}</div>
@@ -406,16 +411,25 @@ export function TaskDisplay({
         </div>
       </div>
 
-      {/* Tracking indicator — pinned to bottom of screen */}
+      {/* Tracking indicator and finish button — pinned to bottom of screen */}
       {isCollecting && !preview && (
         <div
-          className="pointer-events-none fixed left-1/2 z-50 -translate-x-1/2"
-          style={{ bottom: '12px' }}
+          className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 cursor-default"
+          dir="rtl"
         >
-          <div className="flex items-center gap-1.5 border border-[#51513d]/18 bg-[#f3edd7]/75 px-3 py-1 text-xs text-[#51513d]/70 backdrop-blur-sm">
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a6a867]" />
-            <span>Tracking</span>
+          <div className="flex items-center gap-2 border border-[#51513d]/20 bg-[#f3edd7]/85 px-3 py-1.5 text-xs text-[#51513d] shadow-sm backdrop-blur-sm">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-[#a6a867]" />
+            <span className="font-medium">جاري تسجيل حركة العين</span>
           </div>
+
+          <button
+            type="button"
+            onClick={triggerDialog}
+            className="flex cursor-pointer items-center gap-2 border-2 border-[#1b2021] bg-[#f3edd7] px-4 py-1.5 text-xs font-black text-[#1b2021] shadow-[3px_3px_0_0_#1b2021] transition-transform hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0_0_#1b2021] active:translate-x-0.5 active:translate-y-0.5"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#51513d]" />
+            <span>انتهيت من القراءة (اضغط هنا أو Enter)</span>
+          </button>
         </div>
       )}
 

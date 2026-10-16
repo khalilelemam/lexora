@@ -23,24 +23,23 @@ const MODE_CONFIG: Record<
   }
 > = {
   grid: {
-    label: 'Grid Mode',
-    instruction: 'A dot will appear at different positions on screen.',
-    howTo:
-      'Follow each dot with your eyes and hold your gaze steady until the ring fills completely.',
+    label: 'معايرة النقاط',
+    instruction: 'ستظهر نقاط متتالية في مواضع مختلفة على الشاشة.',
+    howTo: 'تابع كل نقطة بعينيك وحافظ على ثبات نظرك حتى تكتمل الدائرة.',
     accentColor: '#51513d',
     icon: 'GRID',
   },
   stickman: {
-    label: 'Ninja Mode',
-    instruction: 'A ninja stickman will appear at random positions.',
-    howTo: 'Lock your eyes on the target. Hold steady to capture each one.',
+    label: 'نمط النينجا',
+    instruction: 'ستظهر شخصية نينجا في مواضع مختلفة.',
+    howTo: 'ثبّت عينيك على الهدف مباشرة للمتابعة.',
     accentColor: '#51513d',
     icon: 'NIN',
   },
   star: {
-    label: 'Star Mode',
-    instruction: 'A golden star will twinkle at different positions.',
-    howTo: 'Follow the star with your eyes and hold your gaze on it until the ring fills.',
+    label: 'نمط النجمة',
+    instruction: 'ستلمع نجمة ذهبية في مواضع مختلفة.',
+    howTo: 'تابع النجمة بعينيك حتى تكتمل الدائرة المحيطة بها.',
     accentColor: '#e3dc95',
     icon: 'STAR',
   },
@@ -97,8 +96,8 @@ export function CalibrationCountdown({
               <path d="M2 12l10 5 10-5" />
             </svg>
           </div>
-          <span className="text-sm font-black tracking-widest text-[#1b2021] uppercase">
-            Lexora
+          <span className="text-sm font-black tracking-widest text-[#1b2021]">
+            ليكسورا
           </span>
         </div>
 
@@ -107,12 +106,12 @@ export function CalibrationCountdown({
           onClick={onToggleAudio}
           className="flex items-center gap-2 border border-[#51513d]/18 bg-[#f3edd7]/70 px-3 py-2 text-[#51513d] transition-colors hover:bg-[#e3dcc2]"
           aria-pressed={audioEnabled}
-          aria-label={audioEnabled ? 'Turn calibration sound off' : 'Turn calibration sound on'}
+          aria-label={audioEnabled ? 'كتم الصوت' : 'تشغيل الصوت'}
         >
           {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#a6a867]" />
           <span className="font-mono text-[9px] font-black tracking-wider text-[#51513d] uppercase">
-            Sound {audioEnabled ? 'on' : 'off'}
+            الصوت {audioEnabled ? 'مفعّل' : 'معطّل'}
           </span>
         </button>
       </div>
@@ -166,26 +165,26 @@ export function CalibrationCountdown({
         </div>
 
         {/* Big countdown indicator underneath */}
-        <div className="mt-8 space-y-1 text-center">
+        <div className="mt-8 space-y-1 text-center" dir="rtl">
           <div className="inline-flex items-center gap-2">
             <span className="font-mono text-xs font-bold tracking-widest text-[#51513d]/60 uppercase">
-              Starting In
+              تبدأ خلال
             </span>
             <span className="animate-scale flex h-7 w-7 items-center justify-center rounded-full bg-[#1b2021] text-xs font-bold text-[#e3dcc2]">
               {countdown}
             </span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-[#1b2021] md:text-2xl">
-            Prepare Your Focus
+            استعد للتركيز
           </h2>
           <p className="max-w-xs text-[11px] leading-relaxed text-[#51513d]/80">
-            Keep your head still and look directly at the target in the center.
+            أبقِ رأسك ثابتاً، وانظر مباشرة نحو النقطة في المنتصف.
           </p>
         </div>
       </div>
 
       {/* Bottom Instructions Card */}
-      <div className="relative z-10 mx-auto w-full max-w-md border border-[#51513d]/15 bg-[#f3edd7]/95 p-5 shadow-[8px_8px_0_rgba(81,81,61,0.08)] backdrop-blur-sm">
+      <div className="relative z-10 mx-auto w-full max-w-md border border-[#51513d]/15 bg-[#f3edd7]/95 p-5 shadow-[8px_8px_0_rgba(81,81,61,0.08)] backdrop-blur-sm" dir="rtl">
         <div className="flex items-start gap-4">
           {/* Mini icon/indicator */}
           <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#51513d]/15 bg-[#e3dcc2]">
@@ -220,13 +219,13 @@ export function CalibrationCountdown({
             )}
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 text-right">
             <h3 className="text-xs font-black tracking-wider text-[#1b2021] uppercase">
-              Calibration Instructions
+              تعليمات المعايرة
             </h3>
             <p className="text-[11px] leading-relaxed text-[#51513d]">{config.instruction}</p>
             <p className="text-[10px] leading-relaxed text-[#51513d]/70">
-              <span className="font-bold text-[#1b2021]">Action: </span>
+              <span className="font-bold text-[#1b2021]">المطلوب: </span>
               {config.howTo}
             </p>
           </div>

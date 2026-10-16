@@ -17,7 +17,7 @@ export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScre
   const canRetry = Boolean(onRetry);
 
   return (
-    <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-4">
+    <div className="relative mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-4" dir="rtl">
       <LexoraLogo size="sm" />
 
       <div className="w-full border border-[#51513d]/18 bg-[#f3edd7]/92 p-6 text-center shadow-[12px_12px_0_rgba(81,81,61,.1)] sm:p-8">
@@ -26,28 +26,27 @@ export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScre
         </div>
 
         <p className="mt-6 text-xs font-black tracking-[0.28em] text-[#51513d] uppercase">
-          Test interrupted
+          تعذر إكمال الجلسة
         </p>
         <h2 className="mt-2 text-3xl font-black tracking-tight text-[#1b2021]">
-          We could not finish analysis
+          حدث خطأ أثناء معالجة الجلسة
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-[#51513d]">
-          Lexora received an issue while processing this attempt. The message below may come from
-          the analysis service, network, or saved test data.
+          واجه النظام مشكلة أثناء تسجيل أو حفظ بيانات الجلسة. يمكنك مراجعة التفاصيل أدناه وإعادة المحاولة.
         </p>
 
-        <div className="mx-auto mt-6 max-w-xl border border-[#51513d]/14 bg-[#e3dcc2]/55 p-4 text-left">
+        <div className="mx-auto mt-6 max-w-xl border border-[#51513d]/14 bg-[#e3dcc2]/55 p-4 text-right">
           <p className="text-[10px] font-black tracking-[0.22em] text-[#51513d]/70 uppercase">
-            Service message
+            رسالة النظام
           </p>
           <p className="mt-2 text-sm leading-relaxed text-[#1b2021]">{error}</p>
         </div>
 
-        <div className="mt-6 grid gap-3 text-left sm:grid-cols-3">
+        <div className="mt-6 grid gap-3 text-right sm:grid-cols-3">
           {[
-            canRetry ? 'Retry sends same data again' : 'Start over captures fresh data',
-            'Check camera or tracker signal',
-            'Keep lighting steady before retry',
+            canRetry ? 'إعادة الإرسال لنفس البيانات' : 'بدء جلسة جديدة ببيانات جديدة',
+            'التأكد من وضوح الكاميرا وإضاءة المكان',
+            'الحفاظ على ثبات الرأس عند إعادة المحاولة',
           ].map((item, index) => (
             <div key={item} className="border border-[#51513d]/14 bg-[#e3dcc2]/45 p-3">
               <span className="font-mono text-[10px] font-black text-[#a6a867]">0{index + 1}</span>
@@ -61,10 +60,10 @@ export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScre
             <Button
               type="button"
               onClick={onRetry}
-              className="bg-[#51513d] text-[#e3dcc2] hover:bg-[#1b2021]"
+              className="bg-[#51513d] text-[#e3dcc2] hover:bg-[#1b2021] font-bold"
             >
               <RotateCcw className="mr-2 h-4 w-4" />
-              Retry Submission
+              إعادة محاولة الإرسال
             </Button>
           )}
           {onStartOver && (
@@ -74,12 +73,12 @@ export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScre
               onClick={onStartOver}
               className={
                 onRetry
-                  ? 'border-[#51513d]/30 bg-[#f3edd7] text-[#51513d] hover:bg-[#e3dcc2] hover:text-[#1b2021]'
-                  : 'bg-[#51513d] text-[#e3dcc2] hover:bg-[#1b2021]'
+                  ? 'border-[#51513d]/30 bg-[#f3edd7] text-[#51513d] hover:bg-[#e3dcc2] hover:text-[#1b2021] font-bold'
+                  : 'bg-[#51513d] text-[#e3dcc2] hover:bg-[#1b2021] font-bold'
               }
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Start Over
+              بدء جلسة جديدة
             </Button>
           )}
           {onGoHome && (
@@ -87,10 +86,10 @@ export function ErrorScreen({ error, onRetry, onStartOver, onGoHome }: ErrorScre
               type="button"
               variant="outline"
               onClick={onGoHome}
-              className="border-[#51513d]/30 bg-[#f3edd7] text-[#51513d] hover:bg-[#e3dcc2] hover:text-[#1b2021]"
+              className="border-[#51513d]/30 bg-[#f3edd7] text-[#51513d] hover:bg-[#e3dcc2] hover:text-[#1b2021] font-bold"
             >
               <Home className="mr-2 h-4 w-4" />
-              Back Home
+              العودة للرئيسية
             </Button>
           )}
         </div>

@@ -29,7 +29,7 @@ export function ScreenGuard({ children }: ScreenGuardProps) {
 
   if (screenInfo.tooSmall) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#e3dcc2] p-8 text-[#1b2021]">
+      <div className="flex min-h-screen items-center justify-center bg-[#e3dcc2] p-8 text-[#1b2021]" dir="rtl">
         <div className="grid w-full max-w-4xl overflow-hidden border border-[#51513d]/18 bg-[#f3edd7] shadow-[0_24px_70px_rgba(27,32,33,0.16)] md:grid-cols-[0.86fr_1.14fr]">
           <div className="flex min-h-72 flex-col justify-between bg-[#51513d] p-8 text-[#e3dcc2]">
             <LexoraLogo size="sm" color="text-[#e3dcc2]" />
@@ -38,28 +38,27 @@ export function ScreenGuard({ children }: ScreenGuardProps) {
                 <MonitorSmartphone className="h-8 w-8 text-[#e3dc95]" />
               </div>
               <p className="text-[10px] font-semibold tracking-[0.32em] text-[#e3dc95] uppercase">
-                Display Check
+                فحص أبعاد الشاشة
               </p>
-              <h2 className="mt-3 text-3xl font-black tracking-tight">Screen Too Small</h2>
+              <h2 className="mt-3 text-3xl font-black tracking-tight">الشاشة صغيرة جداً</h2>
             </div>
           </div>
-          <div className="flex flex-col justify-center p-8">
+          <div className="flex flex-col justify-center p-8 text-right">
             <p className="max-w-xl text-base leading-7 text-[#1b2021]/70">
-              Eye-tracking tests require at least {MIN_WIDTH}x{MIN_HEIGHT} pixels for accurate
-              results. Please use a laptop or desktop monitor before starting the reading session.
+              تتطلب اختبارات تتبع حركة العين شاشة بدقة لا تقل عن {MIN_WIDTH}x{MIN_HEIGHT} بكسل لضمان دقة المعايرة ومحاذاة النصوص. يرجى استخدام حاسوب محمول (لابتوب) أو شاشة كمبيوتر مكتبي للبدء.
             </p>
             <div className="mt-8 grid gap-3 text-sm sm:grid-cols-2">
-              <div className="border border-[#51513d]/18 bg-[#e3dcc2]/45 p-4">
+              <div className="border border-[#51513d]/18 bg-[#e3dcc2]/45 p-4 text-right">
                 <p className="text-[10px] font-semibold tracking-[0.24em] text-[#51513d]/60 uppercase">
-                  Required
+                  الحد الأدنى المطلوب
                 </p>
                 <p className="mt-2 font-mono text-lg font-bold text-[#51513d]">
                   {MIN_WIDTH}x{MIN_HEIGHT}
                 </p>
               </div>
-              <div className="border border-[#51513d]/18 bg-[#e3dcc2]/45 p-4">
+              <div className="border border-[#51513d]/18 bg-[#e3dcc2]/45 p-4 text-right">
                 <p className="text-[10px] font-semibold tracking-[0.24em] text-[#51513d]/60 uppercase">
-                  Current
+                  الأبعاد الحالية
                 </p>
                 <p className="mt-2 font-mono text-lg font-bold text-[#51513d]">
                   {screenInfo.width}x{screenInfo.height}

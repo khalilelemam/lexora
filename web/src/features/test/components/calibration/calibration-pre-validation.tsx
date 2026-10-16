@@ -17,33 +17,33 @@ const MODE_INSTRUCTIONS: Record<
   }
 > = {
   grid: {
-    title: 'Quick accuracy check',
-    description: 'Lexora will verify that your gaze lands where the target appears.',
+    title: 'فحص سريع لدقة التتبع',
+    description: 'سنتأكد الآن من مطابقة نظرات العين مع مواضع النقاط على الشاشة.',
     steps: [
-      'Look at each target as soon as it appears',
-      'Hold your eyes steady until capture completes',
-      'Keep your head relaxed and still',
-      'This takes only a few seconds',
+      'انظر إلى كل نقطة فور ظهورها',
+      'ثبّت نظرك حتى يكتمل تسجيل النقطة',
+      'أبقِ رأسك مسترخياً وثابتاً',
+      'يستغرق الفحص بضع ثوانٍ فقط',
     ],
   },
   star: {
-    title: 'Star accuracy check',
-    description: "One final pass confirms the star targets match the reader's gaze.",
+    title: 'فحص دقة النجوم',
+    description: 'خطوة أخيرة لتأكيد دقة تتبع النجوم بعيني القارئ.',
     steps: [
-      'Find the star quickly',
-      'Hold gaze until it completes',
-      'Stay still between targets',
-      'Blink normally if needed',
+      'ابحث عن النجمة سريعاً بعينيك',
+      'ثبّت نظرك عليها حتى تكتمل الدائرة',
+      'حافظ على هدوئك بين النقاط',
+      'اطرف بعينيك بشكل طبيعي عند الحاجة',
     ],
   },
   stickman: {
-    title: 'Ninja accuracy check',
-    description: 'A short final check makes sure the tracking is ready for reading.',
+    title: 'فحص دقة النينجا',
+    description: 'تحقق أخير للتأكد من جاهزية التتبع لبدء القراءة.',
     steps: [
-      'Find each character quickly',
-      'Keep gaze locked until capture completes',
-      'Use only your eyes to move',
-      'Stay calm and steady',
+      'اعثر على الشخصية بعينيك بسرعة',
+      'ثبّت نظرك عليها حتى تختفي',
+      'حرّك عينيك فقط وليس رأسك',
+      'حافظ على هدوء وتركيز عينيك',
     ],
   },
 };
@@ -111,9 +111,10 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
       <div
         className="relative flex w-full max-w-2xl flex-col items-center border border-[#51513d]/18 bg-[#f3edd7]/92 px-6 py-8 shadow-[12px_12px_0_rgba(81,81,61,.1)] backdrop-blur-sm sm:px-10"
         style={{ animation: 'float-up 0.4s ease-out' }}
+        dir="rtl"
       >
         <p className="text-xs font-black tracking-[0.28em] text-[#51513d] uppercase">
-          Calibration checkpoint
+          نقطة التحقق من المعايرة
         </p>
 
         <div className="relative my-6 flex h-32 w-32 items-center justify-center">
@@ -144,11 +145,11 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
           {instructions.description}
         </p>
 
-        <div className="mt-6 grid w-full gap-3 sm:grid-cols-2">
+        <div className="mt-6 grid w-full gap-3 sm:grid-cols-2 text-right">
           {instructions.steps.map((step, idx) => (
             <div key={step} className="border border-[#51513d]/14 bg-[#e3dcc2]/55 p-3">
               <span className="flex h-6 w-6 items-center justify-center bg-[#51513d] font-mono text-[10px] font-black text-[#f3edd7]">
-                {idx + 1}
+                0{idx + 1}
               </span>
               <p className="mt-2 text-sm font-semibold text-[#1b2021]">{step}</p>
             </div>
@@ -156,7 +157,7 @@ export function CalibrationPreValidation({ resolvedMode, onReady }: CalibrationP
         </div>
 
         <p className="mt-6 text-xs font-bold tracking-wider text-[#51513d]/75 uppercase">
-          Starts automatically. Click anywhere to begin now.
+          يبدأ الفحص تلقائياً، أو اضغط في أي مكان للبدء فوراً
         </p>
       </div>
     </div>

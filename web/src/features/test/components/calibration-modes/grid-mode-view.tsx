@@ -157,9 +157,9 @@ export const GridModeView = React.memo(
         {/* 6. Floating HUD Bar (bottom) */}
         <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-24 items-end justify-between px-6 pb-6">
           {/* Active Mode Label */}
-          <div className="flex items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 text-[10px] font-black tracking-widest text-[#1b2021] uppercase shadow-[4px_4px_0_0_#1b2021] sm:text-xs">
+          <div className="flex items-center gap-2 border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 text-[10px] font-black text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] sm:text-xs">
             <span className="h-2 w-2 animate-pulse rounded-full border border-[#1b2021] bg-[#a6a867]" />
-            Grid Calibration
+            معايرة دقة تتبع العين
           </div>
 
           {/* Dynamic Compact Progress Dots */}
@@ -181,7 +181,7 @@ export const GridModeView = React.memo(
 
           {/* Numeric Step Counter */}
           <div className="border-2 border-[#1b2021] bg-[#e3dcc2] px-4 py-2 font-mono text-[10px] font-black tracking-wider text-[#1b2021] shadow-[4px_4px_0_0_#1b2021] sm:text-xs">
-            STEP <span className="text-[#a6a867]">{collectionStep}</span> / {collectionTotal}
+            النقطة <span className="text-[#a6a867]">{collectionStep}</span> / {collectionTotal}
           </div>
         </div>
       </div>

@@ -50,8 +50,8 @@ export function CalibrationValidation({
       {/* Bottom HUD — outside calibration area for consistency */}
       <div className="pointer-events-none absolute right-0 bottom-0 left-0 flex h-16 items-center justify-center">
         <div className="w-[min(420px,85vw)] rounded-xl border border-[#51513d] bg-[#f3edd7]/90 px-5 py-2.5 shadow-sm backdrop-blur-md">
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-xs text-[#51513d]">Checking accuracy</span>
+          <div className="mb-1.5 flex items-center justify-between" dir="rtl">
+            <span className="text-xs font-bold text-[#51513d]">فحص دقة التتبع</span>
             <span className="text-xs font-semibold text-[#1b2021]">
               {currentStep} / {totalSteps}
             </span>

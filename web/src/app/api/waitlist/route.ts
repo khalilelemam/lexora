@@ -55,6 +55,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       waitlistId: entry.id,
+      fullName: entry.fullName,
+      childAge: entry.childAge,
       message: 'تم تسجيلك بنجاح في قائمة الانتظار!',
     });
   } catch (error) {
@@ -72,20 +74,55 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+    const emailQuery = searchParams.get('email');
+
+    // 1. Return-user lookup by email
+    if (emailQuery) {
+      const normalizedEmail = emailQuery.trim().toLowerCase();
+      const entry = await prisma.waitlistEntry.findUnique({
+        where: { email: normalizedEmail },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          childAge: true,
+          userRole: true,
+          hasCompletedTest: true,
+        },
+      });
+
+      if (!entry) {
+        return NextResponse.json(
+          {
+            success: false,
+            found: false,
+            error: 'لم نجد هذا البريد الإلكتروني مسجلاً في قائمة الانتظار.',
+          },
+          { status: 404 },
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        found: true,
+        entry,
+      });
+    }
+
     const secret = searchParams.get('secret');
     const adminSecret = process.env.ADMIN_SECRET || 'lexora-waitlist-secret';
 
-    // Public count summary for social proof
+    // 2. Public count summary
     if (secret !== adminSecret) {
       const count = await prisma.waitlistEntry.count();
       const testCount = await prisma.testAttempt.count();
       return NextResponse.json({
-        totalCount: Math.max(count, 48), // baseline social proof
+        totalCount: Math.max(count, 48),
         completedTestsCount: testCount,
       });
     }
 
-    // Admin full list
+    // 3. Admin full list
     const entries = await prisma.waitlistEntry.findMany({
       orderBy: { createdAt: 'desc' },
       include: {

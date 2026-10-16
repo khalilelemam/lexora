@@ -105,16 +105,14 @@ export const TOBII_STEPS = [
   { key: 'results', label: 'Results' },
 ] as const;
 
-/** Webcam steps for the StepIndicator (ETDD70 3-task reading structure) */
+/** Webcam steps for the StepIndicator (Streamlined 3-task reading structure) */
 export const WEBCAM_STEPS = [
-  { key: 'intake', label: 'البيانات' },
-  { key: 'device-setup', label: 'الكاميرا' },
-  { key: 'calibration-setup', label: 'الاستعداد' },
+  { key: 'device-setup', label: 'تجهيز الكاميرا' },
   { key: 'calibrating', label: 'المعايرة' },
   { key: 'task-syllables', label: 'المقاطع الصوتية' },
-  { key: 'task-pseudo-words', label: 'كلمات غير مألوفة' },
-  { key: 'task-meaningful-text', label: 'النص الهادف' },
-  { key: 'results', label: 'اكتمال الاختبار' },
+  { key: 'task-pseudo-words', label: 'الكلمات التجريبية' },
+  { key: 'task-meaningful-text', label: 'النص القصصي' },
+  { key: 'results', label: 'اكتمال الجلسة' },
 ] as const;
 
 /** Map test states to the step key they belong to (for StepIndicator) */

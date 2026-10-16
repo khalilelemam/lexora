@@ -9,21 +9,19 @@ interface LexoraLogoProps {
   color?: string;
   animate?: boolean;
   showText?: boolean;
+  showEnglishSubtitle?: boolean;
 }
 
 const sizeMap = {
-  sm: { iconH: 20, text: 'text-lg', gap: 'gap-2' },
-  md: { iconH: 28, text: 'text-2xl', gap: 'gap-2.5' },
-  lg: { iconH: 40, text: 'text-4xl', gap: 'gap-3' },
-  xl: { iconH: 52, text: 'text-5xl', gap: 'gap-4' },
+  sm: { iconH: 22, text: 'text-lg', subtext: 'text-[9px]', gap: 'gap-2.5' },
+  md: { iconH: 30, text: 'text-2xl', subtext: 'text-[10px]', gap: 'gap-3' },
+  lg: { iconH: 42, text: 'text-3xl', subtext: 'text-xs', gap: 'gap-3.5' },
+  xl: { iconH: 56, text: 'text-5xl', subtext: 'text-sm', gap: 'gap-4' },
 } as const;
 
 /**
- * Lexora brand logo — uses the official SVG icon from brand assets.
- * The SVG is all-black; apply color via CSS filter or the `color` prop class.
- *
- * For dark backgrounds: color="text-white" + invert filter
- * For light backgrounds: color="text-[#2D2A26]" (default)
+ * Lexora brand logo with Arabic-first identity:
+ * Displays the iconic eye mark alongside "ليكسورا" with an English "LEXORA" subtitle.
  */
 export function LexoraLogo({
   className,
@@ -31,16 +29,16 @@ export function LexoraLogo({
   color,
   animate = false,
   showText = true,
+  showEnglishSubtitle = true,
 }: LexoraLogoProps) {
   const s = sizeMap[size];
-  // Aspect ratio of the official icon SVG: 142.51 × 75.47 ≈ 1.888 : 1
   const iconW = Math.round(s.iconH * 1.89);
 
   return (
-    <div className={cn('flex items-center', s.gap, className)}>
+    <div className={cn('flex items-center select-none', s.gap, className)}>
       <Image
         src="/images/lexora-logo.svg"
-        alt="Lexora"
+        alt="ليكسورا Lexora"
         width={iconW}
         height={s.iconH}
         className={cn(
@@ -51,17 +49,27 @@ export function LexoraLogo({
         priority
       />
       {showText && (
-        <span
-          className={cn(
-            s.text,
-            'font-bold tracking-tight',
-            color
-              ? color.replace(/^text-/, 'text-')
-              : 'from-primary to-accent bg-linear-to-r bg-clip-text text-transparent',
+        <div className="flex flex-col justify-center leading-none">
+          <span
+            className={cn(
+              s.text,
+              'font-black tracking-tight text-[#1b2021] dark:text-[#f3edd7]',
+              color && color.replace(/^text-/, 'text-'),
+            )}
+          >
+            ليكسورا
+          </span>
+          {showEnglishSubtitle && (
+            <span
+              className={cn(
+                s.subtext,
+                'font-bold tracking-[0.22em] text-[#51513d]/75 uppercase mt-0.5',
+              )}
+            >
+              LEXORA
+            </span>
           )}
-        >
-          Lexora
-        </span>
+        </div>
       )}
     </div>
   );
